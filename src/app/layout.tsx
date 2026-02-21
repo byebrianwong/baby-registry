@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "BabyList - One Registry, Every Store",
+  title: "Baby Akachan - One Registry, Every Store",
   description:
     "Create your baby registry with items from any store. Share one link with friends and family.",
 };

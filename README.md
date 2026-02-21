@@ -1,4 +1,4 @@
-# BabyList - One Registry, Every Store
+# Baby Akachan - One Registry, Every Store
 
 A baby registry app built with Next.js, Supabase, and Tailwind CSS. Parents create a registry with items from any store, share a single link, and gift givers can reserve items with no sign-up required.
 

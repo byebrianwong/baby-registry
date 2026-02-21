@@ -23,7 +23,7 @@ export default function HomePage() {
               <Link href="/signup">Create Your Registry</Link>
             </Button>
             <Button size="lg" variant="outline" asChild>
-              <Link href="/login">Sign In</Link>
+              <Link href="/demo">View Demo Registry</Link>
             </Button>
           </div>
         </section>
@@ -118,7 +118,7 @@ export default function HomePage() {
               Ready to Build Your Registry?
             </h2>
             <p className="mt-4 text-muted-foreground">
-              Join thousands of parents who trust BabyList for their registry.
+              Join thousands of parents who trust Baby Akachan for their registry.
             </p>
             <Button size="lg" className="mt-8" asChild>
               <Link href="/signup">Get Started Free</Link>
@@ -129,7 +129,7 @@ export default function HomePage() {
 
       <footer className="border-t py-8">
         <div className="container mx-auto px-4 text-center text-sm text-muted-foreground">
-          &copy; {new Date().getFullYear()} BabyList. All rights reserved.
+          &copy; {new Date().getFullYear()} Baby Akachan. All rights reserved.
         </div>
       </footer>
     </div>

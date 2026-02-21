@@ -44,7 +44,7 @@ export default function LoginPage() {
         <CardHeader className="text-center">
           <Link href="/" className="mx-auto flex items-center gap-2 font-semibold mb-4">
             <Baby className="h-6 w-6 text-primary" />
-            <span className="text-xl">BabyList</span>
+            <span className="text-xl">Baby Akachan</span>
           </Link>
           <CardTitle className="text-2xl">Welcome back</CardTitle>
           <CardDescription>Sign in to manage your registry</CardDescription>
