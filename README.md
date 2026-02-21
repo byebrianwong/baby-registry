@@ -21,30 +21,44 @@ A baby registry app built with Next.js, Supabase, and Tailwind CSS. Parents crea
 
 ## Getting Started
 
+### Prerequisites
+
+- **Node.js 18+** (tested with 20 and 25)
+- **npm**
+- A free [Supabase](https://supabase.com) account
+
 ### 1. Clone and install
 
 ```bash
-git clone <your-repo-url>
+git clone git@github.com:byebrianwong/baby-registry.git
 cd baby-registry
 npm install
 ```
 
 ### 2. Set up Supabase
 
-1. Create a new project at [supabase.com](https://supabase.com)
-2. Copy `.env.local.example` to `.env.local` and fill in your credentials:
+1. Go to [supabase.com](https://supabase.com) and create a new project (free tier works fine for dev)
+2. Copy the env example and fill in your credentials:
 
 ```bash
 cp .env.local.example .env.local
 ```
 
-3. Run the SQL migration in the Supabase SQL Editor:
-   - Open `supabase/migrations/001_initial_schema.sql`
-   - Paste and run it in your Supabase Dashboard > SQL Editor
+3. Find your credentials in the Supabase Dashboard:
+   - Go to **Project Settings > API**
+   - `NEXT_PUBLIC_SUPABASE_URL` = the **Project URL** (e.g., `https://abcdefg.supabase.co`)
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY` = the **anon / public** key
+   - `SUPABASE_SERVICE_ROLE_KEY` = the **service_role** key (keep this secret)
 
-4. Enable anonymous sign-ins:
-   - Go to Supabase Dashboard > Authentication > Providers
-   - Enable "Anonymous Sign-Ins" (needed for gift givers)
+4. Run the database migration:
+   - Go to **SQL Editor** in your Supabase Dashboard
+   - Copy the entire contents of `supabase/migrations/001_initial_schema.sql`
+   - Paste it in and click **Run**
+   - You should see "Success. No rows returned" — that means it worked
+
+5. Enable anonymous sign-ins (required for gift givers to reserve items without an account):
+   - Go to **Authentication > Providers > Anonymous Sign-In**
+   - Toggle it **ON** and save
 
 ### 3. Run the dev server
 
@@ -52,7 +66,16 @@ cp .env.local.example .env.local
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+Open [http://localhost:3000](http://localhost:3000). You should see the landing page. Click **Sign up** to create an account and start building a registry.
+
+### Quick walkthrough
+
+1. **Sign up** with any email/password
+2. **Create a registry** — give it a title and optional due date
+3. **Browse the checklist** — click "Checklist" to see ~100 recommended items, add ones you want
+4. **Add custom items** — click "Add Item" to add products from any URL
+5. **Share your registry** — click "Share Link" to copy the public URL (e.g., `/r/your-slug`)
+6. **Test the gift-giver view** — open that link in an incognito window and try reserving an item
 
 ## Project Structure
 
