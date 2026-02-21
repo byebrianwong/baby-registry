@@ -1,0 +1,247 @@
+import { redirect, notFound } from "next/navigation";
+import Link from "next/link";
+import {
+  ExternalLink,
+  Settings,
+  ClipboardList,
+  Share2,
+  Copy,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { Separator } from "@/components/ui/separator";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { createClient } from "@/utils/supabase/server";
+import { AddItemDialog } from "@/components/add-item-dialog";
+import { ItemCard } from "@/components/item-card";
+import { CopyLinkButton } from "@/components/copy-link-button";
+
+interface RegistryItem {
+  id: string;
+  title: string;
+  external_url: string | null;
+  image_url: string | null;
+  price: number | null;
+  quantity_needed: number;
+  quantity_fulfilled: number;
+  is_essential: boolean;
+  notes: string | null;
+  category_id: string | null;
+  sort_order: number;
+}
+
+interface Category {
+  id: string;
+  name: string;
+  sort_order: number;
+}
+
+export default async function RegistryManagePage({
+  params,
+}: {
+  params: Promise<{ registryId: string }>;
+}) {
+  const { registryId } = await params;
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/login");
+  }
+
+  const { data: registry } = await supabase
+    .from("registries")
+    .select("*")
+    .eq("id", registryId)
+    .eq("owner_id", user.id)
+    .single();
+
+  if (!registry) {
+    notFound();
+  }
+
+  const [{ data: categories }, { data: items }, { data: purchases }] =
+    await Promise.all([
+      supabase
+        .from("categories")
+        .select("*")
+        .eq("registry_id", registryId)
+        .order("sort_order"),
+      supabase
+        .from("registry_items")
+        .select("*")
+        .eq("registry_id", registryId)
+        .order("sort_order"),
+      supabase
+        .from("purchases")
+        .select("*")
+        .eq("status", "reserved")
+        .order("created_at", { ascending: false }),
+    ]);
+
+  const allItems = (items || []) as RegistryItem[];
+  const allCategories = (categories || []) as Category[];
+
+  const totalItems = allItems.length;
+  const fulfilledItems = allItems.filter(
+    (i) => i.quantity_fulfilled >= i.quantity_needed
+  ).length;
+  const progress = totalItems > 0 ? (fulfilledItems / totalItems) * 100 : 0;
+  const totalValue = allItems.reduce((sum, i) => sum + (i.price || 0), 0);
+
+  // Group items by category
+  const itemsByCategory = new Map<string | null, RegistryItem[]>();
+  for (const item of allItems) {
+    const key = item.category_id;
+    if (!itemsByCategory.has(key)) {
+      itemsByCategory.set(key, []);
+    }
+    itemsByCategory.get(key)!.push(item);
+  }
+
+  const registryUrl = `/r/${registry.slug}`;
+
+  return (
+    <div className="container mx-auto px-4 py-8">
+      {/* Header */}
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">{registry.title}</h1>
+          {registry.event_date && (
+            <p className="text-muted-foreground">
+              Due date:{" "}
+              {new Date(registry.event_date).toLocaleDateString("en-US", {
+                month: "long",
+                day: "numeric",
+                year: "numeric",
+              })}
+            </p>
+          )}
+        </div>
+        <div className="flex gap-2">
+          <CopyLinkButton slug={registry.slug} />
+          <Button variant="outline" asChild>
+            <Link href={registryUrl} target="_blank">
+              <ExternalLink className="mr-2 h-4 w-4" />
+              Preview
+            </Link>
+          </Button>
+          <Button variant="outline" asChild>
+            <Link href={`/dashboard/registry/${registryId}/checklist`}>
+              <ClipboardList className="mr-2 h-4 w-4" />
+              Checklist
+            </Link>
+          </Button>
+          <Button variant="outline" asChild>
+            <Link href={`/dashboard/registry/${registryId}/settings`}>
+              <Settings className="h-4 w-4" />
+            </Link>
+          </Button>
+        </div>
+      </div>
+
+      {/* Stats */}
+      <div className="mt-6 grid gap-4 md:grid-cols-4">
+        <Card>
+          <CardContent className="p-4">
+            <p className="text-sm text-muted-foreground">Total Items</p>
+            <p className="text-2xl font-bold">{totalItems}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <p className="text-sm text-muted-foreground">Fulfilled</p>
+            <p className="text-2xl font-bold">{fulfilledItems}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <p className="text-sm text-muted-foreground">Completion</p>
+            <div className="flex items-center gap-2">
+              <p className="text-2xl font-bold">{Math.round(progress)}%</p>
+              <Progress value={progress} className="flex-1" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <p className="text-sm text-muted-foreground">Total Value</p>
+            <p className="text-2xl font-bold">${totalValue.toFixed(0)}</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Separator className="my-8" />
+
+      {/* Items */}
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-xl font-semibold">Registry Items</h2>
+        <AddItemDialog registryId={registryId} categories={allCategories} />
+      </div>
+
+      {totalItems === 0 ? (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-12">
+            <p className="text-muted-foreground">
+              No items yet. Add items manually or browse the checklist.
+            </p>
+            <div className="mt-4 flex gap-2">
+              <AddItemDialog registryId={registryId} categories={allCategories} />
+              <Button variant="outline" asChild>
+                <Link href={`/dashboard/registry/${registryId}/checklist`}>
+                  Browse Checklist
+                </Link>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="space-y-8">
+          {allCategories.map((category) => {
+            const categoryItems = itemsByCategory.get(category.id) || [];
+            if (categoryItems.length === 0) return null;
+
+            return (
+              <div key={category.id}>
+                <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                  {category.name}
+                  <Badge variant="secondary">{categoryItems.length}</Badge>
+                </h3>
+                <div className="grid gap-3 md:grid-cols-2">
+                  {categoryItems.map((item) => (
+                    <ItemCard
+                      key={item.id}
+                      item={item}
+                      registryId={registryId}
+                      isOwner
+                    />
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+
+          {/* Uncategorized items */}
+          {(itemsByCategory.get(null) || []).length > 0 && (
+            <div>
+              <h3 className="text-lg font-semibold mb-3">Other</h3>
+              <div className="grid gap-3 md:grid-cols-2">
+                {itemsByCategory.get(null)!.map((item) => (
+                  <ItemCard
+                    key={item.id}
+                    item={item}
+                    registryId={registryId}
+                    isOwner
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
