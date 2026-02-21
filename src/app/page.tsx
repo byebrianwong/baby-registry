@@ -18,12 +18,15 @@ export default function HomePage() {
             Create your baby registry with items from any store. Share a single
             link with friends and family. No more juggling multiple lists.
           </p>
-          <div className="mt-10 flex items-center justify-center gap-4">
+          <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
             <Button size="lg" asChild>
               <Link href="/signup">Create Your Registry</Link>
             </Button>
             <Button size="lg" variant="outline" asChild>
-              <Link href="/demo">View Demo Registry</Link>
+              <Link href="/demo/dashboard">Demo: Parent Dashboard</Link>
+            </Button>
+            <Button size="lg" variant="outline" asChild>
+              <Link href="/demo">Demo: Gift Giver View</Link>
             </Button>
           </div>
         </section>
