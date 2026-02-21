@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import {
   Baby,
@@ -21,6 +21,8 @@ import {
   X,
   FolderOpen,
   Pencil,
+  Loader2,
+  Link as LinkIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -98,6 +100,49 @@ function DemoAddItemDialog({
   onAdd: (item: DemoItem) => void;
 }) {
   const [open, setOpen] = useState(false);
+  const [scraping, setScraping] = useState(false);
+  const [scrapeStatus, setScrapeStatus] = useState("");
+  const titleRef = React.useRef<HTMLInputElement>(null);
+  const priceRef = React.useRef<HTMLInputElement>(null);
+  const imageUrlRef = React.useRef<HTMLInputElement>(null);
+
+  const handleDemoScrape = async (url: string) => {
+    if (!url || scraping) return;
+    try { new URL(url); } catch { return; }
+
+    setScraping(true);
+    setScrapeStatus("");
+
+    // Simulate network delay
+    await new Promise((r) => setTimeout(r, 1200));
+
+    const mockData = {
+      title: "4moms MamaRoo Multi-Motion Baby Swing",
+      price: "219.99",
+      imageUrl: "https://images.unsplash.com/photo-1555252333-9f8e92e65df9?w=300&h=300&fit=crop",
+    };
+
+    const filled: string[] = [];
+    if (titleRef.current && !titleRef.current.value) {
+      titleRef.current.value = mockData.title;
+      filled.push("title");
+    }
+    if (priceRef.current && !priceRef.current.value) {
+      priceRef.current.value = mockData.price;
+      filled.push("price");
+    }
+    if (imageUrlRef.current && !imageUrlRef.current.value) {
+      imageUrlRef.current.value = mockData.imageUrl;
+      filled.push("image");
+    }
+
+    setScrapeStatus(
+      filled.length > 0
+        ? `Auto-filled ${filled.join(", ")}`
+        : "No new data found to fill"
+    );
+    setScraping(false);
+  };
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -125,10 +170,11 @@ function DemoAddItemDialog({
 
     onAdd(newItem);
     setOpen(false);
+    setScrapeStatus("");
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) setScrapeStatus(""); }}>
       <DialogTrigger asChild>
         <Button>
           <Plus className="mr-2 h-4 w-4" />
@@ -139,15 +185,50 @@ function DemoAddItemDialog({
         <DialogHeader>
           <DialogTitle>Add Item to Registry</DialogTitle>
           <DialogDescription>
-            This is a demo — the item will be added to the local list.
+            This is a demo — paste a URL to see auto-fill in action.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="externalUrl">Product URL</Label>
+            <div className="flex gap-2">
+              <Input
+                id="externalUrl"
+                name="externalUrl"
+                type="url"
+                placeholder="https://www.amazon.com/..."
+                onBlur={(e) => handleDemoScrape(e.target.value)}
+                className="flex-1"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                disabled={scraping}
+                onClick={() => {
+                  const input = document.getElementById("externalUrl") as HTMLInputElement;
+                  if (input?.value) handleDemoScrape(input.value);
+                }}
+                title="Fetch product details"
+              >
+                {scraping ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <LinkIcon className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
+            {scrapeStatus && (
+              <p className="text-xs text-muted-foreground">{scrapeStatus}</p>
+            )}
+          </div>
+
           <div className="space-y-2">
             <Label htmlFor="title">Item Name</Label>
             <Input
               id="title"
               name="title"
+              ref={titleRef}
               placeholder="e.g., Convertible Crib"
               required
             />
@@ -170,12 +251,13 @@ function DemoAddItemDialog({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="externalUrl">Product URL (optional)</Label>
+            <Label htmlFor="imageUrl">Image URL (optional)</Label>
             <Input
-              id="externalUrl"
-              name="externalUrl"
+              id="imageUrl"
+              name="imageUrl"
+              ref={imageUrlRef}
               type="url"
-              placeholder="https://www.amazon.com/..."
+              placeholder="https://..."
             />
           </div>
 
@@ -185,6 +267,7 @@ function DemoAddItemDialog({
               <Input
                 id="price"
                 name="price"
+                ref={priceRef}
                 type="number"
                 step="0.01"
                 min="0"
