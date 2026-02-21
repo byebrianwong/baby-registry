@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { Plus } from "lucide-react";
+import { useState, useRef } from "react";
+import { Plus, Loader2, Link as LinkIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -23,6 +23,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { addRegistryItem } from "@/lib/actions/registry";
+import { scrapeProductUrl } from "@/lib/actions/scrape";
 
 interface Category {
   id: string;
@@ -50,7 +51,53 @@ export function AddItemDialog({
 }: AddItemDialogProps) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [scraping, setScraping] = useState(false);
+  const [scrapeStatus, setScrapeStatus] = useState<string>("");
   const [error, setError] = useState("");
+
+  const titleRef = useRef<HTMLInputElement>(null);
+  const priceRef = useRef<HTMLInputElement>(null);
+  const imageUrlRef = useRef<HTMLInputElement>(null);
+
+  const handleScrape = async (url: string) => {
+    if (!url || scraping) return;
+
+    try {
+      new URL(url);
+    } catch {
+      return;
+    }
+
+    setScraping(true);
+    setScrapeStatus("");
+
+    const result = await scrapeProductUrl(url);
+
+    if (result.error) {
+      setScrapeStatus(result.error);
+    } else {
+      let filled: string[] = [];
+      if (result.title && titleRef.current && !titleRef.current.value) {
+        titleRef.current.value = result.title;
+        filled.push("title");
+      }
+      if (result.price && priceRef.current && !priceRef.current.value) {
+        priceRef.current.value = result.price;
+        filled.push("price");
+      }
+      if (result.imageUrl && imageUrlRef.current && !imageUrlRef.current.value) {
+        imageUrlRef.current.value = result.imageUrl;
+        filled.push("image");
+      }
+      if (filled.length > 0) {
+        setScrapeStatus(`Auto-filled ${filled.join(", ")}`);
+      } else {
+        setScrapeStatus("No new data found to fill");
+      }
+    }
+
+    setScraping(false);
+  };
 
   const handleSubmit = async (formData: FormData) => {
     setLoading(true);
@@ -60,12 +107,13 @@ export function AddItemDialog({
       setError(result.error);
     } else {
       setOpen(false);
+      setScrapeStatus("");
     }
     setLoading(false);
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) setScrapeStatus(""); }}>
       <DialogTrigger asChild>
         {trigger || (
           <Button>
@@ -78,15 +126,50 @@ export function AddItemDialog({
         <DialogHeader>
           <DialogTitle>Add Item to Registry</DialogTitle>
           <DialogDescription>
-            Add a product from any store or a custom item.
+            Paste a product URL to auto-fill, or add a custom item.
           </DialogDescription>
         </DialogHeader>
         <form action={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="externalUrl">Product URL</Label>
+            <div className="flex gap-2">
+              <Input
+                id="externalUrl"
+                name="externalUrl"
+                type="url"
+                placeholder="https://www.amazon.com/..."
+                onBlur={(e) => handleScrape(e.target.value)}
+                className="flex-1"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                disabled={scraping}
+                onClick={() => {
+                  const input = document.getElementById("externalUrl") as HTMLInputElement;
+                  if (input?.value) handleScrape(input.value);
+                }}
+                title="Fetch product details"
+              >
+                {scraping ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <LinkIcon className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
+            {scrapeStatus && (
+              <p className="text-xs text-muted-foreground">{scrapeStatus}</p>
+            )}
+          </div>
+
           <div className="space-y-2">
             <Label htmlFor="title">Item Name</Label>
             <Input
               id="title"
               name="title"
+              ref={titleRef}
               placeholder="e.g., Convertible Crib"
               defaultValue={defaultValues?.title}
               required
@@ -110,20 +193,11 @@ export function AddItemDialog({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="externalUrl">Product URL (optional)</Label>
-            <Input
-              id="externalUrl"
-              name="externalUrl"
-              type="url"
-              placeholder="https://www.amazon.com/..."
-            />
-          </div>
-
-          <div className="space-y-2">
             <Label htmlFor="imageUrl">Image URL (optional)</Label>
             <Input
               id="imageUrl"
               name="imageUrl"
+              ref={imageUrlRef}
               type="url"
               placeholder="https://..."
             />
@@ -135,6 +209,7 @@ export function AddItemDialog({
               <Input
                 id="price"
                 name="price"
+                ref={priceRef}
                 type="number"
                 step="0.01"
                 min="0"

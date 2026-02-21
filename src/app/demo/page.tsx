@@ -10,6 +10,8 @@ import {
   Gift,
   Check,
   ArrowLeft,
+  HandCoins,
+  DollarSign,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -27,6 +29,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { PaymentMethodsDisplay } from "@/components/payment-methods-display";
 import {
   DEMO_REGISTRY,
   DEMO_CATEGORIES,
@@ -44,8 +47,17 @@ interface DemoItem {
   quantity_needed: number;
   quantity_fulfilled: number;
   is_essential: boolean;
+  is_parent_purchased: boolean;
   notes: string | null;
   sort_order: number;
+}
+
+interface DemoCashFund {
+  id: string;
+  title: string;
+  description: string | null;
+  goal_amount: number;
+  current_amount: number;
 }
 
 function DemoReserveDialog({
@@ -148,8 +160,226 @@ function DemoReserveDialog({
   );
 }
 
+function DemoCoverItemDialog({
+  item,
+  onCover,
+}: {
+  item: DemoItem;
+  onCover: (itemId: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [covered, setCovered] = useState(false);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onCover(item.id);
+    setCovered(true);
+  };
+
+  if (covered) {
+    return (
+      <Button size="sm" disabled variant="secondary">
+        <HandCoins className="mr-1 h-3 w-3" />
+        Covered
+      </Button>
+    );
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button size="sm" variant="outline">
+          <HandCoins className="mr-1 h-3 w-3" />
+          Cover This Item
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Cover &ldquo;{item.title}&rdquo;</DialogTitle>
+          <DialogDescription>
+            This is a demo — no actual payment is made. The parents already
+            bought this item. You can reimburse them via the payment methods
+            below.
+          </DialogDescription>
+        </DialogHeader>
+
+        {item.price && (
+          <p className="text-lg font-semibold">${item.price.toFixed(2)}</p>
+        )}
+
+        <PaymentMethodsDisplay
+          paymentMethods={DEMO_REGISTRY.settings.payment_methods}
+        />
+
+        <Separator />
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="coverName">Your Name</Label>
+            <Input
+              id="coverName"
+              defaultValue="Demo User"
+              required
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="coverEmail">Your Email</Label>
+            <Input
+              id="coverEmail"
+              type="email"
+              defaultValue="demo@example.com"
+              required
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="coverMessage">Message (optional)</Label>
+            <Textarea id="coverMessage" placeholder="Happy to help!" rows={2} />
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button type="submit">I&apos;ll Cover This</Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function DemoContributeFundDialog({
+  fund,
+  onContribute,
+}: {
+  fund: DemoCashFund;
+  onContribute: (fundId: string, amount: number) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [contributed, setContributed] = useState(false);
+
+  const remaining = Math.max(0, fund.goal_amount - fund.current_amount);
+  const fundProgress =
+    fund.goal_amount > 0
+      ? (fund.current_amount / fund.goal_amount) * 100
+      : 0;
+
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const amount = parseFloat(formData.get("amount") as string) || 25;
+    onContribute(fund.id, amount);
+    setContributed(true);
+  };
+
+  if (contributed) {
+    return (
+      <Button size="sm" disabled variant="secondary">
+        <DollarSign className="mr-1 h-3 w-3" />
+        Contributed
+      </Button>
+    );
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button size="sm">
+          <DollarSign className="mr-1 h-3 w-3" />
+          Contribute
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>
+            Contribute to &ldquo;{fund.title}&rdquo;
+          </DialogTitle>
+          <DialogDescription>
+            This is a demo — no actual payment is made. Pledge a contribution
+            and send payment directly to the parents.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div>
+          <div className="flex justify-between text-sm mb-1">
+            <span>${fund.current_amount} raised</span>
+            <span>${fund.goal_amount} goal</span>
+          </div>
+          <Progress value={fundProgress} />
+          {remaining > 0 && (
+            <p className="text-xs text-muted-foreground mt-1">
+              ${remaining} remaining
+            </p>
+          )}
+        </div>
+
+        <PaymentMethodsDisplay
+          paymentMethods={DEMO_REGISTRY.settings.payment_methods}
+        />
+
+        <Separator />
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="fundAmount">Amount ($)</Label>
+            <Input
+              id="fundAmount"
+              name="amount"
+              type="number"
+              step="0.01"
+              min="1"
+              max={remaining}
+              placeholder="25.00"
+              required
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="fundName">Your Name</Label>
+            <Input
+              id="fundName"
+              defaultValue="Demo User"
+              required
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="fundEmail">Your Email</Label>
+            <Input
+              id="fundEmail"
+              type="email"
+              defaultValue="demo@example.com"
+              required
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="fundMessage">Message (optional)</Label>
+            <Textarea
+              id="fundMessage"
+              placeholder="Congratulations!"
+              rows={2}
+            />
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button type="submit">Contribute</Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export default function DemoPage() {
   const [items, setItems] = useState(DEMO_ITEMS);
+  const [funds, setFunds] = useState(DEMO_CASH_FUNDS);
 
   const handleReserve = (itemId: string, quantity: number) => {
     setItems((prev) =>
@@ -160,6 +390,20 @@ export default function DemoPage() {
               quantity_fulfilled: item.quantity_fulfilled + quantity,
             }
           : item
+      )
+    );
+  };
+
+  const handleCoverItem = (itemId: string) => {
+    // In demo, just show the UI change — item stays parent-purchased
+  };
+
+  const handleContribute = (fundId: string, amount: number) => {
+    setFunds((prev) =>
+      prev.map((fund) =>
+        fund.id === fundId
+          ? { ...fund, current_amount: fund.current_amount + amount }
+          : fund
       )
     );
   };
@@ -248,7 +492,7 @@ export default function DemoPage() {
           <div>
             <h2 className="text-xl font-semibold mb-4">Gift Funds</h2>
             <div className="grid gap-4 md:grid-cols-2">
-              {DEMO_CASH_FUNDS.map((fund) => {
+              {funds.map((fund) => {
                 const fundProgress =
                   fund.goal_amount > 0
                     ? (fund.current_amount / fund.goal_amount) * 100
@@ -269,9 +513,12 @@ export default function DemoPage() {
                         </div>
                         <Progress value={fundProgress} />
                       </div>
-                      <Button className="mt-4" size="sm" variant="outline" disabled>
-                        Contribute (Coming Soon)
-                      </Button>
+                      <div className="mt-4">
+                        <DemoContributeFundDialog
+                          fund={fund}
+                          onContribute={handleContribute}
+                        />
+                      </div>
                     </CardContent>
                   </Card>
                 );
@@ -304,7 +551,13 @@ export default function DemoPage() {
                     return (
                       <Card
                         key={item.id}
-                        className={isFulfilled ? "opacity-50" : ""}
+                        className={
+                          isFulfilled && !item.is_parent_purchased
+                            ? "opacity-50"
+                            : item.is_parent_purchased
+                              ? "border-primary/30 bg-primary/5"
+                              : ""
+                        }
                       >
                         <CardContent className="p-4">
                           <div className="flex gap-3">
@@ -352,31 +605,46 @@ export default function DemoPage() {
                           )}
 
                           <div className="mt-3 flex items-center gap-2">
-                            {isFulfilled ? (
+                            {item.is_parent_purchased ? (
+                              <>
+                                <Badge
+                                  variant="outline"
+                                  className="border-primary/50 text-primary text-xs"
+                                >
+                                  Bought by parent
+                                </Badge>
+                                <DemoCoverItemDialog
+                                  item={item}
+                                  onCover={handleCoverItem}
+                                />
+                              </>
+                            ) : isFulfilled ? (
                               <Badge variant="secondary">
                                 Fulfilled
                               </Badge>
                             ) : (
-                              <DemoReserveDialog
-                                item={item}
-                                onReserve={handleReserve}
-                              />
-                            )}
-                            {item.external_url && (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                asChild
-                              >
-                                <a
-                                  href={item.external_url}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                >
-                                  <ExternalLink className="mr-1 h-3 w-3" />
-                                  Shop
-                                </a>
-                              </Button>
+                              <>
+                                <DemoReserveDialog
+                                  item={item}
+                                  onReserve={handleReserve}
+                                />
+                                {item.external_url && (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    asChild
+                                  >
+                                    <a
+                                      href={item.external_url}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                    >
+                                      <ExternalLink className="mr-1 h-3 w-3" />
+                                      Shop
+                                    </a>
+                                  </Button>
+                                )}
+                              </>
                             )}
                           </div>
                         </CardContent>

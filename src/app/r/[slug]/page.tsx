@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { Baby, Calendar, ExternalLink, Package } from "lucide-react";
+import { Baby, Calendar, ExternalLink, Package, HandCoins } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -7,6 +7,9 @@ import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/utils/supabase/server";
 import { ReserveItemDialog } from "@/components/reserve-item-dialog";
+import { CoverItemDialog } from "@/components/cover-item-dialog";
+import { ContributeFundDialog } from "@/components/contribute-fund-dialog";
+import type { PaymentMethods } from "@/lib/types";
 import type { Metadata } from "next";
 
 interface RegistryItem {
@@ -18,6 +21,7 @@ interface RegistryItem {
   quantity_needed: number;
   quantity_fulfilled: number;
   is_essential: boolean;
+  is_parent_purchased: boolean;
   notes: string | null;
   category_id: string | null;
 }
@@ -98,6 +102,10 @@ export default async function PublicRegistryPage({
   const allItems = (items || []) as RegistryItem[];
   const allCategories = (categories || []) as Category[];
   const allFunds = (cashFunds || []) as CashFund[];
+
+  const paymentMethods = (registry.settings as any)?.payment_methods as
+    | PaymentMethods
+    | undefined;
 
   const totalItems = allItems.length;
   const fulfilledItems = allItems.filter(
@@ -200,9 +208,12 @@ export default async function PublicRegistryPage({
                               <Progress value={fundProgress} />
                             </div>
                           )}
-                          <Button className="mt-4" size="sm" disabled>
-                            Contribute (Coming Soon)
-                          </Button>
+                          <div className="mt-4">
+                            <ContributeFundDialog
+                              fund={fund}
+                              paymentMethods={paymentMethods}
+                            />
+                          </div>
                         </CardContent>
                       </Card>
                     );
@@ -235,7 +246,13 @@ export default async function PublicRegistryPage({
                       return (
                         <Card
                           key={item.id}
-                          className={isFulfilled ? "opacity-50" : ""}
+                          className={
+                            isFulfilled && !item.is_parent_purchased
+                              ? "opacity-50"
+                              : item.is_parent_purchased
+                                ? "border-primary/30 bg-primary/5"
+                                : ""
+                          }
                         >
                           <CardContent className="p-4">
                             <div className="flex gap-3">
@@ -285,22 +302,34 @@ export default async function PublicRegistryPage({
                             )}
 
                             <div className="mt-3 flex items-center gap-2">
-                              {isFulfilled ? (
+                              {item.is_parent_purchased ? (
+                                <>
+                                  <Badge variant="outline" className="border-primary/50 text-primary text-xs">
+                                    Bought by parent
+                                  </Badge>
+                                  <CoverItemDialog
+                                    item={item}
+                                    paymentMethods={paymentMethods}
+                                  />
+                                </>
+                              ) : isFulfilled ? (
                                 <Badge variant="secondary">Fulfilled</Badge>
                               ) : (
-                                <ReserveItemDialog item={item} />
-                              )}
-                              {item.external_url && (
-                                <Button variant="outline" size="sm" asChild>
-                                  <a
-                                    href={item.external_url}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                  >
-                                    <ExternalLink className="mr-1 h-3 w-3" />
-                                    Shop
-                                  </a>
-                                </Button>
+                                <>
+                                  <ReserveItemDialog item={item} />
+                                  {item.external_url && (
+                                    <Button variant="outline" size="sm" asChild>
+                                      <a
+                                        href={item.external_url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                      >
+                                        <ExternalLink className="mr-1 h-3 w-3" />
+                                        Shop
+                                      </a>
+                                    </Button>
+                                  )}
+                                </>
                               )}
                             </div>
                           </CardContent>
@@ -323,7 +352,13 @@ export default async function PublicRegistryPage({
                     return (
                       <Card
                         key={item.id}
-                        className={isFulfilled ? "opacity-50" : ""}
+                        className={
+                          isFulfilled && !item.is_parent_purchased
+                            ? "opacity-50"
+                            : item.is_parent_purchased
+                              ? "border-primary/30 bg-primary/5"
+                              : ""
+                        }
                       >
                         <CardContent className="p-4">
                           <h3 className="font-medium text-sm">{item.title}</h3>
@@ -333,7 +368,17 @@ export default async function PublicRegistryPage({
                             </p>
                           )}
                           <div className="mt-2">
-                            {isFulfilled ? (
+                            {item.is_parent_purchased ? (
+                              <>
+                                <Badge variant="outline" className="border-primary/50 text-primary text-xs">
+                                  Bought by parent
+                                </Badge>
+                                <CoverItemDialog
+                                  item={item}
+                                  paymentMethods={paymentMethods}
+                                />
+                              </>
+                            ) : isFulfilled ? (
                               <Badge variant="secondary">Fulfilled</Badge>
                             ) : (
                               <ReserveItemDialog item={item} />

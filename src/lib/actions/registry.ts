@@ -297,3 +297,255 @@ export async function reserveItem(formData: FormData) {
 
   return { success: true, purchaseId: data };
 }
+
+// ============================================================================
+// Phase 2-5: New server actions
+// ============================================================================
+
+export async function createCategory(registryId: string, name: string) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/login");
+  }
+
+  // Get max sort_order for this registry
+  const { data: existing } = await supabase
+    .from("categories")
+    .select("sort_order")
+    .eq("registry_id", registryId)
+    .order("sort_order", { ascending: false })
+    .limit(1);
+
+  const nextOrder = existing && existing.length > 0 ? existing[0].sort_order + 1 : 0;
+
+  const { error } = await supabase.from("categories").insert({
+    registry_id: registryId,
+    name,
+    sort_order: nextOrder,
+  });
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidatePath(`/dashboard/registry/${registryId}`);
+  return { success: true };
+}
+
+export async function updateCategory(
+  categoryId: string,
+  registryId: string,
+  name: string
+) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/login");
+  }
+
+  const { error } = await supabase
+    .from("categories")
+    .update({ name })
+    .eq("id", categoryId);
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidatePath(`/dashboard/registry/${registryId}`);
+  return { success: true };
+}
+
+export async function deleteCategory(categoryId: string, registryId: string) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/login");
+  }
+
+  const { error } = await supabase
+    .from("categories")
+    .delete()
+    .eq("id", categoryId);
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidatePath(`/dashboard/registry/${registryId}`);
+  return { success: true };
+}
+
+export async function updatePaymentMethods(
+  registryId: string,
+  formData: FormData
+) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/login");
+  }
+
+  const venmo = (formData.get("venmo") as string)?.trim() || undefined;
+  const paypal = (formData.get("paypal") as string)?.trim() || undefined;
+  const zelle = (formData.get("zelle") as string)?.trim() || undefined;
+
+  // Read existing settings first to merge
+  const { data: registry } = await supabase
+    .from("registries")
+    .select("settings")
+    .eq("id", registryId)
+    .eq("owner_id", user.id)
+    .single();
+
+  if (!registry) {
+    return { error: "Registry not found" };
+  }
+
+  const settings = (registry.settings as Record<string, unknown>) || {};
+  settings.payment_methods = { venmo, paypal, zelle };
+
+  const { error } = await supabase
+    .from("registries")
+    .update({ settings })
+    .eq("id", registryId)
+    .eq("owner_id", user.id);
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidatePath(`/dashboard/registry/${registryId}`);
+  return { success: true };
+}
+
+export async function toggleParentPurchased(
+  itemId: string,
+  registryId: string,
+  purchased: boolean
+) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/login");
+  }
+
+  const { error } = await supabase.rpc("mark_item_parent_purchased", {
+    p_item_id: itemId,
+    p_owner_id: user.id,
+    p_purchased: purchased,
+  });
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidatePath(`/dashboard/registry/${registryId}`);
+  return { success: true };
+}
+
+export async function cancelReservation(
+  purchaseId: string,
+  registryId: string
+) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/login");
+  }
+
+  const { error } = await supabase.rpc("cancel_reservation", {
+    p_purchase_id: purchaseId,
+    p_owner_id: user.id,
+  });
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidatePath(`/dashboard/registry/${registryId}`);
+  return { success: true };
+}
+
+export async function contributeToCashFund(formData: FormData) {
+  const supabase = await createClient();
+
+  const fundId = formData.get("fundId") as string;
+  const amount = parseFloat(formData.get("amount") as string);
+  const buyerName = formData.get("buyerName") as string;
+  const buyerEmail = formData.get("buyerEmail") as string;
+  const message = formData.get("message") as string;
+
+  // Ensure the gift giver has at least an anonymous session
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    await supabase.auth.signInAnonymously();
+  }
+
+  const { data, error } = await supabase.rpc("reserve_cash_fund", {
+    p_fund_id: fundId,
+    p_buyer_name: buyerName,
+    p_amount: amount,
+    p_buyer_email: buyerEmail,
+    p_message: message || null,
+  });
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  return { success: true, purchaseId: data };
+}
+
+export async function coverParentPurchasedItem(formData: FormData) {
+  const supabase = await createClient();
+
+  const itemId = formData.get("itemId") as string;
+  const buyerName = formData.get("buyerName") as string;
+  const buyerEmail = formData.get("buyerEmail") as string;
+  const message = formData.get("message") as string;
+
+  // Ensure the gift giver has at least an anonymous session
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    await supabase.auth.signInAnonymously();
+  }
+
+  const { data, error } = await supabase.rpc("cover_parent_item", {
+    p_item_id: itemId,
+    p_buyer_name: buyerName,
+    p_buyer_email: buyerEmail,
+    p_message: message || null,
+  });
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  return { success: true, purchaseId: data };
+}
