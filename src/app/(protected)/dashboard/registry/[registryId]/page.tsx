@@ -4,8 +4,9 @@ import {
   ExternalLink,
   Settings,
   ClipboardList,
-  Share2,
-  Copy,
+  Mail,
+  MessageSquare,
+  DollarSign,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -16,6 +17,7 @@ import { createClient } from "@/utils/supabase/server";
 import { AddItemDialog } from "@/components/add-item-dialog";
 import { ItemCard } from "@/components/item-card";
 import { CopyLinkButton } from "@/components/copy-link-button";
+import { RegistryTabs } from "@/components/registry-tabs";
 
 interface RegistryItem {
   id: string;
@@ -77,13 +79,22 @@ export default async function RegistryManagePage({
         .order("sort_order"),
       supabase
         .from("purchases")
-        .select("*")
-        .eq("status", "reserved")
+        .select("*, registry_items!registry_item_id(title, registry_id), cash_funds!cash_fund_id(title, registry_id)")
         .order("created_at", { ascending: false }),
     ]);
 
   const allItems = (items || []) as RegistryItem[];
   const allCategories = (categories || []) as Category[];
+
+  // Filter purchases to this registry
+  const allPurchases = (purchases || []).filter((p: any) => {
+    if (p.registry_items?.registry_id === registryId) return true;
+    if (p.cash_funds?.registry_id === registryId) return true;
+    return false;
+  }).map((p: any) => ({
+    ...p,
+    item_title: p.registry_items?.title || p.cash_funds?.title || "Unknown item",
+  }));
 
   const totalItems = allItems.length;
   const fulfilledItems = allItems.filter(
@@ -176,72 +187,160 @@ export default async function RegistryManagePage({
 
       <Separator className="my-8" />
 
-      {/* Items */}
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-semibold">Registry Items</h2>
-        <AddItemDialog registryId={registryId} categories={allCategories} />
-      </div>
-
-      {totalItems === 0 ? (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <p className="text-muted-foreground">
-              No items yet. Add items manually or browse the checklist.
-            </p>
-            <div className="mt-4 flex gap-2">
+      <RegistryTabs
+        totalItems={totalItems}
+        purchaseCount={allPurchases.length}
+        itemsContent={
+          <>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-semibold">Registry Items</h2>
               <AddItemDialog registryId={registryId} categories={allCategories} />
-              <Button variant="outline" asChild>
-                <Link href={`/dashboard/registry/${registryId}/checklist`}>
-                  Browse Checklist
-                </Link>
-              </Button>
             </div>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="space-y-8">
-          {allCategories.map((category) => {
-            const categoryItems = itemsByCategory.get(category.id) || [];
-            if (categoryItems.length === 0) return null;
 
-            return (
-              <div key={category.id}>
-                <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-                  {category.name}
-                  <Badge variant="secondary">{categoryItems.length}</Badge>
-                </h3>
-                <div className="grid gap-3 md:grid-cols-2">
-                  {categoryItems.map((item) => (
-                    <ItemCard
-                      key={item.id}
-                      item={item}
-                      registryId={registryId}
-                      isOwner
-                    />
-                  ))}
-                </div>
+            {totalItems === 0 ? (
+              <Card>
+                <CardContent className="flex flex-col items-center justify-center py-12">
+                  <p className="text-muted-foreground">
+                    No items yet. Add items manually or browse the checklist.
+                  </p>
+                  <div className="mt-4 flex gap-2">
+                    <AddItemDialog registryId={registryId} categories={allCategories} />
+                    <Button variant="outline" asChild>
+                      <Link href={`/dashboard/registry/${registryId}/checklist`}>
+                        Browse Checklist
+                      </Link>
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-8">
+                {allCategories.map((category) => {
+                  const categoryItems = itemsByCategory.get(category.id) || [];
+                  if (categoryItems.length === 0) return null;
+
+                  return (
+                    <div key={category.id}>
+                      <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                        {category.name}
+                        <Badge variant="secondary">{categoryItems.length}</Badge>
+                      </h3>
+                      <div className="grid gap-3 md:grid-cols-2">
+                        {categoryItems.map((item) => (
+                          <ItemCard
+                            key={item.id}
+                            item={item}
+                            registryId={registryId}
+                            isOwner
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {/* Uncategorized items */}
+                {(itemsByCategory.get(null) || []).length > 0 && (
+                  <div>
+                    <h3 className="text-lg font-semibold mb-3">Other</h3>
+                    <div className="grid gap-3 md:grid-cols-2">
+                      {itemsByCategory.get(null)!.map((item) => (
+                        <ItemCard
+                          key={item.id}
+                          item={item}
+                          registryId={registryId}
+                          isOwner
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
-            );
-          })}
+            )}
+          </>
+        }
+        purchasesContent={
+          <>
+            <div className="mb-6">
+              <h2 className="text-xl font-semibold">Gift Activity</h2>
+              <p className="text-sm text-muted-foreground">
+                See who has reserved items and contributed to funds
+              </p>
+            </div>
 
-          {/* Uncategorized items */}
-          {(itemsByCategory.get(null) || []).length > 0 && (
-            <div>
-              <h3 className="text-lg font-semibold mb-3">Other</h3>
-              <div className="grid gap-3 md:grid-cols-2">
-                {itemsByCategory.get(null)!.map((item) => (
-                  <ItemCard
-                    key={item.id}
-                    item={item}
-                    registryId={registryId}
-                    isOwner
-                  />
+            {allPurchases.length === 0 ? (
+              <Card>
+                <CardContent className="flex flex-col items-center justify-center py-12">
+                  <p className="text-muted-foreground">
+                    No gifts reserved yet. Share your registry link to get started!
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-3">
+                {allPurchases.map((purchase: any) => (
+                  <Card key={purchase.id}>
+                    <CardContent className="p-4">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-medium">
+                              {purchase.buyer_name}
+                            </span>
+                            <Badge
+                              variant={purchase.cash_fund_id ? "default" : "secondary"}
+                              className="text-xs"
+                            >
+                              {purchase.cash_fund_id ? "Contribution" : "Reserved"}
+                            </Badge>
+                          </div>
+                          <p className="text-sm mt-1">
+                            {purchase.cash_fund_id ? (
+                              <>
+                                <DollarSign className="inline h-3 w-3 mr-1" />
+                                Contributed{" "}
+                                <span className="font-medium">${purchase.amount}</span>{" "}
+                                to <span className="font-medium">{purchase.item_title}</span>
+                              </>
+                            ) : (
+                              <>
+                                Reserved{" "}
+                                {purchase.quantity > 1 && <span>{purchase.quantity}x </span>}
+                                <span className="font-medium">{purchase.item_title}</span>
+                              </>
+                            )}
+                          </p>
+                          <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
+                            {purchase.buyer_email && (
+                              <span className="flex items-center gap-1">
+                                <Mail className="h-3 w-3" />
+                                {purchase.buyer_email}
+                              </span>
+                            )}
+                            <span>
+                              {new Date(purchase.created_at).toLocaleDateString("en-US", {
+                                month: "short",
+                                day: "numeric",
+                                year: "numeric",
+                              })}
+                            </span>
+                          </div>
+                          {purchase.message && (
+                            <p className="mt-2 text-sm text-muted-foreground flex items-start gap-1">
+                              <MessageSquare className="h-3 w-3 mt-0.5 shrink-0" />
+                              &ldquo;{purchase.message}&rdquo;
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
                 ))}
               </div>
-            </div>
-          )}
-        </div>
-      )}
+            )}
+          </>
+        }
+      />
     </div>
   );
 }
