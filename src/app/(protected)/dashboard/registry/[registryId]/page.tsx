@@ -18,6 +18,8 @@ import { AddItemDialog } from "@/components/add-item-dialog";
 import { ItemCard } from "@/components/item-card";
 import { CopyLinkButton } from "@/components/copy-link-button";
 import { RegistryTabs } from "@/components/registry-tabs";
+import { CategoryManager } from "@/components/category-manager";
+import { CancelReservationButton } from "./cancel-reservation-button";
 
 interface RegistryItem {
   id: string;
@@ -28,6 +30,7 @@ interface RegistryItem {
   quantity_needed: number;
   quantity_fulfilled: number;
   is_essential: boolean;
+  is_parent_purchased: boolean;
   notes: string | null;
   category_id: string | null;
   sort_order: number;
@@ -132,7 +135,7 @@ export default async function RegistryManagePage({
             </p>
           )}
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <CopyLinkButton slug={registry.slug} />
           <Button variant="outline" asChild>
             <Link href={registryUrl} target="_blank">
@@ -194,7 +197,13 @@ export default async function RegistryManagePage({
           <>
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-semibold">Registry Items</h2>
-              <AddItemDialog registryId={registryId} categories={allCategories} />
+              <div className="flex gap-2">
+                <CategoryManager
+                  registryId={registryId}
+                  categories={allCategories}
+                />
+                <AddItemDialog registryId={registryId} categories={allCategories} />
+              </div>
             </div>
 
             {totalItems === 0 ? (
@@ -278,64 +287,82 @@ export default async function RegistryManagePage({
               </Card>
             ) : (
               <div className="space-y-3">
-                {allPurchases.map((purchase: any) => (
-                  <Card key={purchase.id}>
-                    <CardContent className="p-4">
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className="font-medium">
-                              {purchase.buyer_name}
-                            </span>
-                            <Badge
-                              variant={purchase.cash_fund_id ? "default" : "secondary"}
-                              className="text-xs"
-                            >
-                              {purchase.cash_fund_id ? "Contribution" : "Reserved"}
-                            </Badge>
-                          </div>
-                          <p className="text-sm mt-1">
-                            {purchase.cash_fund_id ? (
-                              <>
-                                <DollarSign className="inline h-3 w-3 mr-1" />
-                                Contributed{" "}
-                                <span className="font-medium">${purchase.amount}</span>{" "}
-                                to <span className="font-medium">{purchase.item_title}</span>
-                              </>
-                            ) : (
-                              <>
-                                Reserved{" "}
-                                {purchase.quantity > 1 && <span>{purchase.quantity}x </span>}
-                                <span className="font-medium">{purchase.item_title}</span>
-                              </>
-                            )}
-                          </p>
-                          <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
-                            {purchase.buyer_email && (
-                              <span className="flex items-center gap-1">
-                                <Mail className="h-3 w-3" />
-                                {purchase.buyer_email}
+                {allPurchases.map((purchase: any) => {
+                  const isCancelled = purchase.status === "cancelled";
+                  return (
+                    <Card
+                      key={purchase.id}
+                      className={isCancelled ? "opacity-50" : ""}
+                    >
+                      <CardContent className="p-4">
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-medium">
+                                {purchase.buyer_name}
                               </span>
-                            )}
-                            <span>
-                              {new Date(purchase.created_at).toLocaleDateString("en-US", {
-                                month: "short",
-                                day: "numeric",
-                                year: "numeric",
-                              })}
-                            </span>
-                          </div>
-                          {purchase.message && (
-                            <p className="mt-2 text-sm text-muted-foreground flex items-start gap-1">
-                              <MessageSquare className="h-3 w-3 mt-0.5 shrink-0" />
-                              &ldquo;{purchase.message}&rdquo;
+                              {isCancelled ? (
+                                <Badge variant="destructive" className="text-xs">
+                                  Cancelled
+                                </Badge>
+                              ) : (
+                                <Badge
+                                  variant={purchase.cash_fund_id ? "default" : "secondary"}
+                                  className="text-xs"
+                                >
+                                  {purchase.cash_fund_id ? "Contribution" : "Reserved"}
+                                </Badge>
+                              )}
+                            </div>
+                            <p className="text-sm mt-1">
+                              {purchase.cash_fund_id ? (
+                                <>
+                                  <DollarSign className="inline h-3 w-3 mr-1" />
+                                  Contributed{" "}
+                                  <span className="font-medium">${purchase.amount}</span>{" "}
+                                  to <span className="font-medium">{purchase.item_title}</span>
+                                </>
+                              ) : (
+                                <>
+                                  Reserved{" "}
+                                  {purchase.quantity > 1 && <span>{purchase.quantity}x </span>}
+                                  <span className="font-medium">{purchase.item_title}</span>
+                                </>
+                              )}
                             </p>
+                            <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
+                              {purchase.buyer_email && (
+                                <span className="flex items-center gap-1">
+                                  <Mail className="h-3 w-3" />
+                                  {purchase.buyer_email}
+                                </span>
+                              )}
+                              <span>
+                                {new Date(purchase.created_at).toLocaleDateString("en-US", {
+                                  month: "short",
+                                  day: "numeric",
+                                  year: "numeric",
+                                })}
+                              </span>
+                            </div>
+                            {purchase.message && (
+                              <p className="mt-2 text-sm text-muted-foreground flex items-start gap-1">
+                                <MessageSquare className="h-3 w-3 mt-0.5 shrink-0" />
+                                &ldquo;{purchase.message}&rdquo;
+                              </p>
+                            )}
+                          </div>
+                          {!isCancelled && (
+                            <CancelReservationButton
+                              purchaseId={purchase.id}
+                              registryId={registryId}
+                            />
                           )}
                         </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                      </CardContent>
+                    </Card>
+                  );
+                })}
               </div>
             )}
           </>

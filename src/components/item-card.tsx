@@ -1,11 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { ExternalLink, Trash2, Package } from "lucide-react";
+import { ExternalLink, Trash2, Package, ShoppingBag, Undo2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { deleteRegistryItem } from "@/lib/actions/registry";
+import { deleteRegistryItem, toggleParentPurchased } from "@/lib/actions/registry";
 
 interface ItemCardProps {
   item: {
@@ -17,6 +17,7 @@ interface ItemCardProps {
     quantity_needed: number;
     quantity_fulfilled: number;
     is_essential: boolean;
+    is_parent_purchased: boolean;
     notes: string | null;
   };
   registryId: string;
@@ -25,6 +26,7 @@ interface ItemCardProps {
 
 export function ItemCard({ item, registryId, isOwner }: ItemCardProps) {
   const [deleting, setDeleting] = useState(false);
+  const [toggling, setToggling] = useState(false);
   const isFulfilled = item.quantity_fulfilled >= item.quantity_needed;
   const remaining = item.quantity_needed - item.quantity_fulfilled;
 
@@ -34,8 +36,22 @@ export function ItemCard({ item, registryId, isOwner }: ItemCardProps) {
     await deleteRegistryItem(item.id, registryId);
   };
 
+  const handleToggleParentPurchased = async () => {
+    setToggling(true);
+    await toggleParentPurchased(item.id, registryId, !item.is_parent_purchased);
+    setToggling(false);
+  };
+
   return (
-    <Card className={isFulfilled ? "opacity-60" : ""}>
+    <Card
+      className={
+        isFulfilled && !item.is_parent_purchased
+          ? "opacity-60"
+          : item.is_parent_purchased
+            ? "border-primary/30 bg-primary/5"
+            : ""
+      }
+    >
       <CardContent className="flex gap-4 p-4">
         <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-md bg-muted">
           {item.image_url ? (
@@ -54,7 +70,12 @@ export function ItemCard({ item, registryId, isOwner }: ItemCardProps) {
             <div>
               <h3 className="font-medium leading-tight">
                 {item.title}
-                {isFulfilled && (
+                {item.is_parent_purchased && (
+                  <Badge variant="outline" className="ml-2 border-primary/50 text-primary">
+                    You bought this
+                  </Badge>
+                )}
+                {isFulfilled && !item.is_parent_purchased && (
                   <Badge variant="secondary" className="ml-2">
                     Fulfilled
                   </Badge>
@@ -71,7 +92,7 @@ export function ItemCard({ item, registryId, isOwner }: ItemCardProps) {
                     ${item.price.toFixed(2)}
                   </span>
                 )}
-                {item.quantity_needed > 1 && (
+                {item.quantity_needed > 1 && !isFulfilled && (
                   <span className="text-sm text-muted-foreground">
                     {remaining} of {item.quantity_needed} needed
                   </span>
@@ -93,6 +114,28 @@ export function ItemCard({ item, registryId, isOwner }: ItemCardProps) {
                   <ExternalLink className="mr-1 h-3 w-3" />
                   View
                 </a>
+              </Button>
+            )}
+            {isOwner && !isFulfilled && !item.is_parent_purchased && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleToggleParentPurchased}
+                disabled={toggling}
+              >
+                <ShoppingBag className="mr-1 h-3 w-3" />
+                {toggling ? "Saving..." : "I Bought This"}
+              </Button>
+            )}
+            {isOwner && item.is_parent_purchased && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleToggleParentPurchased}
+                disabled={toggling}
+              >
+                <Undo2 className="mr-1 h-3 w-3" />
+                Undo
               </Button>
             )}
             {isOwner && (
