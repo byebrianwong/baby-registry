@@ -2,46 +2,155 @@
 
 import * as React from "react"
 import { XIcon } from "lucide-react"
-import { Dialog as SheetPrimitive } from "radix-ui"
+import {
+  Dialog as AriaDialog,
+  Heading as AriaHeading,
+  Modal as AriaModal,
+  ModalOverlay as AriaModalOverlay,
+} from "react-aria-components"
 
 import { cn } from "@/lib/utils"
 
-function Sheet({ ...props }: React.ComponentProps<typeof SheetPrimitive.Root>) {
-  return <SheetPrimitive.Root data-slot="sheet" {...props} />
+// ---- Sheet Context ----
+
+interface SheetContextValue {
+  open: boolean
+  onOpenChange: (open: boolean) => void
 }
+
+const SheetContext = React.createContext<SheetContextValue>({
+  open: false,
+  onOpenChange: () => {},
+})
+
+// ---- Sheet (Root) ----
+
+function Sheet({
+  open: controlledOpen,
+  defaultOpen = false,
+  onOpenChange: controlledOnOpenChange,
+  children,
+}: {
+  open?: boolean
+  defaultOpen?: boolean
+  onOpenChange?: (open: boolean) => void
+  children: React.ReactNode
+  modal?: boolean
+}) {
+  const [internalOpen, setInternalOpen] = React.useState(defaultOpen)
+  const isControlled = controlledOpen !== undefined
+  const open = isControlled ? controlledOpen : internalOpen
+
+  const onOpenChange = React.useCallback(
+    (value: boolean) => {
+      if (!isControlled) setInternalOpen(value)
+      controlledOnOpenChange?.(value)
+    },
+    [isControlled, controlledOnOpenChange]
+  )
+
+  return (
+    <SheetContext.Provider value={{ open, onOpenChange }}>
+      {children}
+    </SheetContext.Provider>
+  )
+}
+
+// ---- SheetTrigger ----
 
 function SheetTrigger({
-  ...props
-}: React.ComponentProps<typeof SheetPrimitive.Trigger>) {
-  return <SheetPrimitive.Trigger data-slot="sheet-trigger" {...props} />
-}
-
-function SheetClose({
-  ...props
-}: React.ComponentProps<typeof SheetPrimitive.Close>) {
-  return <SheetPrimitive.Close data-slot="sheet-close" {...props} />
-}
-
-function SheetPortal({
-  ...props
-}: React.ComponentProps<typeof SheetPrimitive.Portal>) {
-  return <SheetPrimitive.Portal data-slot="sheet-portal" {...props} />
-}
-
-function SheetOverlay({
+  asChild,
+  children,
   className,
   ...props
-}: React.ComponentProps<typeof SheetPrimitive.Overlay>) {
+}: React.ComponentProps<"button"> & { asChild?: boolean }) {
+  const { open, onOpenChange } = React.useContext(SheetContext)
+
+  if (asChild && React.isValidElement(children)) {
+    const childProps = children.props as Record<string, unknown>
+    const childOnClick = childProps.onClick as ((e: React.MouseEvent) => void) | undefined
+    return React.cloneElement(children as React.ReactElement<Record<string, unknown>>, {
+      onClick: (e: React.MouseEvent) => {
+        onOpenChange(!open)
+        childOnClick?.(e)
+      },
+      "aria-haspopup": "dialog",
+      "aria-expanded": open,
+    } as Record<string, unknown>)
+  }
+
   return (
-    <SheetPrimitive.Overlay
-      data-slot="sheet-overlay"
-      className={cn(
-        "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50 bg-black/50",
-        className
-      )}
+    <button
+      data-slot="sheet-trigger"
+      className={className}
+      onClick={() => onOpenChange(!open)}
+      aria-haspopup="dialog"
+      aria-expanded={open}
+      type="button"
       {...props}
-    />
+    >
+      {children}
+    </button>
   )
+}
+
+// ---- SheetClose ----
+
+function SheetClose({
+  asChild,
+  children,
+  className,
+  ...props
+}: React.ComponentProps<"button"> & { asChild?: boolean }) {
+  const { onOpenChange } = React.useContext(SheetContext)
+
+  if (asChild && React.isValidElement(children)) {
+    const childProps = children.props as Record<string, unknown>
+    const childOnClick = childProps.onClick as ((e: React.MouseEvent) => void) | undefined
+    return React.cloneElement(children as React.ReactElement<Record<string, unknown>>, {
+      onClick: (e: React.MouseEvent) => {
+        onOpenChange(false)
+        childOnClick?.(e)
+      },
+    } as Record<string, unknown>)
+  }
+
+  return (
+    <button
+      data-slot="sheet-close"
+      type="button"
+      className={className}
+      onClick={() => onOpenChange(false)}
+      {...props}
+    >
+      {children}
+    </button>
+  )
+}
+
+// ---- SheetContent ----
+
+const sideStyles = {
+  right:
+    "inset-y-0 right-0 h-full w-3/4 border-l sm:max-w-sm",
+  left:
+    "inset-y-0 left-0 h-full w-3/4 border-r sm:max-w-sm",
+  top: "inset-x-0 top-0 h-auto border-b",
+  bottom: "inset-x-0 bottom-0 h-auto border-t",
+}
+
+const sideEnterStyles = {
+  right: "slide-in-from-right",
+  left: "slide-in-from-left",
+  top: "slide-in-from-top",
+  bottom: "slide-in-from-bottom",
+}
+
+const sideExitStyles = {
+  right: "slide-out-to-right",
+  left: "slide-out-to-left",
+  top: "slide-out-to-top",
+  bottom: "slide-out-to-bottom",
 }
 
 function SheetContent({
@@ -50,40 +159,60 @@ function SheetContent({
   side = "right",
   showCloseButton = true,
   ...props
-}: React.ComponentProps<typeof SheetPrimitive.Content> & {
+}: Omit<React.ComponentProps<"div">, "role"> & {
   side?: "top" | "right" | "bottom" | "left"
   showCloseButton?: boolean
 }) {
+  const { open, onOpenChange } = React.useContext(SheetContext)
+
   return (
-    <SheetPortal>
-      <SheetOverlay />
-      <SheetPrimitive.Content
-        data-slot="sheet-content"
-        className={cn(
-          "bg-background data-[state=open]:animate-in data-[state=closed]:animate-out fixed z-50 flex flex-col gap-4 shadow-lg transition ease-in-out data-[state=closed]:duration-300 data-[state=open]:duration-500",
-          side === "right" &&
-            "data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right inset-y-0 right-0 h-full w-3/4 border-l sm:max-w-sm",
-          side === "left" &&
-            "data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left inset-y-0 left-0 h-full w-3/4 border-r sm:max-w-sm",
-          side === "top" &&
-            "data-[state=closed]:slide-out-to-top data-[state=open]:slide-in-from-top inset-x-0 top-0 h-auto border-b",
-          side === "bottom" &&
-            "data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom inset-x-0 bottom-0 h-auto border-t",
-          className
-        )}
-        {...props}
+    <AriaModalOverlay
+      isOpen={open}
+      onOpenChange={onOpenChange}
+      isDismissable
+      className={(state) =>
+        cn(
+          "fixed inset-0 z-50 bg-black/50",
+          state.isEntering && "animate-in fade-in-0 duration-300",
+          state.isExiting && "animate-out fade-out-0 duration-300"
+        )
+      }
+    >
+      <AriaModal
+        className={(state) =>
+          cn(
+            "bg-background fixed z-50 flex flex-col gap-4 shadow-lg outline-none transition ease-in-out",
+            sideStyles[side],
+            state.isEntering &&
+              `animate-in ${sideEnterStyles[side]} duration-500`,
+            state.isExiting &&
+              `animate-out ${sideExitStyles[side]} duration-300`
+          )
+        }
       >
-        {children}
-        {showCloseButton && (
-          <SheetPrimitive.Close className="ring-offset-background focus:ring-ring data-[state=open]:bg-secondary absolute top-4 right-4 rounded-xs opacity-70 transition-opacity hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none">
-            <XIcon className="size-4" />
-            <span className="sr-only">Close</span>
-          </SheetPrimitive.Close>
-        )}
-      </SheetPrimitive.Content>
-    </SheetPortal>
+        <AriaDialog
+          data-slot="sheet-content"
+          className="flex size-full flex-col gap-4 outline-none"
+        >
+          {children}
+          {showCloseButton && (
+            <button
+              data-slot="sheet-close"
+              type="button"
+              className="ring-offset-background focus:ring-ring absolute top-4 right-4 cursor-pointer rounded-xs opacity-70 transition-opacity hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none"
+              onClick={() => onOpenChange(false)}
+            >
+              <XIcon className="size-4" />
+              <span className="sr-only">Close</span>
+            </button>
+          )}
+        </AriaDialog>
+      </AriaModal>
+    </AriaModalOverlay>
   )
 }
+
+// ---- Layout Components ----
 
 function SheetHeader({ className, ...props }: React.ComponentProps<"div">) {
   return (
@@ -108,12 +237,13 @@ function SheetFooter({ className, ...props }: React.ComponentProps<"div">) {
 function SheetTitle({
   className,
   ...props
-}: React.ComponentProps<typeof SheetPrimitive.Title>) {
+}: React.ComponentProps<"h2">) {
   return (
-    <SheetPrimitive.Title
+    <AriaHeading
+      slot="title"
       data-slot="sheet-title"
       className={cn("text-foreground font-semibold", className)}
-      {...props}
+      {...(props as Record<string, unknown>)}
     />
   )
 }
@@ -121,9 +251,9 @@ function SheetTitle({
 function SheetDescription({
   className,
   ...props
-}: React.ComponentProps<typeof SheetPrimitive.Description>) {
+}: React.ComponentProps<"p">) {
   return (
-    <SheetPrimitive.Description
+    <p
       data-slot="sheet-description"
       className={cn("text-muted-foreground text-sm", className)}
       {...props}

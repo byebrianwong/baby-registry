@@ -1,7 +1,6 @@
 "use client"
 
 import * as React from "react"
-import { Avatar as AvatarPrimitive } from "radix-ui"
 
 import { cn } from "@/lib/utils"
 
@@ -9,11 +8,11 @@ function Avatar({
   className,
   size = "default",
   ...props
-}: React.ComponentProps<typeof AvatarPrimitive.Root> & {
+}: React.ComponentProps<"span"> & {
   size?: "default" | "sm" | "lg"
 }) {
   return (
-    <AvatarPrimitive.Root
+    <span
       data-slot="avatar"
       data-size={size}
       className={cn(
@@ -27,12 +26,29 @@ function Avatar({
 
 function AvatarImage({
   className,
+  src,
+  alt,
+  onLoadingStatusChange,
   ...props
-}: React.ComponentProps<typeof AvatarPrimitive.Image>) {
+}: React.ComponentProps<"img"> & {
+  onLoadingStatusChange?: (status: "loading" | "loaded" | "error") => void
+}) {
+  const [status, setStatus] = React.useState<"loading" | "loaded" | "error">("loading")
+
+  React.useEffect(() => {
+    onLoadingStatusChange?.(status)
+  }, [status, onLoadingStatusChange])
+
+  if (status === "error") return null
+
   return (
-    <AvatarPrimitive.Image
+    <img
       data-slot="avatar-image"
+      src={src}
+      alt={alt}
       className={cn("aspect-square size-full", className)}
+      onLoad={() => setStatus("loaded")}
+      onError={() => setStatus("error")}
       {...props}
     />
   )
@@ -41,9 +57,9 @@ function AvatarImage({
 function AvatarFallback({
   className,
   ...props
-}: React.ComponentProps<typeof AvatarPrimitive.Fallback>) {
+}: React.ComponentProps<"span">) {
   return (
-    <AvatarPrimitive.Fallback
+    <span
       data-slot="avatar-fallback"
       className={cn(
         "bg-muted text-muted-foreground flex size-full items-center justify-center rounded-full text-sm group-data-[size=sm]/avatar:text-xs",

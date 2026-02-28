@@ -1,31 +1,45 @@
 "use client"
 
 import * as React from "react"
-import { CheckIcon } from "lucide-react"
-import { Checkbox as CheckboxPrimitive } from "radix-ui"
 
 import { cn } from "@/lib/utils"
 
 function Checkbox({
   className,
   ...props
-}: React.ComponentProps<typeof CheckboxPrimitive.Root>) {
+}: Omit<React.ComponentProps<"input">, "type">) {
   return (
-    <CheckboxPrimitive.Root
-      data-slot="checkbox"
+    <span
       className={cn(
-        "peer border-input dark:bg-input/30 data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground dark:data-[state=checked]:bg-primary data-[state=checked]:border-primary focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive size-4 shrink-0 rounded-[4px] border shadow-xs transition-shadow outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50",
+        "group/checkbox relative inline-grid size-4 shrink-0 place-content-center rounded-[4px] border border-input shadow-xs transition-shadow dark:bg-input/30",
+        "has-[:checked]:bg-primary has-[:checked]:border-primary has-[:checked]:text-primary-foreground dark:has-[:checked]:bg-primary",
+        "has-[:focus-visible]:border-ring has-[:focus-visible]:ring-ring/50 has-[:focus-visible]:ring-[3px]",
+        "has-[:disabled]:cursor-not-allowed has-[:disabled]:opacity-50",
+        "aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive",
         className
       )}
-      {...props}
     >
-      <CheckboxPrimitive.Indicator
-        data-slot="checkbox-indicator"
-        className="grid place-content-center text-current transition-none"
+      <input
+        type="checkbox"
+        data-slot="checkbox"
+        className="peer absolute inset-0 size-full cursor-pointer opacity-0 disabled:cursor-not-allowed"
+        {...props}
+      />
+      <svg
+        aria-hidden="true"
+        viewBox="0 0 14 14"
+        fill="none"
+        className="pointer-events-none size-3.5 text-current opacity-0 peer-checked:opacity-100"
       >
-        <CheckIcon className="size-3.5" />
-      </CheckboxPrimitive.Indicator>
-    </CheckboxPrimitive.Root>
+        <path
+          d="M11.6666 3.5L5.24992 9.91667L2.33325 7"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    </span>
   )
 }
 
