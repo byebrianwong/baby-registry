@@ -27,8 +27,8 @@ export default function NewRegistryPage() {
     <div className="container mx-auto max-w-2xl px-4 py-8">
       <Card>
         <CardHeader className="text-center">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-            <Baby className="h-6 w-6 text-primary" />
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-brand-600/10">
+            <Baby className="h-6 w-6 text-brand-600" />
           </div>
           <CardTitle className="text-2xl">Create Your Registry</CardTitle>
           <CardDescription>
@@ -54,7 +54,7 @@ export default function NewRegistryPage() {
                 name="eventDate"
                 type="date"
               />
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-tertiary">
                 Used for personalized recommendations and reminders
               </p>
             </div>
@@ -67,12 +67,12 @@ export default function NewRegistryPage() {
                 placeholder="We're so excited to welcome our little one! Thank you for being part of this journey."
                 rows={3}
               />
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-tertiary">
                 Displayed on your public registry page
               </p>
             </div>
 
-            {error && <p className="text-sm text-destructive">{error}</p>}
+            {error && <p className="text-sm text-error-primary">{error}</p>}
 
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? "Creating..." : "Create Registry"}

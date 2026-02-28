@@ -14,7 +14,7 @@ export function PaymentMethodsDisplay({
     (!paymentMethods.venmo && !paymentMethods.paypal && !paymentMethods.zelle)
   ) {
     return (
-      <p className="text-sm text-muted-foreground">
+      <p className="text-sm text-tertiary">
         Contact the parents directly to arrange payment.
       </p>
     );
@@ -26,7 +26,7 @@ export function PaymentMethodsDisplay({
       <div className="space-y-1.5">
         {paymentMethods.venmo && (
           <div className="flex items-center gap-2 text-sm">
-            <span className="font-medium text-muted-foreground w-14">
+            <span className="font-medium text-tertiary w-14">
               Venmo
             </span>
             <span>{paymentMethods.venmo}</span>
@@ -34,7 +34,7 @@ export function PaymentMethodsDisplay({
         )}
         {paymentMethods.paypal && (
           <div className="flex items-center gap-2 text-sm">
-            <span className="font-medium text-muted-foreground w-14">
+            <span className="font-medium text-tertiary w-14">
               PayPal
             </span>
             <span>{paymentMethods.paypal}</span>
@@ -42,7 +42,7 @@ export function PaymentMethodsDisplay({
         )}
         {paymentMethods.zelle && (
           <div className="flex items-center gap-2 text-sm">
-            <span className="font-medium text-muted-foreground w-14">
+            <span className="font-medium text-tertiary w-14">
               Zelle
             </span>
             <span>{paymentMethods.zelle}</span>

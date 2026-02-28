@@ -151,7 +151,7 @@ export default function ChecklistPage() {
         </Button>
         <div>
           <h1 className="text-2xl font-bold">Registry Checklist</h1>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-tertiary">
             Browse recommended items and add them to your registry
           </p>
         </div>
@@ -162,7 +162,7 @@ export default function ChecklistPage() {
         <div className="flex items-center gap-4">
           <div className="text-sm">
             <span className="font-medium">{addedCount}</span>
-            <span className="text-muted-foreground"> of {totalItems} items added</span>
+            <span className="text-tertiary"> of {totalItems} items added</span>
           </div>
           <Progress
             value={(addedCount / totalItems) * 100}
@@ -178,8 +178,8 @@ export default function ChecklistPage() {
                 onClick={() => setFilter(mode)}
                 className={`px-3 py-1.5 text-xs font-medium transition-colors ${
                   filter === mode
-                    ? "bg-primary text-primary-foreground"
-                    : "hover:bg-muted"
+                    ? "bg-brand-solid text-white"
+                    : "hover:bg-active"
                 } ${mode === "all" ? "rounded-l-md" : ""} ${
                   mode === "not-added" ? "rounded-r-md" : ""
                 }`}
@@ -223,14 +223,14 @@ export default function ChecklistPage() {
             <Card key={category.name}>
               <button
                 onClick={() => toggleCategory(category.name)}
-                className="flex w-full items-center gap-3 p-4 text-left hover:bg-muted/50 transition-colors"
+                className="flex w-full items-center gap-3 p-4 text-left hover:bg-active transition-colors"
               >
                 {isExpanded ? (
                   <ChevronDown className="h-4 w-4 shrink-0" />
                 ) : (
                   <ChevronRight className="h-4 w-4 shrink-0" />
                 )}
-                <Icon className="h-5 w-5 text-primary shrink-0" />
+                <Icon className="h-5 w-5 text-brand-600 shrink-0" />
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
                     <span className="font-medium">{category.name}</span>
@@ -238,7 +238,7 @@ export default function ChecklistPage() {
                       {catAddedCount}/{category.items.length}
                     </Badge>
                     {catEssentials > 0 && (
-                      <span className="text-xs text-muted-foreground">
+                      <span className="text-xs text-tertiary">
                         {catEssentialsAdded}/{catEssentials} essentials
                       </span>
                     )}
@@ -282,17 +282,17 @@ export default function ChecklistPage() {
                               )}
                             </div>
                             <div className="flex items-center gap-2 mt-0.5">
-                              <span className="text-xs text-muted-foreground">
+                              <span className="text-xs text-tertiary">
                                 {item.suggestedPrice}
                               </span>
                               {item.suggestedQuantity > 1 && (
-                                <span className="text-xs text-muted-foreground">
+                                <span className="text-xs text-tertiary">
                                   Qty: {item.suggestedQuantity}
                                 </span>
                               )}
                             </div>
                             {item.description && (
-                              <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
+                              <p className="text-xs text-tertiary mt-0.5 line-clamp-1">
                                 {item.description}
                               </p>
                             )}

@@ -83,7 +83,7 @@ export default function RegistrySettingsPage() {
   if (loading || !registry) {
     return (
       <div className="container mx-auto max-w-2xl px-4 py-8">
-        <p className="text-muted-foreground">Loading...</p>
+        <p className="text-tertiary">Loading...</p>
       </div>
     );
   }
@@ -157,12 +157,12 @@ export default function RegistrySettingsPage() {
 
             <div className="space-y-1">
               <Label>Share URL</Label>
-              <p className="text-sm text-muted-foreground font-mono">
+              <p className="text-sm text-tertiary font-mono">
                 /r/{registry.slug}
               </p>
             </div>
 
-            {error && <p className="text-sm text-destructive">{error}</p>}
+            {error && <p className="text-sm text-error-primary">{error}</p>}
 
             <Button type="submit" disabled={saving}>
               {saving ? "Saving..." : "Save Changes"}
@@ -214,7 +214,7 @@ export default function RegistrySettingsPage() {
             </div>
 
             {paymentError && (
-              <p className="text-sm text-destructive">{paymentError}</p>
+              <p className="text-sm text-error-primary">{paymentError}</p>
             )}
 
             <Button type="submit" disabled={savingPayment}>
@@ -230,9 +230,9 @@ export default function RegistrySettingsPage() {
 
       <Separator className="my-8" />
 
-      <Card className="border-destructive/50">
+      <Card className="border-error-primary/50">
         <CardHeader>
-          <CardTitle className="text-destructive">Danger Zone</CardTitle>
+          <CardTitle className="text-error-primary">Danger Zone</CardTitle>
           <CardDescription>
             Permanently delete this registry and all its items
           </CardDescription>

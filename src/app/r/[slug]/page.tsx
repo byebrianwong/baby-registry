@@ -124,23 +124,23 @@ export default async function PublicRegistryPage({
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-primary">
       {/* Header */}
       <header className="border-b">
         <div className="container mx-auto px-4 py-3">
           <a href="/" className="flex items-center gap-2 font-semibold">
-            <Baby className="h-5 w-5 text-primary" />
+            <Baby className="h-5 w-5 text-brand-600" />
             <span>Baby Akachan</span>
           </a>
         </div>
       </header>
 
       {/* Registry Header */}
-      <section className="border-b bg-muted/30 py-12">
+      <section className="border-b bg-secondary py-12">
         <div className="container mx-auto px-4 text-center">
           <h1 className="text-3xl font-bold sm:text-4xl">{registry.title}</h1>
           {registry.event_date && (
-            <p className="mt-2 flex items-center justify-center gap-2 text-muted-foreground">
+            <p className="mt-2 flex items-center justify-center gap-2 text-tertiary">
               <Calendar className="h-4 w-4" />
               {new Date(registry.event_date).toLocaleDateString("en-US", {
                 month: "long",
@@ -150,7 +150,7 @@ export default async function PublicRegistryPage({
             </p>
           )}
           {registry.description && (
-            <p className="mx-auto mt-4 max-w-xl text-muted-foreground">
+            <p className="mx-auto mt-4 max-w-xl text-tertiary">
               {registry.description}
             </p>
           )}
@@ -169,7 +169,7 @@ export default async function PublicRegistryPage({
       {/* Items */}
       <main className="container mx-auto px-4 py-8">
         {totalItems === 0 && allFunds.length === 0 ? (
-          <div className="text-center py-16 text-muted-foreground">
+          <div className="text-center py-16 text-tertiary">
             <p>This registry doesn&apos;t have any items yet.</p>
           </div>
         ) : (
@@ -191,7 +191,7 @@ export default async function PublicRegistryPage({
                             {fund.title}
                           </h3>
                           {fund.description && (
-                            <p className="mt-1 text-sm text-muted-foreground">
+                            <p className="mt-1 text-sm text-tertiary">
                               {fund.description}
                             </p>
                           )}
@@ -256,7 +256,7 @@ export default async function PublicRegistryPage({
                         >
                           <CardContent className="p-4">
                             <div className="flex gap-3">
-                              <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-md bg-muted">
+                              <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-md bg-tertiary">
                                 {item.image_url ? (
                                   <img
                                     src={item.image_url}
@@ -264,7 +264,7 @@ export default async function PublicRegistryPage({
                                     className="h-16 w-16 rounded-md object-cover"
                                   />
                                 ) : (
-                                  <Package className="h-6 w-6 text-muted-foreground" />
+                                  <Package className="h-6 w-6 text-tertiary" />
                                 )}
                               </div>
                               <div className="flex-1 min-w-0">
@@ -281,13 +281,13 @@ export default async function PublicRegistryPage({
                                     </Badge>
                                   )}
                                   {item.price && (
-                                    <span className="text-xs text-muted-foreground">
+                                    <span className="text-xs text-tertiary">
                                       ${item.price.toFixed(2)}
                                     </span>
                                   )}
                                 </div>
                                 {item.quantity_needed > 1 && !isFulfilled && (
-                                  <p className="text-xs text-muted-foreground mt-1">
+                                  <p className="text-xs text-tertiary mt-1">
                                     {remaining} of {item.quantity_needed} still
                                     needed
                                   </p>
@@ -296,7 +296,7 @@ export default async function PublicRegistryPage({
                             </div>
 
                             {item.notes && (
-                              <p className="mt-2 text-xs text-muted-foreground line-clamp-2">
+                              <p className="mt-2 text-xs text-tertiary line-clamp-2">
                                 {item.notes}
                               </p>
                             )}
@@ -363,7 +363,7 @@ export default async function PublicRegistryPage({
                         <CardContent className="p-4">
                           <h3 className="font-medium text-sm">{item.title}</h3>
                           {item.price && (
-                            <p className="text-xs text-muted-foreground">
+                            <p className="text-xs text-tertiary">
                               ${item.price.toFixed(2)}
                             </p>
                           )}
@@ -396,9 +396,9 @@ export default async function PublicRegistryPage({
       </main>
 
       <footer className="border-t py-6 mt-8">
-        <div className="container mx-auto px-4 text-center text-sm text-muted-foreground">
+        <div className="container mx-auto px-4 text-center text-sm text-tertiary">
           Powered by{" "}
-          <a href="/" className="font-medium text-foreground hover:underline">
+          <a href="/" className="font-medium text-brand-600 hover:underline">
             Baby Akachan
           </a>
         </div>

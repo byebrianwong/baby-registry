@@ -125,7 +125,7 @@ export default async function RegistryManagePage({
         <div>
           <h1 className="text-3xl font-bold">{registry.title}</h1>
           {registry.event_date && (
-            <p className="text-muted-foreground">
+            <p className="text-tertiary">
               Due date:{" "}
               {new Date(registry.event_date).toLocaleDateString("en-US", {
                 month: "long",
@@ -161,19 +161,19 @@ export default async function RegistryManagePage({
       <div className="mt-6 grid gap-4 md:grid-cols-4">
         <Card>
           <CardContent className="p-4">
-            <p className="text-sm text-muted-foreground">Total Items</p>
+            <p className="text-sm text-tertiary">Total Items</p>
             <p className="text-2xl font-bold">{totalItems}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4">
-            <p className="text-sm text-muted-foreground">Fulfilled</p>
+            <p className="text-sm text-tertiary">Fulfilled</p>
             <p className="text-2xl font-bold">{fulfilledItems}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4">
-            <p className="text-sm text-muted-foreground">Completion</p>
+            <p className="text-sm text-tertiary">Completion</p>
             <div className="flex items-center gap-2">
               <p className="text-2xl font-bold">{Math.round(progress)}%</p>
               <Progress value={progress} className="flex-1" />
@@ -182,7 +182,7 @@ export default async function RegistryManagePage({
         </Card>
         <Card>
           <CardContent className="p-4">
-            <p className="text-sm text-muted-foreground">Total Value</p>
+            <p className="text-sm text-tertiary">Total Value</p>
             <p className="text-2xl font-bold">${totalValue.toFixed(0)}</p>
           </CardContent>
         </Card>
@@ -209,7 +209,7 @@ export default async function RegistryManagePage({
             {totalItems === 0 ? (
               <Card>
                 <CardContent className="flex flex-col items-center justify-center py-12">
-                  <p className="text-muted-foreground">
+                  <p className="text-tertiary">
                     No items yet. Add items manually or browse the checklist.
                   </p>
                   <div className="mt-4 flex gap-2">
@@ -272,7 +272,7 @@ export default async function RegistryManagePage({
           <>
             <div className="mb-6">
               <h2 className="text-xl font-semibold">Gift Activity</h2>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-tertiary">
                 See who has reserved items and contributed to funds
               </p>
             </div>
@@ -280,7 +280,7 @@ export default async function RegistryManagePage({
             {allPurchases.length === 0 ? (
               <Card>
                 <CardContent className="flex flex-col items-center justify-center py-12">
-                  <p className="text-muted-foreground">
+                  <p className="text-tertiary">
                     No gifts reserved yet. Share your registry link to get started!
                   </p>
                 </CardContent>
@@ -330,7 +330,7 @@ export default async function RegistryManagePage({
                                 </>
                               )}
                             </p>
-                            <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
+                            <div className="flex items-center gap-3 mt-1 text-xs text-tertiary">
                               {purchase.buyer_email && (
                                 <span className="flex items-center gap-1">
                                   <Mail className="h-3 w-3" />
@@ -346,7 +346,7 @@ export default async function RegistryManagePage({
                               </span>
                             </div>
                             {purchase.message && (
-                              <p className="mt-2 text-sm text-muted-foreground flex items-start gap-1">
+                              <p className="mt-2 text-sm text-tertiary flex items-start gap-1">
                                 <MessageSquare className="h-3 w-3 mt-0.5 shrink-0" />
                                 &ldquo;{purchase.message}&rdquo;
                               </p>

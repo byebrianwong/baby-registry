@@ -97,7 +97,7 @@ export function ContributeFundDialog({
             </div>
             <Progress value={fundProgress} />
             {remaining != null && remaining > 0 && (
-              <p className="text-xs text-muted-foreground mt-1">
+              <p className="text-xs text-tertiary mt-1">
                 ${remaining.toFixed(0)} remaining
               </p>
             )}
@@ -151,7 +151,7 @@ export function ContributeFundDialog({
             />
           </div>
 
-          {error && <p className="text-sm text-destructive">{error}</p>}
+          {error && <p className="text-sm text-error-primary">{error}</p>}
 
           <div className="flex justify-end gap-2">
             <Button

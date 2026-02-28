@@ -112,7 +112,7 @@ export function CoverItemDialog({ item, paymentMethods }: CoverItemDialogProps) 
             />
           </div>
 
-          {error && <p className="text-sm text-destructive">{error}</p>}
+          {error && <p className="text-sm text-error-primary">{error}</p>}
 
           <div className="flex justify-end gap-2">
             <Button

@@ -219,7 +219,7 @@ function DemoAddItemDialog({
               </Button>
             </div>
             {scrapeStatus && (
-              <p className="text-xs text-muted-foreground">{scrapeStatus}</p>
+              <p className="text-xs text-tertiary">{scrapeStatus}</p>
             )}
           </div>
 
@@ -342,7 +342,7 @@ function DemoItemCard({
       }
     >
       <CardContent className="flex gap-4 p-4">
-        <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-md bg-muted">
+        <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-md bg-tertiary">
           {item.image_url ? (
             <img
               src={item.image_url}
@@ -350,7 +350,7 @@ function DemoItemCard({
               className="h-20 w-20 rounded-md object-cover"
             />
           ) : (
-            <Package className="h-8 w-8 text-muted-foreground" />
+            <Package className="h-8 w-8 text-tertiary" />
           )}
         </div>
 
@@ -380,12 +380,12 @@ function DemoItemCard({
                   </Badge>
                 )}
                 {item.price && (
-                  <span className="text-sm text-muted-foreground">
+                  <span className="text-sm text-tertiary">
                     ${item.price.toFixed(2)}
                   </span>
                 )}
                 {item.quantity_needed > 1 && !isFulfilled && (
-                  <span className="text-sm text-muted-foreground">
+                  <span className="text-sm text-tertiary">
                     {remaining} of {item.quantity_needed} needed
                   </span>
                 )}
@@ -394,7 +394,7 @@ function DemoItemCard({
           </div>
 
           {item.notes && (
-            <p className="mt-1 text-sm text-muted-foreground line-clamp-2">
+            <p className="mt-1 text-sm text-tertiary line-clamp-2">
               {item.notes}
             </p>
           )}
@@ -436,7 +436,7 @@ function DemoItemCard({
               variant="ghost"
               size="sm"
               onClick={() => onDelete(item.id)}
-              className="text-destructive hover:text-destructive"
+              className="text-error-primary hover:text-error-primary"
             >
               <Trash2 className="h-3 w-3" />
             </Button>
@@ -537,7 +537,7 @@ function DemoCategoryManager({
                     variant="ghost"
                     size="icon"
                     onClick={() => onDelete(cat.id)}
-                    className="text-destructive hover:text-destructive"
+                    className="text-error-primary hover:text-error-primary"
                   >
                     <Trash2 className="h-3 w-3" />
                   </Button>
@@ -683,23 +683,23 @@ export default function DemoManagePage() {
   return (
     <div className="min-h-screen flex flex-col">
       {/* Demo banner */}
-      <div className="bg-primary text-primary-foreground py-2 px-4 text-center text-sm">
+      <div className="bg-brand-solid text-white py-2 px-4 text-center text-sm">
         This is a demo — changes are local and won&apos;t be saved.{" "}
         <Link href="/signup" className="underline font-medium">
           Create your own registry
         </Link>
       </div>
 
-      <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <header className="sticky top-0 z-50 w-full border-b bg-primary/95 backdrop-blur supports-[backdrop-filter]:bg-primary/60">
         <div className="container mx-auto flex h-14 items-center px-4">
           <Link
             href="/demo/dashboard"
             className="flex items-center gap-2 font-semibold"
           >
-            <Baby className="h-5 w-5 text-primary" />
+            <Baby className="h-5 w-5 text-brand-600" />
             <span>Baby Akachan</span>
           </Link>
-          <span className="ml-4 text-sm text-muted-foreground hidden md:inline">
+          <span className="ml-4 text-sm text-tertiary hidden md:inline">
             demo@example.com
           </span>
         </div>
@@ -720,7 +720,7 @@ export default function DemoManagePage() {
                   {DEMO_REGISTRY.title}
                 </h1>
               </div>
-              <p className="text-muted-foreground ml-10">
+              <p className="text-tertiary ml-10">
                 Due date:{" "}
                 {new Date(
                   DEMO_REGISTRY.event_date
@@ -767,7 +767,7 @@ export default function DemoManagePage() {
           <div className="mt-6 grid gap-4 md:grid-cols-4">
             <Card>
               <CardContent className="p-4">
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-tertiary">
                   Total Items
                 </p>
                 <p className="text-2xl font-bold">{totalItems}</p>
@@ -775,7 +775,7 @@ export default function DemoManagePage() {
             </Card>
             <Card>
               <CardContent className="p-4">
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-tertiary">
                   Fulfilled
                 </p>
                 <p className="text-2xl font-bold">{fulfilledItems}</p>
@@ -783,7 +783,7 @@ export default function DemoManagePage() {
             </Card>
             <Card>
               <CardContent className="p-4">
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-tertiary">
                   Completion
                 </p>
                 <div className="flex items-center gap-2">
@@ -796,7 +796,7 @@ export default function DemoManagePage() {
             </Card>
             <Card>
               <CardContent className="p-4">
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-tertiary">
                   Total Value
                 </p>
                 <p className="text-2xl font-bold">
@@ -885,7 +885,7 @@ export default function DemoManagePage() {
             <>
               <div className="mb-6">
                 <h2 className="text-xl font-semibold">Gift Activity</h2>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-tertiary">
                   See who has reserved items and contributed to funds
                 </p>
               </div>
@@ -960,7 +960,7 @@ export default function DemoManagePage() {
                                   </>
                                 )}
                               </p>
-                              <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
+                              <div className="flex items-center gap-3 mt-1 text-xs text-tertiary">
                                 <span className="flex items-center gap-1">
                                   <Mail className="h-3 w-3" />
                                   {purchase.buyer_email}
@@ -976,7 +976,7 @@ export default function DemoManagePage() {
                                 </span>
                               </div>
                               {purchase.message && (
-                                <p className="mt-2 text-sm text-muted-foreground flex items-start gap-1">
+                                <p className="mt-2 text-sm text-tertiary flex items-start gap-1">
                                   <MessageSquare className="h-3 w-3 mt-0.5 shrink-0" />
                                   &ldquo;{purchase.message}&rdquo;
                                 </p>
@@ -989,7 +989,7 @@ export default function DemoManagePage() {
                                 onClick={() =>
                                   handleCancelPurchase(purchase.id)
                                 }
-                                className="text-destructive hover:text-destructive shrink-0"
+                                className="text-error-primary hover:text-error-primary shrink-0"
                               >
                                 <X className="h-3 w-3 mr-1" />
                                 Cancel

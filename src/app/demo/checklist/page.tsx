@@ -115,23 +115,23 @@ export default function DemoChecklistPage() {
   return (
     <div className="min-h-screen flex flex-col">
       {/* Demo banner */}
-      <div className="bg-primary text-primary-foreground py-2 px-4 text-center text-sm">
+      <div className="bg-brand-solid text-white py-2 px-4 text-center text-sm">
         This is a demo checklist — items are added locally.{" "}
         <Link href="/signup" className="underline font-medium">
           Create your own registry
         </Link>
       </div>
 
-      <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <header className="sticky top-0 z-50 w-full border-b bg-primary/95 backdrop-blur supports-[backdrop-filter]:bg-primary/60">
         <div className="container mx-auto flex h-14 items-center px-4">
           <Link
             href="/demo/dashboard"
             className="flex items-center gap-2 font-semibold"
           >
-            <Baby className="h-5 w-5 text-primary" />
+            <Baby className="h-5 w-5 text-brand-600" />
             <span>Baby Akachan</span>
           </Link>
-          <span className="ml-auto text-sm text-muted-foreground hidden md:inline">
+          <span className="ml-auto text-sm text-tertiary hidden md:inline">
             demo@example.com
           </span>
         </div>
@@ -150,7 +150,7 @@ export default function DemoChecklistPage() {
               <h1 className="text-2xl font-bold">
                 Registry Checklist
               </h1>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-tertiary">
                 Browse recommended items and add them to your registry
               </p>
             </div>
@@ -161,7 +161,7 @@ export default function DemoChecklistPage() {
             <div className="flex items-center gap-4">
               <div className="text-sm">
                 <span className="font-medium">{addedCount}</span>
-                <span className="text-muted-foreground">
+                <span className="text-tertiary">
                   {" "}
                   of {totalItems} items added
                 </span>
@@ -182,8 +182,8 @@ export default function DemoChecklistPage() {
                     onClick={() => setFilter(mode)}
                     className={`px-3 py-1.5 text-xs font-medium transition-colors ${
                       filter === mode
-                        ? "bg-primary text-primary-foreground"
-                        : "hover:bg-muted"
+                        ? "bg-brand-solid text-white"
+                        : "hover:bg-active"
                     } ${mode === "all" ? "rounded-l-md" : ""} ${
                       mode === "not-added" ? "rounded-r-md" : ""
                     }`}
@@ -236,14 +236,14 @@ export default function DemoChecklistPage() {
                 <Card key={category.name}>
                   <button
                     onClick={() => toggleCategory(category.name)}
-                    className="flex w-full items-center gap-3 p-4 text-left hover:bg-muted/50 transition-colors"
+                    className="flex w-full items-center gap-3 p-4 text-left hover:bg-active transition-colors"
                   >
                     {isExpanded ? (
                       <ChevronDown className="h-4 w-4 shrink-0" />
                     ) : (
                       <ChevronRight className="h-4 w-4 shrink-0" />
                     )}
-                    <Icon className="h-5 w-5 text-primary shrink-0" />
+                    <Icon className="h-5 w-5 text-brand-600 shrink-0" />
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
                         <span className="font-medium">
@@ -256,7 +256,7 @@ export default function DemoChecklistPage() {
                           {catAddedCount}/{category.items.length}
                         </Badge>
                         {catEssentials > 0 && (
-                          <span className="text-xs text-muted-foreground">
+                          <span className="text-xs text-tertiary">
                             {catEssentialsAdded}/{catEssentials}{" "}
                             essentials
                           </span>
@@ -309,18 +309,18 @@ export default function DemoChecklistPage() {
                                   )}
                                 </div>
                                 <div className="flex items-center gap-2 mt-0.5">
-                                  <span className="text-xs text-muted-foreground">
+                                  <span className="text-xs text-tertiary">
                                     {item.suggestedPrice}
                                   </span>
                                   {item.suggestedQuantity > 1 && (
-                                    <span className="text-xs text-muted-foreground">
+                                    <span className="text-xs text-tertiary">
                                       Qty:{" "}
                                       {item.suggestedQuantity}
                                     </span>
                                   )}
                                 </div>
                                 {item.description && (
-                                  <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
+                                  <p className="text-xs text-tertiary mt-0.5 line-clamp-1">
                                     {item.description}
                                   </p>
                                 )}

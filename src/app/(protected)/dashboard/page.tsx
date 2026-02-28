@@ -31,7 +31,7 @@ export default async function DashboardPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">My Registries</h1>
-          <p className="text-muted-foreground">
+          <p className="text-tertiary">
             Manage your baby registries and track gifts
           </p>
         </div>
@@ -46,9 +46,9 @@ export default async function DashboardPage() {
       {!registries || registries.length === 0 ? (
         <Card className="mt-8">
           <CardContent className="flex flex-col items-center justify-center py-16">
-            <Gift className="h-12 w-12 text-muted-foreground" />
+            <Gift className="h-12 w-12 text-tertiary" />
             <h2 className="mt-4 text-xl font-semibold">No registries yet</h2>
-            <p className="mt-2 text-muted-foreground">
+            <p className="mt-2 text-tertiary">
               Create your first registry to start adding items.
             </p>
             <Button className="mt-6" asChild>
@@ -111,7 +111,7 @@ export default async function DashboardPage() {
                       <Progress value={progress} />
                     </div>
 
-                    <div className="flex justify-between text-sm text-muted-foreground">
+                    <div className="flex justify-between text-sm text-tertiary">
                       <span>{totalItems} items</span>
                       <span>${totalValue.toFixed(0)} total value</span>
                     </div>
@@ -120,7 +120,7 @@ export default async function DashboardPage() {
                       <div className="text-sm">
                         <p className="font-medium mb-1">Recent activity:</p>
                         {recentPurchases.map((p: { id: string; buyer_name: string }) => (
-                          <p key={p.id} className="text-muted-foreground">
+                          <p key={p.id} className="text-tertiary">
                             {p.buyer_name} reserved an item
                           </p>
                         ))}

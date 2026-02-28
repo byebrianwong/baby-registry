@@ -11,38 +11,10 @@
 @custom-variant label (& [data-label]);
 @custom-variant focus-input-within (&:has(input:focus));
 
-/* Backwards-compatible shadcn token aliases mapped to Untitled UI tokens */
 @theme inline {
   /* Fonts — use Geist loaded from next/font */
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-
-  /* Primary = sage green brand color (generic --color-primary) */
-  --color-primary: var(--color-brand-600);
-  --color-primary-foreground: var(--color-white);
-
-  /* Secondary = light gray surface */
-  --color-secondary: var(--color-gray-50);
-  --color-secondary-foreground: var(--color-gray-900);
-
-  /* Muted = subtle gray */
-  --color-muted: var(--color-gray-100);
-  --color-muted-foreground: var(--color-gray-500);
-
-  /* Accent = hover highlight */
-  --color-accent: var(--color-gray-100);
-  --color-accent-foreground: var(--color-gray-900);
-
-  /* Destructive = error red */
-  --color-destructive: var(--color-error-600);
-
-  /* Surfaces */
-  --color-background: var(--color-white);
-  --color-foreground: var(--color-gray-900);
-  --color-card: var(--color-white);
-  --color-card-foreground: var(--color-gray-900);
-  --color-popover: var(--color-white);
-  --color-popover-foreground: var(--color-gray-900);
 
   /* Borders & inputs */
   --color-border: var(--color-gray-200);
@@ -96,6 +68,6 @@ input[type="search"]::-webkit-search-cancel-button {
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-primary text-primary;
   }
 }

@@ -73,13 +73,13 @@ export default function LoginPage() {
               />
             </div>
             {error && (
-              <p className="text-sm text-destructive">{error}</p>
+              <p className="text-sm text-error-primary">{error}</p>
             )}
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? "Signing in..." : "Sign In"}
             </Button>
           </form>
-          <p className="mt-4 text-center text-sm text-muted-foreground">
+          <p className="mt-4 text-center text-sm text-tertiary">
             Don&apos;t have an account?{" "}
             <Link href="/signup" className="text-brand-600 underline-offset-4 hover:underline">
               Sign up

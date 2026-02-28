@@ -55,7 +55,7 @@ export const WithData: Story = {
     totalItems: 32,
     purchaseCount: 3,
     itemsContent: (
-      <div className="text-muted-foreground text-center py-8">
+      <div className="text-tertiary text-center py-8">
         [Items grid would render here]
       </div>
     ),
@@ -63,7 +63,7 @@ export const WithData: Story = {
       <div className="space-y-3">
         <div className="mb-6">
           <h2 className="text-xl font-semibold">Gift Activity</h2>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-tertiary">
             See who has reserved items and contributed to funds
           </p>
         </div>
@@ -92,7 +92,7 @@ export const WithData: Story = {
                   </>
                 )}
               </p>
-              <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
+              <div className="flex items-center gap-3 mt-1 text-xs text-tertiary">
                 <span className="flex items-center gap-1">
                   <Mail className="h-3 w-3" />
                   {purchase.buyer_email}
@@ -106,7 +106,7 @@ export const WithData: Story = {
                 </span>
               </div>
               {purchase.message && (
-                <p className="mt-2 text-sm text-muted-foreground flex items-start gap-1">
+                <p className="mt-2 text-sm text-tertiary flex items-start gap-1">
                   <MessageSquare className="h-3 w-3 mt-0.5 shrink-0" />
                   &ldquo;{purchase.message}&rdquo;
                 </p>
@@ -124,12 +124,12 @@ export const Empty: Story = {
     totalItems: 0,
     purchaseCount: 0,
     itemsContent: (
-      <div className="text-muted-foreground text-center py-12">
+      <div className="text-tertiary text-center py-12">
         No items yet. Add items manually or browse the checklist.
       </div>
     ),
     purchasesContent: (
-      <div className="text-muted-foreground text-center py-12">
+      <div className="text-tertiary text-center py-12">
         No gifts reserved yet. Share your registry link to get started!
       </div>
     ),

@@ -30,7 +30,7 @@ export function CancelReservationButton({
       size="sm"
       onClick={handleCancel}
       disabled={loading}
-      className="text-destructive hover:text-destructive shrink-0"
+      className="text-error-primary hover:text-error-primary shrink-0"
     >
       <X className="h-3 w-3 mr-1" />
       {loading ? "..." : "Cancel"}

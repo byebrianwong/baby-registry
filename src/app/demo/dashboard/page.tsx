@@ -34,31 +34,31 @@ export default function DemoDashboardPage() {
   return (
     <div className="min-h-screen flex flex-col">
       {/* Demo banner */}
-      <div className="bg-primary text-primary-foreground py-2 px-4 text-center text-sm">
+      <div className="bg-brand-solid text-white py-2 px-4 text-center text-sm">
         This is a demo dashboard — no account required.{" "}
         <Link href="/signup" className="underline font-medium">
           Create your own registry
         </Link>
       </div>
 
-      <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <header className="sticky top-0 z-50 w-full border-b bg-primary/95 backdrop-blur supports-[backdrop-filter]:bg-primary/60">
         <div className="container mx-auto flex h-14 items-center px-4">
           <Link
             href="/demo/dashboard"
             className="flex items-center gap-2 font-semibold"
           >
-            <Baby className="h-5 w-5 text-primary" />
+            <Baby className="h-5 w-5 text-brand-600" />
             <span>Baby Akachan</span>
           </Link>
           <nav className="ml-6 hidden items-center gap-4 md:flex">
             <Link
               href="/demo/dashboard"
-              className="text-sm font-medium text-foreground"
+              className="text-sm font-medium text-primary"
             >
               Dashboard
             </Link>
           </nav>
-          <span className="ml-auto text-sm text-muted-foreground hidden md:inline">
+          <span className="ml-auto text-sm text-tertiary hidden md:inline">
             demo@example.com
           </span>
         </div>
@@ -69,7 +69,7 @@ export default function DemoDashboardPage() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold">My Registries</h1>
-              <p className="text-muted-foreground">
+              <p className="text-tertiary">
                 Manage your baby registries and track gifts
               </p>
             </div>
@@ -110,7 +110,7 @@ export default function DemoDashboardPage() {
                     <Progress value={progress} />
                   </div>
 
-                  <div className="flex justify-between text-sm text-muted-foreground">
+                  <div className="flex justify-between text-sm text-tertiary">
                     <span>{totalItems} items</span>
                     <span>${totalValue.toFixed(0)} total value</span>
                   </div>
@@ -120,7 +120,7 @@ export default function DemoDashboardPage() {
                     {recentActivity.map((p) => (
                       <p
                         key={p.id}
-                        className="text-muted-foreground"
+                        className="text-tertiary"
                       >
                         {p.name} reserved {p.item}
                       </p>

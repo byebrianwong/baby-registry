@@ -53,7 +53,7 @@ export function ItemCard({ item, registryId, isOwner }: ItemCardProps) {
       }
     >
       <CardContent className="flex gap-4 p-4">
-        <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-md bg-muted">
+        <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-md bg-tertiary">
           {item.image_url ? (
             <img
               src={item.image_url}
@@ -61,7 +61,7 @@ export function ItemCard({ item, registryId, isOwner }: ItemCardProps) {
               className="h-20 w-20 rounded-md object-cover"
             />
           ) : (
-            <Package className="h-8 w-8 text-muted-foreground" />
+            <Package className="h-8 w-8 text-tertiary" />
           )}
         </div>
 
@@ -88,12 +88,12 @@ export function ItemCard({ item, registryId, isOwner }: ItemCardProps) {
                   </Badge>
                 )}
                 {item.price && (
-                  <span className="text-sm text-muted-foreground">
+                  <span className="text-sm text-tertiary">
                     ${item.price.toFixed(2)}
                   </span>
                 )}
                 {item.quantity_needed > 1 && !isFulfilled && (
-                  <span className="text-sm text-muted-foreground">
+                  <span className="text-sm text-tertiary">
                     {remaining} of {item.quantity_needed} needed
                   </span>
                 )}
@@ -102,7 +102,7 @@ export function ItemCard({ item, registryId, isOwner }: ItemCardProps) {
           </div>
 
           {item.notes && (
-            <p className="mt-1 text-sm text-muted-foreground line-clamp-2">
+            <p className="mt-1 text-sm text-tertiary line-clamp-2">
               {item.notes}
             </p>
           )}
@@ -144,7 +144,7 @@ export function ItemCard({ item, registryId, isOwner }: ItemCardProps) {
                 size="sm"
                 onClick={handleDelete}
                 disabled={deleting}
-                className="text-destructive hover:text-destructive"
+                className="text-error-primary hover:text-error-primary"
               >
                 <Trash2 className="h-3 w-3" />
               </Button>

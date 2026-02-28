@@ -92,13 +92,13 @@ export default function SignupPage() {
               />
             </div>
             {error && (
-              <p className="text-sm text-destructive">{error}</p>
+              <p className="text-sm text-error-primary">{error}</p>
             )}
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? "Creating account..." : "Create Account"}
             </Button>
           </form>
-          <p className="mt-4 text-center text-sm text-muted-foreground">
+          <p className="mt-4 text-center text-sm text-tertiary">
             Already have an account?{" "}
             <Link href="/login" className="text-brand-600 underline-offset-4 hover:underline">
               Sign in

@@ -41,7 +41,7 @@ export function Nav() {
     : [];
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header className="sticky top-0 z-50 w-full border-b bg-primary/95 backdrop-blur supports-[backdrop-filter]:bg-primary/60">
       <div className="container mx-auto flex h-14 items-center px-4">
         <Link href={user ? "/dashboard" : "/"} className="flex items-center gap-2 font-semibold">
           <Baby className="h-5 w-5 text-brand-600" />
@@ -55,10 +55,10 @@ export function Nav() {
                 <Link
                   key={link.href}
                   href={link.href}
-                  className={`text-sm transition-colors hover:text-foreground ${
+                  className={`text-sm transition-colors hover:text-primary ${
                     pathname === link.href
-                      ? "text-foreground font-medium"
-                      : "text-muted-foreground"
+                      ? "text-primary font-medium"
+                      : "text-tertiary"
                   }`}
                 >
                   {link.label}
@@ -69,7 +69,7 @@ export function Nav() {
             <div className="ml-auto flex items-center gap-2">
               {loading ? null : user ? (
                 <>
-                  <span className="hidden text-sm text-muted-foreground md:inline">
+                  <span className="hidden text-sm text-tertiary md:inline">
                     {user.email}
                   </span>
                   <Button variant="ghost" size="sm" onClick={handleSignOut}>
@@ -107,7 +107,7 @@ export function Nav() {
                     {user && (
                       <button
                         onClick={handleSignOut}
-                        className="text-sm text-muted-foreground text-left"
+                        className="text-sm text-tertiary text-left"
                       >
                         Sign out
                       </button>

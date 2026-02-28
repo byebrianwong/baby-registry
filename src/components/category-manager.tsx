@@ -122,7 +122,7 @@ export function CategoryManager({
                     variant="ghost"
                     size="icon"
                     onClick={() => handleDelete(cat.id, cat.name)}
-                    className="text-destructive hover:text-destructive"
+                    className="text-error-primary hover:text-error-primary"
                   >
                     <Trash2 className="h-3 w-3" />
                   </Button>

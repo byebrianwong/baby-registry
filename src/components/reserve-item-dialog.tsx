@@ -129,7 +129,7 @@ export function ReserveItemDialog({ item }: ReserveItemDialogProps) {
             />
           </div>
 
-          {error && <p className="text-sm text-destructive">{error}</p>}
+          {error && <p className="text-sm text-error-primary">{error}</p>}
 
           <div className="flex justify-end gap-2">
             <Button

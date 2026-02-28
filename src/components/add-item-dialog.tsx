@@ -160,7 +160,7 @@ export function AddItemDialog({
               </Button>
             </div>
             {scrapeStatus && (
-              <p className="text-xs text-muted-foreground">{scrapeStatus}</p>
+              <p className="text-xs text-tertiary">{scrapeStatus}</p>
             )}
           </div>
 
@@ -251,7 +251,7 @@ export function AddItemDialog({
             />
           </div>
 
-          {error && <p className="text-sm text-destructive">{error}</p>}
+          {error && <p className="text-sm text-error-primary">{error}</p>}
 
           <div className="flex justify-end gap-2">
             <Button
