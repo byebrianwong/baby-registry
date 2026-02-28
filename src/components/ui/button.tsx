@@ -10,12 +10,13 @@ import {
 import { cn } from "@/lib/utils"
 import { cx } from "@/lib/utils/cx"
 
-type ButtonVariant = "default" | "destructive" | "outline" | "secondary" | "ghost" | "link"
+type ButtonVariant = "default" | "destructive" | "destructive-outline" | "outline" | "secondary" | "ghost" | "link"
 type ButtonSize = "default" | "xs" | "sm" | "lg" | "icon" | "icon-xs" | "icon-sm" | "icon-lg"
 
 const variantMap: Record<ButtonVariant, UntitledProps["color"]> = {
   default: "primary",
   destructive: "primary-destructive",
+  "destructive-outline": "secondary-destructive",
   outline: "secondary",
   secondary: "secondary",
   ghost: "tertiary",

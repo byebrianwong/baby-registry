@@ -360,27 +360,307 @@ function DemoAddItemDialog({
   );
 }
 
+function DemoEditItemDialog({
+  item,
+  categories,
+  open,
+  onOpenChange,
+  onSave,
+  onDelete,
+}: {
+  item: DemoItem;
+  categories: { id: string; name: string }[];
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSave: (item: DemoItem) => void;
+  onDelete: (id: string) => void;
+}) {
+  const [scraping, setScraping] = useState(false);
+  const [scrapeStatus, setScrapeStatus] = useState("");
+  const [openToUsed, setOpenToUsed] = useState(false);
+  const [currency, setCurrency] = useState("USD");
+  const urlRef = React.useRef<HTMLInputElement>(null);
+  const titleRef = React.useRef<HTMLInputElement>(null);
+  const priceRef = React.useRef<HTMLInputElement>(null);
+  const imageUrlRef = React.useRef<HTMLInputElement>(null);
+
+  const handleDemoScrape = async (url: string) => {
+    if (!url || scraping) return;
+    try { new URL(url); } catch { return; }
+
+    setScraping(true);
+    setScrapeStatus("");
+
+    await new Promise((r) => setTimeout(r, 1200));
+
+    const mockData = {
+      title: "4moms MamaRoo Multi-Motion Baby Swing",
+      price: "219.99",
+      imageUrl: "https://images.unsplash.com/photo-1555252333-9f8e92e65df9?w=300&h=300&fit=crop",
+    };
+
+    const filled: string[] = [];
+    if (titleRef.current && !titleRef.current.value) {
+      titleRef.current.value = mockData.title;
+      filled.push("title");
+    }
+    if (priceRef.current && !priceRef.current.value) {
+      priceRef.current.value = mockData.price;
+      filled.push("price");
+    }
+    if (imageUrlRef.current && !imageUrlRef.current.value) {
+      imageUrlRef.current.value = mockData.imageUrl;
+      filled.push("image");
+    }
+
+    setScrapeStatus(
+      filled.length > 0
+        ? `Auto-filled ${filled.join(", ")}`
+        : "No new data found to fill"
+    );
+    setScraping(false);
+  };
+
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const form = e.currentTarget;
+    const formData = new FormData(form);
+
+    const updatedItem: DemoItem = {
+      ...item,
+      title: formData.get("title") as string,
+      category_id: formData.get("categoryId") as string,
+      external_url: (formData.get("externalUrl") as string) || null,
+      image_url: (formData.get("imageUrl") as string) || null,
+      price: formData.get("price")
+        ? parseFloat(formData.get("price") as string)
+        : null,
+      quantity_needed: parseInt(
+        (formData.get("quantityNeeded") as string) || "1"
+      ),
+      is_essential: formData.get("isEssential") === "true",
+      notes: (formData.get("notes") as string) || null,
+    };
+
+    onSave(updatedItem);
+    onOpenChange(false);
+  };
+
+  const handleRemove = () => {
+    onDelete(item.id);
+    onOpenChange(false);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => { onOpenChange(v); if (!v) { setScrapeStatus(""); setOpenToUsed(false); setCurrency("USD"); } }}>
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg" showCloseButton={false}>
+        <DialogHeader>
+          <DialogTitle>Edit item in registry</DialogTitle>
+          <DialogDescription>
+            This is a demo — paste a URL to see auto-fill in action.
+          </DialogDescription>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-1.5">
+            <Label>Product URL</Label>
+            <div className="flex items-center gap-4">
+              <InputGroup
+                leadingAddon={<InputPrefix>http://</InputPrefix>}
+                className="flex-1"
+              >
+                <InputBase
+                  ref={urlRef}
+                  name="externalUrl"
+                  type="url"
+                  placeholder="www.untitledui.com"
+                  defaultValue={item.external_url || ""}
+                  onBlur={(e) => handleDemoScrape((e.target as HTMLInputElement).value)}
+                />
+              </InputGroup>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-lg"
+                disabled={scraping}
+                onClick={() => {
+                  if (urlRef.current?.value) handleDemoScrape(urlRef.current.value);
+                }}
+                title="Fetch product details"
+              >
+                {scraping ? (
+                  <Loader2 className="h-6 w-6 animate-spin" />
+                ) : (
+                  <Link01 className="h-6 w-6" />
+                )}
+              </Button>
+            </div>
+            {scrapeStatus && (
+              <p className="text-xs text-tertiary">{scrapeStatus}</p>
+            )}
+          </div>
+
+          <Input
+            ref={titleRef}
+            label="Item Name"
+            name="title"
+            placeholder="e.g., Convertible Crib"
+            defaultValue={item.title}
+            isRequired
+          />
+
+          <Checkbox
+            name="isEssential"
+            value="true"
+            defaultSelected={item.is_essential}
+            label="Mark as most wanted item"
+          />
+
+          <Select
+            name="categoryId"
+            label="Category"
+            defaultSelectedKey={item.category_id}
+            placeholder="Select a category"
+            items={categories.map((cat) => ({ id: cat.id, label: cat.name }))}
+          >
+            {(item) => <Select.Item id={item.id} label={item.label} />}
+          </Select>
+
+          <InputGroup
+            label="Image URL (optional)"
+            leadingAddon={<InputPrefix>http://</InputPrefix>}
+          >
+            <InputBase
+              ref={imageUrlRef}
+              name="imageUrl"
+              type="url"
+              placeholder="www.untitledui.com"
+              defaultValue={item.image_url || ""}
+            />
+          </InputGroup>
+
+          <div className="grid grid-cols-2 gap-4">
+            <InputGroup
+              label="Price (optional)"
+              prefix={currencySymbols[currency] || "$"}
+              trailingAddon={
+                <InputPrefix position="trailing">
+                  <span className="relative inline-flex items-center">
+                    <select
+                      className="appearance-none bg-transparent pr-5 text-primary outline-none cursor-pointer"
+                      value={currency}
+                      onChange={(e) => setCurrency(e.target.value)}
+                    >
+                      <option>USD</option>
+                      <option>EUR</option>
+                      <option>GBP</option>
+                      <option>JPY</option>
+                      <option>CAD</option>
+                      <option>AUD</option>
+                    </select>
+                    <ChevronDown className="pointer-events-none absolute right-0 h-4 w-4 text-tertiary" />
+                  </span>
+                </InputPrefix>
+              }
+            >
+              <InputBase
+                ref={priceRef}
+                name="price"
+                type="number"
+                step="0.01"
+                min={0}
+                placeholder="0.00"
+                defaultValue={item.price?.toString() || ""}
+              />
+            </InputGroup>
+            <Input
+              label="Quantity"
+              name="quantityNeeded"
+              type="number"
+              min={1}
+              defaultValue={item.quantity_needed.toString()}
+            />
+          </div>
+
+          <Checkbox
+            name="isOpenToUsed"
+            value="true"
+            isSelected={openToUsed}
+            onChange={setOpenToUsed}
+            label="Mark as open to used condition item"
+          />
+          {openToUsed && (
+            <div className="pl-6">
+              <Select
+                name="minimumCondition"
+                label="Minimum condition"
+                defaultSelectedKey="like-new"
+                items={[
+                  { id: "like-new", label: "Like new" },
+                  { id: "very-good", label: "Very good" },
+                  { id: "good", label: "Good" },
+                  { id: "acceptable", label: "Acceptable" },
+                ]}
+              >
+                {(item) => <Select.Item id={item.id} label={item.label} />}
+              </Select>
+            </div>
+          )}
+
+          <TextArea
+            label="Notes (optional)"
+            name="notes"
+            placeholder="Enter a description..."
+            defaultValue={item.notes || ""}
+            rows={3}
+          />
+
+          <div className="flex justify-end gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="destructive-outline"
+              onClick={handleRemove}
+            >
+              Remove item
+            </Button>
+            <Button type="submit">Save changes</Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function DemoItemCard({
   item,
   onDelete,
   onToggleParentPurchased,
+  onClick,
 }: {
   item: DemoItem;
   onDelete: (id: string) => void;
   onToggleParentPurchased: (id: string) => void;
+  onClick: () => void;
 }) {
   const isFulfilled = item.quantity_fulfilled >= item.quantity_needed;
   const remaining = item.quantity_needed - item.quantity_fulfilled;
 
   return (
     <Card
-      className={`py-0 gap-0 rounded-xl ${
+      className={`py-0 gap-0 rounded-xl cursor-pointer transition-shadow hover:shadow-md ${
         isFulfilled && !item.is_parent_purchased
           ? "opacity-60"
           : item.is_parent_purchased
             ? "bg-secondary"
             : ""
       }`}
+      onClick={onClick}
     >
       <CardContent className="flex h-full flex-col justify-between gap-4 p-4">
         <div className="flex gap-3">
@@ -438,7 +718,7 @@ function DemoItemCard({
           </div>
         </div>
 
-        <div className="flex items-center justify-end gap-2">
+        <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
           {item.external_url && (
             <Button
               variant="outline"
@@ -610,9 +890,16 @@ export default function DemoManagePage() {
   const [purchases, setPurchases] = useState<DemoPurchase[]>(DEMO_PURCHASES);
   const [copied, setCopied] = useState(false);
   const [activeTab, setActiveTab] = useState<TabMode>("items");
+  const [editingItem, setEditingItem] = useState<DemoItem | null>(null);
 
   const handleAddItem = (item: DemoItem) => {
     setItems((prev) => [...prev, item]);
+  };
+
+  const handleUpdateItem = (updatedItem: DemoItem) => {
+    setItems((prev) =>
+      prev.map((item) => (item.id === updatedItem.id ? updatedItem : item))
+    );
   };
 
   const handleDeleteItem = (id: string) => {
@@ -904,6 +1191,7 @@ export default function DemoManagePage() {
                             onToggleParentPurchased={
                               handleToggleParentPurchased
                             }
+                            onClick={() => setEditingItem(item)}
                           />
                         ))}
                       </div>
@@ -911,6 +1199,17 @@ export default function DemoManagePage() {
                   );
                 })}
               </div>
+
+              {editingItem && (
+                <DemoEditItemDialog
+                  item={editingItem}
+                  categories={categories}
+                  open={!!editingItem}
+                  onOpenChange={(open) => { if (!open) setEditingItem(null); }}
+                  onSave={handleUpdateItem}
+                  onDelete={handleDeleteItem}
+                />
+              )}
             </>
           ) : (
             <>
