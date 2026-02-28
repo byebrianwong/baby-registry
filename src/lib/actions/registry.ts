@@ -586,3 +586,75 @@ export async function coverParentPurchasedItem(formData: FormData) {
 
   return { success: true, purchaseId: data };
 }
+
+export async function acceptSuggestion(formData: FormData) {
+  const supabase = await createClient();
+  const suggestionId = formData.get("suggestionId") as string;
+  const registryId = formData.get("registryId") as string;
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
+
+  // Fetch the suggestion
+  const { data: suggestion, error: fetchError } = await supabase
+    .from("suggestions")
+    .select("*")
+    .eq("id", suggestionId)
+    .single();
+
+  if (fetchError || !suggestion) {
+    return { error: "Suggestion not found" };
+  }
+
+  // Add item to registry
+  const { error: insertError } = await supabase.from("registry_items").insert({
+    registry_id: registryId,
+    title: suggestion.title,
+    external_url: suggestion.external_url,
+    price: suggestion.price,
+    notes: suggestion.notes,
+    quantity_needed: 1,
+  });
+
+  if (insertError) {
+    return { error: insertError.message };
+  }
+
+  // Update suggestion status
+  const { error: updateError } = await supabase
+    .from("suggestions")
+    .update({ status: "accepted" })
+    .eq("id", suggestionId);
+
+  if (updateError) {
+    return { error: updateError.message };
+  }
+
+  revalidatePath(`/dashboard/registry/${registryId}`);
+  return { success: true };
+}
+
+export async function declineSuggestion(formData: FormData) {
+  const supabase = await createClient();
+  const suggestionId = formData.get("suggestionId") as string;
+  const registryId = formData.get("registryId") as string;
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
+
+  const { error } = await supabase
+    .from("suggestions")
+    .update({ status: "declined" })
+    .eq("id", suggestionId);
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidatePath(`/dashboard/registry/${registryId}`);
+  return { success: true };
+}

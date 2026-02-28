@@ -7,6 +7,8 @@ import {
   Mail,
   MessageSquare,
   DollarSign,
+  Lightbulb,
+  Plus,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -20,6 +22,7 @@ import { CopyLinkButton } from "@/components/copy-link-button";
 import { RegistryTabs } from "@/components/registry-tabs";
 import { CategoryManager } from "@/components/category-manager";
 import { CancelReservationButton } from "./cancel-reservation-button";
+import { SuggestionActions } from "./suggestion-actions";
 
 interface RegistryItem {
   id: string;
@@ -68,7 +71,7 @@ export default async function RegistryManagePage({
     notFound();
   }
 
-  const [{ data: categories }, { data: items }, { data: purchases }] =
+  const [{ data: categories }, { data: items }, { data: purchases }, { data: suggestions }] =
     await Promise.all([
       supabase
         .from("categories")
@@ -84,6 +87,11 @@ export default async function RegistryManagePage({
         .from("purchases")
         .select("*, registry_items!registry_item_id(title, registry_id), cash_funds!cash_fund_id(title, registry_id)")
         .order("created_at", { ascending: false }),
+      supabase
+        .from("suggestions")
+        .select("*")
+        .eq("registry_id", registryId)
+        .order("created_at", { ascending: false }),
     ]);
 
   const allItems = (items || []) as RegistryItem[];
@@ -98,6 +106,21 @@ export default async function RegistryManagePage({
     ...p,
     item_title: p.registry_items?.title || p.cash_funds?.title || "Unknown item",
   }));
+
+  const allSuggestions = (suggestions || []) as {
+    id: string;
+    title: string;
+    external_url: string | null;
+    price: number | null;
+    notes: string | null;
+    suggested_by_name: string;
+    suggested_by_email: string | null;
+    status: "pending" | "accepted" | "declined";
+    created_at: string;
+  }[];
+  const pendingSuggestionCount = allSuggestions.filter(
+    (s) => s.status === "pending"
+  ).length;
 
   const totalItems = allItems.length;
   const fulfilledItems = allItems.filter(
@@ -193,6 +216,7 @@ export default async function RegistryManagePage({
       <RegistryTabs
         totalItems={totalItems}
         purchaseCount={allPurchases.length}
+        suggestionCount={pendingSuggestionCount}
         itemsContent={
           <>
             <div className="flex items-center justify-between mb-6">
@@ -355,6 +379,116 @@ export default async function RegistryManagePage({
                           {!isCancelled && (
                             <CancelReservationButton
                               purchaseId={purchase.id}
+                              registryId={registryId}
+                            />
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            )}
+          </>
+        }
+        suggestionsContent={
+          <>
+            <div className="mb-6">
+              <h2 className="text-xl font-semibold">Suggestion Inbox</h2>
+              <p className="text-sm text-tertiary">
+                Items suggested by your guests
+              </p>
+            </div>
+
+            {allSuggestions.length === 0 ? (
+              <Card>
+                <CardContent className="flex flex-col items-center justify-center py-12">
+                  <Lightbulb className="h-8 w-8 text-tertiary mb-2" />
+                  <p className="text-tertiary">
+                    No suggestions yet. Guests can suggest items from your registry page.
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-3">
+                {allSuggestions.map((suggestion) => {
+                  const isActioned = suggestion.status !== "pending";
+                  return (
+                    <Card
+                      key={suggestion.id}
+                      className={isActioned ? "opacity-50" : ""}
+                    >
+                      <CardContent className="p-4">
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-medium">
+                                {suggestion.title}
+                              </span>
+                              <Badge
+                                variant={
+                                  suggestion.status === "pending"
+                                    ? "secondary"
+                                    : suggestion.status === "accepted"
+                                      ? "default"
+                                      : "outline"
+                                }
+                                className="text-xs"
+                              >
+                                {suggestion.status === "pending"
+                                  ? "Pending"
+                                  : suggestion.status === "accepted"
+                                    ? "Added"
+                                    : "Declined"}
+                              </Badge>
+                            </div>
+                            <div className="flex items-center gap-3 mt-1 text-xs text-tertiary">
+                              <span>
+                                Suggested by{" "}
+                                <span className="font-medium text-primary">
+                                  {suggestion.suggested_by_name}
+                                </span>
+                              </span>
+                              {suggestion.suggested_by_email && (
+                                <span className="flex items-center gap-1">
+                                  <Mail className="h-3 w-3" />
+                                  {suggestion.suggested_by_email}
+                                </span>
+                              )}
+                              <span>
+                                {new Date(suggestion.created_at).toLocaleDateString("en-US", {
+                                  month: "short",
+                                  day: "numeric",
+                                  year: "numeric",
+                                })}
+                              </span>
+                            </div>
+                            {suggestion.price && (
+                              <p className="text-sm mt-1">
+                                ${suggestion.price.toFixed(2)}
+                              </p>
+                            )}
+                            {suggestion.external_url && (
+                              <a
+                                href={suggestion.external_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-sm text-brand-600 hover:underline mt-1 inline-flex items-center gap-1"
+                              >
+                                <ExternalLink className="h-3 w-3" />
+                                View product
+                              </a>
+                            )}
+                            {suggestion.notes && (
+                              <p className="mt-2 text-sm text-tertiary flex items-start gap-1">
+                                <MessageSquare className="h-3 w-3 mt-0.5 shrink-0" />
+                                &ldquo;{suggestion.notes}&rdquo;
+                              </p>
+                            )}
+                          </div>
+                          {suggestion.status === "pending" && (
+                            <SuggestionActions
+                              suggestionId={suggestion.id}
                               registryId={registryId}
                             />
                           )}

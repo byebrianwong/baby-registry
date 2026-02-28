@@ -23,6 +23,7 @@ import {
   Pencil,
   Loader2,
   ChevronDown,
+  Lightbulb,
 } from "lucide-react";
 import { Link01 } from "@untitledui/icons";
 import { Button } from "@/components/ui/button";
@@ -57,6 +58,7 @@ import {
   DEMO_CATEGORIES,
   DEMO_ITEMS,
   DEMO_PURCHASES,
+  DEMO_SUGGESTIONS,
 } from "@/lib/demo-data";
 
 interface DemoItem {
@@ -86,6 +88,18 @@ interface DemoPurchase {
   message: string | null;
   created_at: string;
   item_title: string;
+}
+
+interface DemoSuggestion {
+  id: string;
+  title: string;
+  external_url: string | null;
+  price: number | null;
+  notes: string | null;
+  suggested_by_name: string;
+  suggested_by_email: string | null;
+  status: "pending" | "accepted" | "declined";
+  created_at: string;
 }
 
 const currencySymbols: Record<string, string> = {
@@ -882,7 +896,7 @@ function DemoCategoryManager({
   );
 }
 
-type TabMode = "items" | "purchases";
+type TabMode = "items" | "purchases" | "suggestions";
 
 export default function DemoManagePage() {
   const [items, setItems] = useState<DemoItem[]>(DEMO_ITEMS);
@@ -891,6 +905,7 @@ export default function DemoManagePage() {
   const [copied, setCopied] = useState(false);
   const [activeTab, setActiveTab] = useState<TabMode>("items");
   const [editingItem, setEditingItem] = useState<DemoItem | null>(null);
+  const [suggestions, setSuggestions] = useState<DemoSuggestion[]>(DEMO_SUGGESTIONS);
 
   const handleAddItem = (item: DemoItem) => {
     setItems((prev) => [...prev, item]);
@@ -968,6 +983,37 @@ export default function DemoManagePage() {
     }
   };
 
+  const handleAcceptSuggestion = (suggestion: DemoSuggestion) => {
+    const newItem: DemoItem = {
+      id: `item-${Date.now()}`,
+      title: suggestion.title,
+      category_id: categories[0]?.id || "",
+      external_url: suggestion.external_url,
+      image_url: null,
+      price: suggestion.price,
+      quantity_needed: 1,
+      quantity_fulfilled: 0,
+      is_essential: false,
+      is_parent_purchased: false,
+      notes: suggestion.notes,
+      sort_order: items.length,
+    };
+    setItems((prev) => [...prev, newItem]);
+    setSuggestions((prev) =>
+      prev.map((s) =>
+        s.id === suggestion.id ? { ...s, status: "accepted" as const } : s
+      )
+    );
+  };
+
+  const handleDeclineSuggestion = (id: string) => {
+    setSuggestions((prev) =>
+      prev.map((s) =>
+        s.id === id ? { ...s, status: "declined" as const } : s
+      )
+    );
+  };
+
   const handleCopyLink = () => {
     navigator.clipboard.writeText(
       `${window.location.origin}/demo`
@@ -997,6 +1043,7 @@ export default function DemoManagePage() {
   }
 
   const activePurchases = purchases.filter((p) => p.status !== "cancelled");
+  const pendingSuggestions = suggestions.filter((s) => s.status === "pending");
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -1148,6 +1195,16 @@ export default function DemoManagePage() {
             >
               Gift Activity ({purchases.length})
             </button>
+            <button
+              onClick={() => setActiveTab("suggestions")}
+              className={`pb-2 text-sm font-medium border-b-2 transition-colors ${
+                activeTab === "suggestions"
+                  ? "border-brand-600 text-primary"
+                  : "border-transparent text-tertiary hover:text-primary"
+              }`}
+            >
+              Suggestions ({pendingSuggestions.length})
+            </button>
           </div>
 
           {activeTab === "items" ? (
@@ -1211,7 +1268,7 @@ export default function DemoManagePage() {
                 />
               )}
             </>
-          ) : (
+          ) : activeTab === "purchases" ? (
             <>
               <div className="mb-6">
                 <h2 className="text-xl font-semibold">Gift Activity</h2>
@@ -1331,6 +1388,139 @@ export default function DemoManagePage() {
                     );
                   })}
               </div>
+            </>
+          ) : (
+            <>
+              <div className="mb-6">
+                <h2 className="text-xl font-semibold">Suggestion Inbox</h2>
+                <p className="text-sm text-tertiary">
+                  Items suggested by your guests
+                </p>
+              </div>
+
+              {suggestions.length === 0 ? (
+                <Card>
+                  <CardContent className="flex flex-col items-center justify-center py-12">
+                    <Lightbulb className="h-8 w-8 text-tertiary mb-2" />
+                    <p className="text-tertiary">
+                      No suggestions yet. Guests can suggest items from your registry page.
+                    </p>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="space-y-3">
+                  {suggestions
+                    .sort(
+                      (a, b) =>
+                        new Date(b.created_at).getTime() -
+                        new Date(a.created_at).getTime()
+                    )
+                    .map((suggestion) => {
+                      const isActioned = suggestion.status !== "pending";
+                      return (
+                        <Card
+                          key={suggestion.id}
+                          className={isActioned ? "opacity-50" : ""}
+                        >
+                          <CardContent className="p-4">
+                            <div className="flex items-start justify-between gap-4">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <span className="font-medium">
+                                    {suggestion.title}
+                                  </span>
+                                  <Badge
+                                    variant={
+                                      suggestion.status === "pending"
+                                        ? "secondary"
+                                        : suggestion.status === "accepted"
+                                          ? "default"
+                                          : "outline"
+                                    }
+                                    className="text-xs"
+                                  >
+                                    {suggestion.status === "pending"
+                                      ? "Pending"
+                                      : suggestion.status === "accepted"
+                                        ? "Added"
+                                        : "Declined"}
+                                  </Badge>
+                                </div>
+                                <div className="flex items-center gap-3 mt-1 text-xs text-tertiary">
+                                  <span>
+                                    Suggested by{" "}
+                                    <span className="font-medium text-primary">
+                                      {suggestion.suggested_by_name}
+                                    </span>
+                                  </span>
+                                  {suggestion.suggested_by_email && (
+                                    <span className="flex items-center gap-1">
+                                      <Mail className="h-3 w-3" />
+                                      {suggestion.suggested_by_email}
+                                    </span>
+                                  )}
+                                  <span>
+                                    {new Date(
+                                      suggestion.created_at
+                                    ).toLocaleDateString("en-US", {
+                                      month: "short",
+                                      day: "numeric",
+                                      year: "numeric",
+                                    })}
+                                  </span>
+                                </div>
+                                {suggestion.price && (
+                                  <p className="text-sm mt-1">
+                                    ${suggestion.price.toFixed(2)}
+                                  </p>
+                                )}
+                                {suggestion.external_url && (
+                                  <a
+                                    href={suggestion.external_url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-sm text-brand-600 hover:underline mt-1 inline-flex items-center gap-1"
+                                  >
+                                    <ExternalLink className="h-3 w-3" />
+                                    View product
+                                  </a>
+                                )}
+                                {suggestion.notes && (
+                                  <p className="mt-2 text-sm text-tertiary flex items-start gap-1">
+                                    <MessageSquare className="h-3 w-3 mt-0.5 shrink-0" />
+                                    &ldquo;{suggestion.notes}&rdquo;
+                                  </p>
+                                )}
+                              </div>
+                              {suggestion.status === "pending" && (
+                                <div className="flex gap-2 shrink-0">
+                                  <Button
+                                    size="sm"
+                                    onClick={() =>
+                                      handleAcceptSuggestion(suggestion)
+                                    }
+                                  >
+                                    <Plus className="h-3 w-3 mr-1" />
+                                    Add to registry
+                                  </Button>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() =>
+                                      handleDeclineSuggestion(suggestion.id)
+                                    }
+                                  >
+                                    Decline
+                                  </Button>
+                                </div>
+                              )}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
+                </div>
+              )}
             </>
           )}
         </div>
