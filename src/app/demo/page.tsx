@@ -523,7 +523,7 @@ export default function DemoPage() {
                               : ""
                         }`}
                       >
-                        <CardContent className="flex h-full flex-col justify-between gap-2 p-4">
+                        <CardContent className="flex h-full flex-col justify-between gap-4 p-4">
                           <div className="flex gap-3">
                             <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-md bg-secondary">
                               {item.image_url ? (
