@@ -18,6 +18,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
+import { Mail01 } from "@untitledui/icons";
 import { Input } from "@/components/base/input/input";
 import { TextArea } from "@/components/base/textarea/textarea";
 import {
@@ -91,9 +92,9 @@ function DemoReserveDialog({
           <span className="inline-flex items-center gap-1.5"><Gift className="h-4 w-4 shrink-0" />Mark as purchased</span>
         </Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent showCloseButton={false}>
         <DialogHeader>
-          <DialogTitle>Reserve &ldquo;{item.title}&rdquo;</DialogTitle>
+          <DialogTitle>Mark &ldquo;{item.title}&rdquo; as purchased</DialogTitle>
           <DialogDescription>
             This is a demo — no actual reservation is made. In the real app,
             this notifies the parents and prevents duplicate gifts.
@@ -103,29 +104,30 @@ function DemoReserveDialog({
           <Input
             label="Your Name"
             placeholder="Jane Doe"
-            defaultValue="Demo User"
             isRequired
           />
           <Input
             label="Your Email"
             type="email"
             placeholder="jane@example.com"
-            defaultValue="demo@example.com"
+            icon={Mail01}
             isRequired
           />
-          {remaining > 1 && (
+          {item.quantity_needed > 1 && (
             <Input
-              label={`Quantity (up to ${remaining})`}
+              label="Quantity"
               type="number"
               min={1}
               max={remaining}
               defaultValue="1"
+              isRequired
+              hint={`${remaining} of ${item.quantity_needed} still needed`}
             />
           )}
           <TextArea
             label="Message (optional)"
             placeholder="Congratulations!"
-            rows={2}
+            rows={3}
           />
           <div className="flex justify-end gap-2">
             <Button
@@ -135,7 +137,7 @@ function DemoReserveDialog({
             >
               Cancel
             </Button>
-            <Button type="submit">Reserve Item</Button>
+            <Button type="submit">I bought this item</Button>
           </div>
         </form>
       </DialogContent>
@@ -204,6 +206,7 @@ function DemoCoverItemDialog({
             label="Your Email"
             type="email"
             defaultValue="demo@example.com"
+            icon={Mail01}
             isRequired
           />
           <TextArea
@@ -316,6 +319,7 @@ function DemoContributeFundDialog({
             label="Your Email"
             type="email"
             defaultValue="demo@example.com"
+            icon={Mail01}
             isRequired
           />
           <TextArea
