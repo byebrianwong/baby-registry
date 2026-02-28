@@ -23,9 +23,10 @@ export interface CategoryNavItem {
 
 interface CategoryNavProps {
   categories: CategoryNavItem[];
+  suggestButton?: React.ReactNode;
 }
 
-export function CategoryNav({ categories }: CategoryNavProps) {
+export function CategoryNav({ categories, suggestButton }: CategoryNavProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -108,6 +109,12 @@ export function CategoryNav({ categories }: CategoryNavProps) {
             </div>
             <Separator />
             {navList}
+            {suggestButton && (
+              <>
+                <Separator />
+                {suggestButton}
+              </>
+            )}
           </div>
         )}
       </aside>
@@ -129,6 +136,11 @@ export function CategoryNav({ categories }: CategoryNavProps) {
             </SheetHeader>
             <div className="px-4 pb-4">
               {navList}
+              {suggestButton && (
+                <div className="mt-4">
+                  {suggestButton}
+                </div>
+              )}
             </div>
           </SheetContent>
         </Sheet>

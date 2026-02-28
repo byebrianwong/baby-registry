@@ -519,6 +519,43 @@ export async function contributeToCashFund(formData: FormData) {
   return { success: true, purchaseId: data };
 }
 
+export async function suggestItem(formData: FormData) {
+  const supabase = await createClient();
+
+  const registryId = formData.get("registryId") as string;
+  const title = formData.get("title") as string;
+  const externalUrl = formData.get("externalUrl") as string;
+  const price = formData.get("price") as string;
+  const notes = formData.get("notes") as string;
+  const suggestedByName = formData.get("suggestedByName") as string;
+  const suggestedByEmail = formData.get("suggestedByEmail") as string;
+
+  // Ensure the guest has at least an anonymous session
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    await supabase.auth.signInAnonymously();
+  }
+
+  const { error } = await supabase.from("suggestions").insert({
+    registry_id: registryId,
+    title,
+    external_url: externalUrl || null,
+    price: price ? parseFloat(price) : null,
+    notes: notes || null,
+    suggested_by_name: suggestedByName,
+    suggested_by_email: suggestedByEmail || null,
+  });
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  return { success: true };
+}
+
 export async function coverParentPurchasedItem(formData: FormData) {
   const supabase = await createClient();
 

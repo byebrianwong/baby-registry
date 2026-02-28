@@ -12,6 +12,7 @@ import {
   ArrowLeft,
   HandCoins,
   DollarSign,
+  Lightbulb,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -62,6 +63,106 @@ interface DemoCashFund {
   description: string | null;
   goal_amount: number;
   current_amount: number;
+}
+
+function DemoSuggestItemDialog() {
+  const [open, setOpen] = useState(false);
+  const [success, setSuccess] = useState(false);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setSuccess(true);
+  };
+
+  const handleOpenChange = (open: boolean) => {
+    setOpen(open);
+    if (!open) {
+      setSuccess(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogTrigger asChild>
+        <Button variant="outline" className="w-full">
+          <span className="inline-flex items-center gap-1.5">
+            <Lightbulb className="h-4 w-4 shrink-0" />
+            Suggest an Item
+          </span>
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        {success ? (
+          <>
+            <DialogHeader>
+              <DialogTitle>Thank you!</DialogTitle>
+              <DialogDescription>
+                Your suggestion has been sent to the parents. They&apos;ll
+                review it and decide whether to add it to their registry.
+              </DialogDescription>
+            </DialogHeader>
+            <Button onClick={() => setOpen(false)}>Done</Button>
+          </>
+        ) : (
+          <>
+            <DialogHeader>
+              <DialogTitle>Suggest an Item</DialogTitle>
+              <DialogDescription>
+                Know something the parents might love? Suggest it here and
+                they&apos;ll be notified.
+              </DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <Input
+                label="Item Name"
+                placeholder="e.g. Baby Monitor"
+                isRequired
+              />
+              <Input
+                label="Link (optional)"
+                type="url"
+                placeholder="https://example.com/item"
+              />
+              <Input
+                label="Estimated Price (optional)"
+                type="number"
+                step="0.01"
+                min={0}
+                placeholder="0.00"
+              />
+              <TextArea
+                label="Why do you recommend this?"
+                placeholder="I loved this for my baby..."
+                rows={3}
+              />
+              <Separator />
+              <Input
+                label="Your Name"
+                placeholder="Jane Doe"
+                isRequired
+              />
+              <Input
+                label="Your Email (optional)"
+                type="email"
+                placeholder="jane@example.com"
+                icon={Mail01}
+              />
+              <div className="flex justify-end gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit">Submit Suggestion</Button>
+              </div>
+            </form>
+          </>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
 }
 
 function DemoReserveDialog({
@@ -497,7 +598,7 @@ export default function DemoPage() {
       {/* Items */}
       <main className="container mx-auto px-4 py-8">
         <div className="flex gap-8 items-start">
-          {navItems.length > 1 && <CategoryNav categories={navItems} />}
+          {navItems.length > 1 && <CategoryNav categories={navItems} suggestButton={<DemoSuggestItemDialog />} />}
           <div className="flex-1 min-w-0 space-y-10">
           {/* Cash Funds */}
           <div id={getCategorySectionId("gift-funds")} className="scroll-mt-4">

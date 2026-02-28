@@ -61,6 +61,19 @@ export interface CashFund {
   updated_at: string;
 }
 
+export interface Suggestion {
+  id: string;
+  registry_id: string;
+  title: string;
+  external_url: string | null;
+  price: number | null;
+  notes: string | null;
+  suggested_by_name: string;
+  suggested_by_email: string | null;
+  status: "pending" | "accepted" | "declined";
+  created_at: string;
+}
+
 export interface Purchase {
   id: string;
   registry_item_id: string | null;
