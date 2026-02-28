@@ -22,14 +22,15 @@ import {
   FolderOpen,
   Pencil,
   Loader2,
-  Link as LinkIcon,
 } from "lucide-react";
+import { Link01 } from "@untitledui/icons";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input, InputBase } from "@/components/base/input/input";
+import { InputGroup, InputPrefix } from "@/components/base/input/input-group";
 import { Label } from "@/components/base/input/label";
 import { TextArea } from "@/components/base/textarea/textarea";
 import { Checkbox } from "@/components/base/checkbox/checkbox";
@@ -96,6 +97,7 @@ function DemoAddItemDialog({
   const [open, setOpen] = useState(false);
   const [scraping, setScraping] = useState(false);
   const [scrapeStatus, setScrapeStatus] = useState("");
+  const [openToUsed, setOpenToUsed] = useState(false);
   const urlRef = React.useRef<HTMLInputElement>(null);
   const titleRef = React.useRef<HTMLInputElement>(null);
   const priceRef = React.useRef<HTMLInputElement>(null);
@@ -169,16 +171,16 @@ function DemoAddItemDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) setScrapeStatus(""); }}>
+    <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setScrapeStatus(""); setOpenToUsed(false); } }}>
       <DialogTrigger asChild>
         <Button>
           <Plus className="mr-2 h-4 w-4" />
           Add Item
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg" showCloseButton={false}>
         <DialogHeader>
-          <DialogTitle>Add Item to Registry</DialogTitle>
+          <DialogTitle>Add item to registry</DialogTitle>
           <DialogDescription>
             This is a demo — paste a URL to see auto-fill in action.
           </DialogDescription>
@@ -186,19 +188,23 @@ function DemoAddItemDialog({
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1.5">
             <Label>Product URL</Label>
-            <div className="flex gap-2">
-              <InputBase
-                ref={urlRef}
-                name="externalUrl"
-                type="url"
-                placeholder="https://www.amazon.com/..."
-                onBlur={(e) => handleDemoScrape((e.target as HTMLInputElement).value)}
-                wrapperClassName="flex-1"
-              />
+            <div className="flex items-center gap-4">
+              <InputGroup
+                leadingAddon={<InputPrefix>http://</InputPrefix>}
+                className="flex-1"
+              >
+                <InputBase
+                  ref={urlRef}
+                  name="externalUrl"
+                  type="url"
+                  placeholder="www.untitledui.com"
+                  onBlur={(e) => handleDemoScrape((e.target as HTMLInputElement).value)}
+                />
+              </InputGroup>
               <Button
                 type="button"
-                variant="outline"
-                size="icon"
+                variant="ghost"
+                size="icon-lg"
                 disabled={scraping}
                 onClick={() => {
                   if (urlRef.current?.value) handleDemoScrape(urlRef.current.value);
@@ -206,9 +212,9 @@ function DemoAddItemDialog({
                 title="Fetch product details"
               >
                 {scraping ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <Loader2 className="h-6 w-6 animate-spin" />
                 ) : (
-                  <LinkIcon className="h-4 w-4" />
+                  <Link01 className="h-6 w-6" />
                 )}
               </Button>
             </div>
@@ -225,6 +231,12 @@ function DemoAddItemDialog({
             isRequired
           />
 
+          <Checkbox
+            name="isEssential"
+            value="true"
+            label="Mark as most wanted item"
+          />
+
           <Select
             name="categoryId"
             label="Category"
@@ -235,24 +247,32 @@ function DemoAddItemDialog({
             {(item) => <Select.Item id={item.id} label={item.label} />}
           </Select>
 
-          <Input
-            ref={imageUrlRef}
+          <InputGroup
             label="Image URL (optional)"
-            name="imageUrl"
-            type="url"
-            placeholder="https://..."
-          />
+            leadingAddon={<InputPrefix>http://</InputPrefix>}
+          >
+            <InputBase
+              ref={imageUrlRef}
+              name="imageUrl"
+              type="url"
+              placeholder="www.untitledui.com"
+            />
+          </InputGroup>
 
           <div className="grid grid-cols-2 gap-4">
-            <Input
-              ref={priceRef}
+            <InputGroup
               label="Price ($)"
-              name="price"
-              type="number"
-              step="0.01"
-              min={0}
-              placeholder="0.00"
-            />
+              prefix="$"
+            >
+              <InputBase
+                ref={priceRef}
+                name="price"
+                type="number"
+                step="0.01"
+                min={0}
+                placeholder="80.00"
+              />
+            </InputGroup>
             <Input
               label="Quantity"
               name="quantityNeeded"
@@ -263,16 +283,35 @@ function DemoAddItemDialog({
           </div>
 
           <Checkbox
-            name="isEssential"
+            name="isOpenToUsed"
             value="true"
-            label="Mark as essential item"
+            isSelected={openToUsed}
+            onChange={setOpenToUsed}
+            label="Mark as open to used condition item"
           />
+          {openToUsed && (
+            <div className="pl-6">
+              <Select
+                name="minimumCondition"
+                label="Minimum condition"
+                defaultSelectedKey="like-new"
+                items={[
+                  { id: "like-new", label: "Like new" },
+                  { id: "very-good", label: "Very good" },
+                  { id: "good", label: "Good" },
+                  { id: "acceptable", label: "Acceptable" },
+                ]}
+              >
+                {(item) => <Select.Item id={item.id} label={item.label} />}
+              </Select>
+            </div>
+          )}
 
           <TextArea
             label="Notes (optional)"
             name="notes"
-            placeholder="Any preferences for color, brand, etc."
-            rows={2}
+            placeholder="Enter a description..."
+            rows={3}
           />
 
           <div className="flex justify-end gap-2">
@@ -283,7 +322,7 @@ function DemoAddItemDialog({
             >
               Cancel
             </Button>
-            <Button type="submit">Add Item</Button>
+            <Button type="submit">Add item</Button>
           </div>
         </form>
       </DialogContent>
