@@ -253,9 +253,8 @@ function DemoContributeFundDialog({
 
   if (contributed) {
     return (
-      <Button size="sm" disabled variant="secondary">
-        <DollarSign className="mr-1 h-3 w-3" />
-        Contributed
+      <Button disabled variant="secondary">
+        <span className="inline-flex items-center gap-1.5"><DollarSign className="h-4 w-4 shrink-0" />Contributed</span>
       </Button>
     );
   }
@@ -263,9 +262,8 @@ function DemoContributeFundDialog({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="sm">
-          <DollarSign className="mr-1 h-3 w-3" />
-          Contribute
+        <Button>
+          <span className="inline-flex items-center gap-1.5"><DollarSign className="h-4 w-4 shrink-0" />Contribute</span>
         </Button>
       </DialogTrigger>
       <DialogContent>
@@ -462,22 +460,25 @@ export default function DemoPage() {
                     ? (fund.current_amount / fund.goal_amount) * 100
                     : 0;
                 return (
-                  <Card key={fund.id}>
-                    <CardContent className="p-6">
-                      <h3 className="font-semibold text-lg">
+                  <Card key={fund.id} className="py-0 gap-0 rounded-xl shadow-none">
+                    <CardContent className="flex flex-col gap-4 p-4">
+                      <h3 className="font-semibold text-2xl leading-8">
                         {fund.title}
                       </h3>
-                      <p className="mt-1 text-sm text-tertiary">
+                      <p className="text-sm text-tertiary">
                         {fund.description}
                       </p>
-                      <div className="mt-4">
-                        <div className="flex justify-between text-sm mb-1">
+                      <div className="flex flex-col gap-1">
+                        <div className="flex justify-between text-sm">
                           <span>${fund.current_amount} raised</span>
                           <span>${fund.goal_amount} goal</span>
                         </div>
                         <Progress value={fundProgress} />
+                        <span className="text-xs">
+                          ${Math.max(0, fund.goal_amount - fund.current_amount)} remaining
+                        </span>
                       </div>
-                      <div className="mt-4">
+                      <div className="flex justify-end">
                         <DemoContributeFundDialog
                           fund={fund}
                           onContribute={handleContribute}
