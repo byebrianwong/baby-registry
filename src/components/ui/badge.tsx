@@ -5,18 +5,18 @@ import { cn } from "@/lib/utils"
 type BadgeVariant = "default" | "secondary" | "destructive" | "outline" | "ghost" | "link"
 
 const baseStyles =
-  "inline-flex items-center justify-center rounded-full border border-transparent px-2 py-0.5 text-xs font-medium w-fit whitespace-nowrap shrink-0 [&>svg]:size-3 gap-1 [&>svg]:pointer-events-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive transition-[color,box-shadow] overflow-hidden"
+  "inline-flex items-center justify-center rounded-full border border-transparent px-2 py-0.5 text-xs font-medium w-fit whitespace-nowrap shrink-0 [&>svg]:size-3 gap-1 [&>svg]:pointer-events-none focus-visible:border-brand focus-visible:ring-brand/50 focus-visible:ring-[3px] aria-invalid:ring-error/20 dark:aria-invalid:ring-error/40 aria-invalid:border-error transition-[color,box-shadow] overflow-hidden"
 
 const variantStyles: Record<BadgeVariant, string> = {
-  default: "bg-primary text-primary-foreground [a&]:hover:bg-primary/90",
+  default: "bg-brand-solid text-white [a&]:hover:bg-brand-solid/90",
   secondary:
-    "bg-secondary text-secondary-foreground [a&]:hover:bg-secondary/90",
+    "bg-secondary text-secondary [a&]:hover:bg-secondary/90",
   destructive:
-    "bg-destructive text-white [a&]:hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/60",
+    "bg-error-600 text-white [a&]:hover:bg-error-600/90 focus-visible:ring-error/20 dark:focus-visible:ring-error/40",
   outline:
-    "border-border text-foreground [a&]:hover:bg-accent [a&]:hover:text-accent-foreground",
-  ghost: "[a&]:hover:bg-accent [a&]:hover:text-accent-foreground",
-  link: "text-primary underline-offset-4 [a&]:hover:underline",
+    "border-secondary text-primary [a&]:hover:bg-active [a&]:hover:text-primary",
+  ghost: "[a&]:hover:bg-active [a&]:hover:text-primary",
+  link: "text-brand-600 underline-offset-4 [a&]:hover:underline",
 }
 
 function badgeVariants({ variant = "default" }: { variant?: BadgeVariant } = {}) {

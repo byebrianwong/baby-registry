@@ -48,7 +48,7 @@ export function ItemCard({ item, registryId, isOwner }: ItemCardProps) {
         isFulfilled && !item.is_parent_purchased
           ? "opacity-60"
           : item.is_parent_purchased
-            ? "border-primary/30 bg-primary/5"
+            ? "border-brand-600/30 bg-brand-600/5"
             : ""
       }
     >
@@ -71,7 +71,7 @@ export function ItemCard({ item, registryId, isOwner }: ItemCardProps) {
               <h3 className="font-medium leading-tight">
                 {item.title}
                 {item.is_parent_purchased && (
-                  <Badge variant="outline" className="ml-2 border-primary/50 text-primary">
+                  <Badge variant="outline" className="ml-2 border-brand-600/50 text-brand-600">
                     You bought this
                   </Badge>
                 )}

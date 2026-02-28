@@ -1,7 +1,6 @@
 "use client"
 
 import * as React from "react"
-import { XIcon } from "lucide-react"
 import {
   Dialog as AriaDialog,
   Heading as AriaHeading,
@@ -10,6 +9,7 @@ import {
 } from "react-aria-components"
 
 import { cn } from "@/lib/utils"
+import { CloseButton } from "@/components/base/buttons/close-button"
 
 // ---- Sheet Context ----
 
@@ -172,39 +172,39 @@ function SheetContent({
       isDismissable
       className={(state) =>
         cn(
-          "fixed inset-0 z-50 bg-black/50",
-          state.isEntering && "animate-in fade-in-0 duration-300",
-          state.isExiting && "animate-out fade-out-0 duration-300"
+          "fixed inset-0 z-50 flex min-h-dvh w-full bg-overlay/70 outline-hidden ease-linear",
+          side === "right" && "items-center justify-end pl-6 md:pl-10",
+          side === "left" && "items-center justify-start pr-6 md:pr-10",
+          side === "top" && "items-start justify-center pb-6",
+          side === "bottom" && "items-end justify-center pt-6",
+          state.isEntering && "duration-300 animate-in fade-in",
+          state.isExiting && "duration-300 animate-out fade-out"
         )
       }
     >
       <AriaModal
         className={(state) =>
           cn(
-            "bg-background fixed z-50 flex flex-col gap-4 shadow-lg outline-none transition ease-in-out",
+            "bg-primary shadow-xl outline-none transition",
             sideStyles[side],
             state.isEntering &&
-              `animate-in ${sideEnterStyles[side]} duration-500`,
+              `duration-300 animate-in ${sideEnterStyles[side]}`,
             state.isExiting &&
-              `animate-out ${sideExitStyles[side]} duration-300`
+              `duration-300 animate-out ${sideExitStyles[side]}`
           )
         }
       >
         <AriaDialog
           data-slot="sheet-content"
-          className="flex size-full flex-col gap-4 outline-none"
+          className="relative flex size-full flex-col gap-4 overflow-y-auto bg-primary ring-1 ring-secondary_alt outline-none"
         >
           {children}
           {showCloseButton && (
-            <button
-              data-slot="sheet-close"
-              type="button"
-              className="ring-offset-background focus:ring-ring absolute top-4 right-4 cursor-pointer rounded-xs opacity-70 transition-opacity hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none"
-              onClick={() => onOpenChange(false)}
-            >
-              <XIcon className="size-4" />
-              <span className="sr-only">Close</span>
-            </button>
+            <CloseButton
+              size="sm"
+              className="absolute top-3 right-3 shrink-0"
+              onPress={() => onOpenChange(false)}
+            />
           )}
         </AriaDialog>
       </AriaModal>
@@ -228,7 +228,7 @@ function SheetFooter({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="sheet-footer"
-      className={cn("mt-auto flex flex-col gap-2 p-4", className)}
+      className={cn("mt-auto flex flex-col gap-2 p-4 shadow-[inset_0px_1px_0px_0px] shadow-border-secondary", className)}
       {...props}
     />
   )
@@ -242,7 +242,7 @@ function SheetTitle({
     <AriaHeading
       slot="title"
       data-slot="sheet-title"
-      className={cn("text-foreground font-semibold", className)}
+      className={cn("text-primary font-semibold", className)}
       {...(props as Record<string, unknown>)}
     />
   )
@@ -255,7 +255,7 @@ function SheetDescription({
   return (
     <p
       data-slot="sheet-description"
-      className={cn("text-muted-foreground text-sm", className)}
+      className={cn("text-tertiary text-sm", className)}
       {...props}
     />
   )

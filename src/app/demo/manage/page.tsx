@@ -337,7 +337,7 @@ function DemoItemCard({
         isFulfilled && !item.is_parent_purchased
           ? "opacity-60"
           : item.is_parent_purchased
-            ? "border-primary/30 bg-primary/5"
+            ? "border-brand-600/30 bg-brand-600/5"
             : ""
       }
     >
@@ -362,7 +362,7 @@ function DemoItemCard({
                 {item.is_parent_purchased && (
                   <Badge
                     variant="outline"
-                    className="ml-2 border-primary/50 text-primary"
+                    className="ml-2 border-brand-600/50 text-brand-600"
                   >
                     You bought this
                   </Badge>
@@ -814,8 +814,8 @@ export default function DemoManagePage() {
               onClick={() => setActiveTab("items")}
               className={`pb-2 text-sm font-medium border-b-2 transition-colors ${
                 activeTab === "items"
-                  ? "border-primary text-foreground"
-                  : "border-transparent text-muted-foreground hover:text-foreground"
+                  ? "border-brand-600 text-primary"
+                  : "border-transparent text-tertiary hover:text-primary"
               }`}
             >
               Items ({totalItems})
@@ -824,8 +824,8 @@ export default function DemoManagePage() {
               onClick={() => setActiveTab("purchases")}
               className={`pb-2 text-sm font-medium border-b-2 transition-colors ${
                 activeTab === "purchases"
-                  ? "border-primary text-foreground"
-                  : "border-transparent text-muted-foreground hover:text-foreground"
+                  ? "border-brand-600 text-primary"
+                  : "border-transparent text-tertiary hover:text-primary"
               }`}
             >
               Gift Activity ({purchases.length})

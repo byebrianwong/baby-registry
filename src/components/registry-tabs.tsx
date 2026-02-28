@@ -24,8 +24,8 @@ export function RegistryTabs({
           onClick={() => setActiveTab("items")}
           className={`pb-2 text-sm font-medium border-b-2 transition-colors ${
             activeTab === "items"
-              ? "border-primary text-foreground"
-              : "border-transparent text-muted-foreground hover:text-foreground"
+              ? "border-brand-600 text-primary"
+              : "border-transparent text-tertiary hover:text-primary"
           }`}
         >
           Items ({totalItems})
@@ -34,8 +34,8 @@ export function RegistryTabs({
           onClick={() => setActiveTab("purchases")}
           className={`pb-2 text-sm font-medium border-b-2 transition-colors ${
             activeTab === "purchases"
-              ? "border-primary text-foreground"
-              : "border-transparent text-muted-foreground hover:text-foreground"
+              ? "border-brand-600 text-primary"
+              : "border-transparent text-tertiary hover:text-primary"
           }`}
         >
           Gift Activity ({purchaseCount})

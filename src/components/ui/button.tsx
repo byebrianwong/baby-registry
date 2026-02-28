@@ -1,42 +1,63 @@
-import * as React from "react"
+"use client"
 
+import * as React from "react"
+import {
+  Button as UntitledButton,
+  type ButtonProps as UntitledButtonProps,
+  type Props as UntitledProps,
+  styles as untitledStyles,
+} from "@/components/base/buttons/button"
 import { cn } from "@/lib/utils"
+import { cx } from "@/lib/utils/cx"
 
 type ButtonVariant = "default" | "destructive" | "outline" | "secondary" | "ghost" | "link"
 type ButtonSize = "default" | "xs" | "sm" | "lg" | "icon" | "icon-xs" | "icon-sm" | "icon-lg"
 
-const baseStyles =
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive"
-
-const variantStyles: Record<ButtonVariant, string> = {
-  default: "bg-primary text-primary-foreground hover:bg-primary/90",
-  destructive:
-    "bg-destructive text-white hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/60",
-  outline:
-    "border bg-background shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50",
-  secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
-  ghost:
-    "hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50",
-  link: "text-primary underline-offset-4 hover:underline",
+const variantMap: Record<ButtonVariant, UntitledProps["color"]> = {
+  default: "primary",
+  destructive: "primary-destructive",
+  outline: "secondary",
+  secondary: "secondary",
+  ghost: "tertiary",
+  link: "link-color",
 }
 
-const sizeStyles: Record<ButtonSize, string> = {
-  default: "h-9 px-4 py-2 has-[>svg]:px-3",
-  xs: "h-6 gap-1 rounded-md px-2 text-xs has-[>svg]:px-1.5 [&_svg:not([class*='size-'])]:size-3",
-  sm: "h-8 rounded-md gap-1.5 px-3 has-[>svg]:px-2.5",
-  lg: "h-10 rounded-md px-6 has-[>svg]:px-4",
-  icon: "size-9",
-  "icon-xs": "size-6 rounded-md [&_svg:not([class*='size-'])]:size-3",
-  "icon-sm": "size-8",
-  "icon-lg": "size-10",
+const sizeMap: Record<ButtonSize, UntitledProps["size"]> = {
+  default: "sm",
+  xs: "sm",
+  sm: "sm",
+  lg: "md",
+  icon: "sm",
+  "icon-xs": "sm",
+  "icon-sm": "sm",
+  "icon-lg": "md",
 }
 
+// Extra size overrides not covered by Untitled UI sizes
+const sizeOverrides: Partial<Record<ButtonSize, string>> = {
+  xs: "!h-6 !gap-1 !rounded-md !px-2 !text-xs !py-0 [&_svg:not([class*='size-'])]:!size-3",
+  "icon-xs": "!size-6 !rounded-md !p-0 [&_svg:not([class*='size-'])]:!size-3",
+}
+
+/**
+ * Generate button class names without rendering (for use with asChild on non-button elements)
+ */
 function buttonVariants({
   variant = "default",
   size = "default",
   className,
 }: { variant?: ButtonVariant; size?: ButtonSize; className?: string } = {}) {
-  return cn(baseStyles, variantStyles[variant], sizeStyles[size], className)
+  const utColor = variantMap[variant]
+  const utSize = sizeMap[size]
+  const isIconSize = size === "icon" || size === "icon-xs" || size === "icon-sm" || size === "icon-lg"
+  return cx(
+    untitledStyles.common.root,
+    untitledStyles.sizes[utSize!].root,
+    untitledStyles.colors[utColor!].root,
+    isIconSize && "aspect-square p-0",
+    sizeOverrides[size],
+    className,
+  )
 }
 
 function Button({
@@ -44,36 +65,69 @@ function Button({
   variant = "default",
   size = "default",
   asChild = false,
+  disabled,
+  children,
   ...props
-}: React.ComponentProps<"button"> &  {
+}: React.ComponentProps<"button"> & {
   variant?: ButtonVariant
   size?: ButtonSize
   asChild?: boolean
 }) {
-  const classes = buttonVariants({ variant, size, className })
+  const utColor = variantMap[variant]
+  const utSize = sizeMap[size]
+  const isIconSize = size === "icon" || size === "icon-xs" || size === "icon-sm" || size === "icon-lg"
 
-  if (asChild) {
-    const child = React.Children.only(props.children)
-    if (React.isValidElement<Record<string, unknown>>(child)) {
-      const { children: _, ...restProps } = props
-      return React.cloneElement(child, {
-        ...restProps,
-        "data-slot": "button",
-        "data-variant": variant,
-        "data-size": size,
-        className: cn(classes, child.props.className as string | undefined),
-      } as Record<string, unknown>)
+  // asChild: extract href from Link child and pass to Untitled UI Button's href prop
+  if (asChild && React.isValidElement(children)) {
+    const childProps = children.props as Record<string, unknown>
+    const href = childProps.href as string | undefined
+
+    if (href) {
+      // Render as Untitled UI link-button using href
+      const childChildren = childProps.children as React.ReactNode
+      return (
+        <UntitledButton
+          href={href}
+          color={utColor}
+          size={utSize}
+          isDisabled={disabled}
+          className={cn(
+            isIconSize && "aspect-square p-0",
+            sizeOverrides[size],
+            className,
+          )}
+        >
+          {childChildren}
+        </UntitledButton>
+      )
     }
+
+    // Non-link asChild: clone the child with button styles
+    const classes = buttonVariants({ variant, size, className })
+    return React.cloneElement(children as React.ReactElement<Record<string, unknown>>, {
+      "data-slot": "button",
+      className: cn(classes, childProps.className as string | undefined),
+    } as Record<string, unknown>)
   }
 
+  // Regular button rendering via Untitled UI Button
+  const { type = "button", onClick, ...rest } = props
   return (
-    <button
-      data-slot="button"
-      data-variant={variant}
-      data-size={size}
-      className={classes}
-      {...props}
-    />
+    <UntitledButton
+      color={utColor}
+      size={utSize}
+      isDisabled={disabled}
+      type={type}
+      className={cn(
+        isIconSize && "aspect-square p-0",
+        sizeOverrides[size],
+        className,
+      )}
+      onClick={onClick as UntitledButtonProps["onClick"]}
+      {...(rest as Omit<UntitledButtonProps, "color" | "size" | "isDisabled" | "type" | "onClick" | "className">)}
+    >
+      {children}
+    </UntitledButton>
   )
 }
 

@@ -43,7 +43,7 @@ export default function LoginPage() {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <Link href="/" className="mx-auto flex items-center gap-2 font-semibold mb-4">
-            <Baby className="h-6 w-6 text-primary" />
+            <Baby className="h-6 w-6 text-brand-600" />
             <span className="text-xl">Baby Akachan</span>
           </Link>
           <CardTitle className="text-2xl">Welcome back</CardTitle>
@@ -81,7 +81,7 @@ export default function LoginPage() {
           </form>
           <p className="mt-4 text-center text-sm text-muted-foreground">
             Don&apos;t have an account?{" "}
-            <Link href="/signup" className="text-primary underline-offset-4 hover:underline">
+            <Link href="/signup" className="text-brand-600 underline-offset-4 hover:underline">
               Sign up
             </Link>
           </p>

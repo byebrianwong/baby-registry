@@ -84,13 +84,13 @@ function SelectValue({
     <AriaSelectValue
       data-slot="select-value"
       className={cn(
-        "flex items-center gap-2 truncate data-[placeholder]:text-muted-foreground",
+        "flex items-center gap-2 truncate data-[placeholder]:text-placeholder",
         className
       )}
     >
       {({ selectedText }) =>
         selectedText || (
-          <span className="text-muted-foreground">{placeholder}</span>
+          <span className="text-placeholder">{placeholder}</span>
         )
       }
     </AriaSelectValue>
@@ -112,12 +112,14 @@ function SelectTrigger({
       data-slot="select-trigger"
       data-size={size}
       className={cn(
-        "border-input focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:bg-input/30 dark:hover:bg-input/50 flex w-fit items-center justify-between gap-2 rounded-md border bg-transparent px-3 py-2 text-sm whitespace-nowrap shadow-xs transition-[color,box-shadow] outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50 data-[size=default]:h-9 data-[size=sm]:h-8 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+        "flex w-fit items-center justify-between gap-2 rounded-lg bg-primary px-3 py-2 text-sm text-primary whitespace-nowrap shadow-xs ring-1 ring-primary ring-inset transition-[color,box-shadow] outline-none disabled:cursor-not-allowed disabled:bg-disabled_subtle disabled:ring-disabled data-[size=default]:h-9 data-[size=sm]:h-8 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+        "focus-visible:ring-2 focus-visible:ring-brand",
+        "aria-invalid:ring-error_subtle aria-invalid:focus-visible:ring-error",
         className
       )}
     >
       {children}
-      <ChevronDownIcon className="size-4 opacity-50" />
+      <ChevronDownIcon className="size-4 text-fg-quaternary" />
     </AriaButton>
   )
 }
@@ -138,7 +140,7 @@ function SelectContent({
       data-slot="select-content"
       className={(state) =>
         cn(
-          "bg-popover text-popover-foreground z-50 min-w-[var(--trigger-width)] overflow-y-auto rounded-md border p-1 shadow-md",
+          "bg-primary text-primary z-50 min-w-[var(--trigger-width)] overflow-y-auto rounded-lg border border-secondary p-1 shadow-lg",
           state.isEntering &&
             "animate-in fade-in-0 zoom-in-95 duration-200",
           state.isExiting &&
@@ -161,7 +163,7 @@ function SelectLabel({
   return (
     <span
       data-slot="select-label"
-      className={cn("text-muted-foreground px-2 py-1.5 text-xs", className)}
+      className={cn("text-tertiary px-2 py-1.5 text-xs", className)}
       {...props}
     />
   )
@@ -187,8 +189,8 @@ function SelectItem({
       data-slot="select-item"
       className={(state) =>
         cn(
-          "relative flex w-full cursor-default items-center gap-2 rounded-sm py-1.5 pr-8 pl-2 text-sm outline-hidden select-none",
-          state.isFocused && "bg-accent text-accent-foreground",
+          "relative flex w-full cursor-default items-center gap-2 rounded-md py-1.5 pr-8 pl-2 text-sm text-primary outline-hidden select-none",
+          state.isFocused && "bg-active",
           state.isDisabled && "pointer-events-none opacity-50",
           typeof className === "string" ? className : undefined
         )
@@ -197,7 +199,7 @@ function SelectItem({
       {(state) => (
         <>
           <span className="absolute right-2 flex size-3.5 items-center justify-center">
-            {state.isSelected && <CheckIcon className="size-4" />}
+            {state.isSelected && <CheckIcon className="size-4 text-fg-brand-primary" />}
           </span>
           {children}
         </>
@@ -216,7 +218,7 @@ function SelectSeparator({
     <div
       data-slot="select-separator"
       className={cn(
-        "bg-border pointer-events-none -mx-1 my-1 h-px",
+        "bg-border-secondary pointer-events-none -mx-1 my-1 h-px",
         className
       )}
       {...props}

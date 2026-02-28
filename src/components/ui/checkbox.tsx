@@ -11,11 +11,11 @@ function Checkbox({
   return (
     <span
       className={cn(
-        "group/checkbox relative inline-grid size-4 shrink-0 place-content-center rounded-[4px] border border-input shadow-xs transition-shadow dark:bg-input/30",
-        "has-[:checked]:bg-primary has-[:checked]:border-primary has-[:checked]:text-primary-foreground dark:has-[:checked]:bg-primary",
-        "has-[:focus-visible]:border-ring has-[:focus-visible]:ring-ring/50 has-[:focus-visible]:ring-[3px]",
+        "group/checkbox relative inline-grid size-4 shrink-0 place-content-center rounded-[4px] shadow-xs ring-1 ring-primary ring-inset transition-shadow",
+        "has-[:checked]:bg-brand-solid has-[:checked]:ring-bg-brand-solid has-[:checked]:text-white",
+        "has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-brand",
         "has-[:disabled]:cursor-not-allowed has-[:disabled]:opacity-50",
-        "aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive",
+        "has-[:invalid]:ring-error_subtle has-[:invalid]:has-[:focus-visible]:ring-error",
         className
       )}
     >

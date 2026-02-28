@@ -1,7 +1,6 @@
 "use client"
 
 import * as React from "react"
-import { XIcon } from "lucide-react"
 import {
   Dialog as AriaDialog,
   Heading as AriaHeading,
@@ -10,6 +9,7 @@ import {
 } from "react-aria-components"
 
 import { cn } from "@/lib/utils"
+import { CloseButton } from "@/components/base/buttons/close-button"
 import { Button } from "@/components/ui/button"
 
 // ---- Dialog Context ----
@@ -148,41 +148,37 @@ function DialogContent({
       isDismissable
       className={(state) =>
         cn(
-          "fixed inset-0 z-50 bg-black/50",
-          state.isEntering && "animate-in fade-in-0 duration-200",
-          state.isExiting && "animate-out fade-out-0 duration-200"
+          "fixed inset-0 z-50 flex min-h-dvh w-full items-end justify-center overflow-y-auto bg-overlay/70 px-4 pt-4 pb-[clamp(16px,8vh,64px)] outline-hidden backdrop-blur-[6px] sm:items-center sm:justify-center sm:p-8",
+          state.isEntering && "duration-300 ease-out animate-in fade-in",
+          state.isExiting && "duration-200 ease-in animate-out fade-out"
         )
       }
     >
       <AriaModal
         className={(state) =>
           cn(
-            "fixed top-[50%] left-[50%] z-50 w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] outline-none sm:max-w-lg",
+            "max-h-full w-full max-w-[calc(100%-2rem)] outline-hidden max-sm:overflow-y-auto max-sm:rounded-xl sm:max-w-lg",
             state.isEntering &&
-              "animate-in fade-in-0 zoom-in-95 duration-200",
+              "duration-300 ease-out animate-in zoom-in-95",
             state.isExiting &&
-              "animate-out fade-out-0 zoom-out-95 duration-200"
+              "duration-200 ease-in animate-out zoom-out-95"
           )
         }
       >
         <AriaDialog
           data-slot="dialog-content"
           className={cn(
-            "bg-background relative grid gap-4 rounded-lg border p-6 shadow-lg outline-none",
+            "bg-primary relative grid gap-4 rounded-lg border border-secondary p-6 shadow-lg outline-none",
             className
           )}
         >
           {children}
           {showCloseButton && (
-            <button
-              data-slot="dialog-close"
-              type="button"
-              className="ring-offset-background focus:ring-ring absolute top-4 right-4 cursor-pointer rounded-xs opacity-70 transition-opacity hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4"
-              onClick={() => onOpenChange(false)}
-            >
-              <XIcon />
-              <span className="sr-only">Close</span>
-            </button>
+            <CloseButton
+              size="sm"
+              className="absolute top-3 right-3"
+              onPress={() => onOpenChange(false)}
+            />
           )}
         </AriaDialog>
       </AriaModal>
@@ -253,7 +249,7 @@ function DialogDescription({
   return (
     <p
       data-slot="dialog-description"
-      className={cn("text-muted-foreground text-sm", className)}
+      className={cn("text-tertiary text-sm", className)}
       {...props}
     />
   )

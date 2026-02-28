@@ -250,7 +250,7 @@ export default async function PublicRegistryPage({
                             isFulfilled && !item.is_parent_purchased
                               ? "opacity-50"
                               : item.is_parent_purchased
-                                ? "border-primary/30 bg-primary/5"
+                                ? "border-brand-600/30 bg-brand-600/5"
                                 : ""
                           }
                         >
@@ -304,7 +304,7 @@ export default async function PublicRegistryPage({
                             <div className="mt-3 flex items-center gap-2">
                               {item.is_parent_purchased ? (
                                 <>
-                                  <Badge variant="outline" className="border-primary/50 text-primary text-xs">
+                                  <Badge variant="outline" className="border-brand-600/50 text-brand-600 text-xs">
                                     Bought by parent
                                   </Badge>
                                   <CoverItemDialog
@@ -356,7 +356,7 @@ export default async function PublicRegistryPage({
                           isFulfilled && !item.is_parent_purchased
                             ? "opacity-50"
                             : item.is_parent_purchased
-                              ? "border-primary/30 bg-primary/5"
+                              ? "border-brand-600/30 bg-brand-600/5"
                               : ""
                         }
                       >
@@ -370,7 +370,7 @@ export default async function PublicRegistryPage({
                           <div className="mt-2">
                             {item.is_parent_purchased ? (
                               <>
-                                <Badge variant="outline" className="border-primary/50 text-primary text-xs">
+                                <Badge variant="outline" className="border-brand-600/50 text-brand-600 text-xs">
                                   Bought by parent
                                 </Badge>
                                 <CoverItemDialog

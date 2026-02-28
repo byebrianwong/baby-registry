@@ -26,7 +26,7 @@ function DropdownMenuContent({ className, children, sideOffset, ...props }: Reac
     <div
       data-slot="dropdown-menu-content"
       className={cn(
-        "bg-popover text-popover-foreground z-50 min-w-[8rem] overflow-hidden rounded-md border p-1 shadow-md",
+        "bg-primary text-primary z-50 min-w-[8rem] overflow-hidden rounded-md border p-1 shadow-md",
         className
       )}
       {...props}
@@ -52,7 +52,7 @@ function DropdownMenuItem({
       data-inset={inset}
       data-variant={variant}
       className={cn(
-        "focus:bg-accent focus:text-accent-foreground relative flex cursor-default items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-hidden select-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50 data-[inset]:pl-8",
+        "focus:bg-active focus:text-primary relative flex cursor-default items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-hidden select-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50 data-[inset]:pl-8",
         className
       )}
       {...props}
@@ -65,7 +65,7 @@ function DropdownMenuCheckboxItem({ className, children, checked, ...props }: Re
     <div
       data-slot="dropdown-menu-checkbox-item"
       className={cn(
-        "focus:bg-accent focus:text-accent-foreground relative flex cursor-default items-center gap-2 rounded-sm py-1.5 pr-2 pl-8 text-sm outline-hidden select-none",
+        "focus:bg-active focus:text-primary relative flex cursor-default items-center gap-2 rounded-sm py-1.5 pr-2 pl-8 text-sm outline-hidden select-none",
         className
       )}
       {...props}
@@ -87,7 +87,7 @@ function DropdownMenuRadioItem({ className, children, ...props }: React.Componen
     <div
       data-slot="dropdown-menu-radio-item"
       className={cn(
-        "focus:bg-accent focus:text-accent-foreground relative flex cursor-default items-center gap-2 rounded-sm py-1.5 pr-2 pl-8 text-sm outline-hidden select-none",
+        "focus:bg-active focus:text-primary relative flex cursor-default items-center gap-2 rounded-sm py-1.5 pr-2 pl-8 text-sm outline-hidden select-none",
         className
       )}
       {...props}
@@ -112,7 +112,7 @@ function DropdownMenuSeparator({ className, ...props }: React.ComponentProps<"di
   return (
     <div
       data-slot="dropdown-menu-separator"
-      className={cn("bg-border -mx-1 my-1 h-px", className)}
+      className={cn("bg-border-secondary -mx-1 my-1 h-px", className)}
       {...props}
     />
   )
@@ -122,7 +122,7 @@ function DropdownMenuShortcut({ className, ...props }: React.ComponentProps<"spa
   return (
     <span
       data-slot="dropdown-menu-shortcut"
-      className={cn("text-muted-foreground ml-auto text-xs tracking-widest", className)}
+      className={cn("text-tertiary ml-auto text-xs tracking-widest", className)}
       {...props}
     />
   )
@@ -154,7 +154,7 @@ function DropdownMenuSubContent({ className, ...props }: React.ComponentProps<"d
     <div
       data-slot="dropdown-menu-sub-content"
       className={cn(
-        "bg-popover text-popover-foreground z-50 min-w-[8rem] overflow-hidden rounded-md border p-1 shadow-lg",
+        "bg-primary text-primary z-50 min-w-[8rem] overflow-hidden rounded-md border p-1 shadow-lg",
         className
       )}
       {...props}
