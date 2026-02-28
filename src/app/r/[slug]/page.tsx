@@ -13,6 +13,7 @@ import type { PaymentMethods } from "@/lib/types";
 import type { Metadata } from "next";
 import { CategoryNav, type CategoryNavItem } from "@/components/category-nav";
 import { getCategorySectionId } from "@/lib/category-section-id";
+import { ScrollToTop } from "@/components/scroll-to-top";
 
 interface RegistryItem {
   id: string;
@@ -436,6 +437,8 @@ export default async function PublicRegistryPage({
           </a>
         </div>
       </footer>
+
+      <ScrollToTop />
     </div>
   );
 }

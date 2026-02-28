@@ -33,6 +33,7 @@ import {
 import { PaymentMethodsDisplay } from "@/components/payment-methods-display";
 import { CategoryNav, type CategoryNavItem } from "@/components/category-nav";
 import { getCategorySectionId } from "@/lib/category-section-id";
+import { ScrollToTop } from "@/components/scroll-to-top";
 import {
   DEMO_REGISTRY,
   DEMO_CATEGORIES,
@@ -680,6 +681,8 @@ export default function DemoPage() {
           </Link>
         </div>
       </footer>
+
+      <ScrollToTop />
     </div>
   );
 }
