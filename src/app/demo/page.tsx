@@ -119,7 +119,7 @@ function DemoReserveDialog({
               type="number"
               min={1}
               max={remaining}
-              defaultValue="1"
+              placeholder="1"
               isRequired
               hint={`${remaining} of ${item.quantity_needed} still needed`}
             />
@@ -154,6 +154,7 @@ function DemoCoverItemDialog({
 }) {
   const [open, setOpen] = useState(false);
   const [covered, setCovered] = useState(false);
+  const remaining = item.quantity_needed - item.quantity_fulfilled;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -176,7 +177,7 @@ function DemoCoverItemDialog({
           <span className="inline-flex items-center gap-1.5"><HandCoins className="h-4 w-4 shrink-0" />Cover the cost</span>
         </Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent showCloseButton={false}>
         <DialogHeader>
           <DialogTitle>Cover &ldquo;{item.title}&rdquo;</DialogTitle>
           <DialogDescription>
@@ -186,33 +187,43 @@ function DemoCoverItemDialog({
           </DialogDescription>
         </DialogHeader>
 
-        {item.price && (
-          <p className="text-lg font-semibold">${item.price.toFixed(2)}</p>
-        )}
-
-        <PaymentMethodsDisplay
-          paymentMethods={DEMO_REGISTRY.settings.payment_methods}
-        />
-
-        <Separator />
+        <div className="flex flex-col gap-2 overflow-hidden rounded-xl px-4">
+          {item.price && (
+            <p className="text-lg font-semibold">${item.price.toFixed(2)}</p>
+          )}
+          <PaymentMethodsDisplay
+            paymentMethods={DEMO_REGISTRY.settings.payment_methods}
+          />
+        </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <Input
             label="Your Name"
-            defaultValue="Demo User"
+            placeholder="Jane Doe"
             isRequired
           />
           <Input
             label="Your Email"
             type="email"
-            defaultValue="demo@example.com"
+            placeholder="jane@example.com"
             icon={Mail01}
             isRequired
           />
+          {item.quantity_needed > 1 && (
+            <Input
+              label="Quantity"
+              type="number"
+              min={1}
+              max={remaining}
+              placeholder="1"
+              isRequired
+              hint={`${remaining} of ${item.quantity_needed} still needed`}
+            />
+          )}
           <TextArea
             label="Message (optional)"
-            placeholder="Happy to help!"
-            rows={2}
+            placeholder="Congratulations!"
+            rows={3}
           />
           <div className="flex justify-end gap-2">
             <Button
@@ -222,7 +233,7 @@ function DemoCoverItemDialog({
             >
               Cancel
             </Button>
-            <Button type="submit">I&apos;ll Cover This</Button>
+            <Button type="submit">I&apos;ll cover this</Button>
           </div>
         </form>
       </DialogContent>
