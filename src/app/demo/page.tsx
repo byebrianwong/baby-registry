@@ -13,16 +13,21 @@ import {
   HandCoins,
   DollarSign,
   Lightbulb,
+  Loader2,
+  ChevronDown,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
-import { Mail01 } from "@untitledui/icons";
+import { Link01, Mail01 } from "@untitledui/icons";
 import { Input, InputBase } from "@/components/base/input/input";
 import { InputGroup, InputPrefix } from "@/components/base/input/input-group";
+import { Label } from "@/components/base/input/label";
 import { TextArea } from "@/components/base/textarea/textarea";
+import { Checkbox } from "@/components/base/checkbox/checkbox";
+import { Select } from "@/components/base/select/select";
 import {
   Dialog,
   DialogContent,
@@ -91,7 +96,7 @@ function DemoSuggestItemDialog() {
           </span>
         </Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg" showCloseButton={false}>
         {success ? (
           <>
             <DialogHeader>
@@ -106,7 +111,7 @@ function DemoSuggestItemDialog() {
         ) : (
           <>
             <DialogHeader>
-              <DialogTitle>Suggest an Item</DialogTitle>
+              <DialogTitle>Suggest an item</DialogTitle>
               <DialogDescription>
                 Know something the parents might love? Suggest it here and
                 they&apos;ll be notified.
@@ -118,35 +123,97 @@ function DemoSuggestItemDialog() {
                 placeholder="e.g. Baby Monitor"
                 isRequired
               />
-              <Input
-                label="Link (optional)"
-                type="url"
-                placeholder="https://example.com/item"
+
+              <Checkbox
+                value="true"
+                label="Mark as available to gift"
               />
-              <Input
-                label="Estimated Price (optional)"
-                type="number"
-                step="0.01"
-                min={0}
-                placeholder="0.00"
-              />
+
+              <div className="space-y-1.5">
+                <Label>Product URL (optional)</Label>
+                <div className="flex items-center gap-4">
+                  <InputGroup
+                    leadingAddon={<InputPrefix>http://</InputPrefix>}
+                    className="flex-1"
+                  >
+                    <InputBase
+                      type="url"
+                      placeholder="www.untitledui.com"
+                    />
+                  </InputGroup>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-lg"
+                    title="Open link"
+                  >
+                    <Link01 className="h-6 w-6" />
+                  </Button>
+                </div>
+              </div>
+
+              <Select
+                label="Category"
+                placeholder="Select a category"
+                items={DEMO_CATEGORIES.map((cat) => ({ id: cat.id, label: cat.name }))}
+              >
+                {(item) => <Select.Item id={item.id} label={item.label} />}
+              </Select>
+
+              <div className="grid grid-cols-2 gap-4">
+                <InputGroup
+                  label="Estimated price (optional)"
+                  prefix="$"
+                  trailingAddon={
+                    <InputPrefix position="trailing">
+                      <span className="relative inline-flex items-center">
+                        <select className="appearance-none bg-transparent pr-5 text-primary outline-none cursor-pointer">
+                          <option>USD</option>
+                          <option>EUR</option>
+                          <option>GBP</option>
+                          <option>JPY</option>
+                          <option>CAD</option>
+                          <option>AUD</option>
+                        </select>
+                        <ChevronDown className="pointer-events-none absolute right-0 h-4 w-4 text-tertiary" />
+                      </span>
+                    </InputPrefix>
+                  }
+                >
+                  <InputBase
+                    type="number"
+                    step="0.01"
+                    min={0}
+                    placeholder="0.00"
+                  />
+                </InputGroup>
+                <Input
+                  label="Quantity"
+                  type="number"
+                  min={1}
+                  defaultValue="1"
+                />
+              </div>
+
               <TextArea
-                label="Why do you recommend this?"
-                placeholder="I loved this for my baby..."
+                label="Why do you recommend this? (optional)"
+                placeholder="Enter a description..."
                 rows={3}
               />
-              <Separator />
+
               <Input
                 label="Your Name"
                 placeholder="Jane Doe"
                 isRequired
               />
               <Input
-                label="Your Email (optional)"
+                label="Your Email"
                 type="email"
                 placeholder="jane@example.com"
                 icon={Mail01}
+                isRequired
               />
+
               <div className="flex justify-end gap-2">
                 <Button
                   type="button"
@@ -155,7 +222,7 @@ function DemoSuggestItemDialog() {
                 >
                   Cancel
                 </Button>
-                <Button type="submit">Submit Suggestion</Button>
+                <Button type="submit">Suggest item</Button>
               </div>
             </form>
           </>
@@ -417,23 +484,16 @@ function DemoContributeFundDialog({
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <InputGroup
+          <Input
             label="Amount"
-            prefix="$"
+            name="amount"
+            type="number"
+            step="0.01"
+            min={1}
+            max={remaining}
+            placeholder="0.00"
             isRequired
-            trailingAddon={
-              <InputPrefix position="trailing">USD</InputPrefix>
-            }
-          >
-            <InputBase
-              name="amount"
-              type="number"
-              step="0.01"
-              min={1}
-              max={remaining}
-              placeholder="0.00"
-            />
-          </InputGroup>
+          />
           <Input
             label="Your Name"
             placeholder="Jane Doe"
