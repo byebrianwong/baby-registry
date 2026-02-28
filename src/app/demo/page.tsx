@@ -78,9 +78,8 @@ function DemoReserveDialog({
 
   if (reserved) {
     return (
-      <Button size="sm" disabled variant="secondary">
-        <Check className="mr-1 h-3 w-3" />
-        Reserved
+      <Button disabled variant="secondary">
+        <span className="inline-flex items-center gap-1.5"><Check className="h-4 w-4 shrink-0" />Reserved</span>
       </Button>
     );
   }
@@ -88,9 +87,8 @@ function DemoReserveDialog({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="sm">
-          <Gift className="mr-1 h-3 w-3" />
-          I&apos;ll Get This
+        <Button>
+          <span className="inline-flex items-center gap-1.5"><Gift className="h-4 w-4 shrink-0" />I&apos;ll get this</span>
         </Button>
       </DialogTrigger>
       <DialogContent>
@@ -163,9 +161,8 @@ function DemoCoverItemDialog({
 
   if (covered) {
     return (
-      <Button size="sm" disabled variant="secondary">
-        <HandCoins className="mr-1 h-3 w-3" />
-        Covered
+      <Button disabled variant="secondary">
+        <span className="inline-flex items-center gap-1.5"><HandCoins className="h-4 w-4 shrink-0" />Covered</span>
       </Button>
     );
   }
@@ -173,9 +170,8 @@ function DemoCoverItemDialog({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="sm" variant="outline">
-          <HandCoins className="mr-1 h-3 w-3" />
-          Cover This Item
+        <Button>
+          <span className="inline-flex items-center gap-1.5"><HandCoins className="h-4 w-4 shrink-0" />Cover the cost</span>
         </Button>
       </DialogTrigger>
       <DialogContent>
@@ -519,17 +515,17 @@ export default function DemoPage() {
                     return (
                       <Card
                         key={item.id}
-                        className={
+                        className={`py-0 gap-0 rounded-xl shadow-md ${
                           isFulfilled && !item.is_parent_purchased
-                            ? "opacity-50"
+                            ? "bg-secondary/50 border-secondary"
                             : item.is_parent_purchased
-                              ? "border-brand-600/30 bg-brand-600/5"
+                              ? "bg-brand-600/10"
                               : ""
-                        }
+                        }`}
                       >
                         <CardContent className="p-4">
                           <div className="flex gap-3">
-                            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-md bg-tertiary">
+                            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-md bg-secondary">
                               {item.image_url ? (
                                 <img
                                   src={item.image_url}
@@ -544,25 +540,26 @@ export default function DemoPage() {
                               <h3 className="font-medium text-sm leading-tight">
                                 {item.title}
                               </h3>
-                              <div className="mt-1 flex items-center gap-2 flex-wrap">
-                                {item.is_essential && (
-                                  <Badge className="text-xs">
-                                    Essential
-                                  </Badge>
-                                )}
+                              <div className="mt-2 flex flex-col gap-2 items-start">
+                                {item.is_parent_purchased ? (
+                                  <span className="inline-flex items-center rounded-full bg-brand-600 px-2.5 py-0.5 text-xs font-medium text-white">
+                                    Bought by Parent
+                                  </span>
+                                ) : isFulfilled ? (
+                                  <span className="inline-flex items-center rounded-full bg-brand-600 px-2.5 py-0.5 text-xs font-medium text-white">
+                                    Already Purchased
+                                  </span>
+                                ) : item.is_essential ? (
+                                  <span className="inline-flex items-center rounded-full bg-brand-600 px-2.5 py-0.5 text-xs font-medium text-white">
+                                    Most Wanted
+                                  </span>
+                                ) : null}
                                 {item.price && (
                                   <span className="text-xs text-tertiary">
                                     ${item.price.toFixed(2)}
                                   </span>
                                 )}
                               </div>
-                              {item.quantity_needed > 1 &&
-                                !isFulfilled && (
-                                  <p className="text-xs text-tertiary mt-1">
-                                    {remaining} of{" "}
-                                    {item.quantity_needed} still needed
-                                  </p>
-                                )}
                             </div>
                           </div>
 
@@ -572,49 +569,37 @@ export default function DemoPage() {
                             </p>
                           )}
 
-                          <div className="mt-3 flex items-center gap-2">
-                            {item.is_parent_purchased ? (
-                              <>
-                                <Badge
-                                  variant="outline"
-                                  className="border-brand-600/50 text-brand-600 text-xs"
-                                >
-                                  Bought by parent
-                                </Badge>
+                          {(item.is_parent_purchased || !isFulfilled) && (
+                            <div className="mt-3 flex items-center justify-end gap-2">
+                              {item.is_parent_purchased ? (
                                 <DemoCoverItemDialog
                                   item={item}
                                   onCover={handleCoverItem}
                                 />
-                              </>
-                            ) : isFulfilled ? (
-                              <Badge variant="secondary">
-                                Fulfilled
-                              </Badge>
-                            ) : (
-                              <>
-                                <DemoReserveDialog
-                                  item={item}
-                                  onReserve={handleReserve}
-                                />
-                                {item.external_url && (
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    asChild
-                                  >
-                                    <a
-                                      href={item.external_url}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
+                              ) : (
+                                <>
+                                  <DemoReserveDialog
+                                    item={item}
+                                    onReserve={handleReserve}
+                                  />
+                                  {item.external_url && (
+                                    <Button
+                                      variant="outline"
+                                      asChild
                                     >
-                                      <ExternalLink className="mr-1 h-3 w-3" />
-                                      Shop
-                                    </a>
-                                  </Button>
-                                )}
-                              </>
-                            )}
-                          </div>
+                                      <a
+                                        href={item.external_url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                      >
+                                        <span className="inline-flex items-center gap-1.5"><ExternalLink className="h-4 w-4 shrink-0" />Shop</span>
+                                      </a>
+                                    </Button>
+                                  )}
+                                </>
+                              )}
+                            </div>
+                          )}
                         </CardContent>
                       </Card>
                     );
