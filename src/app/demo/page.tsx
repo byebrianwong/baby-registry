@@ -536,38 +536,35 @@ export default function DemoPage() {
                                 <Package className="h-6 w-6 text-tertiary" />
                               )}
                             </div>
-                            <div className="flex-1 min-w-0">
+                            <div className="flex-1 min-w-0 flex flex-col gap-2 items-start">
                               <h3 className="font-medium text-sm leading-tight">
                                 {item.title}
                               </h3>
-                              <div className="mt-2 flex flex-col gap-2 items-start">
-                                {item.is_parent_purchased ? (
-                                  <span className="inline-flex items-center rounded-full bg-brand-600 px-2.5 py-0.5 text-xs font-medium text-white">
-                                    Bought by Parent
-                                  </span>
-                                ) : isFulfilled ? (
-                                  <span className="inline-flex items-center rounded-full bg-brand-600 px-2.5 py-0.5 text-xs font-medium text-white">
-                                    Already Purchased
-                                  </span>
-                                ) : item.is_essential ? (
-                                  <span className="inline-flex items-center rounded-full bg-brand-600 px-2.5 py-0.5 text-xs font-medium text-white">
-                                    Most Wanted
-                                  </span>
-                                ) : null}
-                                {item.price && (
-                                  <span className="text-xs text-tertiary">
-                                    ${item.price.toFixed(2)}
-                                  </span>
-                                )}
-                              </div>
+                              {item.is_parent_purchased ? (
+                                <span className="inline-flex items-center rounded-full bg-brand-600 px-2.5 py-0.5 text-xs font-medium text-white">
+                                  Bought by Parent
+                                </span>
+                              ) : isFulfilled ? (
+                                <span className="inline-flex items-center rounded-full bg-brand-600 px-2.5 py-0.5 text-xs font-medium text-white">
+                                  Already Purchased
+                                </span>
+                              ) : item.is_essential ? (
+                                <span className="inline-flex items-center rounded-full bg-brand-600 px-2.5 py-0.5 text-xs font-medium text-white">
+                                  Most Wanted
+                                </span>
+                              ) : null}
+                              {item.price && (
+                                <span className="text-xs text-tertiary">
+                                  ${item.price.toFixed(2)}
+                                </span>
+                              )}
+                              {item.notes && (
+                                <p className="text-xs text-tertiary line-clamp-2">
+                                  {item.notes}
+                                </p>
+                              )}
                             </div>
                           </div>
-
-                          {item.notes && (
-                            <p className="text-xs text-tertiary line-clamp-2">
-                              {item.notes}
-                            </p>
-                          )}
 
                           {(item.is_parent_purchased || !isFulfilled) && (
                             <div className="flex items-center justify-end gap-2">
