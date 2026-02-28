@@ -382,7 +382,7 @@ function DemoItemCard({
             : ""
       }`}
     >
-      <CardContent className="flex flex-col gap-4 p-4">
+      <CardContent className="flex h-full flex-col justify-between gap-4 p-4">
         <div className="flex gap-3">
           <div className="flex size-[106px] shrink-0 items-center justify-center rounded-[10px] bg-tertiary">
             {item.image_url ? (
@@ -399,16 +399,18 @@ function DemoItemCard({
           <div className="flex-1 min-w-0 flex flex-col gap-2">
             <div className="flex items-center justify-between gap-2">
               <h3 className="text-sm font-medium">{item.title}</h3>
-              {item.is_parent_purchased && (
-                <span className="shrink-0 inline-flex items-center rounded-full border border-brand-600 px-2.5 py-0.5 text-xs font-medium">
-                  Purchased by you
-                </span>
-              )}
-              {isFulfilled && !item.is_parent_purchased && (
-                <span className="shrink-0 inline-flex items-center rounded-full bg-brand-600 px-2.5 py-0.5 text-xs font-medium text-white">
-                  Gifted
-                </span>
-              )}
+              <div className="shrink-0 h-6">
+                {item.is_parent_purchased && (
+                  <span className="inline-flex items-center rounded-full border border-brand-600 px-2.5 py-0.5 text-xs font-medium">
+                    Purchased by you
+                  </span>
+                )}
+                {isFulfilled && !item.is_parent_purchased && (
+                  <span className="inline-flex items-center rounded-full bg-brand-600 px-2.5 py-0.5 text-xs font-medium text-white">
+                    Gifted
+                  </span>
+                )}
+              </div>
             </div>
 
             {item.is_essential && (
