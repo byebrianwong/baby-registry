@@ -88,7 +88,7 @@ function DemoReserveDialog({
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button>
-          <span className="inline-flex items-center gap-1.5"><Gift className="h-4 w-4 shrink-0" />I&apos;ll get this</span>
+          <span className="inline-flex items-center gap-1.5"><Gift className="h-4 w-4 shrink-0" />Mark as purchased</span>
         </Button>
       </DialogTrigger>
       <DialogContent>
@@ -523,7 +523,7 @@ export default function DemoPage() {
                               : ""
                         }`}
                       >
-                        <CardContent className="flex h-full flex-col justify-between p-4">
+                        <CardContent className="flex h-full flex-col justify-between gap-2 p-4">
                           <div className="flex gap-3">
                             <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-md bg-secondary">
                               {item.image_url ? (
@@ -540,26 +540,37 @@ export default function DemoPage() {
                               <h3 className="font-medium text-sm leading-tight">
                                 {item.title}
                               </h3>
-                              {item.is_parent_purchased ? (
-                                <span className="inline-flex items-center rounded-full bg-brand-600 px-2.5 py-0.5 text-xs font-medium text-white">
-                                  Bought by Parent
+                              <div className="flex flex-wrap gap-2.5">
+                                {item.is_parent_purchased ? (
+                                  <span className="inline-flex items-center rounded-full bg-brand-600 px-2.5 py-0.5 text-xs font-medium text-white">
+                                    Purchased by parent
+                                  </span>
+                                ) : isFulfilled ? (
+                                  <span className="inline-flex items-center rounded-full bg-brand-600 px-2.5 py-0.5 text-xs font-medium text-white">
+                                    Already purchased by guest
+                                  </span>
+                                ) : (
+                                  <>
+                                    {item.is_essential && (
+                                      <span className="inline-flex items-center rounded-full bg-brand-600 px-2.5 py-0.5 text-xs font-medium text-white">
+                                        Most wanted
+                                      </span>
+                                    )}
+                                  </>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-2.5">
+                                {item.price && (
+                                  <span className="text-sm font-semibold">
+                                    ${item.price.toFixed(2)}
+                                  </span>
+                                )}
+                                <span className="text-xs">
+                                  {remaining} of {item.quantity_needed} still needed
                                 </span>
-                              ) : isFulfilled ? (
-                                <span className="inline-flex items-center rounded-full bg-brand-600 px-2.5 py-0.5 text-xs font-medium text-white">
-                                  Already Purchased
-                                </span>
-                              ) : item.is_essential ? (
-                                <span className="inline-flex items-center rounded-full bg-brand-600 px-2.5 py-0.5 text-xs font-medium text-white">
-                                  Most Wanted
-                                </span>
-                              ) : null}
-                              {item.price && (
-                                <span className="text-xs text-tertiary">
-                                  ${item.price.toFixed(2)}
-                                </span>
-                              )}
+                              </div>
                               {item.notes && (
-                                <p className="text-xs text-tertiary line-clamp-2">
+                                <p className="text-sm line-clamp-2">
                                   {item.notes}
                                 </p>
                               )}
@@ -589,7 +600,7 @@ export default function DemoPage() {
                                         target="_blank"
                                         rel="noopener noreferrer"
                                       >
-                                        <span className="inline-flex items-center gap-1.5"><ExternalLink className="h-4 w-4 shrink-0" />Shop</span>
+                                        <span className="inline-flex items-center gap-1.5"><ExternalLink className="h-4 w-4 shrink-0" />Cancel</span>
                                       </a>
                                     </Button>
                                   )}
