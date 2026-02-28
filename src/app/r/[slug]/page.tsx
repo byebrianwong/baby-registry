@@ -11,6 +11,8 @@ import { CoverItemDialog } from "@/components/cover-item-dialog";
 import { ContributeFundDialog } from "@/components/contribute-fund-dialog";
 import type { PaymentMethods } from "@/lib/types";
 import type { Metadata } from "next";
+import { CategoryNav, type CategoryNavItem } from "@/components/category-nav";
+import { getCategorySectionId } from "@/lib/category-section-id";
 
 interface RegistryItem {
   id: string;
@@ -123,6 +125,34 @@ export default async function PublicRegistryPage({
     itemsByCategory.get(key)!.push(item);
   }
 
+  // Build navigation items for category sidebar
+  const navItems: CategoryNavItem[] = [];
+  if (allFunds.length > 0) {
+    navItems.push({
+      id: getCategorySectionId("gift-funds"),
+      name: "Gift Funds",
+      count: allFunds.length,
+    });
+  }
+  for (const category of allCategories) {
+    const categoryItems = itemsByCategory.get(category.id) || [];
+    if (categoryItems.length > 0) {
+      navItems.push({
+        id: getCategorySectionId(category.id),
+        name: category.name,
+        count: categoryItems.length,
+      });
+    }
+  }
+  const uncategorizedItems = itemsByCategory.get(null) || [];
+  if (uncategorizedItems.length > 0) {
+    navItems.push({
+      id: getCategorySectionId(null),
+      name: "Other Items",
+      count: uncategorizedItems.length,
+    });
+  }
+
   return (
     <div className="min-h-screen bg-primary">
       {/* Header */}
@@ -173,10 +203,12 @@ export default async function PublicRegistryPage({
             <p>This registry doesn&apos;t have any items yet.</p>
           </div>
         ) : (
-          <div className="space-y-10">
+          <div className="flex gap-8 items-start">
+            {navItems.length > 1 && <CategoryNav categories={navItems} />}
+            <div className="flex-1 min-w-0 space-y-10">
             {/* Cash Funds */}
             {allFunds.length > 0 && (
-              <div>
+              <div id={getCategorySectionId("gift-funds")} className="scroll-mt-4">
                 <h2 className="text-xl font-semibold mb-4">Gift Funds</h2>
                 <div className="grid gap-4 md:grid-cols-2">
                   {allFunds.map((fund) => {
@@ -229,7 +261,7 @@ export default async function PublicRegistryPage({
               if (categoryItems.length === 0) return null;
 
               return (
-                <div key={category.id}>
+                <div key={category.id} id={getCategorySectionId(category.id)} className="scroll-mt-4">
                   <h2 className="text-xl font-semibold mb-4">
                     {category.name}
                     <Badge variant="secondary" className="ml-2">
@@ -343,7 +375,7 @@ export default async function PublicRegistryPage({
 
             {/* Uncategorized */}
             {(itemsByCategory.get(null) || []).length > 0 && (
-              <div>
+              <div id={getCategorySectionId(null)} className="scroll-mt-4">
                 <h2 className="text-xl font-semibold mb-4">Other Items</h2>
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                   {itemsByCategory.get(null)!.map((item) => {
@@ -391,6 +423,7 @@ export default async function PublicRegistryPage({
                 </div>
               </div>
             )}
+            </div>
           </div>
         )}
       </main>

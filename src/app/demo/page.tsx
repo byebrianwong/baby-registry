@@ -31,6 +31,8 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { PaymentMethodsDisplay } from "@/components/payment-methods-display";
+import { CategoryNav, type CategoryNavItem } from "@/components/category-nav";
+import { getCategorySectionId } from "@/lib/category-section-id";
 import {
   DEMO_REGISTRY,
   DEMO_CATEGORIES,
@@ -410,6 +412,26 @@ export default function DemoPage() {
     itemsByCategory.get(item.category_id)!.push(item);
   }
 
+  // Build navigation items for category sidebar
+  const navItems: CategoryNavItem[] = [];
+  if (funds.length > 0) {
+    navItems.push({
+      id: getCategorySectionId("gift-funds"),
+      name: "Gift Funds",
+      count: funds.length,
+    });
+  }
+  for (const category of DEMO_CATEGORIES) {
+    const categoryItems = itemsByCategory.get(category.id) || [];
+    if (categoryItems.length > 0) {
+      navItems.push({
+        id: getCategorySectionId(category.id),
+        name: category.name,
+        count: categoryItems.length,
+      });
+    }
+  }
+
   return (
     <div className="min-h-screen bg-primary">
       {/* Demo banner */}
@@ -473,9 +495,11 @@ export default function DemoPage() {
 
       {/* Items */}
       <main className="container mx-auto px-4 py-8">
-        <div className="space-y-10">
+        <div className="flex gap-8 items-start">
+          {navItems.length > 1 && <CategoryNav categories={navItems} />}
+          <div className="flex-1 min-w-0 space-y-10">
           {/* Cash Funds */}
-          <div>
+          <div id={getCategorySectionId("gift-funds")} className="scroll-mt-4">
             <h2 className="text-xl font-semibold mb-4">Gift Funds</h2>
             <div className="grid gap-4 md:grid-cols-2">
               {funds.map((fund) => {
@@ -523,7 +547,7 @@ export default function DemoPage() {
             if (categoryItems.length === 0) return null;
 
             return (
-              <div key={category.id}>
+              <div key={category.id} id={getCategorySectionId(category.id)} className="scroll-mt-4">
                 <h2 className="text-xl font-semibold mb-4">
                   {category.name}
                   <Badge variant="secondary" className="ml-2">
@@ -641,6 +665,7 @@ export default function DemoPage() {
               </div>
             );
           })}
+          </div>
         </div>
       </main>
 
