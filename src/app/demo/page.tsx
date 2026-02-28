@@ -523,7 +523,7 @@ export default function DemoPage() {
                               : ""
                         }`}
                       >
-                        <CardContent className="p-4">
+                        <CardContent className="flex h-full flex-col justify-between p-4">
                           <div className="flex gap-3">
                             <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-md bg-secondary">
                               {item.image_url ? (
@@ -564,13 +564,13 @@ export default function DemoPage() {
                           </div>
 
                           {item.notes && (
-                            <p className="mt-2 text-xs text-tertiary line-clamp-2">
+                            <p className="text-xs text-tertiary line-clamp-2">
                               {item.notes}
                             </p>
                           )}
 
                           {(item.is_parent_purchased || !isFulfilled) && (
-                            <div className="mt-3 flex items-center justify-end gap-2">
+                            <div className="flex items-center justify-end gap-2">
                               {item.is_parent_purchased ? (
                                 <DemoCoverItemDialog
                                   item={item}
