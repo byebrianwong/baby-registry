@@ -3,9 +3,8 @@
 import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/base/input/input";
+import { TextArea } from "@/components/base/textarea/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { createClient } from "@/utils/supabase/client";
@@ -101,38 +100,29 @@ export default function RegistrySettingsPage() {
         </CardHeader>
         <CardContent>
           <form action={handleSave} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="title">Title</Label>
-              <Input
-                id="title"
-                name="title"
-                defaultValue={registry.title}
-                required
-              />
-            </div>
+            <Input
+              label="Title"
+              name="title"
+              defaultValue={registry.title}
+              isRequired
+            />
+
+            <Input
+              label="Due Date"
+              name="eventDate"
+              type="date"
+              defaultValue={registry.event_date || ""}
+            />
+
+            <TextArea
+              label="Welcome Message"
+              name="description"
+              defaultValue={registry.description || ""}
+              rows={3}
+            />
 
             <div className="space-y-2">
-              <Label htmlFor="eventDate">Due Date</Label>
-              <Input
-                id="eventDate"
-                name="eventDate"
-                type="date"
-                defaultValue={registry.event_date || ""}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="description">Welcome Message</Label>
-              <Textarea
-                id="description"
-                name="description"
-                defaultValue={registry.description || ""}
-                rows={3}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Visibility</Label>
+              <span className="text-sm font-medium text-secondary">Visibility</span>
               <div className="flex items-center gap-4">
                 <label className="flex items-center gap-2">
                   <input
@@ -156,7 +146,7 @@ export default function RegistrySettingsPage() {
             </div>
 
             <div className="space-y-1">
-              <Label>Share URL</Label>
+              <span className="text-sm font-medium text-secondary">Share URL</span>
               <p className="text-sm text-tertiary font-mono">
                 /r/{registry.slug}
               </p>
@@ -183,35 +173,26 @@ export default function RegistrySettingsPage() {
         </CardHeader>
         <CardContent>
           <form action={handleSavePayment} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="venmo">Venmo</Label>
-              <Input
-                id="venmo"
-                name="venmo"
-                placeholder="@your-venmo"
-                defaultValue={pm?.venmo || ""}
-              />
-            </div>
+            <Input
+              label="Venmo"
+              name="venmo"
+              placeholder="@your-venmo"
+              defaultValue={pm?.venmo || ""}
+            />
 
-            <div className="space-y-2">
-              <Label htmlFor="paypal">PayPal</Label>
-              <Input
-                id="paypal"
-                name="paypal"
-                placeholder="you@email.com or PayPal.me link"
-                defaultValue={pm?.paypal || ""}
-              />
-            </div>
+            <Input
+              label="PayPal"
+              name="paypal"
+              placeholder="you@email.com or PayPal.me link"
+              defaultValue={pm?.paypal || ""}
+            />
 
-            <div className="space-y-2">
-              <Label htmlFor="zelle">Zelle</Label>
-              <Input
-                id="zelle"
-                name="zelle"
-                placeholder="you@email.com or phone number"
-                defaultValue={pm?.zelle || ""}
-              />
-            </div>
+            <Input
+              label="Zelle"
+              name="zelle"
+              placeholder="you@email.com or phone number"
+              defaultValue={pm?.zelle || ""}
+            />
 
             {paymentError && (
               <p className="text-sm text-error-primary">{paymentError}</p>

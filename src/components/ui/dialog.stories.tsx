@@ -9,8 +9,7 @@ import {
   DialogTrigger,
 } from "./dialog";
 import { Button } from "./button";
-import { Input } from "./input";
-import { Label } from "./label";
+import { Input } from "@/components/base/input/input";
 
 const meta: Meta<typeof Dialog> = {
   title: "UI/Dialog",
@@ -35,14 +34,8 @@ export const Default: Story = {
           </DialogDescription>
         </DialogHeader>
         <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-            <Label htmlFor="item-name">Item Name</Label>
-            <Input id="item-name" placeholder="e.g. Baby Monitor" />
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-            <Label htmlFor="item-link">Link (optional)</Label>
-            <Input id="item-link" placeholder="https://example.com/item" />
-          </div>
+          <Input label="Item Name" placeholder="e.g. Baby Monitor" />
+          <Input label="Link (optional)" placeholder="https://example.com/item" />
           <Button type="submit">Add Item</Button>
         </div>
       </DialogContent>

@@ -5,8 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Baby } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Input } from "@/components/base/input/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { createClient } from "@/utils/supabase/client";
 
@@ -57,40 +56,31 @@ export default function SignupPage() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSignup} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="fullName">Full Name</Label>
-              <Input
-                id="fullName"
-                type="text"
-                placeholder="Jane & John Doe"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="you@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="At least 6 characters"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                minLength={6}
-              />
-            </div>
+            <Input
+              label="Full Name"
+              type="text"
+              placeholder="Jane & John Doe"
+              value={fullName}
+              onChange={(val) => setFullName(val)}
+              isRequired
+            />
+            <Input
+              label="Email"
+              type="email"
+              placeholder="you@example.com"
+              value={email}
+              onChange={(val) => setEmail(val)}
+              isRequired
+            />
+            <Input
+              label="Password"
+              type="password"
+              placeholder="At least 6 characters"
+              value={password}
+              onChange={(val) => setPassword(val)}
+              isRequired
+              minLength={6}
+            />
             {error && (
               <p className="text-sm text-error-primary">{error}</p>
             )}

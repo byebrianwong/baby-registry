@@ -3,10 +3,11 @@
 import { useState, useRef } from "react";
 import { Plus, Loader2, Link as LinkIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Input, InputBase } from "@/components/base/input/input";
+import { Label } from "@/components/base/input/label";
+import { TextArea } from "@/components/base/textarea/textarea";
+import { Checkbox } from "@/components/base/checkbox/checkbox";
+import { Select } from "@/components/base/select/select";
 import {
   Dialog,
   DialogContent,
@@ -15,13 +16,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { addRegistryItem } from "@/lib/actions/registry";
 import { scrapeProductUrl } from "@/lib/actions/scrape";
 
@@ -55,6 +49,7 @@ export function AddItemDialog({
   const [scrapeStatus, setScrapeStatus] = useState<string>("");
   const [error, setError] = useState("");
 
+  const urlRef = useRef<HTMLInputElement>(null);
   const titleRef = useRef<HTMLInputElement>(null);
   const priceRef = useRef<HTMLInputElement>(null);
   const imageUrlRef = useRef<HTMLInputElement>(null);
@@ -130,16 +125,16 @@ export function AddItemDialog({
           </DialogDescription>
         </DialogHeader>
         <form action={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="externalUrl">Product URL</Label>
+          <div className="space-y-1.5">
+            <Label>Product URL</Label>
             <div className="flex gap-2">
-              <Input
-                id="externalUrl"
+              <InputBase
+                ref={urlRef}
                 name="externalUrl"
                 type="url"
                 placeholder="https://www.amazon.com/..."
-                onBlur={(e) => handleScrape(e.target.value)}
-                className="flex-1"
+                onBlur={(e) => handleScrape((e.target as HTMLInputElement).value)}
+                wrapperClassName="flex-1"
               />
               <Button
                 type="button"
@@ -147,8 +142,7 @@ export function AddItemDialog({
                 size="icon"
                 disabled={scraping}
                 onClick={() => {
-                  const input = document.getElementById("externalUrl") as HTMLInputElement;
-                  if (input?.value) handleScrape(input.value);
+                  if (urlRef.current?.value) handleScrape(urlRef.current.value);
                 }}
                 title="Fetch product details"
               >
@@ -164,92 +158,66 @@ export function AddItemDialog({
             )}
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="title">Item Name</Label>
-            <Input
-              id="title"
-              name="title"
-              ref={titleRef}
-              placeholder="e.g., Convertible Crib"
-              defaultValue={defaultValues?.title}
-              required
-            />
-          </div>
+          <Input
+            ref={titleRef}
+            label="Item Name"
+            name="title"
+            placeholder="e.g., Convertible Crib"
+            defaultValue={defaultValues?.title}
+            isRequired
+          />
 
-          <div className="space-y-2">
-            <Label htmlFor="categoryId">Category</Label>
-            <Select name="categoryId" defaultValue={defaultValues?.categoryId}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select a category" />
-              </SelectTrigger>
-              <SelectContent>
-                {categories.map((cat) => (
-                  <SelectItem key={cat.id} value={cat.id}>
-                    {cat.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          <Select
+            name="categoryId"
+            label="Category"
+            defaultSelectedKey={defaultValues?.categoryId}
+            placeholder="Select a category"
+            items={categories.map((cat) => ({ id: cat.id, label: cat.name }))}
+          >
+            {(item) => <Select.Item id={item.id} label={item.label} />}
+          </Select>
 
-          <div className="space-y-2">
-            <Label htmlFor="imageUrl">Image URL (optional)</Label>
-            <Input
-              id="imageUrl"
-              name="imageUrl"
-              ref={imageUrlRef}
-              type="url"
-              placeholder="https://..."
-            />
-          </div>
+          <Input
+            ref={imageUrlRef}
+            label="Image URL (optional)"
+            name="imageUrl"
+            type="url"
+            placeholder="https://..."
+          />
 
           <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="price">Price ($)</Label>
-              <Input
-                id="price"
-                name="price"
-                ref={priceRef}
-                type="number"
-                step="0.01"
-                min="0"
-                placeholder="0.00"
-                defaultValue={defaultValues?.price}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="quantityNeeded">Quantity</Label>
-              <Input
-                id="quantityNeeded"
-                name="quantityNeeded"
-                type="number"
-                min="1"
-                defaultValue={defaultValues?.quantityNeeded || "1"}
-              />
-            </div>
-          </div>
-
-          <div className="flex items-center space-x-2">
-            <Checkbox
-              id="isEssential"
-              name="isEssential"
-              value="true"
-              defaultChecked={defaultValues?.isEssential}
+            <Input
+              ref={priceRef}
+              label="Price ($)"
+              name="price"
+              type="number"
+              step="0.01"
+              min={0}
+              placeholder="0.00"
+              defaultValue={defaultValues?.price}
             />
-            <Label htmlFor="isEssential" className="text-sm font-normal">
-              Mark as essential item
-            </Label>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="notes">Notes (optional)</Label>
-            <Textarea
-              id="notes"
-              name="notes"
-              placeholder="Any preferences for color, brand, etc."
-              rows={2}
+            <Input
+              label="Quantity"
+              name="quantityNeeded"
+              type="number"
+              min={1}
+              defaultValue={defaultValues?.quantityNeeded || "1"}
             />
           </div>
+
+          <Checkbox
+            name="isEssential"
+            value="true"
+            defaultSelected={defaultValues?.isEssential}
+            label="Mark as essential item"
+          />
+
+          <TextArea
+            label="Notes (optional)"
+            name="notes"
+            placeholder="Any preferences for color, brand, etc."
+            rows={2}
+          />
 
           {error && <p className="text-sm text-error-primary">{error}</p>}
 

@@ -10,6 +10,16 @@ import { Tooltip, TooltipTrigger } from "@/components/base/tooltip/tooltip";
 import { cx, sortCx } from "@/lib/utils/cx";
 
 export interface InputBaseProps extends TextFieldProps {
+    /** HTML min attribute for number inputs. */
+    min?: number | string;
+    /** HTML max attribute for number inputs. */
+    max?: number | string;
+    /** HTML step attribute for number inputs. */
+    step?: number | string;
+    /** HTML minLength attribute. */
+    minLength?: number;
+    /** HTML maxLength attribute. */
+    maxLength?: number;
     /** Tooltip message on hover. */
     tooltip?: string;
     /**

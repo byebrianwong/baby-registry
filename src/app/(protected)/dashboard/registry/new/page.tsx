@@ -2,9 +2,8 @@
 
 import { Baby } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/base/input/input";
+import { TextArea } from "@/components/base/textarea/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { createRegistry } from "@/lib/actions/registry";
 import { useState } from "react";
@@ -37,40 +36,27 @@ export default function NewRegistryPage() {
         </CardHeader>
         <CardContent>
           <form action={handleSubmit} className="space-y-6">
-            <div className="space-y-2">
-              <Label htmlFor="title">Registry Title</Label>
-              <Input
-                id="title"
-                name="title"
-                placeholder="The Smith Family Baby Registry"
-                required
-              />
-            </div>
+            <Input
+              label="Registry Title"
+              name="title"
+              placeholder="The Smith Family Baby Registry"
+              isRequired
+            />
 
-            <div className="space-y-2">
-              <Label htmlFor="eventDate">Due Date (optional)</Label>
-              <Input
-                id="eventDate"
-                name="eventDate"
-                type="date"
-              />
-              <p className="text-xs text-tertiary">
-                Used for personalized recommendations and reminders
-              </p>
-            </div>
+            <Input
+              label="Due Date (optional)"
+              name="eventDate"
+              type="date"
+              hint="Used for personalized recommendations and reminders"
+            />
 
-            <div className="space-y-2">
-              <Label htmlFor="description">Welcome Message (optional)</Label>
-              <Textarea
-                id="description"
-                name="description"
-                placeholder="We're so excited to welcome our little one! Thank you for being part of this journey."
-                rows={3}
-              />
-              <p className="text-xs text-tertiary">
-                Displayed on your public registry page
-              </p>
-            </div>
+            <TextArea
+              label="Welcome Message (optional)"
+              name="description"
+              placeholder="We're so excited to welcome our little one! Thank you for being part of this journey."
+              rows={3}
+              hint="Displayed on your public registry page"
+            />
 
             {error && <p className="text-sm text-error-primary">{error}</p>}
 

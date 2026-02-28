@@ -3,9 +3,8 @@
 import { useState } from "react";
 import { DollarSign } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/base/input/input";
+import { TextArea } from "@/components/base/textarea/textarea";
 import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
 import {
@@ -109,47 +108,35 @@ export function ContributeFundDialog({
         <Separator />
 
         <form action={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="fundAmount">Amount ($)</Label>
-            <Input
-              id="fundAmount"
-              name="amount"
-              type="number"
-              step="0.01"
-              min="1"
-              max={remaining ?? undefined}
-              placeholder="25.00"
-              required
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="fundName">Your Name</Label>
-            <Input
-              id="fundName"
-              name="buyerName"
-              placeholder="Jane Doe"
-              required
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="fundEmail">Your Email</Label>
-            <Input
-              id="fundEmail"
-              name="buyerEmail"
-              type="email"
-              placeholder="jane@example.com"
-              required
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="fundMessage">Message (optional)</Label>
-            <Textarea
-              id="fundMessage"
-              name="message"
-              placeholder="Congratulations!"
-              rows={2}
-            />
-          </div>
+          <Input
+            label="Amount ($)"
+            name="amount"
+            type="number"
+            step="0.01"
+            min={1}
+            max={remaining ?? undefined}
+            placeholder="25.00"
+            isRequired
+          />
+          <Input
+            label="Your Name"
+            name="buyerName"
+            placeholder="Jane Doe"
+            isRequired
+          />
+          <Input
+            label="Your Email"
+            name="buyerEmail"
+            type="email"
+            placeholder="jane@example.com"
+            isRequired
+          />
+          <TextArea
+            label="Message (optional)"
+            name="message"
+            placeholder="Congratulations!"
+            rows={2}
+          />
 
           {error && <p className="text-sm text-error-primary">{error}</p>}
 

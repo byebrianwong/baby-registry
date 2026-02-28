@@ -3,9 +3,8 @@
 import { useState } from "react";
 import { Gift } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/base/input/input";
+import { TextArea } from "@/components/base/textarea/textarea";
 import {
   Dialog,
   DialogContent,
@@ -87,47 +86,35 @@ export function ReserveItemDialog({ item }: ReserveItemDialogProps) {
           </DialogDescription>
         </DialogHeader>
         <form action={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="buyerName">Your Name</Label>
-            <Input
-              id="buyerName"
-              name="buyerName"
-              placeholder="Jane Doe"
-              required
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="buyerEmail">Your Email</Label>
-            <Input
-              id="buyerEmail"
-              name="buyerEmail"
-              type="email"
-              placeholder="jane@example.com"
-              required
-            />
-          </div>
+          <Input
+            label="Your Name"
+            name="buyerName"
+            placeholder="Jane Doe"
+            isRequired
+          />
+          <Input
+            label="Your Email"
+            name="buyerEmail"
+            type="email"
+            placeholder="jane@example.com"
+            isRequired
+          />
           {remaining > 1 && (
-            <div className="space-y-2">
-              <Label htmlFor="quantity">Quantity (up to {remaining})</Label>
-              <Input
-                id="quantity"
-                name="quantity"
-                type="number"
-                min="1"
-                max={remaining}
-                defaultValue="1"
-              />
-            </div>
-          )}
-          <div className="space-y-2">
-            <Label htmlFor="message">Message (optional)</Label>
-            <Textarea
-              id="message"
-              name="message"
-              placeholder="Congratulations!"
-              rows={2}
+            <Input
+              label={`Quantity (up to ${remaining})`}
+              name="quantity"
+              type="number"
+              min={1}
+              max={remaining}
+              defaultValue="1"
             />
-          </div>
+          )}
+          <TextArea
+            label="Message (optional)"
+            name="message"
+            placeholder="Congratulations!"
+            rows={2}
+          />
 
           {error && <p className="text-sm text-error-primary">{error}</p>}
 

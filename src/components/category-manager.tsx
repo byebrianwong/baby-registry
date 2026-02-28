@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { FolderOpen, Plus, Pencil, Trash2, Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Input } from "@/components/base/input/input";
 import {
   Sheet,
   SheetContent,
@@ -84,7 +84,7 @@ export function CategoryManager({
                 <>
                   <Input
                     value={editName}
-                    onChange={(e) => setEditName(e.target.value)}
+                    onChange={(val) => setEditName(val)}
                     className="flex-1"
                     onKeyDown={(e) => {
                       if (e.key === "Enter") handleUpdate(cat.id);
@@ -134,7 +134,7 @@ export function CategoryManager({
           <div className="flex items-center gap-2 pt-4 border-t">
             <Input
               value={newName}
-              onChange={(e) => setNewName(e.target.value)}
+              onChange={(val) => setNewName(val)}
               placeholder="New category name"
               className="flex-1"
               onKeyDown={(e) => {

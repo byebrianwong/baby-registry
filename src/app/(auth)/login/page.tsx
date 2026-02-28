@@ -5,8 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Baby } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Input } from "@/components/base/input/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { createClient } from "@/utils/supabase/client";
 
@@ -51,27 +50,21 @@ export default function LoginPage() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleLogin} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="you@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
-            </div>
+            <Input
+              label="Email"
+              type="email"
+              placeholder="you@example.com"
+              value={email}
+              onChange={(val) => setEmail(val)}
+              isRequired
+            />
+            <Input
+              label="Password"
+              type="password"
+              value={password}
+              onChange={(val) => setPassword(val)}
+              isRequired
+            />
             {error && (
               <p className="text-sm text-error-primary">{error}</p>
             )}

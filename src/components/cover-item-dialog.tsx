@@ -3,9 +3,8 @@
 import { useState } from "react";
 import { HandCoins } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/base/input/input";
+import { TextArea } from "@/components/base/textarea/textarea";
 import { Separator } from "@/components/ui/separator";
 import {
   Dialog,
@@ -83,34 +82,25 @@ export function CoverItemDialog({ item, paymentMethods }: CoverItemDialogProps) 
         <Separator />
 
         <form action={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="coverName">Your Name</Label>
-            <Input
-              id="coverName"
-              name="buyerName"
-              placeholder="Jane Doe"
-              required
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="coverEmail">Your Email</Label>
-            <Input
-              id="coverEmail"
-              name="buyerEmail"
-              type="email"
-              placeholder="jane@example.com"
-              required
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="coverMessage">Message (optional)</Label>
-            <Textarea
-              id="coverMessage"
-              name="message"
-              placeholder="Happy to help!"
-              rows={2}
-            />
-          </div>
+          <Input
+            label="Your Name"
+            name="buyerName"
+            placeholder="Jane Doe"
+            isRequired
+          />
+          <Input
+            label="Your Email"
+            name="buyerEmail"
+            type="email"
+            placeholder="jane@example.com"
+            isRequired
+          />
+          <TextArea
+            label="Message (optional)"
+            name="message"
+            placeholder="Happy to help!"
+            rows={2}
+          />
 
           {error && <p className="text-sm text-error-primary">{error}</p>}
 

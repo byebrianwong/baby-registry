@@ -29,17 +29,11 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Input, InputBase } from "@/components/base/input/input";
+import { Label } from "@/components/base/input/label";
+import { TextArea } from "@/components/base/textarea/textarea";
+import { Checkbox } from "@/components/base/checkbox/checkbox";
+import { Select } from "@/components/base/select/select";
 import {
   Dialog,
   DialogContent,
@@ -102,6 +96,7 @@ function DemoAddItemDialog({
   const [open, setOpen] = useState(false);
   const [scraping, setScraping] = useState(false);
   const [scrapeStatus, setScrapeStatus] = useState("");
+  const urlRef = React.useRef<HTMLInputElement>(null);
   const titleRef = React.useRef<HTMLInputElement>(null);
   const priceRef = React.useRef<HTMLInputElement>(null);
   const imageUrlRef = React.useRef<HTMLInputElement>(null);
@@ -162,7 +157,7 @@ function DemoAddItemDialog({
         (formData.get("quantityNeeded") as string) || "1"
       ),
       quantity_fulfilled: 0,
-      is_essential: formData.get("isEssential") === "on",
+      is_essential: formData.get("isEssential") === "true",
       is_parent_purchased: false,
       notes: (formData.get("notes") as string) || null,
       sort_order: 0,
@@ -189,16 +184,16 @@ function DemoAddItemDialog({
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="externalUrl">Product URL</Label>
+          <div className="space-y-1.5">
+            <Label>Product URL</Label>
             <div className="flex gap-2">
-              <Input
-                id="externalUrl"
+              <InputBase
+                ref={urlRef}
                 name="externalUrl"
                 type="url"
                 placeholder="https://www.amazon.com/..."
-                onBlur={(e) => handleDemoScrape(e.target.value)}
-                className="flex-1"
+                onBlur={(e) => handleDemoScrape((e.target as HTMLInputElement).value)}
+                wrapperClassName="flex-1"
               />
               <Button
                 type="button"
@@ -206,8 +201,7 @@ function DemoAddItemDialog({
                 size="icon"
                 disabled={scraping}
                 onClick={() => {
-                  const input = document.getElementById("externalUrl") as HTMLInputElement;
-                  if (input?.value) handleDemoScrape(input.value);
+                  if (urlRef.current?.value) handleDemoScrape(urlRef.current.value);
                 }}
                 title="Fetch product details"
               >
@@ -223,85 +217,63 @@ function DemoAddItemDialog({
             )}
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="title">Item Name</Label>
-            <Input
-              id="title"
-              name="title"
-              ref={titleRef}
-              placeholder="e.g., Convertible Crib"
-              required
-            />
-          </div>
+          <Input
+            ref={titleRef}
+            label="Item Name"
+            name="title"
+            placeholder="e.g., Convertible Crib"
+            isRequired
+          />
 
-          <div className="space-y-2">
-            <Label htmlFor="categoryId">Category</Label>
-            <Select name="categoryId" defaultValue={categories[0]?.id}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select a category" />
-              </SelectTrigger>
-              <SelectContent>
-                {categories.map((cat) => (
-                  <SelectItem key={cat.id} value={cat.id}>
-                    {cat.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          <Select
+            name="categoryId"
+            label="Category"
+            defaultSelectedKey={categories[0]?.id}
+            placeholder="Select a category"
+            items={categories.map((cat) => ({ id: cat.id, label: cat.name }))}
+          >
+            {(item) => <Select.Item id={item.id} label={item.label} />}
+          </Select>
 
-          <div className="space-y-2">
-            <Label htmlFor="imageUrl">Image URL (optional)</Label>
-            <Input
-              id="imageUrl"
-              name="imageUrl"
-              ref={imageUrlRef}
-              type="url"
-              placeholder="https://..."
-            />
-          </div>
+          <Input
+            ref={imageUrlRef}
+            label="Image URL (optional)"
+            name="imageUrl"
+            type="url"
+            placeholder="https://..."
+          />
 
           <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="price">Price ($)</Label>
-              <Input
-                id="price"
-                name="price"
-                ref={priceRef}
-                type="number"
-                step="0.01"
-                min="0"
-                placeholder="0.00"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="quantityNeeded">Quantity</Label>
-              <Input
-                id="quantityNeeded"
-                name="quantityNeeded"
-                type="number"
-                min="1"
-                defaultValue="1"
-              />
-            </div>
-          </div>
-
-          <div className="flex items-center space-x-2">
-            <Checkbox id="isEssential" name="isEssential" />
-            <Label htmlFor="isEssential" className="text-sm font-normal">
-              Mark as essential item
-            </Label>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="notes">Notes (optional)</Label>
-            <Textarea
-              id="notes"
-              name="notes"
-              placeholder="Any preferences for color, brand, etc."
-              rows={2}
+            <Input
+              ref={priceRef}
+              label="Price ($)"
+              name="price"
+              type="number"
+              step="0.01"
+              min={0}
+              placeholder="0.00"
+            />
+            <Input
+              label="Quantity"
+              name="quantityNeeded"
+              type="number"
+              min={1}
+              defaultValue="1"
             />
           </div>
+
+          <Checkbox
+            name="isEssential"
+            value="true"
+            label="Mark as essential item"
+          />
+
+          <TextArea
+            label="Notes (optional)"
+            name="notes"
+            placeholder="Any preferences for color, brand, etc."
+            rows={2}
+          />
 
           <div className="flex justify-end gap-2">
             <Button
@@ -497,7 +469,7 @@ function DemoCategoryManager({
                 <>
                   <Input
                     value={editName}
-                    onChange={(e) => setEditName(e.target.value)}
+                    onChange={(val) => setEditName(val)}
                     className="flex-1"
                     onKeyDown={(e) => {
                       if (e.key === "Enter") handleUpdate(cat.id);
@@ -549,7 +521,7 @@ function DemoCategoryManager({
           <div className="flex items-center gap-2 pt-4 border-t">
             <Input
               value={newName}
-              onChange={(e) => setNewName(e.target.value)}
+              onChange={(val) => setNewName(val)}
               placeholder="New category name"
               className="flex-1"
               onKeyDown={(e) => {

@@ -18,9 +18,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/base/input/input";
+import { TextArea } from "@/components/base/textarea/textarea";
 import {
   Dialog,
   DialogContent,
@@ -103,47 +102,33 @@ function DemoReserveDialog({
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="buyerName">Your Name</Label>
-            <Input
-              id="buyerName"
-              placeholder="Jane Doe"
-              defaultValue="Demo User"
-              required
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="buyerEmail">Your Email</Label>
-            <Input
-              id="buyerEmail"
-              type="email"
-              placeholder="jane@example.com"
-              defaultValue="demo@example.com"
-              required
-            />
-          </div>
+          <Input
+            label="Your Name"
+            placeholder="Jane Doe"
+            defaultValue="Demo User"
+            isRequired
+          />
+          <Input
+            label="Your Email"
+            type="email"
+            placeholder="jane@example.com"
+            defaultValue="demo@example.com"
+            isRequired
+          />
           {remaining > 1 && (
-            <div className="space-y-2">
-              <Label htmlFor="quantity">
-                Quantity (up to {remaining})
-              </Label>
-              <Input
-                id="quantity"
-                type="number"
-                min="1"
-                max={remaining}
-                defaultValue="1"
-              />
-            </div>
-          )}
-          <div className="space-y-2">
-            <Label htmlFor="message">Message (optional)</Label>
-            <Textarea
-              id="message"
-              placeholder="Congratulations!"
-              rows={2}
+            <Input
+              label={`Quantity (up to ${remaining})`}
+              type="number"
+              min={1}
+              max={remaining}
+              defaultValue="1"
             />
-          </div>
+          )}
+          <TextArea
+            label="Message (optional)"
+            placeholder="Congratulations!"
+            rows={2}
+          />
           <div className="flex justify-end gap-2">
             <Button
               type="button"
@@ -214,27 +199,22 @@ function DemoCoverItemDialog({
         <Separator />
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="coverName">Your Name</Label>
-            <Input
-              id="coverName"
-              defaultValue="Demo User"
-              required
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="coverEmail">Your Email</Label>
-            <Input
-              id="coverEmail"
-              type="email"
-              defaultValue="demo@example.com"
-              required
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="coverMessage">Message (optional)</Label>
-            <Textarea id="coverMessage" placeholder="Happy to help!" rows={2} />
-          </div>
+          <Input
+            label="Your Name"
+            defaultValue="Demo User"
+            isRequired
+          />
+          <Input
+            label="Your Email"
+            type="email"
+            defaultValue="demo@example.com"
+            isRequired
+          />
+          <TextArea
+            label="Message (optional)"
+            placeholder="Happy to help!"
+            rows={2}
+          />
           <div className="flex justify-end gap-2">
             <Button
               type="button"
@@ -323,44 +303,32 @@ function DemoContributeFundDialog({
         <Separator />
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="fundAmount">Amount ($)</Label>
-            <Input
-              id="fundAmount"
-              name="amount"
-              type="number"
-              step="0.01"
-              min="1"
-              max={remaining}
-              placeholder="25.00"
-              required
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="fundName">Your Name</Label>
-            <Input
-              id="fundName"
-              defaultValue="Demo User"
-              required
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="fundEmail">Your Email</Label>
-            <Input
-              id="fundEmail"
-              type="email"
-              defaultValue="demo@example.com"
-              required
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="fundMessage">Message (optional)</Label>
-            <Textarea
-              id="fundMessage"
-              placeholder="Congratulations!"
-              rows={2}
-            />
-          </div>
+          <Input
+            label="Amount ($)"
+            name="amount"
+            type="number"
+            step="0.01"
+            min={1}
+            max={remaining}
+            placeholder="25.00"
+            isRequired
+          />
+          <Input
+            label="Your Name"
+            defaultValue="Demo User"
+            isRequired
+          />
+          <Input
+            label="Your Email"
+            type="email"
+            defaultValue="demo@example.com"
+            isRequired
+          />
+          <TextArea
+            label="Message (optional)"
+            placeholder="Congratulations!"
+            rows={2}
+          />
           <div className="flex justify-end gap-2">
             <Button
               type="button"
