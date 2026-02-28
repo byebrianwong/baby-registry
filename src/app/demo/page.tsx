@@ -515,7 +515,7 @@ export default function DemoPage() {
                     return (
                       <Card
                         key={item.id}
-                        className={`py-0 gap-0 rounded-xl shadow-md ${
+                        className={`py-0 gap-0 rounded-xl shadow-none ${
                           isFulfilled && !item.is_parent_purchased
                             ? "bg-secondary/50 border-secondary"
                             : item.is_parent_purchased
