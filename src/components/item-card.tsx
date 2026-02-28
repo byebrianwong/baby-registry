@@ -109,11 +109,13 @@ export function ItemCard({ item, registryId, isOwner }: ItemCardProps) {
 
           <div className="mt-2 flex items-center gap-2">
             {item.external_url && (
-              <Button variant="outline" size="sm" asChild>
-                <a href={item.external_url} target="_blank" rel="noopener noreferrer">
-                  <ExternalLink className="mr-1 h-3 w-3" />
-                  View
-                </a>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => window.open(item.external_url!, '_blank', 'noopener,noreferrer')}
+              >
+                <ExternalLink className="mr-1 h-3 w-3" />
+                View
               </Button>
             )}
             {isOwner && !isFulfilled && !item.is_parent_purchased && (

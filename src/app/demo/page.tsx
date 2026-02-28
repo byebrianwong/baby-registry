@@ -843,15 +843,9 @@ export default function DemoPage() {
                                   {item.external_url && (
                                     <Button
                                       variant="outline"
-                                      asChild
+                                      onClick={() => window.open(item.external_url!, '_blank', 'noopener,noreferrer')}
                                     >
-                                      <a
-                                        href={item.external_url}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                      >
-                                        <span className="inline-flex items-center gap-1.5"><ExternalLink className="h-4 w-4 shrink-0" />Shop</span>
-                                      </a>
+                                      <span className="inline-flex items-center gap-1.5"><ExternalLink className="h-4 w-4 shrink-0" />Shop</span>
                                     </Button>
                                   )}
                                 </>

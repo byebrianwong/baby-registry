@@ -352,15 +352,13 @@ export default async function PublicRegistryPage({
                                 <>
                                   <ReserveItemDialog item={item} />
                                   {item.external_url && (
-                                    <Button variant="outline" size="sm" asChild>
-                                      <a
-                                        href={item.external_url}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                      >
-                                        <ExternalLink className="mr-1 h-3 w-3" />
-                                        Shop
-                                      </a>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => window.open(item.external_url!, '_blank', 'noopener,noreferrer')}
+                                    >
+                                      <ExternalLink className="mr-1 h-3 w-3" />
+                                      Shop
                                     </Button>
                                   )}
                                 </>

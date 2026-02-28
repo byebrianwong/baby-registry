@@ -440,17 +440,14 @@ function DemoItemCard({
 
         <div className="flex items-center justify-end gap-2">
           {item.external_url && (
-            <Button variant="outline" asChild>
-              <a
-                href={item.external_url}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <span className="inline-flex items-center gap-1.5">
-                  <ExternalLink className="h-4 w-4 shrink-0" />
-                  Shop
-                </span>
-              </a>
+            <Button
+              variant="outline"
+              onClick={() => window.open(item.external_url!, '_blank', 'noopener,noreferrer')}
+            >
+              <span className="inline-flex items-center gap-1.5">
+                <ExternalLink className="h-4 w-4 shrink-0" />
+                Shop
+              </span>
             </Button>
           )}
           {!isFulfilled && !item.is_parent_purchased && (
