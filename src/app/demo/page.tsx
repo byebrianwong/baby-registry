@@ -70,9 +70,19 @@ interface DemoCashFund {
   current_amount: number;
 }
 
+const currencySymbols: Record<string, string> = {
+  USD: "$",
+  EUR: "€",
+  GBP: "£",
+  JPY: "¥",
+  CAD: "CA$",
+  AUD: "A$",
+};
+
 function DemoSuggestItemDialog() {
   const [open, setOpen] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [currency, setCurrency] = useState("USD");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -83,6 +93,7 @@ function DemoSuggestItemDialog() {
     setOpen(open);
     if (!open) {
       setSuccess(false);
+      setCurrency("USD");
     }
   };
 
@@ -163,11 +174,15 @@ function DemoSuggestItemDialog() {
               <div className="grid grid-cols-2 gap-4">
                 <InputGroup
                   label="Estimated price (optional)"
-                  prefix="$"
+                  prefix={currencySymbols[currency] || "$"}
                   trailingAddon={
                     <InputPrefix position="trailing">
                       <span className="relative inline-flex items-center">
-                        <select className="appearance-none bg-transparent pr-5 text-primary outline-none cursor-pointer">
+                        <select
+                          className="appearance-none bg-transparent pr-5 text-primary outline-none cursor-pointer"
+                          value={currency}
+                          onChange={(e) => setCurrency(e.target.value)}
+                        >
                           <option>USD</option>
                           <option>EUR</option>
                           <option>GBP</option>

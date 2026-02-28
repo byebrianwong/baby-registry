@@ -25,11 +25,21 @@ interface SuggestItemDialogProps {
   categories?: { id: string; name: string }[];
 }
 
+const currencySymbols: Record<string, string> = {
+  USD: "$",
+  EUR: "€",
+  GBP: "£",
+  JPY: "¥",
+  CAD: "CA$",
+  AUD: "A$",
+};
+
 export function SuggestItemDialog({ registryId, categories = [] }: SuggestItemDialogProps) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+  const [currency, setCurrency] = useState("USD");
 
   const handleSubmit = async (formData: FormData) => {
     setLoading(true);
@@ -50,6 +60,7 @@ export function SuggestItemDialog({ registryId, categories = [] }: SuggestItemDi
     if (!open) {
       setSuccess(false);
       setError("");
+      setCurrency("USD");
     }
   };
 
@@ -136,11 +147,16 @@ export function SuggestItemDialog({ registryId, categories = [] }: SuggestItemDi
               <div className="grid grid-cols-2 gap-4">
                 <InputGroup
                   label="Estimated price (optional)"
-                  prefix="$"
+                  prefix={currencySymbols[currency] || "$"}
                   trailingAddon={
                     <InputPrefix position="trailing">
                       <span className="relative inline-flex items-center">
-                        <select className="appearance-none bg-transparent pr-5 text-primary outline-none cursor-pointer" name="currency">
+                        <select
+                          className="appearance-none bg-transparent pr-5 text-primary outline-none cursor-pointer"
+                          name="currency"
+                          value={currency}
+                          onChange={(e) => setCurrency(e.target.value)}
+                        >
                           <option>USD</option>
                           <option>EUR</option>
                           <option>GBP</option>
