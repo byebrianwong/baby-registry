@@ -601,7 +601,7 @@ export default function DemoPage() {
                                         target="_blank"
                                         rel="noopener noreferrer"
                                       >
-                                        <span className="inline-flex items-center gap-1.5"><ExternalLink className="h-4 w-4 shrink-0" />Cancel</span>
+                                        <span className="inline-flex items-center gap-1.5"><ExternalLink className="h-4 w-4 shrink-0" />Shop</span>
                                       </a>
                                     </Button>
                                   )}
