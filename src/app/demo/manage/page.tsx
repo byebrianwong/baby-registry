@@ -374,114 +374,105 @@ function DemoItemCard({
 
   return (
     <Card
-      className={
+      className={`py-0 gap-0 rounded-xl ${
         isFulfilled && !item.is_parent_purchased
           ? "opacity-60"
           : item.is_parent_purchased
-            ? "border-brand-600/30 bg-brand-600/5"
+            ? "bg-secondary"
             : ""
-      }
+      }`}
     >
-      <CardContent className="flex gap-4 p-4">
-        <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-md bg-tertiary">
-          {item.image_url ? (
-            <img
-              src={item.image_url}
-              alt={item.title}
-              className="h-20 w-20 rounded-md object-cover"
-            />
-          ) : (
-            <Package className="h-8 w-8 text-tertiary" />
-          )}
+      <CardContent className="flex flex-col gap-4 p-4">
+        <div className="flex gap-3">
+          <div className="flex size-[106px] shrink-0 items-center justify-center rounded-[10px] bg-tertiary">
+            {item.image_url ? (
+              <img
+                src={item.image_url}
+                alt={item.title}
+                className="size-[106px] rounded-[10px] object-cover"
+              />
+            ) : (
+              <Package className="h-10 w-10 text-tertiary" />
+            )}
+          </div>
+
+          <div className="flex-1 min-w-0 flex flex-col gap-2">
+            <div className="flex items-center justify-between gap-2">
+              <h3 className="text-sm font-medium">{item.title}</h3>
+              {item.is_parent_purchased && (
+                <span className="shrink-0 inline-flex items-center rounded-full border border-brand-600 px-2.5 py-0.5 text-xs font-medium">
+                  Purchased by you
+                </span>
+              )}
+              {isFulfilled && !item.is_parent_purchased && (
+                <span className="shrink-0 inline-flex items-center rounded-full bg-brand-600 px-2.5 py-0.5 text-xs font-medium text-white">
+                  Gifted
+                </span>
+              )}
+            </div>
+
+            {item.is_essential && (
+              <div className="flex gap-2.5 flex-wrap">
+                <span className="inline-flex items-center rounded-full bg-brand-600 px-2.5 py-0.5 text-xs font-medium text-white">
+                  Most wanted
+                </span>
+              </div>
+            )}
+
+            <div className="flex items-center gap-2.5">
+              {item.price && (
+                <span className="text-sm font-semibold">
+                  ${item.price.toFixed(2)}
+                </span>
+              )}
+              <span className="text-xs">
+                {remaining} of {item.quantity_needed} still needed
+              </span>
+            </div>
+
+            {item.notes && (
+              <p className="text-sm line-clamp-2">{item.notes}</p>
+            )}
+          </div>
         </div>
 
-        <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between gap-2">
-            <div>
-              <h3 className="font-medium leading-tight">
-                {item.title}
-                {item.is_parent_purchased && (
-                  <Badge
-                    variant="outline"
-                    className="ml-2 border-brand-600/50 text-brand-600"
-                  >
-                    You bought this
-                  </Badge>
-                )}
-                {isFulfilled && !item.is_parent_purchased && (
-                  <Badge variant="secondary" className="ml-2">
-                    Fulfilled
-                  </Badge>
-                )}
-              </h3>
-              <div className="mt-1 flex items-center gap-2">
-                {item.is_essential && (
-                  <Badge variant="default" className="text-xs">
-                    Essential
-                  </Badge>
-                )}
-                {item.price && (
-                  <span className="text-sm text-tertiary">
-                    ${item.price.toFixed(2)}
-                  </span>
-                )}
-                {item.quantity_needed > 1 && !isFulfilled && (
-                  <span className="text-sm text-tertiary">
-                    {remaining} of {item.quantity_needed} needed
-                  </span>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {item.notes && (
-            <p className="mt-1 text-sm text-tertiary line-clamp-2">
-              {item.notes}
-            </p>
-          )}
-
-          <div className="mt-2 flex items-center gap-2">
-            {item.external_url && (
-              <Button variant="outline" size="sm" asChild>
-                <a
-                  href={item.external_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <ExternalLink className="mr-1 h-3 w-3" />
-                  View
-                </a>
-              </Button>
-            )}
-            {!isFulfilled && !item.is_parent_purchased && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => onToggleParentPurchased(item.id)}
+        <div className="flex items-center justify-end gap-2">
+          {item.external_url && (
+            <Button variant="outline" asChild>
+              <a
+                href={item.external_url}
+                target="_blank"
+                rel="noopener noreferrer"
               >
-                <ShoppingBag className="mr-1 h-3 w-3" />
-                I Bought This
-              </Button>
-            )}
-            {item.is_parent_purchased && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => onToggleParentPurchased(item.id)}
-              >
-                <Undo2 className="mr-1 h-3 w-3" />
-                Undo
-              </Button>
-            )}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => onDelete(item.id)}
-              className="text-error-primary hover:text-error-primary"
-            >
-              <Trash2 className="h-3 w-3" />
+                <span className="inline-flex items-center gap-1.5">
+                  <ExternalLink className="h-4 w-4 shrink-0" />
+                  Shop
+                </span>
+              </a>
             </Button>
-          </div>
+          )}
+          {!isFulfilled && !item.is_parent_purchased && (
+            <Button
+              variant="outline"
+              onClick={() => onToggleParentPurchased(item.id)}
+            >
+              <span className="inline-flex items-center gap-1.5">
+                <ShoppingBag className="h-4 w-4 shrink-0" />
+                Mark as bought by parent
+              </span>
+            </Button>
+          )}
+          {item.is_parent_purchased && (
+            <Button
+              variant="outline"
+              onClick={() => onToggleParentPurchased(item.id)}
+            >
+              <span className="inline-flex items-center gap-1.5">
+                <Undo2 className="h-4 w-4 shrink-0" />
+                Mark as unpurchased
+              </span>
+            </Button>
+          )}
         </div>
       </CardContent>
     </Card>
