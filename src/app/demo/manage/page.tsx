@@ -22,6 +22,7 @@ import {
   FolderOpen,
   Pencil,
   Loader2,
+  ChevronDown,
 } from "lucide-react";
 import { Link01 } from "@untitledui/icons";
 import { Button } from "@/components/ui/button";
@@ -87,6 +88,15 @@ interface DemoPurchase {
   item_title: string;
 }
 
+const currencySymbols: Record<string, string> = {
+  USD: "$",
+  EUR: "€",
+  GBP: "£",
+  JPY: "¥",
+  CAD: "CA$",
+  AUD: "A$",
+};
+
 function DemoAddItemDialog({
   categories,
   onAdd,
@@ -98,6 +108,7 @@ function DemoAddItemDialog({
   const [scraping, setScraping] = useState(false);
   const [scrapeStatus, setScrapeStatus] = useState("");
   const [openToUsed, setOpenToUsed] = useState(false);
+  const [currency, setCurrency] = useState("USD");
   const urlRef = React.useRef<HTMLInputElement>(null);
   const titleRef = React.useRef<HTMLInputElement>(null);
   const priceRef = React.useRef<HTMLInputElement>(null);
@@ -171,7 +182,7 @@ function DemoAddItemDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setScrapeStatus(""); setOpenToUsed(false); } }}>
+    <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setScrapeStatus(""); setOpenToUsed(false); setCurrency("USD"); } }}>
       <DialogTrigger asChild>
         <Button>
           <Plus className="mr-2 h-4 w-4" />
@@ -261,8 +272,27 @@ function DemoAddItemDialog({
 
           <div className="grid grid-cols-2 gap-4">
             <InputGroup
-              label="Price ($)"
-              prefix="$"
+              label="Price (optional)"
+              prefix={currencySymbols[currency] || "$"}
+              trailingAddon={
+                <InputPrefix position="trailing">
+                  <span className="relative inline-flex items-center">
+                    <select
+                      className="appearance-none bg-transparent pr-5 text-primary outline-none cursor-pointer"
+                      value={currency}
+                      onChange={(e) => setCurrency(e.target.value)}
+                    >
+                      <option>USD</option>
+                      <option>EUR</option>
+                      <option>GBP</option>
+                      <option>JPY</option>
+                      <option>CAD</option>
+                      <option>AUD</option>
+                    </select>
+                    <ChevronDown className="pointer-events-none absolute right-0 h-4 w-4 text-tertiary" />
+                  </span>
+                </InputPrefix>
+              }
             >
               <InputBase
                 ref={priceRef}
@@ -270,7 +300,7 @@ function DemoAddItemDialog({
                 type="number"
                 step="0.01"
                 min={0}
-                placeholder="80.00"
+                placeholder="0.00"
               />
             </InputGroup>
             <Input

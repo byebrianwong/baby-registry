@@ -437,6 +437,7 @@ function DemoContributeFundDialog({
 }) {
   const [open, setOpen] = useState(false);
   const [contributed, setContributed] = useState(false);
+  const [currency, setCurrency] = useState("USD");
 
   const remaining = Math.max(0, fund.goal_amount - fund.current_amount);
   const fundProgress =
@@ -499,16 +500,39 @@ function DemoContributeFundDialog({
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <Input
+          <InputGroup
             label="Amount"
-            name="amount"
-            type="number"
-            step="0.01"
-            min={1}
-            max={remaining}
-            placeholder="0.00"
+            prefix={currencySymbols[currency] || "$"}
             isRequired
-          />
+            trailingAddon={
+              <InputPrefix position="trailing">
+                <span className="relative inline-flex items-center">
+                  <select
+                    className="appearance-none bg-transparent pr-5 text-primary outline-none cursor-pointer"
+                    value={currency}
+                    onChange={(e) => setCurrency(e.target.value)}
+                  >
+                    <option>USD</option>
+                    <option>EUR</option>
+                    <option>GBP</option>
+                    <option>JPY</option>
+                    <option>CAD</option>
+                    <option>AUD</option>
+                  </select>
+                  <ChevronDown className="pointer-events-none absolute right-0 h-4 w-4 text-tertiary" />
+                </span>
+              </InputPrefix>
+            }
+          >
+            <InputBase
+              name="amount"
+              type="number"
+              step="0.01"
+              min={1}
+              max={remaining}
+              placeholder="0.00"
+            />
+          </InputGroup>
           <Input
             label="Your Name"
             placeholder="Jane Doe"

@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { DollarSign } from "lucide-react";
+import { DollarSign, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/base/input/input";
+import { Input, InputBase } from "@/components/base/input/input";
+import { InputGroup, InputPrefix } from "@/components/base/input/input-group";
 import { TextArea } from "@/components/base/textarea/textarea";
 import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
@@ -30,6 +31,15 @@ interface ContributeFundDialogProps {
   paymentMethods?: PaymentMethods;
 }
 
+const currencySymbols: Record<string, string> = {
+  USD: "$",
+  EUR: "€",
+  GBP: "£",
+  JPY: "¥",
+  CAD: "CA$",
+  AUD: "A$",
+};
+
 export function ContributeFundDialog({
   fund,
   paymentMethods,
@@ -38,6 +48,7 @@ export function ContributeFundDialog({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+  const [currency, setCurrency] = useState("USD");
 
   const remaining =
     fund.goal_amount != null
@@ -108,16 +119,40 @@ export function ContributeFundDialog({
         <Separator />
 
         <form action={handleSubmit} className="space-y-4">
-          <Input
-            label="Amount ($)"
-            name="amount"
-            type="number"
-            step="0.01"
-            min={1}
-            max={remaining ?? undefined}
-            placeholder="25.00"
+          <InputGroup
+            label="Amount"
+            prefix={currencySymbols[currency] || "$"}
             isRequired
-          />
+            trailingAddon={
+              <InputPrefix position="trailing">
+                <span className="relative inline-flex items-center">
+                  <select
+                    className="appearance-none bg-transparent pr-5 text-primary outline-none cursor-pointer"
+                    name="currency"
+                    value={currency}
+                    onChange={(e) => setCurrency(e.target.value)}
+                  >
+                    <option>USD</option>
+                    <option>EUR</option>
+                    <option>GBP</option>
+                    <option>JPY</option>
+                    <option>CAD</option>
+                    <option>AUD</option>
+                  </select>
+                  <ChevronDown className="pointer-events-none absolute right-0 h-4 w-4 text-tertiary" />
+                </span>
+              </InputPrefix>
+            }
+          >
+            <InputBase
+              name="amount"
+              type="number"
+              step="0.01"
+              min={1}
+              max={remaining ?? undefined}
+              placeholder="0.00"
+            />
+          </InputGroup>
           <Input
             label="Your Name"
             name="buyerName"
