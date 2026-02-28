@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { List, PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { List, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -56,7 +56,7 @@ export function CategoryNav({ categories, suggestButton }: CategoryNavProps) {
                 type="button"
                 onClick={() => handleScrollTo(category.id)}
                 className={cn(
-                  "flex w-full items-center justify-between rounded-md px-3 py-2 text-sm transition-colors text-left",
+                  "flex w-full h-10 items-center justify-between rounded-md px-3 text-sm transition-colors text-left",
                   isActive
                     ? "bg-brand-50 text-brand-700 font-medium"
                     : "text-tertiary hover:text-primary hover:bg-secondary"
@@ -84,28 +84,28 @@ export function CategoryNav({ categories, suggestButton }: CategoryNavProps) {
         )}
       >
         {isCollapsed ? (
-          <Button
-            variant="ghost"
-            size="sm"
+          <button
+            type="button"
             onClick={() => setIsCollapsed(false)}
             aria-label="Expand category navigation"
+            className="text-tertiary hover:text-primary"
           >
-            <PanelLeftOpen className="h-4 w-4" />
-          </Button>
+            <ChevronRight className="h-5 w-5" />
+          </button>
         ) : (
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between">
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-quaternary">
+              <h3 className="text-sm font-semibold text-tertiary">
                 Categories
               </h3>
-              <Button
-                variant="ghost"
-                size="sm"
+              <button
+                type="button"
                 onClick={() => setIsCollapsed(true)}
                 aria-label="Collapse category navigation"
+                className="text-tertiary hover:text-primary"
               >
-                <PanelLeftClose className="h-3.5 w-3.5" />
-              </Button>
+                <ChevronLeft className="h-5 w-5" />
+              </button>
             </div>
             <Separator />
             {navList}

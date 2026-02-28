@@ -84,10 +84,10 @@ function DemoSuggestItemDialog() {
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
-        <Button variant="outline" className="w-full">
-          <span className="inline-flex items-center gap-1.5">
-            <Lightbulb className="h-4 w-4 shrink-0" />
-            Suggest an Item
+        <Button variant="secondary" className="w-full">
+          <span className="inline-flex items-center gap-2">
+            <Lightbulb className="h-5 w-5 shrink-0" />
+            Suggest an item
           </span>
         </Button>
       </DialogTrigger>
