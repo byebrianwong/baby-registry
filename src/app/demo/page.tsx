@@ -19,7 +19,8 @@ import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { Mail01 } from "@untitledui/icons";
-import { Input } from "@/components/base/input/input";
+import { Input, InputBase } from "@/components/base/input/input";
+import { InputGroup, InputPrefix } from "@/components/base/input/input-group";
 import { TextArea } from "@/components/base/textarea/textarea";
 import {
   Dialog,
@@ -280,7 +281,7 @@ function DemoContributeFundDialog({
           <span className="inline-flex items-center gap-1.5"><DollarSign className="h-4 w-4 shrink-0" />Contribute</span>
         </Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent showCloseButton={false}>
         <DialogHeader>
           <DialogTitle>
             Contribute to &ldquo;{fund.title}&rdquo;
@@ -291,52 +292,60 @@ function DemoContributeFundDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div>
-          <div className="flex justify-between text-sm mb-1">
+        <div className="flex flex-col gap-1">
+          <div className="flex justify-between text-sm">
             <span>${fund.current_amount} raised</span>
             <span>${fund.goal_amount} goal</span>
           </div>
           <Progress value={fundProgress} />
           {remaining > 0 && (
-            <p className="text-xs text-tertiary mt-1">
+            <span className="text-xs">
               ${remaining} remaining
-            </p>
+            </span>
           )}
         </div>
 
-        <PaymentMethodsDisplay
-          paymentMethods={DEMO_REGISTRY.settings.payment_methods}
-        />
-
-        <Separator />
+        <div className="flex flex-col gap-2 overflow-hidden rounded-xl px-4">
+          <p className="text-lg font-semibold">${fund.goal_amount}</p>
+          <PaymentMethodsDisplay
+            paymentMethods={DEMO_REGISTRY.settings.payment_methods}
+          />
+        </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <Input
-            label="Amount ($)"
-            name="amount"
-            type="number"
-            step="0.01"
-            min={1}
-            max={remaining}
-            placeholder="25.00"
+          <InputGroup
+            label="Amount"
+            prefix="$"
             isRequired
-          />
+            trailingAddon={
+              <InputPrefix position="trailing">USD</InputPrefix>
+            }
+          >
+            <InputBase
+              name="amount"
+              type="number"
+              step="0.01"
+              min={1}
+              max={remaining}
+              placeholder="0.00"
+            />
+          </InputGroup>
           <Input
             label="Your Name"
-            defaultValue="Demo User"
+            placeholder="Jane Doe"
             isRequired
           />
           <Input
             label="Your Email"
             type="email"
-            defaultValue="demo@example.com"
+            placeholder="jane@example.com"
             icon={Mail01}
             isRequired
           />
           <TextArea
             label="Message (optional)"
             placeholder="Congratulations!"
-            rows={2}
+            rows={3}
           />
           <div className="flex justify-end gap-2">
             <Button
