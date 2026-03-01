@@ -1141,7 +1141,10 @@ export default function DemoManagePage() {
               </Button>
               <Button variant="outline" asChild>
                 <Link href="/demo/settings">
-                  <Settings className="h-4 w-4" />
+                  <span className="inline-flex items-center gap-1.5">
+                    <Settings className="h-4 w-4 shrink-0" />
+                    Settings
+                  </span>
                 </Link>
               </Button>
             </div>
