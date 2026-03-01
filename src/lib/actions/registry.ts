@@ -3,6 +3,13 @@
 import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import {
+  notifyItemReserved,
+  notifyCashFundContribution,
+  notifyItemCovered,
+  notifyNewSuggestion,
+} from "@/lib/email";
+import { supabaseAdmin } from "@/lib/supabase-admin";
 
 function generateSlug(title: string): string {
   return (
@@ -295,6 +302,24 @@ export async function reserveItem(formData: FormData) {
     return { error: error.message };
   }
 
+  // Fire-and-forget email notification
+  supabaseAdmin
+    .from("registry_items")
+    .select("title")
+    .eq("id", itemId)
+    .single()
+    .then(({ data: item }) => {
+      if (item) {
+        void notifyItemReserved({
+          itemId,
+          itemTitle: item.title,
+          buyerName,
+          quantity,
+          message: message || null,
+        });
+      }
+    });
+
   return { success: true, purchaseId: data };
 }
 
@@ -516,6 +541,24 @@ export async function contributeToCashFund(formData: FormData) {
     return { error: error.message };
   }
 
+  // Fire-and-forget email notification
+  supabaseAdmin
+    .from("cash_funds")
+    .select("title")
+    .eq("id", fundId)
+    .single()
+    .then(({ data: fund }) => {
+      if (fund) {
+        void notifyCashFundContribution({
+          fundId,
+          fundTitle: fund.title,
+          buyerName,
+          amount,
+          message: message || null,
+        });
+      }
+    });
+
   return { success: true, purchaseId: data };
 }
 
@@ -553,6 +596,15 @@ export async function suggestItem(formData: FormData) {
     return { error: error.message };
   }
 
+  // Fire-and-forget email notification
+  void notifyNewSuggestion({
+    registryId,
+    title,
+    suggestedByName,
+    price: price ? parseFloat(price) : null,
+    notes: notes || null,
+  });
+
   return { success: true };
 }
 
@@ -583,6 +635,23 @@ export async function coverParentPurchasedItem(formData: FormData) {
   if (error) {
     return { error: error.message };
   }
+
+  // Fire-and-forget email notification
+  supabaseAdmin
+    .from("registry_items")
+    .select("title")
+    .eq("id", itemId)
+    .single()
+    .then(({ data: item }) => {
+      if (item) {
+        void notifyItemCovered({
+          itemId,
+          itemTitle: item.title,
+          buyerName,
+          message: message || null,
+        });
+      }
+    });
 
   return { success: true, purchaseId: data };
 }
