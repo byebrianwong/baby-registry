@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter, useParams } from "next/navigation";
+import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/base/input/input";
 import { TextArea } from "@/components/base/textarea/textarea";
@@ -91,7 +93,14 @@ export default function RegistrySettingsPage() {
 
   return (
     <div className="container mx-auto max-w-2xl px-4 py-8">
-      <h1 className="text-2xl font-bold mb-6">Registry Settings</h1>
+      <div className="flex items-center gap-2 mb-6">
+        <Button variant="ghost" size="sm" asChild>
+          <Link href={`/dashboard/registry/${registryId}`}>
+            <ArrowLeft className="h-4 w-4" />
+          </Link>
+        </Button>
+        <h1 className="text-2xl font-bold">Registry Settings</h1>
+      </div>
 
       <Card>
         <CardHeader>
