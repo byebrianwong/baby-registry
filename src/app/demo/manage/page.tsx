@@ -1199,7 +1199,7 @@ export default function DemoManagePage() {
               items={[
                 { id: "items", children: "Items", badge: totalItems },
                 { id: "purchases", children: "Gift Activity", badge: purchases.length },
-                { id: "suggestions", children: "Suggestions", badge: pendingSuggestions.length },
+                { id: "suggestions", children: "Suggestions Inbox", badge: pendingSuggestions.length },
               ]}
             >
               {(item) => (

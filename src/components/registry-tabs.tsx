@@ -15,7 +15,7 @@ interface RegistryTabsProps {
 const tabs = [
   { id: "items", label: "Items" },
   { id: "purchases", label: "Gift Activity" },
-  { id: "suggestions", label: "Suggestions" },
+  { id: "suggestions", label: "Suggestions Inbox" },
 ] as const;
 
 export function RegistryTabs({
