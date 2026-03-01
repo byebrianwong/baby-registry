@@ -1139,8 +1139,10 @@ export default function DemoManagePage() {
                   </span>
                 </Link>
               </Button>
-              <Button variant="outline" disabled>
-                <Settings className="h-4 w-4" />
+              <Button variant="outline" asChild>
+                <Link href="/demo/settings">
+                  <Settings className="h-4 w-4" />
+                </Link>
               </Button>
             </div>
           </div>
