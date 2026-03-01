@@ -2,8 +2,12 @@ import Link from "next/link";
 import { Baby, Gift, Link2, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Nav } from "@/components/nav";
+import { createClient } from "@/utils/supabase/server";
 
-export default function HomePage() {
+export default async function HomePage() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  const ctaHref = user ? "/dashboard" : "/signup";
   return (
     <div className="min-h-screen flex flex-col">
       <Nav />
@@ -20,7 +24,7 @@ export default function HomePage() {
           </p>
           <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
             <Button size="lg" asChild>
-              <Link href="/signup">Create Your Registry</Link>
+              <Link href={ctaHref}>Create Your Registry</Link>
             </Button>
             <Button size="lg" variant="outline" asChild>
               <Link href="/demo/dashboard">Demo: Parent Dashboard</Link>
@@ -124,7 +128,7 @@ export default function HomePage() {
               Join thousands of parents who trust Baby Akachan for their registry.
             </p>
             <Button size="lg" className="mt-8" asChild>
-              <Link href="/signup">Get Started Free</Link>
+              <Link href={ctaHref}>Get Started Free</Link>
             </Button>
           </div>
         </section>
