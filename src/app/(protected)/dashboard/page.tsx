@@ -20,8 +20,7 @@ export default async function DashboardPage() {
     .from("registries")
     .select(`
       *,
-      registry_items(id, quantity_needed, quantity_fulfilled, price),
-      purchases(id, status, created_at, buyer_name, registry_item_id)
+      registry_items(id, quantity_needed, quantity_fulfilled, price, purchases(id, status, created_at, buyer_name))
     `)
     .eq("owner_id", user.id)
     .order("created_at", { ascending: false });
@@ -75,8 +74,15 @@ export default async function DashboardPage() {
                 0
               ) || 0;
             const recentPurchases =
-              registry.purchases
-                ?.filter((p: { status: string }) => p.status !== "cancelled")
+              registry.registry_items
+                ?.flatMap(
+                  (item: { purchases: { id: string; status: string; created_at: string; buyer_name: string }[] }) =>
+                    item.purchases || []
+                )
+                .filter((p: { status: string }) => p.status !== "cancelled")
+                .sort((a: { created_at: string }, b: { created_at: string }) =>
+                  b.created_at.localeCompare(a.created_at)
+                )
                 .slice(0, 3) || [];
 
             return (

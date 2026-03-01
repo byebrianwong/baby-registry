@@ -9,7 +9,7 @@
     "lint": "eslint",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
-    "chromatic": "npx chromatic --project-token=chpt_f829fd84febda15"
+    "chromatic": "npx chromatic"
   },
   "dependencies": {
     "@react-stately/utils": "^3.11.0",
@@ -26,6 +26,7 @@
     "react-aria": "^3.46.0",
     "react-aria-components": "^1.15.1",
     "react-dom": "19.2.3",
+    "resend": "^6.9.3",
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.5.0",
     "tailwindcss-animate": "^1.0.7",
