@@ -191,12 +191,6 @@ export default async function RegistryManagePage({
             </Link>
           </Button>
           <Button variant="outline" asChild>
-            <Link href={`/dashboard/registry/${registryId}/checklist`}>
-              <ClipboardList className="mr-2 h-4 w-4" />
-              Checklist
-            </Link>
-          </Button>
-          <Button variant="outline" asChild>
             <Link href={`/dashboard/registry/${registryId}/settings`}>
               <Settings className="h-4 w-4" />
             </Link>
@@ -246,6 +240,14 @@ export default async function RegistryManagePage({
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-semibold">Registry Items</h2>
               <div className="flex gap-2">
+                <Button variant="outline" asChild>
+                  <Link href={`/dashboard/registry/${registryId}/checklist`}>
+                    <span className="inline-flex items-center gap-1.5">
+                      <ClipboardList className="h-4 w-4 shrink-0" />
+                      Checklist
+                    </span>
+                  </Link>
+                </Button>
                 <CategoryManager
                   registryId={registryId}
                   categories={allCategories}

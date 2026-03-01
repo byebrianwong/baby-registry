@@ -1139,14 +1139,6 @@ export default function DemoManagePage() {
                   </span>
                 </Link>
               </Button>
-              <Button variant="outline" asChild>
-                <Link href="/demo/checklist">
-                  <span className="inline-flex items-center gap-1.5">
-                    <ClipboardList className="h-4 w-4 shrink-0" />
-                    Checklist
-                  </span>
-                </Link>
-              </Button>
               <Button variant="outline" disabled>
                 <Settings className="h-4 w-4" />
               </Button>
@@ -1221,6 +1213,14 @@ export default function DemoManagePage() {
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-semibold">Registry Items</h2>
                 <div className="flex gap-2">
+                  <Button variant="outline" asChild>
+                    <Link href="/demo/checklist">
+                      <span className="inline-flex items-center gap-1.5">
+                        <ClipboardList className="h-4 w-4 shrink-0" />
+                        Checklist
+                      </span>
+                    </Link>
+                  </Button>
                   <DemoCategoryManager
                     categories={categories}
                     onAdd={handleAddCategory}
