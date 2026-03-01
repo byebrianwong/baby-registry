@@ -1243,7 +1243,7 @@ export default function DemoManagePage() {
                     if (categoryItems.length === 0) return null;
 
                     return (
-                      <div key={category.id} id={getCategorySectionId(category.id)} className="scroll-mt-4">
+                      <div key={category.id} id={getCategorySectionId(category.id)} className="scroll-mt-20">
                         <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
                           {category.name}
                           <Badge variant="secondary">

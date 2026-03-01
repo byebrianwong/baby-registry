@@ -279,7 +279,7 @@ export default async function RegistryManagePage({
                     if (categoryItems.length === 0) return null;
 
                     return (
-                      <div key={category.id} id={getCategorySectionId(category.id)} className="scroll-mt-4">
+                      <div key={category.id} id={getCategorySectionId(category.id)} className="scroll-mt-20">
                         <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
                           {category.name}
                           <Badge variant="secondary">{categoryItems.length}</Badge>
@@ -300,7 +300,7 @@ export default async function RegistryManagePage({
 
                   {/* Uncategorized items */}
                   {(itemsByCategory.get(null) || []).length > 0 && (
-                    <div id={getCategorySectionId(null)} className="scroll-mt-4">
+                    <div id={getCategorySectionId(null)} className="scroll-mt-20">
                       <h3 className="text-lg font-semibold mb-3">Other</h3>
                       <div className="grid gap-3 md:grid-cols-2">
                         {itemsByCategory.get(null)!.map((item) => (
