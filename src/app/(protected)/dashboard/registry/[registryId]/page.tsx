@@ -23,6 +23,8 @@ import { RegistryTabs } from "@/components/registry-tabs";
 import { CategoryManager } from "@/components/category-manager";
 import { CancelReservationButton } from "./cancel-reservation-button";
 import { SuggestionActions } from "./suggestion-actions";
+import { CategoryNav, type CategoryNavItem } from "@/components/category-nav";
+import { getCategorySectionId } from "@/lib/category-section-id";
 
 interface RegistryItem {
   id: string;
@@ -139,6 +141,27 @@ export default async function RegistryManagePage({
     itemsByCategory.get(key)!.push(item);
   }
 
+  // Build navigation items for category sidebar
+  const navItems: CategoryNavItem[] = [];
+  for (const category of allCategories) {
+    const categoryItems = itemsByCategory.get(category.id) || [];
+    if (categoryItems.length > 0) {
+      navItems.push({
+        id: getCategorySectionId(category.id),
+        name: category.name,
+        count: categoryItems.length,
+      });
+    }
+  }
+  const uncategorizedItems = itemsByCategory.get(null) || [];
+  if (uncategorizedItems.length > 0) {
+    navItems.push({
+      id: getCategorySectionId(null),
+      name: "Other",
+      count: uncategorizedItems.length,
+    });
+  }
+
   const registryUrl = `/r/${registry.slug}`;
 
   return (
@@ -247,19 +270,39 @@ export default async function RegistryManagePage({
                 </CardContent>
               </Card>
             ) : (
-              <div className="space-y-8">
-                {allCategories.map((category) => {
-                  const categoryItems = itemsByCategory.get(category.id) || [];
-                  if (categoryItems.length === 0) return null;
+              <div className="flex gap-8 items-start">
+                {navItems.length > 1 && <CategoryNav categories={navItems} />}
+                <div className="flex-1 min-w-0 space-y-8">
+                  {allCategories.map((category) => {
+                    const categoryItems = itemsByCategory.get(category.id) || [];
+                    if (categoryItems.length === 0) return null;
 
-                  return (
-                    <div key={category.id}>
-                      <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-                        {category.name}
-                        <Badge variant="secondary">{categoryItems.length}</Badge>
-                      </h3>
+                    return (
+                      <div key={category.id} id={getCategorySectionId(category.id)} className="scroll-mt-4">
+                        <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                          {category.name}
+                          <Badge variant="secondary">{categoryItems.length}</Badge>
+                        </h3>
+                        <div className="grid gap-3 md:grid-cols-2">
+                          {categoryItems.map((item) => (
+                            <ItemCard
+                              key={item.id}
+                              item={item}
+                              registryId={registryId}
+                              isOwner
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+
+                  {/* Uncategorized items */}
+                  {(itemsByCategory.get(null) || []).length > 0 && (
+                    <div id={getCategorySectionId(null)} className="scroll-mt-4">
+                      <h3 className="text-lg font-semibold mb-3">Other</h3>
                       <div className="grid gap-3 md:grid-cols-2">
-                        {categoryItems.map((item) => (
+                        {itemsByCategory.get(null)!.map((item) => (
                           <ItemCard
                             key={item.id}
                             item={item}
@@ -269,25 +312,8 @@ export default async function RegistryManagePage({
                         ))}
                       </div>
                     </div>
-                  );
-                })}
-
-                {/* Uncategorized items */}
-                {(itemsByCategory.get(null) || []).length > 0 && (
-                  <div>
-                    <h3 className="text-lg font-semibold mb-3">Other</h3>
-                    <div className="grid gap-3 md:grid-cols-2">
-                      {itemsByCategory.get(null)!.map((item) => (
-                        <ItemCard
-                          key={item.id}
-                          item={item}
-                          registryId={registryId}
-                          isOwner
-                        />
-                      ))}
-                    </div>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             )}
           </>

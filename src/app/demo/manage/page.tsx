@@ -60,6 +60,8 @@ import {
   DEMO_PURCHASES,
   DEMO_SUGGESTIONS,
 } from "@/lib/demo-data";
+import { CategoryNav, type CategoryNavItem } from "@/components/category-nav";
+import { getCategorySectionId } from "@/lib/category-section-id";
 
 interface DemoItem {
   id: string;
@@ -199,8 +201,10 @@ function DemoAddItemDialog({
     <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setScrapeStatus(""); setOpenToUsed(false); setCurrency("USD"); } }}>
       <DialogTrigger asChild>
         <Button>
-          <Plus className="mr-2 h-4 w-4" />
-          Add Item
+          <span className="inline-flex items-center gap-1.5">
+            <Plus className="h-4 w-4 shrink-0" />
+            Add Item
+          </span>
         </Button>
       </DialogTrigger>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg" showCloseButton={false}>
@@ -802,9 +806,11 @@ function DemoCategoryManager({
   return (
     <Sheet>
       <SheetTrigger asChild>
-        <Button variant="outline" size="sm">
-          <FolderOpen className="mr-2 h-4 w-4" />
-          Categories
+        <Button variant="outline">
+          <span className="inline-flex items-center gap-1.5">
+            <FolderOpen className="h-4 w-4 shrink-0" />
+            Categories
+          </span>
         </Button>
       </SheetTrigger>
       <SheetContent>
@@ -1042,6 +1048,19 @@ export default function DemoManagePage() {
     itemsByCategory.get(item.category_id)!.push(item);
   }
 
+  // Build navigation items for category sidebar
+  const navItems: CategoryNavItem[] = [];
+  for (const category of categories) {
+    const categoryItems = itemsByCategory.get(category.id) || [];
+    if (categoryItems.length > 0) {
+      navItems.push({
+        id: getCategorySectionId(category.id),
+        name: category.name,
+        count: categoryItems.length,
+      });
+    }
+  }
+
   const activePurchases = purchases.filter((p) => p.status !== "cancelled");
   const pendingSuggestions = suggestions.filter((s) => s.status === "pending");
 
@@ -1098,28 +1117,34 @@ export default function DemoManagePage() {
             </div>
             <div className="flex gap-2 flex-wrap">
               <Button variant="outline" onClick={handleCopyLink}>
-                {copied ? (
-                  <>
-                    <Check className="mr-2 h-4 w-4" />
-                    Copied!
-                  </>
-                ) : (
-                  <>
-                    <Share2 className="mr-2 h-4 w-4" />
-                    Share Link
-                  </>
-                )}
+                <span className="inline-flex items-center gap-1.5">
+                  {copied ? (
+                    <>
+                      <Check className="h-4 w-4 shrink-0" />
+                      Copied!
+                    </>
+                  ) : (
+                    <>
+                      <Share2 className="h-4 w-4 shrink-0" />
+                      Share Link
+                    </>
+                  )}
+                </span>
               </Button>
               <Button variant="outline" asChild>
                 <Link href="/demo" target="_blank">
-                  <ExternalLink className="mr-2 h-4 w-4" />
-                  Preview
+                  <span className="inline-flex items-center gap-1.5">
+                    <ExternalLink className="h-4 w-4 shrink-0" />
+                    Preview
+                  </span>
                 </Link>
               </Button>
               <Button variant="outline" asChild>
                 <Link href="/demo/checklist">
-                  <ClipboardList className="mr-2 h-4 w-4" />
-                  Checklist
+                  <span className="inline-flex items-center gap-1.5">
+                    <ClipboardList className="h-4 w-4 shrink-0" />
+                    Checklist
+                  </span>
                 </Link>
               </Button>
               <Button variant="outline" disabled>
@@ -1225,36 +1250,39 @@ export default function DemoManagePage() {
                 </div>
               </div>
 
-              <div className="space-y-8">
-                {categories.map((category) => {
-                  const categoryItems =
-                    itemsByCategory.get(category.id) || [];
-                  if (categoryItems.length === 0) return null;
+              <div className="flex gap-8 items-start">
+                {navItems.length > 1 && <CategoryNav categories={navItems} />}
+                <div className="flex-1 min-w-0 space-y-8">
+                  {categories.map((category) => {
+                    const categoryItems =
+                      itemsByCategory.get(category.id) || [];
+                    if (categoryItems.length === 0) return null;
 
-                  return (
-                    <div key={category.id}>
-                      <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-                        {category.name}
-                        <Badge variant="secondary">
-                          {categoryItems.length}
-                        </Badge>
-                      </h3>
-                      <div className="grid gap-3 md:grid-cols-2">
-                        {categoryItems.map((item) => (
-                          <DemoItemCard
-                            key={item.id}
-                            item={item}
-                            onDelete={handleDeleteItem}
-                            onToggleParentPurchased={
-                              handleToggleParentPurchased
-                            }
-                            onClick={() => setEditingItem(item)}
-                          />
-                        ))}
+                    return (
+                      <div key={category.id} id={getCategorySectionId(category.id)} className="scroll-mt-4">
+                        <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                          {category.name}
+                          <Badge variant="secondary">
+                            {categoryItems.length}
+                          </Badge>
+                        </h3>
+                        <div className="grid gap-3 md:grid-cols-2">
+                          {categoryItems.map((item) => (
+                            <DemoItemCard
+                              key={item.id}
+                              item={item}
+                              onDelete={handleDeleteItem}
+                              onToggleParentPurchased={
+                                handleToggleParentPurchased
+                              }
+                              onClick={() => setEditingItem(item)}
+                            />
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
               </div>
 
               {editingItem && (
