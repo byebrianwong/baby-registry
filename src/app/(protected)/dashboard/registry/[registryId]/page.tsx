@@ -25,6 +25,7 @@ import { CancelReservationButton } from "./cancel-reservation-button";
 import { SuggestionActions } from "./suggestion-actions";
 import { CategoryNav, type CategoryNavItem } from "@/components/category-nav";
 import { getCategorySectionId } from "@/lib/category-section-id";
+import { ScrollToTop } from "@/components/scroll-to-top";
 
 interface RegistryItem {
   id: string;
@@ -528,6 +529,8 @@ export default async function RegistryManagePage({
           </>
         }
       />
+
+      <ScrollToTop />
     </div>
   );
 }

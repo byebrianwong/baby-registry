@@ -60,8 +60,10 @@ import {
   DEMO_PURCHASES,
   DEMO_SUGGESTIONS,
 } from "@/lib/demo-data";
+import { Tabs, TabList, Tab, TabPanel } from "@/components/base/tabs/tabs";
 import { CategoryNav, type CategoryNavItem } from "@/components/category-nav";
 import { getCategorySectionId } from "@/lib/category-section-id";
+import { ScrollToTop } from "@/components/scroll-to-top";
 
 interface DemoItem {
   id: string;
@@ -902,14 +904,12 @@ function DemoCategoryManager({
   );
 }
 
-type TabMode = "items" | "purchases" | "suggestions";
 
 export default function DemoManagePage() {
   const [items, setItems] = useState<DemoItem[]>(DEMO_ITEMS);
   const [categories, setCategories] = useState(DEMO_CATEGORIES);
   const [purchases, setPurchases] = useState<DemoPurchase[]>(DEMO_PURCHASES);
   const [copied, setCopied] = useState(false);
-  const [activeTab, setActiveTab] = useState<TabMode>("items");
   const [editingItem, setEditingItem] = useState<DemoItem | null>(null);
   const [suggestions, setSuggestions] = useState<DemoSuggestion[]>(DEMO_SUGGESTIONS);
 
@@ -1199,41 +1199,25 @@ export default function DemoManagePage() {
           <Separator className="my-8" />
 
           {/* Tabs */}
-          <div className="flex items-center gap-4 mb-6 border-b">
-            <button
-              onClick={() => setActiveTab("items")}
-              className={`pb-2 text-sm font-medium border-b-2 transition-colors ${
-                activeTab === "items"
-                  ? "border-brand-600 text-primary"
-                  : "border-transparent text-tertiary hover:text-primary"
-              }`}
+          <Tabs defaultSelectedKey="items">
+            <TabList
+              type="button-minimal"
+              size="sm"
+              className="w-fit"
+              items={[
+                { id: "items", children: "Items", badge: totalItems },
+                { id: "purchases", children: "Gift Activity", badge: purchases.length },
+                { id: "suggestions", children: "Suggestions", badge: pendingSuggestions.length },
+              ]}
             >
-              Items ({totalItems})
-            </button>
-            <button
-              onClick={() => setActiveTab("purchases")}
-              className={`pb-2 text-sm font-medium border-b-2 transition-colors ${
-                activeTab === "purchases"
-                  ? "border-brand-600 text-primary"
-                  : "border-transparent text-tertiary hover:text-primary"
-              }`}
-            >
-              Gift Activity ({purchases.length})
-            </button>
-            <button
-              onClick={() => setActiveTab("suggestions")}
-              className={`pb-2 text-sm font-medium border-b-2 transition-colors ${
-                activeTab === "suggestions"
-                  ? "border-brand-600 text-primary"
-                  : "border-transparent text-tertiary hover:text-primary"
-              }`}
-            >
-              Suggestions ({pendingSuggestions.length})
-            </button>
-          </div>
+              {(item) => (
+                <Tab key={item.id} id={item.id} badge={item.badge}>
+                  {item.children}
+                </Tab>
+              )}
+            </TabList>
 
-          {activeTab === "items" ? (
-            <>
+            <TabPanel id="items" className="pt-6">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-semibold">Registry Items</h2>
                 <div className="flex gap-2">
@@ -1295,9 +1279,9 @@ export default function DemoManagePage() {
                   onDelete={handleDeleteItem}
                 />
               )}
-            </>
-          ) : activeTab === "purchases" ? (
-            <>
+            </TabPanel>
+
+            <TabPanel id="purchases" className="pt-6">
               <div className="mb-6">
                 <h2 className="text-xl font-semibold">Gift Activity</h2>
                 <p className="text-sm text-tertiary">
@@ -1416,9 +1400,9 @@ export default function DemoManagePage() {
                     );
                   })}
               </div>
-            </>
-          ) : (
-            <>
+            </TabPanel>
+
+            <TabPanel id="suggestions" className="pt-6">
               <div className="mb-6">
                 <h2 className="text-xl font-semibold">Suggestion Inbox</h2>
                 <p className="text-sm text-tertiary">
@@ -1549,10 +1533,12 @@ export default function DemoManagePage() {
                     })}
                 </div>
               )}
-            </>
-          )}
+            </TabPanel>
+          </Tabs>
         </div>
       </main>
+
+      <ScrollToTop />
     </div>
   );
 }
