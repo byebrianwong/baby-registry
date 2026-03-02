@@ -16,17 +16,19 @@ export function CopyLinkButton({ slug }: { slug: string }) {
 
   return (
     <Button variant="outline" onClick={handleCopy}>
-      {copied ? (
-        <>
-          <Check className="mr-2 h-4 w-4" />
-          Copied!
-        </>
-      ) : (
-        <>
-          <Share2 className="mr-2 h-4 w-4" />
-          Share Link
-        </>
-      )}
+      <span className="inline-flex items-center gap-1.5">
+        {copied ? (
+          <>
+            <Check className="h-4 w-4 shrink-0" />
+            Copied!
+          </>
+        ) : (
+          <>
+            <Share2 className="h-4 w-4 shrink-0" />
+            Share Link
+          </>
+        )}
+      </span>
     </Button>
   );
 }

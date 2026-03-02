@@ -1,11 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { ExternalLink, Trash2, Package, ShoppingBag, Undo2 } from "lucide-react";
+import { ExternalLink, Package, ShoppingBag, Undo2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { deleteRegistryItem, toggleParentPurchased } from "@/lib/actions/registry";
+import { toggleParentPurchased } from "@/lib/actions/registry";
 
 interface ItemCardProps {
   item: {
@@ -25,16 +24,9 @@ interface ItemCardProps {
 }
 
 export function ItemCard({ item, registryId, isOwner }: ItemCardProps) {
-  const [deleting, setDeleting] = useState(false);
   const [toggling, setToggling] = useState(false);
   const isFulfilled = item.quantity_fulfilled >= item.quantity_needed;
   const remaining = item.quantity_needed - item.quantity_fulfilled;
-
-  const handleDelete = async () => {
-    if (!confirm("Remove this item from your registry?")) return;
-    setDeleting(true);
-    await deleteRegistryItem(item.id, registryId);
-  };
 
   const handleToggleParentPurchased = async () => {
     setToggling(true);
@@ -44,115 +36,109 @@ export function ItemCard({ item, registryId, isOwner }: ItemCardProps) {
 
   return (
     <Card
-      className={
+      className={`py-0 gap-0 rounded-xl ${
         isFulfilled && !item.is_parent_purchased
           ? "opacity-60"
           : item.is_parent_purchased
-            ? "border-brand-600/30 bg-brand-600/5"
+            ? "bg-secondary"
             : ""
-      }
+      }`}
     >
-      <CardContent className="flex gap-4 p-4">
-        <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-md bg-tertiary">
-          {item.image_url ? (
-            <img
-              src={item.image_url}
-              alt={item.title}
-              className="h-20 w-20 rounded-md object-cover"
-            />
-          ) : (
-            <Package className="h-8 w-8 text-tertiary" />
-          )}
-        </div>
+      <CardContent className="flex h-full flex-col justify-between gap-4 p-4">
+        <div className="flex gap-3">
+          <div className="flex size-[106px] shrink-0 items-center justify-center rounded-[10px] bg-tertiary">
+            {item.image_url ? (
+              <img
+                src={item.image_url}
+                alt={item.title}
+                className="size-[106px] rounded-[10px] object-cover"
+              />
+            ) : (
+              <Package className="h-10 w-10 text-tertiary" />
+            )}
+          </div>
 
-        <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between gap-2">
-            <div>
-              <h3 className="font-medium leading-tight">
-                {item.title}
+          <div className="flex-1 min-w-0 flex flex-col gap-2">
+            <div className="flex items-center justify-between gap-2">
+              <h3 className="text-sm font-medium">{item.title}</h3>
+              <div className="shrink-0 h-6">
                 {item.is_parent_purchased && (
-                  <Badge variant="outline" className="ml-2 border-brand-600/50 text-brand-600">
-                    You bought this
-                  </Badge>
-                )}
-                {isFulfilled && !item.is_parent_purchased && (
-                  <Badge variant="secondary" className="ml-2">
-                    Fulfilled
-                  </Badge>
-                )}
-              </h3>
-              <div className="mt-1 flex items-center gap-2">
-                {item.is_essential && (
-                  <Badge variant="default" className="text-xs">
-                    Essential
-                  </Badge>
-                )}
-                {item.price && (
-                  <span className="text-sm text-tertiary">
-                    ${item.price.toFixed(2)}
+                  <span className="inline-flex items-center rounded-full border border-brand-600 px-2.5 py-0.5 text-xs font-medium">
+                    Purchased by you
                   </span>
                 )}
-                {item.quantity_needed > 1 && !isFulfilled && (
-                  <span className="text-sm text-tertiary">
-                    {remaining} of {item.quantity_needed} needed
+                {isFulfilled && !item.is_parent_purchased && (
+                  <span className="inline-flex items-center rounded-full bg-brand-600 px-2.5 py-0.5 text-xs font-medium text-white">
+                    Gifted
                   </span>
                 )}
               </div>
             </div>
-          </div>
 
-          {item.notes && (
-            <p className="mt-1 text-sm text-tertiary line-clamp-2">
-              {item.notes}
-            </p>
-          )}
+            {item.is_essential && (
+              <div className="flex gap-2.5 flex-wrap">
+                <span className="inline-flex items-center rounded-full bg-brand-600 px-2.5 py-0.5 text-xs font-medium text-white">
+                  Most wanted
+                </span>
+              </div>
+            )}
 
-          <div className="mt-2 flex items-center gap-2">
-            {item.external_url && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => window.open(item.external_url!, '_blank', 'noopener,noreferrer')}
-              >
-                <ExternalLink className="mr-1 h-3 w-3" />
-                View
-              </Button>
-            )}
-            {isOwner && !isFulfilled && !item.is_parent_purchased && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleToggleParentPurchased}
-                disabled={toggling}
-              >
-                <ShoppingBag className="mr-1 h-3 w-3" />
-                {toggling ? "Saving..." : "I Bought This"}
-              </Button>
-            )}
-            {isOwner && item.is_parent_purchased && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleToggleParentPurchased}
-                disabled={toggling}
-              >
-                <Undo2 className="mr-1 h-3 w-3" />
-                Undo
-              </Button>
-            )}
-            {isOwner && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleDelete}
-                disabled={deleting}
-                className="text-error-primary hover:text-error-primary"
-              >
-                <Trash2 className="h-3 w-3" />
-              </Button>
+            <div className="flex items-center gap-2.5">
+              {item.price && (
+                <span className="text-sm font-semibold">
+                  ${item.price.toFixed(2)}
+                </span>
+              )}
+              <span className="text-xs">
+                {remaining} of {item.quantity_needed} still needed
+              </span>
+            </div>
+
+            {item.notes && (
+              <p className="text-sm line-clamp-2">{item.notes}</p>
             )}
           </div>
         </div>
+
+        {isOwner && (
+          <div className="flex items-center justify-end gap-2">
+            {item.external_url && (
+              <Button
+                variant="outline"
+                onClick={() => window.open(item.external_url!, '_blank', 'noopener,noreferrer')}
+              >
+                <span className="inline-flex items-center gap-1.5">
+                  <ExternalLink className="h-4 w-4 shrink-0" />
+                  Shop
+                </span>
+              </Button>
+            )}
+            {!isFulfilled && !item.is_parent_purchased && (
+              <Button
+                variant="outline"
+                onClick={handleToggleParentPurchased}
+                disabled={toggling}
+              >
+                <span className="inline-flex items-center gap-1.5">
+                  <ShoppingBag className="h-4 w-4 shrink-0" />
+                  {toggling ? "Saving..." : "Mark as bought by parent"}
+                </span>
+              </Button>
+            )}
+            {item.is_parent_purchased && (
+              <Button
+                variant="outline"
+                onClick={handleToggleParentPurchased}
+                disabled={toggling}
+              >
+                <span className="inline-flex items-center gap-1.5">
+                  <Undo2 className="h-4 w-4 shrink-0" />
+                  Mark as unpurchased
+                </span>
+              </Button>
+            )}
+          </div>
+        )}
       </CardContent>
     </Card>
   );

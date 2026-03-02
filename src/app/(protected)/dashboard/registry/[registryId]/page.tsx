@@ -186,8 +186,10 @@ export default async function RegistryManagePage({
           <CopyLinkButton slug={registry.slug} />
           <Button variant="outline" asChild>
             <Link href={registryUrl} target="_blank">
-              <ExternalLink className="mr-2 h-4 w-4" />
-              Preview
+              <span className="inline-flex items-center gap-1.5">
+                <ExternalLink className="h-4 w-4 shrink-0" />
+                Preview
+              </span>
             </Link>
           </Button>
           <Button variant="outline" asChild>
