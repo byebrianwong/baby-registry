@@ -33,6 +33,7 @@ export const Default: Story = {
       is_essential: true,
       is_parent_purchased: false,
       notes: "We love the white finish!",
+      category_id: null,
     },
   },
 };
@@ -53,6 +54,7 @@ export const WithImage: Story = {
       is_essential: true,
       is_parent_purchased: false,
       notes: "We love the white finish!",
+      category_id: null,
     },
   },
 };
@@ -72,6 +74,7 @@ export const Fulfilled: Story = {
       is_essential: true,
       is_parent_purchased: false,
       notes: "Breathable design",
+      category_id: null,
     },
   },
 };
@@ -91,6 +94,7 @@ export const ParentPurchased: Story = {
       is_essential: true,
       is_parent_purchased: true,
       notes: null,
+      category_id: null,
     },
   },
 };
@@ -110,6 +114,7 @@ export const MultiQuantity: Story = {
       is_essential: true,
       is_parent_purchased: false,
       notes: "Neutral colors preferred",
+      category_id: null,
     },
   },
 };
@@ -129,6 +134,7 @@ export const NonEssential: Story = {
       is_essential: false,
       is_parent_purchased: false,
       notes: "High contrast black & white design",
+      category_id: null,
     },
   },
 };
@@ -148,6 +154,7 @@ export const NoPrice: Story = {
       is_essential: false,
       is_parent_purchased: false,
       notes: "We love reading — any board books are welcome!",
+      category_id: null,
     },
   },
 };
@@ -168,6 +175,7 @@ export const GiftGiverView: Story = {
       is_essential: true,
       is_parent_purchased: false,
       notes: "This is a big one — group gifting welcome!",
+      category_id: null,
     },
   },
 };

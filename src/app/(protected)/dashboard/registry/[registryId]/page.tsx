@@ -298,6 +298,7 @@ export default async function RegistryManagePage({
                               item={item}
                               registryId={registryId}
                               isOwner
+                              categories={allCategories}
                             />
                           ))}
                         </div>
@@ -316,6 +317,7 @@ export default async function RegistryManagePage({
                             item={item}
                             registryId={registryId}
                             isOwner
+                            categories={allCategories}
                           />
                         ))}
                       </div>

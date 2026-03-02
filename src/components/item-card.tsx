@@ -5,6 +5,7 @@ import { ExternalLink, Package, ShoppingBag, Undo2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { toggleParentPurchased } from "@/lib/actions/registry";
+import { EditItemDialog } from "@/components/edit-item-dialog";
 
 interface ItemCardProps {
   item: {
@@ -18,13 +19,16 @@ interface ItemCardProps {
     is_essential: boolean;
     is_parent_purchased: boolean;
     notes: string | null;
+    category_id: string | null;
   };
   registryId: string;
   isOwner?: boolean;
+  categories?: { id: string; name: string }[];
 }
 
-export function ItemCard({ item, registryId, isOwner }: ItemCardProps) {
+export function ItemCard({ item, registryId, isOwner, categories = [] }: ItemCardProps) {
   const [toggling, setToggling] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
   const isFulfilled = item.quantity_fulfilled >= item.quantity_needed;
   const remaining = item.quantity_needed - item.quantity_fulfilled;
 
@@ -35,14 +39,18 @@ export function ItemCard({ item, registryId, isOwner }: ItemCardProps) {
   };
 
   return (
+    <>
     <Card
       className={`py-0 gap-0 rounded-xl ${
+        isOwner ? "cursor-pointer transition-shadow hover:shadow-md" : ""
+      } ${
         isFulfilled && !item.is_parent_purchased
           ? "opacity-60"
           : item.is_parent_purchased
             ? "bg-secondary"
             : ""
       }`}
+      onClick={isOwner ? () => setEditOpen(true) : undefined}
     >
       <CardContent className="flex h-full flex-col justify-between gap-4 p-4">
         <div className="flex gap-3">
@@ -101,7 +109,7 @@ export function ItemCard({ item, registryId, isOwner }: ItemCardProps) {
         </div>
 
         {isOwner && (
-          <div className="flex items-center justify-end gap-2">
+          <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
             {item.external_url && (
               <Button
                 variant="outline"
@@ -141,5 +149,15 @@ export function ItemCard({ item, registryId, isOwner }: ItemCardProps) {
         )}
       </CardContent>
     </Card>
+    {isOwner && (
+      <EditItemDialog
+        item={item}
+        registryId={registryId}
+        categories={categories}
+        open={editOpen}
+        onOpenChange={setEditOpen}
+      />
+    )}
+    </>
   );
 }
