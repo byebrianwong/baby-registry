@@ -58,6 +58,7 @@ export function AddItemDialog({
   const [loading, setLoading] = useState(false);
   const [scraping, setScraping] = useState(false);
   const [scrapeStatus, setScrapeStatus] = useState<string>("");
+  const [scrapeIsError, setScrapeIsError] = useState(false);
   const [error, setError] = useState("");
   const [openToUsed, setOpenToUsed] = useState(false);
   const [currency, setCurrency] = useState("USD");
@@ -85,11 +86,13 @@ export function AddItemDialog({
 
     setScraping(true);
     setScrapeStatus("");
+    setScrapeIsError(false);
 
     const result = await scrapeProductUrl(url);
 
     if (result.error) {
       setScrapeStatus(result.error);
+      setScrapeIsError(true);
     } else {
       let filled: string[] = [];
       if (result.title && titleRef.current && !titleRef.current.value) {
@@ -135,7 +138,7 @@ export function AddItemDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setScrapeStatus(""); setOpenToUsed(false); setCurrency("USD"); } }}>
+    <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setScrapeStatus(""); setScrapeIsError(false); setOpenToUsed(false); setCurrency("USD"); } }}>
       <DialogTrigger asChild>
         {trigger || (
           <Button>
@@ -187,7 +190,7 @@ export function AddItemDialog({
               </Button>
             </div>
             {scrapeStatus && (
-              <p className="text-xs text-tertiary">{scrapeStatus}</p>
+              <p className={`text-xs ${scrapeIsError ? "text-error-primary" : "text-tertiary"}`}>{scrapeStatus}</p>
             )}
           </div>
 

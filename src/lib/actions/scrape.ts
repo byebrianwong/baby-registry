@@ -9,6 +9,25 @@ interface ScrapeResult {
   error?: string;
 }
 
+// Generic site titles that indicate bot protection or empty pages
+const GENERIC_TITLES = new Set([
+  "amazon.com",
+  "walmart.com",
+  "target",
+  "ebay",
+  "robot check",
+  "access denied",
+  "just a moment...",
+  "attention required",
+  "page not found",
+  "404",
+]);
+
+function isGenericTitle(title: string): boolean {
+  const lower = title.toLowerCase().trim();
+  return GENERIC_TITLES.has(lower) || lower.length < 3;
+}
+
 export async function scrapeProductUrl(url: string): Promise<ScrapeResult> {
   // Validate URL format
   let parsedUrl: URL;
@@ -53,15 +72,35 @@ export async function scrapeProductUrl(url: string): Promise<ScrapeResult> {
     return { error: "Failed to fetch page" };
   }
 
+  // Detect bot protection / minimal pages
+  if (html.length < 10000) {
+    const lower = html.toLowerCase();
+    if (
+      lower.includes("captcha") ||
+      lower.includes("robot") ||
+      lower.includes("blocked") ||
+      lower.includes("access denied") ||
+      lower.includes("challenge-running")
+    ) {
+      return {
+        error:
+          "This site blocked automatic fetching. Please enter the item details manually.",
+      };
+    }
+  }
+
   // Parse with cheerio
   const $ = cheerio.load(html);
 
   // Extract title (priority order)
-  const title =
+  const rawTitle =
     $('meta[property="og:title"]').attr("content")?.trim() ||
     $("title").text().trim() ||
     $('meta[name="twitter:title"]').attr("content")?.trim() ||
     undefined;
+
+  // Filter out generic/useless titles
+  const title = rawTitle && !isGenericTitle(rawTitle) ? rawTitle : undefined;
 
   // Extract image (priority order)
   const imageUrl =
@@ -132,6 +171,14 @@ export async function scrapeProductUrl(url: string): Promise<ScrapeResult> {
     } catch {
       resolvedImageUrl = undefined;
     }
+  }
+
+  // If we got nothing useful, return a helpful error
+  if (!title && !resolvedImageUrl && !price) {
+    return {
+      error:
+        "Couldn't extract product details from this page. The site may block automated access. Please enter the details manually.",
+    };
   }
 
   return {
