@@ -2,11 +2,11 @@
 
 import { useState } from "react";
 import { DollarSign, ChevronDown } from "lucide-react";
+import { Mail01 } from "@untitledui/icons";
 import { Button } from "@/components/ui/button";
 import { Input, InputBase } from "@/components/base/input/input";
 import { InputGroup, InputPrefix } from "@/components/base/input/input-group";
 import { TextArea } from "@/components/base/textarea/textarea";
-import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
 import {
   Dialog,
@@ -76,9 +76,8 @@ export function ContributeFundDialog({
 
   if (success) {
     return (
-      <Button size="sm" disabled variant="secondary">
-        <DollarSign className="mr-1 h-3 w-3" />
-        Contributed
+      <Button disabled variant="secondary">
+        <span className="inline-flex items-center gap-1.5"><DollarSign className="h-4 w-4 shrink-0" />Contributed</span>
       </Button>
     );
   }
@@ -86,12 +85,11 @@ export function ContributeFundDialog({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="sm">
-          <DollarSign className="mr-1 h-3 w-3" />
-          Contribute
+        <Button>
+          <span className="inline-flex items-center gap-1.5"><DollarSign className="h-4 w-4 shrink-0" />Contribute</span>
         </Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent showCloseButton={false}>
         <DialogHeader>
           <DialogTitle>Contribute to &ldquo;{fund.title}&rdquo;</DialogTitle>
           <DialogDescription>
@@ -100,23 +98,26 @@ export function ContributeFundDialog({
         </DialogHeader>
 
         {fund.goal_amount != null && (
-          <div>
-            <div className="flex justify-between text-sm mb-1">
+          <div className="flex flex-col gap-1">
+            <div className="flex justify-between text-sm">
               <span>${fund.current_amount.toFixed(0)} raised</span>
               <span>${fund.goal_amount.toFixed(0)} goal</span>
             </div>
             <Progress value={fundProgress} />
             {remaining != null && remaining > 0 && (
-              <p className="text-xs text-tertiary mt-1">
+              <span className="text-xs">
                 ${remaining.toFixed(0)} remaining
-              </p>
+              </span>
             )}
           </div>
         )}
 
-        <PaymentMethodsDisplay paymentMethods={paymentMethods} />
-
-        <Separator />
+        <div className="flex flex-col gap-2 overflow-hidden rounded-xl px-4">
+          {fund.goal_amount != null && (
+            <p className="text-lg font-semibold">${fund.goal_amount.toFixed(0)}</p>
+          )}
+          <PaymentMethodsDisplay paymentMethods={paymentMethods} />
+        </div>
 
         <form action={handleSubmit} className="space-y-4">
           <InputGroup
@@ -164,13 +165,14 @@ export function ContributeFundDialog({
             name="buyerEmail"
             type="email"
             placeholder="jane@example.com"
+            icon={Mail01}
             isRequired
           />
           <TextArea
             label="Message (optional)"
             name="message"
             placeholder="Congratulations!"
-            rows={2}
+            rows={3}
           />
 
           {error && <p className="text-sm text-error-primary">{error}</p>}

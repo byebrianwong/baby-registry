@@ -64,9 +64,11 @@ export function CategoryManager({
   return (
     <Sheet>
       <SheetTrigger asChild>
-        <Button variant="outline" size="sm">
-          <FolderOpen className="mr-2 h-4 w-4" />
-          Categories
+        <Button variant="outline">
+          <span className="inline-flex items-center gap-1.5">
+            <FolderOpen className="h-4 w-4 shrink-0" />
+            Categories
+          </span>
         </Button>
       </SheetTrigger>
       <SheetContent>

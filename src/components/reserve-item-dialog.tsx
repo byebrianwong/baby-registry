@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Gift } from "lucide-react";
+import { Gift, Check } from "lucide-react";
+import { Mail01 } from "@untitledui/icons";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/base/input/input";
 import { TextArea } from "@/components/base/textarea/textarea";
@@ -49,37 +50,22 @@ export function ReserveItemDialog({ item }: ReserveItemDialogProps) {
 
   if (success) {
     return (
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogTrigger asChild>
-          <Button size="sm" disabled>
-            Reserved
-          </Button>
-        </DialogTrigger>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Thank you!</DialogTitle>
-            <DialogDescription>
-              You&apos;ve reserved &ldquo;{item.title}&rdquo;. The parents will be
-              notified.
-            </DialogDescription>
-          </DialogHeader>
-          <Button onClick={() => setOpen(false)}>Done</Button>
-        </DialogContent>
-      </Dialog>
+      <Button disabled variant="secondary">
+        <span className="inline-flex items-center gap-1.5"><Check className="h-4 w-4 shrink-0" />Reserved</span>
+      </Button>
     );
   }
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="sm">
-          <Gift className="mr-1 h-3 w-3" />
-          I&apos;ll Get This
+        <Button>
+          <span className="inline-flex items-center gap-1.5"><Gift className="h-4 w-4 shrink-0" />Mark as purchased</span>
         </Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent showCloseButton={false}>
         <DialogHeader>
-          <DialogTitle>Reserve &ldquo;{item.title}&rdquo;</DialogTitle>
+          <DialogTitle>Mark &ldquo;{item.title}&rdquo; as purchased</DialogTitle>
           <DialogDescription>
             Let the parents know you&apos;re getting this gift. No account
             required.
@@ -97,23 +83,25 @@ export function ReserveItemDialog({ item }: ReserveItemDialogProps) {
             name="buyerEmail"
             type="email"
             placeholder="jane@example.com"
+            icon={Mail01}
             isRequired
           />
           {remaining > 1 && (
             <Input
-              label={`Quantity (up to ${remaining})`}
+              label="Quantity"
               name="quantity"
               type="number"
               min={1}
               max={remaining}
               defaultValue="1"
+              hint={`${remaining} of ${item.quantity_needed} still needed`}
             />
           )}
           <TextArea
             label="Message (optional)"
             name="message"
             placeholder="Congratulations!"
-            rows={2}
+            rows={3}
           />
 
           {error && <p className="text-sm text-error-primary">{error}</p>}
@@ -127,7 +115,7 @@ export function ReserveItemDialog({ item }: ReserveItemDialogProps) {
               Cancel
             </Button>
             <Button type="submit" disabled={loading}>
-              {loading ? "Reserving..." : "Reserve Item"}
+              {loading ? "Reserving..." : "I bought this item"}
             </Button>
           </div>
         </form>

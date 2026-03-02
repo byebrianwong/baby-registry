@@ -2,10 +2,10 @@
 
 import { useState } from "react";
 import { HandCoins } from "lucide-react";
+import { Mail01 } from "@untitledui/icons";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/base/input/input";
 import { TextArea } from "@/components/base/textarea/textarea";
-import { Separator } from "@/components/ui/separator";
 import {
   Dialog,
   DialogContent,
@@ -49,9 +49,8 @@ export function CoverItemDialog({ item, paymentMethods }: CoverItemDialogProps) 
 
   if (success) {
     return (
-      <Button size="sm" disabled variant="secondary">
-        <HandCoins className="mr-1 h-3 w-3" />
-        Covered
+      <Button disabled variant="secondary">
+        <span className="inline-flex items-center gap-1.5"><HandCoins className="h-4 w-4 shrink-0" />Covered</span>
       </Button>
     );
   }
@@ -59,12 +58,11 @@ export function CoverItemDialog({ item, paymentMethods }: CoverItemDialogProps) 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="sm" variant="outline">
-          <HandCoins className="mr-1 h-3 w-3" />
-          Cover This Item
+        <Button>
+          <span className="inline-flex items-center gap-1.5"><HandCoins className="h-4 w-4 shrink-0" />Cover the cost</span>
         </Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent showCloseButton={false}>
         <DialogHeader>
           <DialogTitle>Cover &ldquo;{item.title}&rdquo;</DialogTitle>
           <DialogDescription>
@@ -73,13 +71,12 @@ export function CoverItemDialog({ item, paymentMethods }: CoverItemDialogProps) 
           </DialogDescription>
         </DialogHeader>
 
-        {item.price && (
-          <p className="text-lg font-semibold">${item.price.toFixed(2)}</p>
-        )}
-
-        <PaymentMethodsDisplay paymentMethods={paymentMethods} />
-
-        <Separator />
+        <div className="flex flex-col gap-2 overflow-hidden rounded-xl px-4">
+          {item.price && (
+            <p className="text-lg font-semibold">${item.price.toFixed(2)}</p>
+          )}
+          <PaymentMethodsDisplay paymentMethods={paymentMethods} />
+        </div>
 
         <form action={handleSubmit} className="space-y-4">
           <Input
@@ -93,13 +90,14 @@ export function CoverItemDialog({ item, paymentMethods }: CoverItemDialogProps) 
             name="buyerEmail"
             type="email"
             placeholder="jane@example.com"
+            icon={Mail01}
             isRequired
           />
           <TextArea
             label="Message (optional)"
             name="message"
-            placeholder="Happy to help!"
-            rows={2}
+            placeholder="Congratulations!"
+            rows={3}
           />
 
           {error && <p className="text-sm text-error-primary">{error}</p>}
@@ -113,7 +111,7 @@ export function CoverItemDialog({ item, paymentMethods }: CoverItemDialogProps) 
               Cancel
             </Button>
             <Button type="submit" disabled={loading}>
-              {loading ? "Sending..." : "I'll Cover This"}
+              {loading ? "Sending..." : "I'll cover this"}
             </Button>
           </div>
         </form>

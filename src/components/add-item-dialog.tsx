@@ -1,9 +1,11 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { Plus, Loader2, Link as LinkIcon } from "lucide-react";
+import { Plus, Loader2, ChevronDown } from "lucide-react";
+import { Link01 } from "@untitledui/icons";
 import { Button } from "@/components/ui/button";
 import { Input, InputBase } from "@/components/base/input/input";
+import { InputGroup, InputPrefix } from "@/components/base/input/input-group";
 import { Label } from "@/components/base/input/label";
 import { TextArea } from "@/components/base/textarea/textarea";
 import { Checkbox } from "@/components/base/checkbox/checkbox";
@@ -37,6 +39,15 @@ interface AddItemDialogProps {
   trigger?: React.ReactNode;
 }
 
+const currencySymbols: Record<string, string> = {
+  USD: "$",
+  EUR: "€",
+  GBP: "£",
+  JPY: "¥",
+  CAD: "CA$",
+  AUD: "A$",
+};
+
 export function AddItemDialog({
   registryId,
   categories,
@@ -48,6 +59,8 @@ export function AddItemDialog({
   const [scraping, setScraping] = useState(false);
   const [scrapeStatus, setScrapeStatus] = useState<string>("");
   const [error, setError] = useState("");
+  const [openToUsed, setOpenToUsed] = useState(false);
+  const [currency, setCurrency] = useState("USD");
 
   const urlRef = useRef<HTMLInputElement>(null);
   const titleRef = useRef<HTMLInputElement>(null);
@@ -108,18 +121,20 @@ export function AddItemDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) setScrapeStatus(""); }}>
+    <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setScrapeStatus(""); setOpenToUsed(false); setCurrency("USD"); } }}>
       <DialogTrigger asChild>
         {trigger || (
           <Button>
-            <Plus className="mr-2 h-4 w-4" />
-            Add Item
+            <span className="inline-flex items-center gap-1.5">
+              <Plus className="h-4 w-4 shrink-0" />
+              Add Item
+            </span>
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg" showCloseButton={false}>
         <DialogHeader>
-          <DialogTitle>Add Item to Registry</DialogTitle>
+          <DialogTitle>Add item to registry</DialogTitle>
           <DialogDescription>
             Paste a product URL to auto-fill, or add a custom item.
           </DialogDescription>
@@ -127,19 +142,23 @@ export function AddItemDialog({
         <form action={handleSubmit} className="space-y-4">
           <div className="space-y-1.5">
             <Label>Product URL</Label>
-            <div className="flex gap-2">
-              <InputBase
-                ref={urlRef}
-                name="externalUrl"
-                type="url"
-                placeholder="https://www.amazon.com/..."
-                onBlur={(e) => handleScrape((e.target as HTMLInputElement).value)}
-                wrapperClassName="flex-1"
-              />
+            <div className="flex items-center gap-4">
+              <InputGroup
+                leadingAddon={<InputPrefix>http://</InputPrefix>}
+                className="flex-1"
+              >
+                <InputBase
+                  ref={urlRef}
+                  name="externalUrl"
+                  type="url"
+                  placeholder="www.untitledui.com"
+                  onBlur={(e) => handleScrape((e.target as HTMLInputElement).value)}
+                />
+              </InputGroup>
               <Button
                 type="button"
-                variant="outline"
-                size="icon"
+                variant="ghost"
+                size="icon-lg"
                 disabled={scraping}
                 onClick={() => {
                   if (urlRef.current?.value) handleScrape(urlRef.current.value);
@@ -147,9 +166,9 @@ export function AddItemDialog({
                 title="Fetch product details"
               >
                 {scraping ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <Loader2 className="h-6 w-6 animate-spin" />
                 ) : (
-                  <LinkIcon className="h-4 w-4" />
+                  <Link01 className="h-6 w-6" />
                 )}
               </Button>
             </div>
@@ -167,6 +186,13 @@ export function AddItemDialog({
             isRequired
           />
 
+          <Checkbox
+            name="isEssential"
+            value="true"
+            defaultSelected={defaultValues?.isEssential}
+            label="Mark as most wanted item"
+          />
+
           <Select
             name="categoryId"
             label="Category"
@@ -177,25 +203,52 @@ export function AddItemDialog({
             {(item) => <Select.Item id={item.id} label={item.label} />}
           </Select>
 
-          <Input
-            ref={imageUrlRef}
+          <InputGroup
             label="Image URL (optional)"
-            name="imageUrl"
-            type="url"
-            placeholder="https://..."
-          />
+            leadingAddon={<InputPrefix>http://</InputPrefix>}
+          >
+            <InputBase
+              ref={imageUrlRef}
+              name="imageUrl"
+              type="url"
+              placeholder="www.untitledui.com"
+            />
+          </InputGroup>
 
           <div className="grid grid-cols-2 gap-4">
-            <Input
-              ref={priceRef}
-              label="Price ($)"
-              name="price"
-              type="number"
-              step="0.01"
-              min={0}
-              placeholder="0.00"
-              defaultValue={defaultValues?.price}
-            />
+            <InputGroup
+              label="Price (optional)"
+              prefix={currencySymbols[currency] || "$"}
+              trailingAddon={
+                <InputPrefix position="trailing">
+                  <span className="relative inline-flex items-center">
+                    <select
+                      className="appearance-none bg-transparent pr-5 text-primary outline-none cursor-pointer"
+                      value={currency}
+                      onChange={(e) => setCurrency(e.target.value)}
+                    >
+                      <option>USD</option>
+                      <option>EUR</option>
+                      <option>GBP</option>
+                      <option>JPY</option>
+                      <option>CAD</option>
+                      <option>AUD</option>
+                    </select>
+                    <ChevronDown className="pointer-events-none absolute right-0 h-4 w-4 text-tertiary" />
+                  </span>
+                </InputPrefix>
+              }
+            >
+              <InputBase
+                ref={priceRef}
+                name="price"
+                type="number"
+                step="0.01"
+                min={0}
+                placeholder="0.00"
+                defaultValue={defaultValues?.price}
+              />
+            </InputGroup>
             <Input
               label="Quantity"
               name="quantityNeeded"
@@ -206,17 +259,35 @@ export function AddItemDialog({
           </div>
 
           <Checkbox
-            name="isEssential"
+            name="isOpenToUsed"
             value="true"
-            defaultSelected={defaultValues?.isEssential}
-            label="Mark as essential item"
+            isSelected={openToUsed}
+            onChange={setOpenToUsed}
+            label="Mark as open to used condition item"
           />
+          {openToUsed && (
+            <div className="pl-6">
+              <Select
+                name="minimumCondition"
+                label="Minimum condition"
+                defaultSelectedKey="like-new"
+                items={[
+                  { id: "like-new", label: "Like new" },
+                  { id: "very-good", label: "Very good" },
+                  { id: "good", label: "Good" },
+                  { id: "acceptable", label: "Acceptable" },
+                ]}
+              >
+                {(item) => <Select.Item id={item.id} label={item.label} />}
+              </Select>
+            </div>
+          )}
 
           <TextArea
             label="Notes (optional)"
             name="notes"
-            placeholder="Any preferences for color, brand, etc."
-            rows={2}
+            placeholder="Enter a description..."
+            rows={3}
           />
 
           {error && <p className="text-sm text-error-primary">{error}</p>}
@@ -230,7 +301,7 @@ export function AddItemDialog({
               Cancel
             </Button>
             <Button type="submit" disabled={loading}>
-              {loading ? "Adding..." : "Add Item"}
+              {loading ? "Adding..." : "Add item"}
             </Button>
           </div>
         </form>
