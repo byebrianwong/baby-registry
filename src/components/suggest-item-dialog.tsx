@@ -45,6 +45,11 @@ export function SuggestItemDialog({ registryId, categories = [] }: SuggestItemDi
     setLoading(true);
     setError("");
     formData.set("registryId", registryId);
+    // Prepend protocol if the visual http:// prefix was relied on
+    const externalUrl = formData.get("externalUrl") as string;
+    if (externalUrl && !/^https?:\/\//i.test(externalUrl)) {
+      formData.set("externalUrl", `http://${externalUrl}`);
+    }
 
     const result = await suggestItem(formData);
     if (result?.error) {

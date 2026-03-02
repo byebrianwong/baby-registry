@@ -67,8 +67,15 @@ export function AddItemDialog({
   const priceRef = useRef<HTMLInputElement>(null);
   const imageUrlRef = useRef<HTMLInputElement>(null);
 
-  const handleScrape = async (url: string) => {
-    if (!url || scraping) return;
+  const normalizeUrl = (url: string) => {
+    if (!url) return url;
+    if (!/^https?:\/\//i.test(url)) return `http://${url}`;
+    return url;
+  };
+
+  const handleScrape = async (rawUrl: string) => {
+    if (!rawUrl || scraping) return;
+    const url = normalizeUrl(rawUrl);
 
     try {
       new URL(url);
@@ -110,6 +117,13 @@ export function AddItemDialog({
   const handleSubmit = async (formData: FormData) => {
     setLoading(true);
     setError("");
+    // Prepend protocol if the visual http:// prefix was relied on
+    for (const field of ["externalUrl", "imageUrl"]) {
+      const val = formData.get(field) as string;
+      if (val && !/^https?:\/\//i.test(val)) {
+        formData.set(field, `http://${val}`);
+      }
+    }
     const result = await addRegistryItem(registryId, formData);
     if (result?.error) {
       setError(result.error);
