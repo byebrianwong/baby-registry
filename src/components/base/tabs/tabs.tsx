@@ -192,7 +192,7 @@ export const Tab = (props: TabComponentProps) => {
             {(state) => (
                 <Fragment>
                     {typeof children === "function" ? children(state) : children || label}
-                    {badge && (
+                    {badge != null && badge !== "" && (
                         <span
                             className={cx(
                                 "hidden rounded-full px-2 py-0.5 text-xs font-medium transition-inherit-all md:inline-flex",
