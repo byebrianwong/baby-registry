@@ -63,14 +63,15 @@ export function AddItemDialog({
   const [scrapeStatus, setScrapeStatus] = useState<string>("");
   const [scrapeIsError, setScrapeIsError] = useState(false);
   const [error, setError] = useState("");
+  const [parentPurchased, setParentPurchased] = useState(false);
   const [openToUsed, setOpenToUsed] = useState(false);
+  const [taxInfo, setTaxInfo] = useState<{ original: string; rate: number } | null>(null);
   const [currency, setCurrency] = useState("USD");
   const [title, setTitle] = useState(defaultValues?.title || "");
-  const [price, setPrice] = useState(defaultValues?.price || "");
+  const [price, setPrice] = useState(defaultValues?.price ? parseFloat(defaultValues.price).toFixed(2) : "");
   const [imageUrl, setImageUrl] = useState("");
   const [imageError, setImageError] = useState(false);
   const [categoryId, setCategoryId] = useState<string | undefined>(defaultValues?.categoryId);
-  const [taxInfo, setTaxInfo] = useState<{ original: string; rate: number } | null>(null);
 
   const urlRef = useRef<HTMLInputElement>(null);
 
@@ -89,7 +90,7 @@ export function AddItemDialog({
     if (!price) return;
     const parsed = parseFloat(price);
     if (isNaN(parsed) || parsed <= 0) return;
-    if (!zipCode || taxInfo) {
+    if (!parentPurchased || !zipCode || taxInfo) {
       setPrice(parsed.toFixed(2));
       return;
     }
@@ -158,7 +159,7 @@ export function AddItemDialog({
       if (result.price && !price) {
         let finalPrice = parseFloat(result.price).toFixed(2);
         let taxNote = "";
-        if (zipCode) {
+        if (parentPurchased && zipCode) {
           const taxResult = await estimateTax(zipCode, parseFloat(result.price));
           if (taxResult) {
             taxNote = ` (incl. ~${(taxResult.taxRate * 100).toFixed(1)}% tax)`;
@@ -213,7 +214,7 @@ export function AddItemDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setScrapeStatus(""); setScrapeIsError(false); setOpenToUsed(false); setCurrency("USD"); setTitle(defaultValues?.title || ""); setPrice(defaultValues?.price || ""); setImageUrl(""); setImageError(false); setCategoryId(defaultValues?.categoryId); setError(""); setTaxInfo(null); } }}>
+    <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setScrapeStatus(""); setScrapeIsError(false); setParentPurchased(false); setOpenToUsed(false); setTaxInfo(null); setCurrency("USD"); setTitle(defaultValues?.title || ""); setPrice(defaultValues?.price ? parseFloat(defaultValues.price).toFixed(2) : ""); setImageUrl(""); setImageError(false); setCategoryId(defaultValues?.categoryId); setError(""); } }}>
       <DialogTrigger asChild>
         {trigger || (
           <Button>
@@ -359,6 +360,14 @@ export function AddItemDialog({
               ${taxInfo.original} + ~{(taxInfo.rate * 100).toFixed(1)}% tax
             </p>
           )}
+
+          <Checkbox
+            name="isParentPurchased"
+            value="true"
+            isSelected={parentPurchased}
+            onChange={setParentPurchased}
+            label="Mark as purchased by parent"
+          />
 
           <Checkbox
             name="isOpenToUsed"

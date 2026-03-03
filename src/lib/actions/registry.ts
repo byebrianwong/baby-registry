@@ -153,9 +153,11 @@ export async function addRegistryItem(registryId: string, formData: FormData) {
   const price = formData.get("price") as string;
   const quantityNeeded = formData.get("quantityNeeded") as string;
   const isEssential = formData.get("isEssential") === "true";
+  const isParentPurchased = formData.get("isParentPurchased") === "true";
   const isOpenToUsed = formData.get("isOpenToUsed") === "true";
   const minimumCondition = formData.get("minimumCondition") as string;
   const notes = formData.get("notes") as string;
+  const qty = quantityNeeded ? parseInt(quantityNeeded) : 1;
 
   const { error } = await supabase.from("registry_items").insert({
     registry_id: registryId,
@@ -164,8 +166,10 @@ export async function addRegistryItem(registryId: string, formData: FormData) {
     external_url: externalUrl || null,
     image_url: imageUrl || null,
     price: price ? parseFloat(price) : null,
-    quantity_needed: quantityNeeded ? parseInt(quantityNeeded) : 1,
+    quantity_needed: qty,
+    quantity_fulfilled: isParentPurchased ? qty : 0,
     is_essential: isEssential,
+    is_parent_purchased: isParentPurchased,
     is_open_to_used: isOpenToUsed,
     minimum_condition: isOpenToUsed ? minimumCondition || null : null,
     notes: notes || null,

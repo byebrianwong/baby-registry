@@ -70,7 +70,7 @@ export function EditItemDialog({
   const [openToUsed, setOpenToUsed] = useState(item.is_open_to_used);
   const [currency, setCurrency] = useState("USD");
   const [title, setTitle] = useState(item.title);
-  const [price, setPrice] = useState(item.price?.toString() || "");
+  const [price, setPrice] = useState(item.price != null ? item.price.toFixed(2) : "");
   const [imageUrl, setImageUrl] = useState(item.image_url || "");
   const [imageError, setImageError] = useState(false);
   const [externalUrl, setExternalUrl] = useState(item.external_url || "");
@@ -94,7 +94,7 @@ export function EditItemDialog({
     if (!price) return;
     const parsed = parseFloat(price);
     if (isNaN(parsed) || parsed <= 0) return;
-    if (!zipCode || taxInfo) {
+    if (!item.is_parent_purchased || !zipCode || taxInfo) {
       setPrice(parsed.toFixed(2));
       return;
     }
@@ -135,7 +135,7 @@ export function EditItemDialog({
       if (result.price && !price) {
         let finalPrice = parseFloat(result.price).toFixed(2);
         let taxNote = "";
-        if (zipCode) {
+        if (item.is_parent_purchased && zipCode) {
           const taxResult = await estimateTax(zipCode, parseFloat(result.price));
           if (taxResult) {
             taxNote = ` (incl. ~${(taxResult.taxRate * 100).toFixed(1)}% tax)`;
@@ -194,7 +194,7 @@ export function EditItemDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={(v) => { onOpenChange(v); if (!v) { setScrapeStatus(""); setScrapeIsError(false); setOpenToUsed(item.is_open_to_used); setCurrency("USD"); setError(""); setTitle(item.title); setPrice(item.price?.toString() || ""); setImageUrl(item.image_url || ""); setImageError(false); setExternalUrl(item.external_url || ""); setTaxInfo(null); } }}>
+    <Dialog open={open} onOpenChange={(v) => { onOpenChange(v); if (!v) { setScrapeStatus(""); setScrapeIsError(false); setOpenToUsed(item.is_open_to_used); setCurrency("USD"); setError(""); setTitle(item.title); setPrice(item.price != null ? item.price.toFixed(2) : ""); setImageUrl(item.image_url || ""); setImageError(false); setExternalUrl(item.external_url || ""); setTaxInfo(null); } }}>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg" showCloseButton={false}>
         <DialogHeader>
           <DialogTitle>Edit item in registry</DialogTitle>

@@ -26,6 +26,8 @@ interface RegistryItem {
   quantity_fulfilled: number;
   is_essential: boolean;
   is_parent_purchased: boolean;
+  is_open_to_used: boolean;
+  minimum_condition: string | null;
   notes: string | null;
   category_id: string | null;
 }
@@ -326,6 +328,11 @@ export default async function PublicRegistryPage({
                                       )}
                                     </>
                                   )}
+                                  {item.is_open_to_used && (
+                                    <span className="inline-flex items-center rounded-full border border-primary/20 px-2.5 py-0.5 text-xs font-medium text-secondary">
+                                      Open to {item.minimum_condition?.replace("-", " ") || "any"} used condition
+                                    </span>
+                                  )}
                                 </div>
                                 <div className="flex items-center gap-2.5">
                                   {item.price && (
@@ -414,7 +421,20 @@ export default async function PublicRegistryPage({
                                 <span className="inline-flex items-center rounded-full bg-brand-600 px-2.5 py-0.5 text-xs font-medium text-white">
                                   Already purchased by guest
                                 </span>
-                              ) : null}
+                              ) : (
+                                <>
+                                  {item.is_essential && (
+                                    <span className="inline-flex items-center rounded-full bg-brand-600 px-2.5 py-0.5 text-xs font-medium text-white">
+                                      Most wanted
+                                    </span>
+                                  )}
+                                </>
+                              )}
+                              {item.is_open_to_used && (
+                                <span className="inline-flex items-center rounded-full border border-primary/20 px-2.5 py-0.5 text-xs font-medium text-secondary">
+                                  Open to {item.minimum_condition?.replace("-", " ") || "any"} used condition
+                                </span>
+                              )}
                             </div>
                             <div className="flex items-center gap-2.5">
                               {item.price && (
