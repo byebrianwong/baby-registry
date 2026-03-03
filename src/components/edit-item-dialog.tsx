@@ -71,6 +71,7 @@ export function EditItemDialog({
   const [price, setPrice] = useState(item.price?.toString() || "");
   const [imageUrl, setImageUrl] = useState(item.image_url || "");
   const [externalUrl, setExternalUrl] = useState(item.external_url || "");
+  const [taxInfo, setTaxInfo] = useState<{ original: string; rate: number } | null>(null);
 
   const urlRef = useRef<HTMLInputElement>(null);
 
@@ -80,6 +81,28 @@ export function EditItemDialog({
     return url;
   };
 
+
+  const handlePriceChange = (val: string) => {
+    setPrice(val);
+    setTaxInfo(null);
+  };
+
+  const handlePriceBlur = async () => {
+    if (!price) return;
+    const parsed = parseFloat(price);
+    if (isNaN(parsed) || parsed <= 0) return;
+    if (!zipCode || taxInfo) {
+      setPrice(parsed.toFixed(2));
+      return;
+    }
+    const result = await estimateTax(zipCode, parsed);
+    if (result) {
+      setPrice(result.priceWithTax);
+      setTaxInfo({ original: parsed.toFixed(2), rate: result.taxRate });
+    } else {
+      setPrice(parsed.toFixed(2));
+    }
+  };
 
   const handleScrape = async (rawUrl: string) => {
     if (!rawUrl || scraping) return;
@@ -107,13 +130,14 @@ export function EditItemDialog({
         filled.push("title");
       }
       if (result.price && !price) {
-        let finalPrice = result.price;
+        let finalPrice = parseFloat(result.price).toFixed(2);
         let taxNote = "";
         if (zipCode) {
           const taxResult = await estimateTax(zipCode, parseFloat(result.price));
           if (taxResult) {
-            finalPrice = taxResult.priceWithTax;
             taxNote = ` (incl. ~${(taxResult.taxRate * 100).toFixed(1)}% tax)`;
+            setTaxInfo({ original: finalPrice, rate: taxResult.taxRate });
+            finalPrice = taxResult.priceWithTax;
           }
         }
         setPrice(finalPrice);
@@ -166,7 +190,7 @@ export function EditItemDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={(v) => { onOpenChange(v); if (!v) { setScrapeStatus(""); setScrapeIsError(false); setOpenToUsed(false); setCurrency("USD"); setError(""); setTitle(item.title); setPrice(item.price?.toString() || ""); setImageUrl(item.image_url || ""); setExternalUrl(item.external_url || ""); } }}>
+    <Dialog open={open} onOpenChange={(v) => { onOpenChange(v); if (!v) { setScrapeStatus(""); setScrapeIsError(false); setOpenToUsed(false); setCurrency("USD"); setError(""); setTitle(item.title); setPrice(item.price?.toString() || ""); setImageUrl(item.image_url || ""); setExternalUrl(item.external_url || ""); setTaxInfo(null); } }}>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg" showCloseButton={false}>
         <DialogHeader>
           <DialogTitle>Edit item in registry</DialogTitle>
@@ -248,7 +272,7 @@ export function EditItemDialog({
               label="Price (optional)"
               name="price"
               value={price}
-              onChange={setPrice}
+              onChange={handlePriceChange}
               prefix={currencySymbols[currency] || "$"}
               trailingAddon={
                 <InputPrefix position="trailing">
@@ -275,6 +299,7 @@ export function EditItemDialog({
                 step="0.01"
                 min={0}
                 placeholder="0.00"
+                onBlur={handlePriceBlur}
               />
             </InputGroup>
             <Input
@@ -285,6 +310,11 @@ export function EditItemDialog({
               defaultValue={item.quantity_needed.toString()}
             />
           </div>
+          {taxInfo && (
+            <p className="text-xs text-tertiary">
+              ${taxInfo.original} + ~{(taxInfo.rate * 100).toFixed(1)}% tax
+            </p>
+          )}
 
           <Checkbox
             name="isOpenToUsed"

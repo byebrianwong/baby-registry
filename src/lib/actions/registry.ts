@@ -471,6 +471,7 @@ export async function updateZipCode(
   }
 
   const zipCode = (formData.get("zipCode") as string)?.trim() || undefined;
+  const taxEnabled = formData.get("taxEnabled") === "true";
 
   const { data: registry } = await supabase
     .from("registries")
@@ -485,6 +486,7 @@ export async function updateZipCode(
 
   const settings = (registry.settings as Record<string, unknown>) || {};
   settings.zip_code = zipCode || null;
+  settings.tax_enabled = taxEnabled;
 
   const { error } = await supabase
     .from("registries")

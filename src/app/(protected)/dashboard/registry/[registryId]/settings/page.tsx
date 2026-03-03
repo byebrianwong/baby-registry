@@ -10,6 +10,7 @@ import { TextArea } from "@/components/base/textarea/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { createClient } from "@/utils/supabase/client";
+import { Checkbox } from "@/components/base/checkbox/checkbox";
 import { updateRegistry, deleteRegistry, updatePaymentMethods, updateZipCode } from "@/lib/actions/registry";
 import type { PaymentMethods } from "@/lib/types";
 
@@ -24,7 +25,7 @@ export default function RegistrySettingsPage() {
     description: string | null;
     is_public: boolean;
     slug: string;
-    settings: { payment_methods?: PaymentMethods; zip_code?: string };
+    settings: { payment_methods?: PaymentMethods; zip_code?: string; tax_enabled?: boolean };
   } | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -203,6 +204,13 @@ export default function RegistrySettingsPage() {
               name="zipCode"
               placeholder="e.g., 90210"
               defaultValue={registry.settings?.zip_code || ""}
+            />
+
+            <Checkbox
+              name="taxEnabled"
+              value="true"
+              defaultSelected={registry.settings?.tax_enabled !== false}
+              label="Auto-add estimated sales tax to prices"
             />
 
             {zipError && (

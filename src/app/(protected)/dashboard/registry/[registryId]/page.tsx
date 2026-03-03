@@ -163,7 +163,9 @@ export default async function RegistryManagePage({
     });
   }
 
-  const zipCode = (registry.settings as Record<string, any>)?.zip_code as string | undefined;
+  const settings = registry.settings as Record<string, any> | null;
+  const taxEnabled = settings?.tax_enabled !== false;
+  const zipCode = taxEnabled ? (settings?.zip_code as string | undefined) : undefined;
   const registryUrl = `/r/${registry.slug}`;
 
   return (
