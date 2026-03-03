@@ -153,6 +153,8 @@ export async function addRegistryItem(registryId: string, formData: FormData) {
   const price = formData.get("price") as string;
   const quantityNeeded = formData.get("quantityNeeded") as string;
   const isEssential = formData.get("isEssential") === "true";
+  const isOpenToUsed = formData.get("isOpenToUsed") === "true";
+  const minimumCondition = formData.get("minimumCondition") as string;
   const notes = formData.get("notes") as string;
 
   const { error } = await supabase.from("registry_items").insert({
@@ -164,6 +166,8 @@ export async function addRegistryItem(registryId: string, formData: FormData) {
     price: price ? parseFloat(price) : null,
     quantity_needed: quantityNeeded ? parseInt(quantityNeeded) : 1,
     is_essential: isEssential,
+    is_open_to_used: isOpenToUsed,
+    minimum_condition: isOpenToUsed ? minimumCondition || null : null,
     notes: notes || null,
   });
 
@@ -196,6 +200,8 @@ export async function updateRegistryItem(
   const price = formData.get("price") as string;
   const quantityNeeded = formData.get("quantityNeeded") as string;
   const isEssential = formData.get("isEssential") === "true";
+  const isOpenToUsed = formData.get("isOpenToUsed") === "true";
+  const minimumCondition = formData.get("minimumCondition") as string;
   const notes = formData.get("notes") as string;
 
   const { error } = await supabase
@@ -208,6 +214,8 @@ export async function updateRegistryItem(
       price: price ? parseFloat(price) : null,
       quantity_needed: quantityNeeded ? parseInt(quantityNeeded) : 1,
       is_essential: isEssential,
+      is_open_to_used: isOpenToUsed,
+      minimum_condition: isOpenToUsed ? minimumCondition || null : null,
       notes: notes || null,
     })
     .eq("id", itemId);

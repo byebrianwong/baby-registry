@@ -32,6 +32,8 @@ interface EditItemDialogProps {
     quantity_fulfilled: number;
     is_essential: boolean;
     is_parent_purchased: boolean;
+    is_open_to_used: boolean;
+    minimum_condition: string | null;
     notes: string | null;
     category_id: string | null;
   };
@@ -65,7 +67,7 @@ export function EditItemDialog({
   const [scrapeStatus, setScrapeStatus] = useState("");
   const [scrapeIsError, setScrapeIsError] = useState(false);
   const [error, setError] = useState("");
-  const [openToUsed, setOpenToUsed] = useState(false);
+  const [openToUsed, setOpenToUsed] = useState(item.is_open_to_used);
   const [currency, setCurrency] = useState("USD");
   const [title, setTitle] = useState(item.title);
   const [price, setPrice] = useState(item.price?.toString() || "");
@@ -190,7 +192,7 @@ export function EditItemDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={(v) => { onOpenChange(v); if (!v) { setScrapeStatus(""); setScrapeIsError(false); setOpenToUsed(false); setCurrency("USD"); setError(""); setTitle(item.title); setPrice(item.price?.toString() || ""); setImageUrl(item.image_url || ""); setExternalUrl(item.external_url || ""); setTaxInfo(null); } }}>
+    <Dialog open={open} onOpenChange={(v) => { onOpenChange(v); if (!v) { setScrapeStatus(""); setScrapeIsError(false); setOpenToUsed(item.is_open_to_used); setCurrency("USD"); setError(""); setTitle(item.title); setPrice(item.price?.toString() || ""); setImageUrl(item.image_url || ""); setExternalUrl(item.external_url || ""); setTaxInfo(null); } }}>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg" showCloseButton={false}>
         <DialogHeader>
           <DialogTitle>Edit item in registry</DialogTitle>
@@ -328,7 +330,7 @@ export function EditItemDialog({
               <Select
                 name="minimumCondition"
                 label="Minimum condition"
-                defaultSelectedKey="like-new"
+                defaultSelectedKey={item.minimum_condition || "like-new"}
                 items={[
                   { id: "like-new", label: "Like new" },
                   { id: "very-good", label: "Very good" },

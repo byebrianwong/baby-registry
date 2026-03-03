@@ -37,6 +37,8 @@ interface RegistryItem {
   quantity_fulfilled: number;
   is_essential: boolean;
   is_parent_purchased: boolean;
+  is_open_to_used: boolean;
+  minimum_condition: string | null;
   notes: string | null;
   category_id: string | null;
   sort_order: number;
