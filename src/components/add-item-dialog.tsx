@@ -68,6 +68,8 @@ export function AddItemDialog({
   const [title, setTitle] = useState(defaultValues?.title || "");
   const [price, setPrice] = useState(defaultValues?.price || "");
   const [imageUrl, setImageUrl] = useState("");
+  const [imageError, setImageError] = useState(false);
+  const [categoryId, setCategoryId] = useState<string | undefined>(defaultValues?.categoryId);
   const [taxInfo, setTaxInfo] = useState<{ original: string; rate: number } | null>(null);
 
   const urlRef = useRef<HTMLInputElement>(null);
@@ -98,6 +100,34 @@ export function AddItemDialog({
     } else {
       setPrice(parsed.toFixed(2));
     }
+  };
+
+  const inferCategory = (productTitle: string): string | undefined => {
+    const keywords: Record<string, string[]> = {
+      "nursery & sleep": ["crib", "bassinet", "blanket", "swaddle", "mattress", "monitor", "mobile", "rocker", "glider", "rocking", "nightlight", "sound machine", "white noise", "sleep sack", "sheet", "pillow", "nursery", "cradle", "moses basket"],
+      "feeding": ["bottle", "nursing", "breast pump", "formula", "bib", "highchair", "high chair", "sippy", "pacifier", "sterilizer", "warmer", "feeding", "breastfeed", "nipple", "lactation", "burp cloth"],
+      "diapering": ["diaper", "wipe", "changing pad", "changing table", "pail", "rash cream", "nappy", "potty"],
+      "gear & travel": ["stroller", "car seat", "carrier", "wrap", "sling", "travel", "pack n play", "playard", "play yard", "jogger", "wagon", "backpack carrier", "bike seat", "gate", "baby gate"],
+      "bath": ["bath", "tub", "towel", "washcloth", "shampoo", "soap", "lotion", "grooming"],
+      "clothing": ["onesie", "bodysuit", "pajama", "sleeper", "outfit", "romper", "dress", "sock", "shoe", "bootie", "hat", "mitten", "jacket", "coat", "clothing", "clothes", "gown"],
+      "health & safety": ["thermometer", "medicine", "nasal", "aspirator", "humidifier", "first aid", "safety", "baby proof", "outlet cover", "cabinet lock", "corner guard", "sunscreen", "vitamin"],
+      "toys & books": ["toy", "book", "rattle", "teether", "play mat", "playmat", "activity", "stuffed", "plush", "puzzle", "block", "game", "doll", "figurine", "reading"],
+      "maternity & postpartum": ["maternity", "postpartum", "nursing bra", "belly band", "recovery", "prenatal", "postnatal", "mama", "mom"],
+      "gifts & extras": ["gift card", "gift basket", "keepsake", "memory book", "photo", "frame", "ornament"],
+    };
+
+    const lower = productTitle.toLowerCase();
+    for (const [categoryName, words] of Object.entries(keywords)) {
+      for (const word of words) {
+        if (lower.includes(word)) {
+          const match = categories.find(
+            (c) => c.name.toLowerCase() === categoryName
+          );
+          if (match) return match.id;
+        }
+      }
+    }
+    return undefined;
   };
 
   const handleScrape = async (rawUrl: string) => {
@@ -141,7 +171,16 @@ export function AddItemDialog({
       }
       if (result.imageUrl && !imageUrl) {
         setImageUrl(result.imageUrl);
+        setImageError(false);
         filled.push("image");
+      }
+      const titleForCategory = result.title || title;
+      if (titleForCategory && !categoryId) {
+        const inferred = inferCategory(titleForCategory);
+        if (inferred) {
+          setCategoryId(inferred);
+          filled.push("category");
+        }
       }
       if (filled.length > 0) {
         setScrapeStatus(`Auto-filled ${filled.join(", ")}`);
@@ -174,7 +213,7 @@ export function AddItemDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setScrapeStatus(""); setScrapeIsError(false); setOpenToUsed(false); setCurrency("USD"); setTitle(defaultValues?.title || ""); setPrice(defaultValues?.price || ""); setImageUrl(""); setError(""); setTaxInfo(null); } }}>
+    <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setScrapeStatus(""); setScrapeIsError(false); setOpenToUsed(false); setCurrency("USD"); setTitle(defaultValues?.title || ""); setPrice(defaultValues?.price || ""); setImageUrl(""); setImageError(false); setCategoryId(defaultValues?.categoryId); setError(""); setTaxInfo(null); } }}>
       <DialogTrigger asChild>
         {trigger || (
           <Button>
@@ -244,20 +283,33 @@ export function AddItemDialog({
           <Select
             name="categoryId"
             label="Category"
-            defaultSelectedKey={defaultValues?.categoryId}
+            selectedKey={categoryId ?? null}
+            onSelectionChange={(key) => setCategoryId(key?.toString() || undefined)}
             placeholder="Select a category"
             items={categories.map((cat) => ({ id: cat.id, label: cat.name }))}
           >
             {(item) => <Select.Item id={item.id} label={item.label} />}
           </Select>
 
-          <Input
-            label="Image URL (optional)"
-            name="imageUrl"
-            placeholder="https://www.example.com/image.jpg"
-            value={imageUrl}
-            onChange={setImageUrl}
-          />
+          <div className="space-y-1.5">
+            <Input
+              label="Image URL (optional)"
+              name="imageUrl"
+              placeholder="https://www.example.com/image.jpg"
+              value={imageUrl}
+              onChange={(val) => { setImageUrl(val); setImageError(false); }}
+            />
+            {imageUrl && !imageError && (
+              <div className="flex size-16 items-center justify-center rounded-lg bg-tertiary">
+                <img
+                  src={imageUrl}
+                  alt="Preview"
+                  className="size-16 rounded-lg object-cover"
+                  onError={() => setImageError(true)}
+                />
+              </div>
+            )}
+          </div>
 
           <div className="grid grid-cols-2 gap-4">
             <InputGroup

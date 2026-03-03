@@ -72,6 +72,7 @@ export function EditItemDialog({
   const [title, setTitle] = useState(item.title);
   const [price, setPrice] = useState(item.price?.toString() || "");
   const [imageUrl, setImageUrl] = useState(item.image_url || "");
+  const [imageError, setImageError] = useState(false);
   const [externalUrl, setExternalUrl] = useState(item.external_url || "");
   const [taxInfo, setTaxInfo] = useState<{ original: string; rate: number } | null>(null);
 
@@ -147,6 +148,7 @@ export function EditItemDialog({
       }
       if (result.imageUrl && !imageUrl) {
         setImageUrl(result.imageUrl);
+        setImageError(false);
         filled.push("image");
       }
       if (filled.length > 0) {
@@ -192,7 +194,7 @@ export function EditItemDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={(v) => { onOpenChange(v); if (!v) { setScrapeStatus(""); setScrapeIsError(false); setOpenToUsed(item.is_open_to_used); setCurrency("USD"); setError(""); setTitle(item.title); setPrice(item.price?.toString() || ""); setImageUrl(item.image_url || ""); setExternalUrl(item.external_url || ""); setTaxInfo(null); } }}>
+    <Dialog open={open} onOpenChange={(v) => { onOpenChange(v); if (!v) { setScrapeStatus(""); setScrapeIsError(false); setOpenToUsed(item.is_open_to_used); setCurrency("USD"); setError(""); setTitle(item.title); setPrice(item.price?.toString() || ""); setImageUrl(item.image_url || ""); setImageError(false); setExternalUrl(item.external_url || ""); setTaxInfo(null); } }}>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg" showCloseButton={false}>
         <DialogHeader>
           <DialogTitle>Edit item in registry</DialogTitle>
@@ -261,13 +263,25 @@ export function EditItemDialog({
             {(catItem) => <Select.Item id={catItem.id} label={catItem.label} />}
           </Select>
 
-          <Input
-            label="Image URL (optional)"
-            name="imageUrl"
-            placeholder="https://www.example.com/image.jpg"
-            value={imageUrl}
-            onChange={setImageUrl}
-          />
+          <div className="space-y-1.5">
+            <Input
+              label="Image URL (optional)"
+              name="imageUrl"
+              placeholder="https://www.example.com/image.jpg"
+              value={imageUrl}
+              onChange={(val) => { setImageUrl(val); setImageError(false); }}
+            />
+            {imageUrl && !imageError && (
+              <div className="flex size-16 items-center justify-center rounded-lg bg-tertiary">
+                <img
+                  src={imageUrl}
+                  alt="Preview"
+                  className="size-16 rounded-lg object-cover"
+                  onError={() => setImageError(true)}
+                />
+              </div>
+            )}
+          </div>
 
           <div className="grid grid-cols-2 gap-4">
             <InputGroup
