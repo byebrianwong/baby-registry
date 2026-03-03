@@ -457,6 +457,50 @@ export async function updatePaymentMethods(
   return { success: true };
 }
 
+export async function updateZipCode(
+  registryId: string,
+  formData: FormData
+) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/login");
+  }
+
+  const zipCode = (formData.get("zipCode") as string)?.trim() || undefined;
+
+  const { data: registry } = await supabase
+    .from("registries")
+    .select("settings")
+    .eq("id", registryId)
+    .eq("owner_id", user.id)
+    .single();
+
+  if (!registry) {
+    return { error: "Registry not found" };
+  }
+
+  const settings = (registry.settings as Record<string, unknown>) || {};
+  settings.zip_code = zipCode || null;
+
+  const { error } = await supabase
+    .from("registries")
+    .update({ settings })
+    .eq("id", registryId)
+    .eq("owner_id", user.id);
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidatePath(`/dashboard/registry/${registryId}`);
+  revalidatePath(`/dashboard/registry/${registryId}/settings`);
+  return { success: true };
+}
+
 export async function toggleParentPurchased(
   itemId: string,
   registryId: string,

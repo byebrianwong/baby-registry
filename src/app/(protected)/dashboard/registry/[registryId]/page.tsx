@@ -163,6 +163,7 @@ export default async function RegistryManagePage({
     });
   }
 
+  const zipCode = (registry.settings as Record<string, any>)?.zip_code as string | undefined;
   const registryUrl = `/r/${registry.slug}`;
 
   return (
@@ -257,7 +258,7 @@ export default async function RegistryManagePage({
                   registryId={registryId}
                   categories={allCategories}
                 />
-                <AddItemDialog registryId={registryId} categories={allCategories} />
+                <AddItemDialog registryId={registryId} categories={allCategories} zipCode={zipCode} />
               </div>
             </div>
 
@@ -268,7 +269,7 @@ export default async function RegistryManagePage({
                     No items yet. Add items manually or browse the checklist.
                   </p>
                   <div className="mt-4 flex gap-2">
-                    <AddItemDialog registryId={registryId} categories={allCategories} />
+                    <AddItemDialog registryId={registryId} categories={allCategories} zipCode={zipCode} />
                     <Button variant="outline" asChild>
                       <Link href={`/dashboard/registry/${registryId}/checklist`}>
                         Browse Checklist
@@ -299,6 +300,7 @@ export default async function RegistryManagePage({
                               registryId={registryId}
                               isOwner
                               categories={allCategories}
+                              zipCode={zipCode}
                             />
                           ))}
                         </div>

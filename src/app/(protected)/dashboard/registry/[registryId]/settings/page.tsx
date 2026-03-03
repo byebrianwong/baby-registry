@@ -10,7 +10,7 @@ import { TextArea } from "@/components/base/textarea/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { createClient } from "@/utils/supabase/client";
-import { updateRegistry, deleteRegistry, updatePaymentMethods } from "@/lib/actions/registry";
+import { updateRegistry, deleteRegistry, updatePaymentMethods, updateZipCode } from "@/lib/actions/registry";
 import type { PaymentMethods } from "@/lib/types";
 
 export default function RegistrySettingsPage() {
@@ -24,14 +24,17 @@ export default function RegistrySettingsPage() {
     description: string | null;
     is_public: boolean;
     slug: string;
-    settings: { payment_methods?: PaymentMethods };
+    settings: { payment_methods?: PaymentMethods; zip_code?: string };
   } | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [savingPayment, setSavingPayment] = useState(false);
+  const [savingZip, setSavingZip] = useState(false);
   const [error, setError] = useState("");
   const [paymentError, setPaymentError] = useState("");
   const [paymentSuccess, setPaymentSuccess] = useState(false);
+  const [zipError, setZipError] = useState("");
+  const [zipSuccess, setZipSuccess] = useState(false);
 
   useEffect(() => {
     const fetchRegistry = async () => {
@@ -69,6 +72,20 @@ export default function RegistrySettingsPage() {
       setTimeout(() => setPaymentSuccess(false), 2000);
     }
     setSavingPayment(false);
+  };
+
+  const handleSaveZip = async (formData: FormData) => {
+    setSavingZip(true);
+    setZipError("");
+    setZipSuccess(false);
+    const result = await updateZipCode(registryId, formData);
+    if (result?.error) {
+      setZipError(result.error);
+    } else {
+      setZipSuccess(true);
+      setTimeout(() => setZipSuccess(false), 2000);
+    }
+    setSavingZip(false);
   };
 
   const handleDelete = async () => {
@@ -165,6 +182,39 @@ export default function RegistrySettingsPage() {
 
             <Button type="submit" disabled={saving}>
               {saving ? "Saving..." : "Save Changes"}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+
+      <Separator className="my-8" />
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Location</CardTitle>
+          <CardDescription>
+            Used to estimate sales tax on item prices when auto-filling from product URLs
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form action={handleSaveZip} className="space-y-4">
+            <Input
+              label="Zip Code"
+              name="zipCode"
+              placeholder="e.g., 90210"
+              defaultValue={registry.settings?.zip_code || ""}
+            />
+
+            {zipError && (
+              <p className="text-sm text-error-primary">{zipError}</p>
+            )}
+
+            <Button type="submit" disabled={savingZip}>
+              {savingZip
+                ? "Saving..."
+                : zipSuccess
+                  ? "Saved!"
+                  : "Save Location"}
             </Button>
           </form>
         </CardContent>

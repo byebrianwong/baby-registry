@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/dialog";
 import { updateRegistryItem, deleteRegistryItem } from "@/lib/actions/registry";
 import { scrapeProductUrl } from "@/lib/actions/scrape";
+import { estimateTax } from "@/lib/actions/tax";
 
 interface EditItemDialogProps {
   item: {
@@ -36,6 +37,7 @@ interface EditItemDialogProps {
   };
   registryId: string;
   categories: { id: string; name: string }[];
+  zipCode?: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
@@ -53,6 +55,7 @@ export function EditItemDialog({
   item,
   registryId,
   categories,
+  zipCode,
   open,
   onOpenChange,
 }: EditItemDialogProps) {
@@ -64,11 +67,12 @@ export function EditItemDialog({
   const [error, setError] = useState("");
   const [openToUsed, setOpenToUsed] = useState(false);
   const [currency, setCurrency] = useState("USD");
+  const [title, setTitle] = useState(item.title);
+  const [price, setPrice] = useState(item.price?.toString() || "");
+  const [imageUrl, setImageUrl] = useState(item.image_url || "");
+  const [externalUrl, setExternalUrl] = useState(item.external_url || "");
 
   const urlRef = useRef<HTMLInputElement>(null);
-  const titleRef = useRef<HTMLInputElement>(null);
-  const priceRef = useRef<HTMLInputElement>(null);
-  const imageUrlRef = useRef<HTMLInputElement>(null);
 
   const normalizeUrl = (url: string) => {
     if (!url) return url;
@@ -98,16 +102,25 @@ export function EditItemDialog({
       setScrapeIsError(true);
     } else {
       let filled: string[] = [];
-      if (result.title && titleRef.current && !titleRef.current.value) {
-        titleRef.current.value = result.title;
+      if (result.title && !title) {
+        setTitle(result.title);
         filled.push("title");
       }
-      if (result.price && priceRef.current && !priceRef.current.value) {
-        priceRef.current.value = result.price;
-        filled.push("price");
+      if (result.price && !price) {
+        let finalPrice = result.price;
+        let taxNote = "";
+        if (zipCode) {
+          const taxResult = await estimateTax(zipCode, parseFloat(result.price));
+          if (taxResult) {
+            finalPrice = taxResult.priceWithTax;
+            taxNote = ` (incl. ~${(taxResult.taxRate * 100).toFixed(1)}% tax)`;
+          }
+        }
+        setPrice(finalPrice);
+        filled.push("price" + taxNote);
       }
-      if (result.imageUrl && imageUrlRef.current && !imageUrlRef.current.value) {
-        imageUrlRef.current.value = result.imageUrl;
+      if (result.imageUrl && !imageUrl) {
+        setImageUrl(result.imageUrl);
         filled.push("image");
       }
       if (filled.length > 0) {
@@ -153,7 +166,7 @@ export function EditItemDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={(v) => { onOpenChange(v); if (!v) { setScrapeStatus(""); setScrapeIsError(false); setOpenToUsed(false); setCurrency("USD"); setError(""); } }}>
+    <Dialog open={open} onOpenChange={(v) => { onOpenChange(v); if (!v) { setScrapeStatus(""); setScrapeIsError(false); setOpenToUsed(false); setCurrency("USD"); setError(""); setTitle(item.title); setPrice(item.price?.toString() || ""); setImageUrl(item.image_url || ""); setExternalUrl(item.external_url || ""); } }}>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg" showCloseButton={false}>
         <DialogHeader>
           <DialogTitle>Edit item in registry</DialogTitle>
@@ -169,7 +182,8 @@ export function EditItemDialog({
                 ref={urlRef}
                 name="externalUrl"
                 placeholder="https://www.example.com"
-                defaultValue={item.external_url || ""}
+                value={externalUrl}
+                onChange={setExternalUrl}
                 onBlur={(e) => handleScrape((e.target as HTMLInputElement).value)}
                 className="flex-1"
               />
@@ -196,11 +210,11 @@ export function EditItemDialog({
           </div>
 
           <Input
-            ref={titleRef}
             label="Item Name"
             name="title"
             placeholder="e.g., Convertible Crib"
-            defaultValue={item.title}
+            value={title}
+            onChange={setTitle}
             isRequired
           />
 
@@ -222,16 +236,19 @@ export function EditItemDialog({
           </Select>
 
           <Input
-            ref={imageUrlRef}
             label="Image URL (optional)"
             name="imageUrl"
             placeholder="https://www.example.com/image.jpg"
-            defaultValue={item.image_url || ""}
+            value={imageUrl}
+            onChange={setImageUrl}
           />
 
           <div className="grid grid-cols-2 gap-4">
             <InputGroup
               label="Price (optional)"
+              name="price"
+              value={price}
+              onChange={setPrice}
               prefix={currencySymbols[currency] || "$"}
               trailingAddon={
                 <InputPrefix position="trailing">
@@ -254,13 +271,10 @@ export function EditItemDialog({
               }
             >
               <InputBase
-                ref={priceRef}
-                name="price"
                 type="number"
                 step="0.01"
                 min={0}
                 placeholder="0.00"
-                defaultValue={item.price?.toString() || ""}
               />
             </InputGroup>
             <Input

@@ -24,9 +24,10 @@ interface ItemCardProps {
   registryId: string;
   isOwner?: boolean;
   categories?: { id: string; name: string }[];
+  zipCode?: string;
 }
 
-export function ItemCard({ item, registryId, isOwner, categories = [] }: ItemCardProps) {
+export function ItemCard({ item, registryId, isOwner, categories = [], zipCode }: ItemCardProps) {
   const [toggling, setToggling] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const isFulfilled = item.quantity_fulfilled >= item.quantity_needed;
@@ -154,6 +155,7 @@ export function ItemCard({ item, registryId, isOwner, categories = [] }: ItemCar
         item={item}
         registryId={registryId}
         categories={categories}
+        zipCode={zipCode}
         open={editOpen}
         onOpenChange={setEditOpen}
       />
