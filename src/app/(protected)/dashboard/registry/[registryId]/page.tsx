@@ -324,6 +324,7 @@ export default async function RegistryManagePage({
                             registryId={registryId}
                             isOwner
                             categories={allCategories}
+                            zipCode={zipCode}
                           />
                         ))}
                       </div>
