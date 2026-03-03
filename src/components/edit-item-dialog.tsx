@@ -76,6 +76,8 @@ export function EditItemDialog({
     return url;
   };
 
+  const stripProtocol = (url: string) => url.replace(/^https?:\/\//i, "");
+
   const handleScrape = async (rawUrl: string) => {
     if (!rawUrl || scraping) return;
     const url = normalizeUrl(rawUrl);
@@ -173,7 +175,7 @@ export function EditItemDialog({
                   name="externalUrl"
                   type="url"
                   placeholder="www.untitledui.com"
-                  defaultValue={item.external_url || ""}
+                  defaultValue={item.external_url ? stripProtocol(item.external_url) : ""}
                   onBlur={(e) => handleScrape((e.target as HTMLInputElement).value)}
                 />
               </InputGroup>
@@ -234,7 +236,7 @@ export function EditItemDialog({
               name="imageUrl"
               type="url"
               placeholder="www.untitledui.com"
-              defaultValue={item.image_url || ""}
+              defaultValue={item.image_url ? stripProtocol(item.image_url) : ""}
             />
           </InputGroup>
 
