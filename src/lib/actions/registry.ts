@@ -525,15 +525,47 @@ export async function toggleParentPurchased(
     redirect("/login");
   }
 
-  const { error } = await supabase.rpc("mark_item_parent_purchased", {
-    p_item_id: itemId,
-    p_owner_id: user.id,
-    p_purchased: purchased,
-  });
+  console.log(`[toggleParentPurchased] itemId=${itemId}, purchased=${purchased}`);
+
+  // Verify ownership
+  const { data: item } = await supabase
+    .from("registry_items")
+    .select("id, quantity_needed, registry_id")
+    .eq("id", itemId)
+    .single();
+
+  if (!item) {
+    console.log(`[toggleParentPurchased] Item not found`);
+    return { error: "Item not found" };
+  }
+  console.log(`[toggleParentPurchased] Found item, registry_id=${item.registry_id}`);
+
+  const { data: registry } = await supabase
+    .from("registries")
+    .select("id")
+    .eq("id", item.registry_id)
+    .eq("owner_id", user.id)
+    .single();
+
+  if (!registry) {
+    console.log(`[toggleParentPurchased] Not authorized`);
+    return { error: "Not authorized" };
+  }
+
+  const { error } = await supabase
+    .from("registry_items")
+    .update({
+      is_parent_purchased: purchased,
+      quantity_fulfilled: purchased ? item.quantity_needed : 0,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", itemId);
 
   if (error) {
+    console.log(`[toggleParentPurchased] Update error: ${error.message}`);
     return { error: error.message };
   }
+  console.log(`[toggleParentPurchased] Success`);
 
   revalidatePath(`/dashboard/registry/${registryId}`);
   return { success: true };
