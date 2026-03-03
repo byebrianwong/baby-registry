@@ -95,7 +95,7 @@ export function ItemCard({ item, registryId, isOwner, categories = [], zipCode }
                 )}
                 {item.is_open_to_used && (
                   <span className="inline-flex items-center rounded-full border border-primary/20 px-2.5 py-0.5 text-xs font-medium text-secondary">
-                    Open to {item.minimum_condition?.replace("-", " ") || "used"}
+                    Open to {item.minimum_condition?.replace("-", " ") || "any"} used condition
                   </span>
                 )}
               </div>
