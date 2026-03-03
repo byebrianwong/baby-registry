@@ -167,7 +167,6 @@ export function AddItemDialog({
                 <InputBase
                   ref={urlRef}
                   name="externalUrl"
-                  type="url"
                   placeholder="www.untitledui.com"
                   onBlur={(e) => handleScrape((e.target as HTMLInputElement).value)}
                 />
@@ -227,7 +226,6 @@ export function AddItemDialog({
             <InputBase
               ref={imageUrlRef}
               name="imageUrl"
-              type="url"
               placeholder="www.untitledui.com"
             />
           </InputGroup>

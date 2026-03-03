@@ -173,7 +173,6 @@ export function EditItemDialog({
                 <InputBase
                   ref={urlRef}
                   name="externalUrl"
-                  type="url"
                   placeholder="www.untitledui.com"
                   defaultValue={item.external_url ? stripProtocol(item.external_url) : ""}
                   onBlur={(e) => handleScrape((e.target as HTMLInputElement).value)}
@@ -234,7 +233,6 @@ export function EditItemDialog({
             <InputBase
               ref={imageUrlRef}
               name="imageUrl"
-              type="url"
               placeholder="www.untitledui.com"
               defaultValue={item.image_url ? stripProtocol(item.image_url) : ""}
             />

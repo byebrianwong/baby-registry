@@ -123,7 +123,6 @@ export function SuggestItemDialog({ registryId, categories = [] }: SuggestItemDi
                   >
                     <InputBase
                       name="externalUrl"
-                      type="url"
                       placeholder="www.untitledui.com"
                     />
                   </InputGroup>
