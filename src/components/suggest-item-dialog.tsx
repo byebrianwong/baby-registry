@@ -117,15 +117,11 @@ export function SuggestItemDialog({ registryId, categories = [] }: SuggestItemDi
               <div className="space-y-1.5">
                 <Label>Product URL (optional)</Label>
                 <div className="flex items-center gap-4">
-                  <InputGroup
-                    leadingAddon={<InputPrefix>http://</InputPrefix>}
+                  <Input
+                    name="externalUrl"
+                    placeholder="https://www.example.com"
                     className="flex-1"
-                  >
-                    <InputBase
-                      name="externalUrl"
-                      placeholder="www.untitledui.com"
-                    />
-                  </InputGroup>
+                  />
                   <Button
                     type="button"
                     variant="ghost"

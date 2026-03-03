@@ -160,17 +160,13 @@ export function AddItemDialog({
           <div className="space-y-1.5">
             <Label>Product URL</Label>
             <div className="flex items-center gap-4">
-              <InputGroup
-                leadingAddon={<InputPrefix>http://</InputPrefix>}
+              <Input
+                ref={urlRef}
+                name="externalUrl"
+                placeholder="https://www.example.com"
+                onBlur={(e) => handleScrape((e.target as HTMLInputElement).value)}
                 className="flex-1"
-              >
-                <InputBase
-                  ref={urlRef}
-                  name="externalUrl"
-                  placeholder="www.untitledui.com"
-                  onBlur={(e) => handleScrape((e.target as HTMLInputElement).value)}
-                />
-              </InputGroup>
+              />
               <Button
                 type="button"
                 variant="ghost"
@@ -219,16 +215,12 @@ export function AddItemDialog({
             {(item) => <Select.Item id={item.id} label={item.label} />}
           </Select>
 
-          <InputGroup
+          <Input
+            ref={imageUrlRef}
             label="Image URL (optional)"
-            leadingAddon={<InputPrefix>http://</InputPrefix>}
-          >
-            <InputBase
-              ref={imageUrlRef}
-              name="imageUrl"
-              placeholder="www.untitledui.com"
-            />
-          </InputGroup>
+            name="imageUrl"
+            placeholder="https://www.example.com/image.jpg"
+          />
 
           <div className="grid grid-cols-2 gap-4">
             <InputGroup

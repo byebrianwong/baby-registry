@@ -76,7 +76,6 @@ export function EditItemDialog({
     return url;
   };
 
-  const stripProtocol = (url: string) => url.replace(/^https?:\/\//i, "");
 
   const handleScrape = async (rawUrl: string) => {
     if (!rawUrl || scraping) return;
@@ -166,18 +165,14 @@ export function EditItemDialog({
           <div className="space-y-1.5">
             <Label>Product URL</Label>
             <div className="flex items-center gap-4">
-              <InputGroup
-                leadingAddon={<InputPrefix>http://</InputPrefix>}
+              <Input
+                ref={urlRef}
+                name="externalUrl"
+                placeholder="https://www.example.com"
+                defaultValue={item.external_url || ""}
+                onBlur={(e) => handleScrape((e.target as HTMLInputElement).value)}
                 className="flex-1"
-              >
-                <InputBase
-                  ref={urlRef}
-                  name="externalUrl"
-                  placeholder="www.untitledui.com"
-                  defaultValue={item.external_url ? stripProtocol(item.external_url) : ""}
-                  onBlur={(e) => handleScrape((e.target as HTMLInputElement).value)}
-                />
-              </InputGroup>
+              />
               <Button
                 type="button"
                 variant="ghost"
@@ -226,17 +221,13 @@ export function EditItemDialog({
             {(catItem) => <Select.Item id={catItem.id} label={catItem.label} />}
           </Select>
 
-          <InputGroup
+          <Input
+            ref={imageUrlRef}
             label="Image URL (optional)"
-            leadingAddon={<InputPrefix>http://</InputPrefix>}
-          >
-            <InputBase
-              ref={imageUrlRef}
-              name="imageUrl"
-              placeholder="www.untitledui.com"
-              defaultValue={item.image_url ? stripProtocol(item.image_url) : ""}
-            />
-          </InputGroup>
+            name="imageUrl"
+            placeholder="https://www.example.com/image.jpg"
+            defaultValue={item.image_url || ""}
+          />
 
           <div className="grid grid-cols-2 gap-4">
             <InputGroup
