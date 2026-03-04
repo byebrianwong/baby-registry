@@ -229,7 +229,7 @@ export function AddItemDialog({
     <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setScrapeStatus(""); setScrapeIsError(false); setParentPurchased(false); setOpenToUsed(false); setTaxInfo(null); setCurrency("USD"); setTitle(defaultValues?.title || ""); setPrice(defaultValues?.price ? parseFloat(defaultValues.price).toFixed(2) : ""); setImageUrl(""); setImageError(false); setCategoryId(defaultValues?.categoryId); setError(""); } }}>
       <DialogTrigger asChild>
         {trigger || (
-          <Button>
+          <Button className="!bg-[#004659] hover:!bg-[#003847] !ring-[#004659] !text-white">
             <span className="inline-flex items-center gap-1.5">
               <Plus className="h-4 w-4 shrink-0" />
               Add Item
