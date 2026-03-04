@@ -170,12 +170,29 @@ export default async function PublicRegistryPage({
         </div>
       </header>
 
-      {/* Registry Header */}
-      <section className="border-b bg-secondary py-12">
-        <div className="container mx-auto px-4 text-center">
-          <h1 className="text-3xl font-bold sm:text-4xl">{registry.title}</h1>
+      {/* Hero Banner */}
+      <section className="relative flex h-[400px] items-center justify-center overflow-hidden bg-white">
+        {/* Decorative illustrations — hidden on small screens, pinned to a 1440px canvas */}
+        <div className="pointer-events-none absolute inset-0 mx-auto hidden max-w-[1440px] lg:block" aria-hidden="true">
+          {/* Left side */}
+          <img src="/hero/star-teal-left.svg" alt="" className="absolute left-[89px] top-[108px] w-[62px] h-[63px]" />
+          <img src="/hero/heart-red.svg" alt="" className="absolute left-[174px] top-[33px] w-[70px] h-[57px]" />
+          <img src="/hero/panda.svg" alt="" className="absolute left-[209px] top-[98px] w-[192px] h-[220px]" />
+          <img src="/hero/spoon-and-fork.svg" alt="" className="absolute left-[44px] top-[230px] w-[99px] h-[112px] -rotate-[29deg]" />
+          {/* Right side */}
+          <img src="/hero/heart-yellow.svg" alt="" className="absolute right-[134px] top-[45px] w-[55px] h-[45px]" />
+          <img src="/hero/bottle.svg" alt="" className="absolute right-[284px] top-[71px] w-[72px] h-[122px] rotate-[21deg]" />
+          <img src="/hero/bib.svg" alt="" className="absolute right-[55px] top-[139px] w-[113px] h-[96px] rotate-[4deg]" />
+          <img src="/hero/socks.svg" alt="" className="absolute right-[245px] top-[265px] w-[130px] h-[105px]" />
+          <img src="/hero/star-teal-right.svg" alt="" className="absolute right-[62px] top-[284px] w-[62px] h-[63px]" />
+        </div>
+        {/* Center content */}
+        <div className="relative z-10 flex max-w-[575px] flex-col items-center gap-4 px-4 text-center">
+          <h1 className="text-4xl font-bold leading-[44px] tracking-tight text-[#181d27]">
+            {registry.title}
+          </h1>
           {registry.event_date && (
-            <p className="mt-2 flex items-center justify-center gap-2 text-tertiary">
+            <p className="flex items-center gap-2 text-[#414651]">
               <Calendar className="h-4 w-4" />
               {new Date(registry.event_date).toLocaleDateString("en-US", {
                 month: "long",
@@ -185,12 +202,12 @@ export default async function PublicRegistryPage({
             </p>
           )}
           {registry.description && (
-            <p className="mx-auto mt-4 max-w-xl text-tertiary whitespace-pre-line">
+            <p className="text-[#414651] whitespace-pre-line">
               {registry.description}
             </p>
           )}
-          <div className="mx-auto mt-6 max-w-xs">
-            <div className="flex justify-between text-sm mb-1">
+          <div className="w-full max-w-[566px]">
+            <div className="flex justify-between text-sm text-[#414651] mb-1">
               <span>
                 {fulfilledItems} of {totalItems} gifts fulfilled
               </span>

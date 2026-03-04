@@ -32,6 +32,7 @@ export default function RegistrySettingsPage() {
   const [savingPayment, setSavingPayment] = useState(false);
   const [savingZip, setSavingZip] = useState(false);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState(false);
   const [paymentError, setPaymentError] = useState("");
   const [paymentSuccess, setPaymentSuccess] = useState(false);
   const [zipError, setZipError] = useState("");
@@ -54,9 +55,21 @@ export default function RegistrySettingsPage() {
   const handleSave = async (formData: FormData) => {
     setSaving(true);
     setError("");
+    setSuccess(false);
     const result = await updateRegistry(registryId, formData);
     if (result?.error) {
       setError(result.error);
+    } else if (registry) {
+      setSuccess(true);
+      setTimeout(() => setSuccess(false), 2000);
+      // Update local state so form values survive the revalidatePath remount
+      setRegistry({
+        ...registry,
+        title: formData.get("title") as string,
+        event_date: (formData.get("eventDate") as string) || null,
+        description: (formData.get("description") as string) || null,
+        is_public: formData.get("isPublic") === "true",
+      });
     }
     setSaving(false);
   };
@@ -182,8 +195,8 @@ export default function RegistrySettingsPage() {
 
             {error && <p className="text-sm text-error-primary">{error}</p>}
 
-            <Button type="submit" disabled={saving}>
-              {saving ? "Saving..." : "Save Changes"}
+            <Button type="submit" disabled={saving} className="!bg-[#004659] hover:!bg-[#003847] !ring-[#004659] !text-white">
+              {saving ? "Saving..." : success ? "Saved!" : "Save changes"}
             </Button>
           </form>
         </CardContent>
@@ -218,12 +231,12 @@ export default function RegistrySettingsPage() {
               <p className="text-sm text-error-primary">{zipError}</p>
             )}
 
-            <Button type="submit" disabled={savingZip}>
+            <Button type="submit" disabled={savingZip} className="!bg-[#004659] hover:!bg-[#003847] !ring-[#004659] !text-white">
               {savingZip
                 ? "Saving..."
                 : zipSuccess
                   ? "Saved!"
-                  : "Save Location"}
+                  : "Save location"}
             </Button>
           </form>
         </CardContent>
@@ -266,12 +279,12 @@ export default function RegistrySettingsPage() {
               <p className="text-sm text-error-primary">{paymentError}</p>
             )}
 
-            <Button type="submit" disabled={savingPayment}>
+            <Button type="submit" disabled={savingPayment} className="!bg-[#004659] hover:!bg-[#003847] !ring-[#004659] !text-white">
               {savingPayment
                 ? "Saving..."
                 : paymentSuccess
                   ? "Saved!"
-                  : "Save Payment Methods"}
+                  : "Save payment methods"}
             </Button>
           </form>
         </CardContent>
@@ -288,7 +301,7 @@ export default function RegistrySettingsPage() {
         </CardHeader>
         <CardContent>
           <Button variant="destructive" onClick={handleDelete}>
-            Delete Registry
+            Delete registry
           </Button>
         </CardContent>
       </Card>
