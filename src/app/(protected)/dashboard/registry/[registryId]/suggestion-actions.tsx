@@ -36,17 +36,24 @@ export function SuggestionActions({
 
   return (
     <div className="flex gap-2 shrink-0">
-      <Button size="sm" onClick={handleAccept} disabled={loading}>
-        <Plus className="h-3 w-3 mr-1" />
-        Add to registry
-      </Button>
       <Button
-        variant="outline"
+        variant="destructive-outline"
         size="sm"
         onClick={handleDecline}
         disabled={loading}
       >
         Decline
+      </Button>
+      <Button
+        size="sm"
+        onClick={handleAccept}
+        disabled={loading}
+        className="!bg-[#004659] hover:!bg-[#003847] !ring-[#004659] !text-white"
+      >
+        <span className="inline-flex items-center gap-1.5">
+          <Plus className="h-4 w-4 shrink-0" />
+          Add to registry
+        </span>
       </Button>
     </div>
   );

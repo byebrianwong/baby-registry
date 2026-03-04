@@ -1410,96 +1410,74 @@ export default function DemoManagePage() {
                         new Date(b.created_at).getTime() -
                         new Date(a.created_at).getTime()
                     )
-                    .map((suggestion) => {
-                      const isActioned = suggestion.status !== "pending";
-                      return (
-                        <Card
-                          key={suggestion.id}
-                          className={isActioned ? "opacity-50" : ""}
-                        >
-                          <CardContent className="p-4">
-                            <div className="flex items-start justify-between gap-4">
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2 flex-wrap">
-                                  <span className="font-medium">
-                                    {suggestion.title}
-                                  </span>
-                                  <Badge
-                                    variant={
-                                      suggestion.status === "pending"
-                                        ? "secondary"
-                                        : suggestion.status === "accepted"
-                                          ? "default"
-                                          : "outline"
-                                    }
-                                    className="text-xs"
-                                  >
-                                    {suggestion.status === "pending"
-                                      ? "Pending"
-                                      : suggestion.status === "accepted"
-                                        ? "Added"
-                                        : "Declined"}
-                                  </Badge>
-                                </div>
-                                <div className="flex items-center gap-3 mt-1 text-xs text-tertiary">
-                                  <span>
-                                    Suggested by{" "}
-                                    <span className="font-medium text-primary">
-                                      {suggestion.suggested_by_name}
-                                    </span>
-                                  </span>
-                                  {suggestion.suggested_by_email && (
-                                    <span className="flex items-center gap-1">
-                                      <Mail className="h-3 w-3" />
-                                      {suggestion.suggested_by_email}
-                                    </span>
-                                  )}
-                                  <span>
-                                    {new Date(
-                                      suggestion.created_at
-                                    ).toLocaleDateString("en-US", {
-                                      month: "short",
-                                      day: "numeric",
-                                      year: "numeric",
-                                    })}
-                                  </span>
-                                </div>
-                                {suggestion.price && (
-                                  <p className="text-sm mt-1">
-                                    ${suggestion.price.toFixed(2)}
-                                  </p>
-                                )}
-                                {suggestion.external_url && (
+                    .map((suggestion) => (
+                      <Card key={suggestion.id} className="py-0">
+                        <CardContent className="p-4">
+                          <div className="flex flex-col gap-2">
+                            <div className="flex items-center gap-2.5">
+                              <span className="flex-1 min-w-0 text-base font-semibold text-secondary">
+                                {suggestion.title}
+                              </span>
+                              <span
+                                className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium shrink-0 ${
+                                  suggestion.status === "pending"
+                                    ? "border-[#717680] text-[#181d27]"
+                                    : suggestion.status === "accepted"
+                                      ? "bg-[#004659] border-[#004659] text-white"
+                                      : "bg-[#f9b8b9] border-[#f9b8b9] text-[#181d27]"
+                                }`}
+                              >
+                                {suggestion.status === "pending"
+                                  ? "Pending"
+                                  : suggestion.status === "accepted"
+                                    ? "Added"
+                                    : "Declined"}
+                              </span>
+                              <span className="text-xs text-secondary shrink-0">
+                                {new Date(
+                                  suggestion.created_at
+                                ).toLocaleDateString("en-US", {
+                                  month: "short",
+                                  day: "numeric",
+                                  year: "numeric",
+                                })}
+                              </span>
+                            </div>
+                            {suggestion.price != null && (
+                              <p className="text-sm font-semibold text-secondary">
+                                ${suggestion.price.toFixed(2)}
+                              </p>
+                            )}
+                            <div className="flex items-center gap-2.5 text-xs text-secondary">
+                              <span>Suggested by {suggestion.suggested_by_name}</span>
+                              {suggestion.suggested_by_email && (
+                                <span>{suggestion.suggested_by_email}</span>
+                              )}
+                            </div>
+                            {suggestion.notes && (
+                              <p className="text-xs text-secondary">
+                                &ldquo;{suggestion.notes}&rdquo;
+                              </p>
+                            )}
+                            <div className="flex items-center justify-between pt-2">
+                              {suggestion.external_url ? (
+                                <Button variant="outline" size="sm" asChild>
                                   <a
                                     href={suggestion.external_url}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="text-sm text-brand-600 hover:underline mt-1 inline-flex items-center gap-1"
                                   >
-                                    <ExternalLink className="h-3 w-3" />
-                                    View product
+                                    <ExternalLink className="h-4 w-4" />
+                                    Shop
                                   </a>
-                                )}
-                                {suggestion.notes && (
-                                  <p className="mt-2 text-sm text-tertiary flex items-start gap-1">
-                                    <MessageSquare className="h-3 w-3 mt-0.5 shrink-0" />
-                                    &ldquo;{suggestion.notes}&rdquo;
-                                  </p>
-                                )}
-                              </div>
+                                </Button>
+                              ) : (
+                                <div />
+                              )}
                               {suggestion.status === "pending" && (
-                                <div className="flex gap-2 shrink-0">
+                                <div className="flex gap-2">
                                   <Button
-                                    size="sm"
-                                    onClick={() =>
-                                      handleAcceptSuggestion(suggestion)
-                                    }
-                                  >
-                                    <Plus className="h-3 w-3 mr-1" />
-                                    Add to registry
-                                  </Button>
-                                  <Button
-                                    variant="outline"
+                                    variant="destructive-outline"
                                     size="sm"
                                     onClick={() =>
                                       handleDeclineSuggestion(suggestion.id)
@@ -1507,13 +1485,25 @@ export default function DemoManagePage() {
                                   >
                                     Decline
                                   </Button>
+                                  <Button
+                                    size="sm"
+                                    onClick={() =>
+                                      handleAcceptSuggestion(suggestion)
+                                    }
+                                    className="!bg-[#004659] hover:!bg-[#003847] !ring-[#004659] !text-white"
+                                  >
+                                    <span className="inline-flex items-center gap-1.5">
+                                      <Plus className="h-4 w-4 shrink-0" />
+                                      Add to registry
+                                    </span>
+                                  </Button>
                                 </div>
                               )}
                             </div>
-                          </CardContent>
-                        </Card>
-                      );
-                    })}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
                 </div>
               )}
             </TabPanel>
