@@ -43,6 +43,46 @@ const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
 
 type FilterMode = "all" | "essential" | "not-added";
 
+/** Match checklist items to registry items using keyword-based fuzzy matching */
+function buildMatchedChecklistItems(
+  checklistNames: string[],
+  registryTitles: string[]
+): Set<string> {
+  const matched = new Set<string>();
+  const lowerTitles = registryTitles.map((t) => t.toLowerCase());
+
+  for (const name of checklistNames) {
+    const lower = name.toLowerCase();
+    // Split on " / " or " & " to handle alternatives like "Glider / Rocker" or "Burp Cloths & Bibs"
+    const alternatives = lower.split(/\s*[\/&]\s*/);
+    // Keywords from each alternative (words >2 chars)
+    const altKeywords = alternatives.map((alt) =>
+      alt.split(/\s+/).filter((w) => w.length > 2)
+    );
+
+    const isMatched = lowerTitles.some(
+      (title) =>
+        title === lower ||
+        title.includes(lower) ||
+        lower.includes(title) ||
+        // Match if ALL keywords from ANY alternative appear in the title
+        altKeywords.some(
+          (keywords) =>
+            keywords.length > 0 && keywords.every((kw) => title.includes(kw))
+        ) ||
+        // Relaxed: match if the longest keyword (most specific) from any alternative appears
+        altKeywords.some((keywords) => {
+          if (keywords.length === 0) return false;
+          const longest = keywords.reduce((a, b) => (a.length >= b.length ? a : b));
+          return longest.length >= 4 && title.includes(longest);
+        })
+    );
+
+    if (isMatched) matched.add(lower);
+  }
+  return matched;
+}
+
 export default function ChecklistPage() {
   const params = useParams();
   const registryId = params.registryId as string;
@@ -69,7 +109,12 @@ export default function ChecklistPage() {
       ]);
       setCategories(cats || []);
       if (items) {
-        setAddedItems(new Set(items.map((i) => i.title.toLowerCase())));
+        const allChecklistNames = DEFAULT_CHECKLIST.flatMap((c) =>
+          c.items.map((i) => i.name)
+        );
+        setAddedItems(
+          buildMatchedChecklistItems(allChecklistNames, items.map((i) => i.title))
+        );
       }
     };
     fetchData();
