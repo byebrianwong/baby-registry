@@ -19,9 +19,9 @@ export function ScrollToTop() {
   if (!visible) return null;
 
   return (
-    <div className="fixed bottom-6 right-4 z-40">
+    <div className="fixed bottom-6 z-40" style={{ right: "max(1rem, calc((100vw - 1280px) / 4))" }}>
       <Button
-        className="rounded-full shadow-lg"
+        className="!rounded-full !size-14 shadow-lg !bg-[#9DB5BB] hover:!bg-[#8da5ab] !ring-[#9DB5BB] !text-[#181d27]"
         onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
         aria-label="Scroll to top"
       >
