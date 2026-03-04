@@ -194,7 +194,7 @@ export default async function PublicRegistryPage({
           {registry.event_date && (
             <p className="flex items-center gap-2 text-[#414651]">
               <Calendar className="h-4 w-4" />
-              {new Date(registry.event_date).toLocaleDateString("en-US", {
+              {new Date(registry.event_date + "T00:00:00").toLocaleDateString("en-US", {
                 month: "long",
                 day: "numeric",
                 year: "numeric",

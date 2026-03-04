@@ -671,7 +671,7 @@ export default function DemoPage() {
           </h1>
           <p className="mt-2 flex items-center justify-center gap-2 text-tertiary">
             <Calendar className="h-4 w-4" />
-            {new Date(DEMO_REGISTRY.event_date).toLocaleDateString(
+            {new Date(DEMO_REGISTRY.event_date + "T00:00:00").toLocaleDateString(
               "en-US",
               {
                 month: "long",

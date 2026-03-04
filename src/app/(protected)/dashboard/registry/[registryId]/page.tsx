@@ -179,7 +179,7 @@ export default async function RegistryManagePage({
           {registry.event_date && (
             <p className="text-tertiary">
               Due date:{" "}
-              {new Date(registry.event_date).toLocaleDateString("en-US", {
+              {new Date(registry.event_date + "T00:00:00").toLocaleDateString("en-US", {
                 month: "long",
                 day: "numeric",
                 year: "numeric",

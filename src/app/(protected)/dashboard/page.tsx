@@ -100,7 +100,7 @@ export default async function DashboardPage() {
                     {registry.event_date && (
                       <>
                         <Calendar className="h-3 w-3" />
-                        {new Date(registry.event_date).toLocaleDateString()}
+                        {new Date(registry.event_date + "T00:00:00").toLocaleDateString()}
                       </>
                     )}
                   </CardDescription>
