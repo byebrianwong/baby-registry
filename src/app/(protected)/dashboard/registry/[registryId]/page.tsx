@@ -190,12 +190,12 @@ export default async function RegistryManagePage({
         <div className="flex gap-2 flex-wrap">
           <CopyLinkButton slug={registry.slug} />
           <Button variant="outline" asChild>
-            <Link href={registryUrl} target="_blank">
+            <a href={registryUrl} target="_blank" rel="noopener noreferrer">
               <span className="inline-flex items-center gap-1.5">
                 <ExternalLink className="h-4 w-4 shrink-0" />
                 Preview
               </span>
-            </Link>
+            </a>
           </Button>
           <Button variant="outline" asChild>
             <Link href={`/dashboard/registry/${registryId}/settings`}>

@@ -86,9 +86,13 @@ function Button({
     if (href) {
       // Render as Untitled UI link-button using href
       const childChildren = childProps.children as React.ReactNode
+      const target = childProps.target as string | undefined
+      const rel = childProps.rel as string | undefined
       return (
         <UntitledButton
           href={href}
+          target={target}
+          rel={rel}
           color={utColor}
           size={utSize}
           isDisabled={disabled}

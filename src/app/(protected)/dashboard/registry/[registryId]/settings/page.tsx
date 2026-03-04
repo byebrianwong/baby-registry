@@ -150,6 +150,7 @@ export default function RegistrySettingsPage() {
 
             <div className="space-y-2">
               <span className="text-sm font-medium text-secondary">Visibility</span>
+              <p className="text-xs text-tertiary">All registries are accessible via their share link. This setting controls whether search engines can find your registry.</p>
               <div className="flex items-center gap-4">
                 <label className="flex items-center gap-2">
                   <input
@@ -158,7 +159,7 @@ export default function RegistrySettingsPage() {
                     value="true"
                     defaultChecked={registry.is_public}
                   />
-                  <span className="text-sm">Public</span>
+                  <span className="text-sm">Public — searchable by search engines</span>
                 </label>
                 <label className="flex items-center gap-2">
                   <input
@@ -167,7 +168,7 @@ export default function RegistrySettingsPage() {
                     value="false"
                     defaultChecked={!registry.is_public}
                   />
-                  <span className="text-sm">Private</span>
+                  <span className="text-sm">Private — only accessible with link</span>
                 </label>
               </div>
             </div>

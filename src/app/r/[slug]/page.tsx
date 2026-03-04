@@ -55,9 +55,8 @@ export async function generateMetadata({
   const supabase = await createClient();
   const { data: registry } = await supabase
     .from("registries")
-    .select("title, description")
+    .select("title, description, is_public")
     .eq("slug", slug)
-    .eq("is_public", true)
     .single();
 
   if (!registry) return { title: "Registry Not Found" };
@@ -65,6 +64,7 @@ export async function generateMetadata({
   return {
     title: `${registry.title} | Baby Akachan`,
     description: registry.description || `View and shop ${registry.title}`,
+    ...(!registry.is_public && { robots: { index: false, follow: false } }),
   };
 }
 
@@ -80,7 +80,6 @@ export default async function PublicRegistryPage({
     .from("registries")
     .select("*")
     .eq("slug", slug)
-    .eq("is_public", true)
     .single();
 
   if (!registry) {

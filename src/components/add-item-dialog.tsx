@@ -207,8 +207,20 @@ export function AddItemDialog({
     if (result?.error) {
       setError(result.error);
     } else {
-      setOpen(false);
+      // Reset all state before closing so reopening shows a clean form
       setScrapeStatus("");
+      setScrapeIsError(false);
+      setParentPurchased(false);
+      setOpenToUsed(false);
+      setTaxInfo(null);
+      setCurrency("USD");
+      setTitle(defaultValues?.title || "");
+      setPrice(defaultValues?.price ? parseFloat(defaultValues.price).toFixed(2) : "");
+      setImageUrl("");
+      setImageError(false);
+      setCategoryId(defaultValues?.categoryId);
+      setError("");
+      setOpen(false);
     }
     setLoading(false);
   };
