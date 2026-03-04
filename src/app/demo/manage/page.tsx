@@ -15,7 +15,6 @@ import {
   ArrowLeft,
   MessageSquare,
   Mail,
-  DollarSign,
   ShoppingBag,
   Undo2,
   X,
@@ -1298,73 +1297,71 @@ export default function DemoManagePage() {
                   )
                   .map((purchase) => {
                     const isCancelled = purchase.status === "cancelled";
+                    const item = items.find((i) => i.id === purchase.registry_item_id);
+                    const isParentPurchased = item?.is_parent_purchased ?? false;
+                    const tagType = isCancelled
+                      ? "cancelled"
+                      : purchase.cash_fund_id
+                        ? "contribution"
+                        : isParentPurchased
+                          ? "covered"
+                          : "purchased";
+                    const displayAmount = purchase.cash_fund_id
+                      ? purchase.amount
+                      : item?.price;
                     return (
                       <Card
                         key={purchase.id}
-                        className={isCancelled ? "opacity-50" : ""}
+                        className={`py-0 ${isCancelled ? "opacity-50" : ""}`}
                       >
                         <CardContent className="p-4">
-                          <div className="flex items-start justify-between gap-4">
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 flex-wrap">
-                                <span className="font-medium">
-                                  {purchase.buyer_name}
-                                </span>
-                                {isCancelled ? (
-                                  <Badge
-                                    variant="destructive"
-                                    className="text-xs"
-                                  >
-                                    Cancelled
-                                  </Badge>
-                                ) : (
-                                  <Badge
-                                    variant={
-                                      purchase.cash_fund_id
-                                        ? "default"
-                                        : "secondary"
-                                    }
-                                    className="text-xs"
-                                  >
-                                    {purchase.cash_fund_id
+                          <div className="flex flex-col gap-2">
+                            <div className="flex items-center gap-4">
+                              <span className="flex-1 min-w-0 text-sm font-medium text-secondary">
+                                {purchase.buyer_name}
+                              </span>
+                              <div className="flex-1 min-w-0">
+                                <span
+                                  className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium ${
+                                    tagType === "cancelled"
+                                      ? "bg-error-primary/10 border-error-primary/20 text-error-primary"
+                                      : tagType === "contribution"
+                                        ? "bg-[#09c69a] border-[#09c69a] text-[#181d27]"
+                                        : tagType === "covered"
+                                          ? "bg-[#a0e4d4] border-[#a0e4d4] text-[#181d27]"
+                                          : "bg-[#f7efa9] border-[#f7efa9] text-[#181d27]"
+                                  }`}
+                                >
+                                  {tagType === "cancelled"
+                                    ? "Cancelled"
+                                    : tagType === "contribution"
                                       ? "Contribution"
-                                      : "Reserved"}
-                                  </Badge>
-                                )}
+                                      : tagType === "covered"
+                                        ? "Covered by guest"
+                                        : "Purchased by guest"}
+                                </span>
                               </div>
-                              <p className="text-sm mt-1">
-                                {purchase.cash_fund_id ? (
-                                  <>
-                                    <DollarSign className="inline h-3 w-3 mr-1" />
-                                    Contributed{" "}
-                                    <span className="font-medium">
-                                      ${purchase.amount}
-                                    </span>{" "}
-                                    to{" "}
-                                    <span className="font-medium">
-                                      {purchase.item_title}
-                                    </span>
-                                  </>
-                                ) : (
-                                  <>
-                                    Reserved{" "}
-                                    {purchase.quantity > 1 && (
-                                      <span>
-                                        {purchase.quantity}x{" "}
-                                      </span>
-                                    )}
-                                    <span className="font-medium">
-                                      {purchase.item_title}
-                                    </span>
-                                  </>
-                                )}
-                              </p>
-                              <div className="flex items-center gap-3 mt-1 text-xs text-tertiary">
-                                <span className="flex items-center gap-1">
-                                  <Mail className="h-3 w-3" />
+                              <div className="flex-1 min-w-0">
+                                <span className="text-xs text-secondary">
+                                  {purchase.cash_fund_id
+                                    ? purchase.item_title
+                                    : `Reserved ${purchase.quantity > 1 ? `${purchase.quantity}x ` : ""}${purchase.item_title}`}
+                                </span>
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <span className="text-sm font-semibold text-secondary">
+                                  {displayAmount != null
+                                    ? `$${Number(displayAmount).toFixed(2)}`
+                                    : ""}
+                                </span>
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <span className="text-xs text-secondary">
                                   {purchase.buyer_email}
                                 </span>
-                                <span>
+                              </div>
+                              <div className="flex-1 min-w-0 text-right">
+                                <span className="text-xs text-secondary">
                                   {new Date(
                                     purchase.created_at
                                   ).toLocaleDateString("en-US", {
@@ -1374,25 +1371,11 @@ export default function DemoManagePage() {
                                   })}
                                 </span>
                               </div>
-                              {purchase.message && (
-                                <p className="mt-2 text-sm text-tertiary flex items-start gap-1">
-                                  <MessageSquare className="h-3 w-3 mt-0.5 shrink-0" />
-                                  <span className="whitespace-pre-line">&ldquo;{purchase.message}&rdquo;</span>
-                                </p>
-                              )}
                             </div>
-                            {!isCancelled && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() =>
-                                  handleCancelPurchase(purchase.id)
-                                }
-                                className="text-error-primary hover:text-error-primary shrink-0"
-                              >
-                                <X className="h-3 w-3 mr-1" />
-                                Cancel
-                              </Button>
+                            {purchase.message && (
+                              <p className="text-sm text-secondary whitespace-pre-line">
+                                {purchase.message}
+                              </p>
                             )}
                           </div>
                         </CardContent>
