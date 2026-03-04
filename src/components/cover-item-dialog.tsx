@@ -58,7 +58,7 @@ export function CoverItemDialog({ item, paymentMethods }: CoverItemDialogProps) 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button>
+        <Button className="!bg-[#09c69a] hover:!bg-[#08b38b] !ring-[#09c69a] !text-white">
           <span className="inline-flex items-center gap-1.5"><HandCoins className="h-4 w-4 shrink-0" />Cover the cost</span>
         </Button>
       </DialogTrigger>
@@ -110,7 +110,7 @@ export function CoverItemDialog({ item, paymentMethods }: CoverItemDialogProps) 
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={loading}>
+            <Button type="submit" disabled={loading} className="!bg-[#004659] hover:!bg-[#003847] !ring-[#004659] !text-white">
               {loading ? "Sending..." : "I'll cover this"}
             </Button>
           </div>

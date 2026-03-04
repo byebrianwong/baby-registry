@@ -59,7 +59,7 @@ export function ReserveItemDialog({ item }: ReserveItemDialogProps) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button>
+        <Button className="!bg-[#004659] hover:!bg-[#003847] !ring-[#004659] !text-white">
           <span className="inline-flex items-center gap-1.5"><Gift className="h-4 w-4 shrink-0" />Mark as purchased</span>
         </Button>
       </DialogTrigger>
@@ -114,7 +114,7 @@ export function ReserveItemDialog({ item }: ReserveItemDialogProps) {
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={loading}>
+            <Button type="submit" disabled={loading} className="!bg-[#004659] hover:!bg-[#003847] !ring-[#004659] !text-white">
               {loading ? "Reserving..." : "I bought this item"}
             </Button>
           </div>

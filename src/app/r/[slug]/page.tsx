@@ -15,6 +15,8 @@ import { CategoryNav, type CategoryNavItem } from "@/components/category-nav";
 import { getCategorySectionId } from "@/lib/category-section-id";
 import { ScrollToTop } from "@/components/scroll-to-top";
 import { SuggestItemDialog } from "@/components/suggest-item-dialog";
+import { Tag } from "@/components/ui/tag";
+import { UsedConditionTag } from "@/components/ui/used-condition-tag";
 
 interface RegistryItem {
   id: string;
@@ -220,13 +222,13 @@ export default async function PublicRegistryPage({
                         ? (fund.current_amount / fund.goal_amount) * 100
                         : 0;
                     return (
-                      <Card key={fund.id} className="py-0 gap-0 rounded-xl shadow-none">
+                      <Card key={fund.id} className="py-0 gap-0 rounded-xl shadow-none border-[#e9eaeb]">
                         <CardContent className="flex flex-col gap-4 p-4">
-                          <h3 className="font-semibold text-2xl leading-8">
+                          <h3 className="font-semibold text-2xl leading-8 text-[#181d27]">
                             {fund.title}
                           </h3>
                           {fund.description && (
-                            <p className="text-sm text-tertiary">
+                            <p className="text-sm text-[#535862]">
                               {fund.description}
                             </p>
                           )}
@@ -286,20 +288,20 @@ export default async function PublicRegistryPage({
                           key={item.id}
                           className={`py-0 gap-0 rounded-xl shadow-none ${
                             isFulfilled && !item.is_parent_purchased
-                              ? "bg-secondary/50 border-secondary"
+                              ? "opacity-60 border-[#f5f5f5]"
                               : item.is_parent_purchased
-                                ? "bg-brand-600/10"
-                                : ""
+                                ? "bg-[rgba(160,228,212,0.2)] border-[#d5d7da]"
+                                : "border-[#d5d7da]"
                           }`}
                         >
                           <CardContent className="flex h-full flex-col justify-between gap-4 p-4">
                             <div className="flex gap-3">
-                              <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-md bg-secondary">
+                              <div className="flex size-16 shrink-0 items-center justify-center rounded-md bg-[#fdfdfd]">
                                 {item.image_url ? (
                                   <img
                                     src={item.image_url}
                                     alt={item.title}
-                                    className="h-16 w-16 rounded-md object-cover"
+                                    className="size-16 rounded-md object-cover"
                                   />
                                 ) : (
                                   <Package className="h-6 w-6 text-tertiary" />
@@ -311,26 +313,18 @@ export default async function PublicRegistryPage({
                                 </h3>
                                 <div className="flex flex-wrap gap-2.5">
                                   {item.is_parent_purchased ? (
-                                    <span className="inline-flex items-center rounded-full bg-brand-600 px-2.5 py-0.5 text-xs font-medium text-white">
-                                      Purchased by parent
-                                    </span>
+                                    <Tag variant="parent-purchased">Purchased by parent</Tag>
                                   ) : isFulfilled ? (
-                                    <span className="inline-flex items-center rounded-full bg-brand-600 px-2.5 py-0.5 text-xs font-medium text-white">
-                                      Already purchased by guest
-                                    </span>
+                                    <Tag variant="guest-purchased">Already purchased by guest</Tag>
                                   ) : (
                                     <>
                                       {item.is_essential && (
-                                        <span className="inline-flex items-center rounded-full bg-brand-600 px-2.5 py-0.5 text-xs font-medium text-white">
-                                          Most wanted
-                                        </span>
+                                        <Tag variant="most-wanted">Most wanted</Tag>
                                       )}
                                     </>
                                   )}
                                   {item.is_open_to_used && (
-                                    <span className="inline-flex items-center rounded-full border border-primary/20 px-2.5 py-0.5 text-xs font-medium text-secondary">
-                                      Open to {item.minimum_condition?.replace("-", " ") || "any"} used condition
-                                    </span>
+                                    <UsedConditionTag condition={item.minimum_condition} />
                                   )}
                                 </div>
                                 <div className="flex items-center gap-2.5">
@@ -339,12 +333,12 @@ export default async function PublicRegistryPage({
                                       ${item.price.toFixed(2)}
                                     </span>
                                   )}
-                                  <span className="text-xs">
+                                  <span className="text-xs text-[#414651]">
                                     {remaining} of {item.quantity_needed} still needed
                                   </span>
                                 </div>
                                 {item.notes && (
-                                  <p className="text-sm line-clamp-2">
+                                  <p className="text-sm text-[#414651] line-clamp-2">
                                     {item.notes}
                                   </p>
                                 )}
@@ -360,7 +354,6 @@ export default async function PublicRegistryPage({
                                   />
                                 ) : (
                                   <>
-                                    <ReserveItemDialog item={item} />
                                     {item.external_url && (
                                       <Button
                                         variant="outline"
@@ -374,6 +367,7 @@ export default async function PublicRegistryPage({
                                         </a>
                                       </Button>
                                     )}
+                                    <ReserveItemDialog item={item} />
                                   </>
                                 )}
                               </div>
@@ -402,10 +396,10 @@ export default async function PublicRegistryPage({
                         key={item.id}
                         className={`py-0 gap-0 rounded-xl shadow-none ${
                           isFulfilled && !item.is_parent_purchased
-                            ? "bg-secondary/50 border-secondary"
+                            ? "opacity-60 border-[#f5f5f5]"
                             : item.is_parent_purchased
-                              ? "bg-brand-600/10"
-                              : ""
+                              ? "bg-[rgba(160,228,212,0.2)] border-[#d5d7da]"
+                              : "border-[#d5d7da]"
                         }`}
                       >
                         <CardContent className="flex h-full flex-col justify-between gap-4 p-4">
@@ -413,26 +407,18 @@ export default async function PublicRegistryPage({
                             <h3 className="font-medium text-sm">{item.title}</h3>
                             <div className="flex flex-wrap gap-2.5">
                               {item.is_parent_purchased ? (
-                                <span className="inline-flex items-center rounded-full bg-brand-600 px-2.5 py-0.5 text-xs font-medium text-white">
-                                  Purchased by parent
-                                </span>
+                                <Tag variant="parent-purchased">Purchased by parent</Tag>
                               ) : isFulfilled ? (
-                                <span className="inline-flex items-center rounded-full bg-brand-600 px-2.5 py-0.5 text-xs font-medium text-white">
-                                  Already purchased by guest
-                                </span>
+                                <Tag variant="guest-purchased">Already purchased by guest</Tag>
                               ) : (
                                 <>
                                   {item.is_essential && (
-                                    <span className="inline-flex items-center rounded-full bg-brand-600 px-2.5 py-0.5 text-xs font-medium text-white">
-                                      Most wanted
-                                    </span>
+                                    <Tag variant="most-wanted">Most wanted</Tag>
                                   )}
                                 </>
                               )}
                               {item.is_open_to_used && (
-                                <span className="inline-flex items-center rounded-full border border-primary/20 px-2.5 py-0.5 text-xs font-medium text-secondary">
-                                  Open to {item.minimum_condition?.replace("-", " ") || "any"} used condition
-                                </span>
+                                <UsedConditionTag condition={item.minimum_condition} />
                               )}
                             </div>
                             <div className="flex items-center gap-2.5">
@@ -441,7 +427,7 @@ export default async function PublicRegistryPage({
                                   ${item.price.toFixed(2)}
                                 </span>
                               )}
-                              <span className="text-xs">
+                              <span className="text-xs text-[#414651]">
                                 {remaining} of {item.quantity_needed} still needed
                               </span>
                             </div>

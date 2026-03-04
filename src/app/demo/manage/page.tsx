@@ -28,6 +28,7 @@ import {
 import { Link01 } from "@untitledui/icons";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Tag } from "@/components/ui/tag";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { Card, CardContent } from "@/components/ui/card";
@@ -701,23 +702,17 @@ function DemoItemCard({
               <h3 className="text-sm font-medium">{item.title}</h3>
               <div className="shrink-0 h-6">
                 {item.is_parent_purchased && (
-                  <span className="inline-flex items-center rounded-full border border-brand-600 px-2.5 py-0.5 text-xs font-medium">
-                    Purchased by you
-                  </span>
+                  <Tag variant="purchased-by-you">Purchased by you</Tag>
                 )}
                 {isFulfilled && !item.is_parent_purchased && (
-                  <span className="inline-flex items-center rounded-full bg-brand-600 px-2.5 py-0.5 text-xs font-medium text-white">
-                    Gifted
-                  </span>
+                  <Tag variant="gifted">Gifted</Tag>
                 )}
               </div>
             </div>
 
             {item.is_essential && (
               <div className="flex gap-2.5 flex-wrap">
-                <span className="inline-flex items-center rounded-full bg-brand-600 px-2.5 py-0.5 text-xs font-medium text-white">
-                  Most wanted
-                </span>
+                <Tag variant="most-wanted">Most wanted</Tag>
               </div>
             )}
 

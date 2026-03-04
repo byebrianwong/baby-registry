@@ -17,6 +17,7 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Tag } from "@/components/ui/tag";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
@@ -792,19 +793,13 @@ export default function DemoPage() {
                               </h3>
                               <div className="flex flex-wrap gap-2.5">
                                 {item.is_parent_purchased ? (
-                                  <span className="inline-flex items-center rounded-full bg-brand-600 px-2.5 py-0.5 text-xs font-medium text-white">
-                                    Purchased by parent
-                                  </span>
+                                  <Tag variant="parent-purchased">Purchased by parent</Tag>
                                 ) : isFulfilled ? (
-                                  <span className="inline-flex items-center rounded-full bg-brand-600 px-2.5 py-0.5 text-xs font-medium text-white">
-                                    Already purchased by guest
-                                  </span>
+                                  <Tag variant="guest-purchased">Already purchased by guest</Tag>
                                 ) : (
                                   <>
                                     {item.is_essential && (
-                                      <span className="inline-flex items-center rounded-full bg-brand-600 px-2.5 py-0.5 text-xs font-medium text-white">
-                                        Most wanted
-                                      </span>
+                                      <Tag variant="most-wanted">Most wanted</Tag>
                                     )}
                                   </>
                                 )}

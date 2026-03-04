@@ -4,6 +4,8 @@ import { useState } from "react";
 import { ExternalLink, Package, ShoppingBag, Undo2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Tag } from "@/components/ui/tag";
+import { UsedConditionTag } from "@/components/ui/used-condition-tag";
 import { toggleParentPurchased } from "@/lib/actions/registry";
 import { EditItemDialog } from "@/components/edit-item-dialog";
 
@@ -74,14 +76,10 @@ export function ItemCard({ item, registryId, isOwner, categories = [], zipCode }
               <h3 className="text-sm font-medium">{item.title}</h3>
               <div className="shrink-0 h-6">
                 {item.is_parent_purchased && (
-                  <span className="inline-flex items-center rounded-full border border-brand-600 px-2.5 py-0.5 text-xs font-medium">
-                    Purchased by you
-                  </span>
+                  <Tag variant="purchased-by-you">Purchased by you</Tag>
                 )}
                 {isFulfilled && !item.is_parent_purchased && (
-                  <span className="inline-flex items-center rounded-full bg-brand-600 px-2.5 py-0.5 text-xs font-medium text-white">
-                    Gifted
-                  </span>
+                  <Tag variant="gifted">Gifted</Tag>
                 )}
               </div>
             </div>
@@ -89,14 +87,10 @@ export function ItemCard({ item, registryId, isOwner, categories = [], zipCode }
             {(item.is_essential || item.is_open_to_used) && (
               <div className="flex gap-2.5 flex-wrap">
                 {item.is_essential && (
-                  <span className="inline-flex items-center rounded-full bg-brand-600 px-2.5 py-0.5 text-xs font-medium text-white">
-                    Most wanted
-                  </span>
+                  <Tag variant="most-wanted">Most wanted</Tag>
                 )}
                 {item.is_open_to_used && (
-                  <span className="inline-flex items-center rounded-full border border-primary/20 px-2.5 py-0.5 text-xs font-medium text-secondary">
-                    Open to {item.minimum_condition?.replace("-", " ") || "any"} used condition
-                  </span>
+                  <UsedConditionTag condition={item.minimum_condition} />
                 )}
               </div>
             )}
