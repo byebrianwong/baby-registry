@@ -21,11 +21,13 @@ import {
 interface CategoryManagerProps {
   registryId: string;
   categories: { id: string; name: string; sort_order: number }[];
+  inline?: boolean;
 }
 
 export function CategoryManager({
   registryId,
   categories,
+  inline,
 }: CategoryManagerProps) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
@@ -61,6 +63,87 @@ export function CategoryManager({
     setEditName(name);
   };
 
+  const categoryList = (
+    <div className="space-y-3">
+      {categories.map((cat) => (
+        <div key={cat.id} className="flex items-center gap-2">
+          {editingId === cat.id ? (
+            <>
+              <Input
+                value={editName}
+                onChange={(val) => setEditName(val)}
+                className="flex-1"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleUpdate(cat.id);
+                  if (e.key === "Escape") setEditingId(null);
+                }}
+                autoFocus
+              />
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => handleUpdate(cat.id)}
+                disabled={loading}
+              >
+                <Check className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setEditingId(null)}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </>
+          ) : (
+            <>
+              <span className="flex-1 text-sm">{cat.name}</span>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => startEditing(cat.id, cat.name)}
+              >
+                <Pencil className="h-3 w-3" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => handleDelete(cat.id, cat.name)}
+                className="text-error-primary hover:text-error-primary"
+              >
+                <Trash2 className="h-3 w-3" />
+              </Button>
+            </>
+          )}
+        </div>
+      ))}
+
+      <div className="flex items-center gap-2 pt-4 border-t">
+        <Input
+          value={newName}
+          onChange={(val) => setNewName(val)}
+          placeholder="New category name"
+          className="flex-1"
+          onKeyDown={(e) => {
+            if (e.key === "Enter") handleCreate();
+          }}
+        />
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={handleCreate}
+          disabled={loading || !newName.trim()}
+        >
+          <Plus className="h-4 w-4" />
+        </Button>
+      </div>
+    </div>
+  );
+
+  if (inline) {
+    return categoryList;
+  }
+
   return (
     <Sheet>
       <SheetTrigger asChild>
@@ -79,79 +162,8 @@ export function CategoryManager({
           </SheetDescription>
         </SheetHeader>
 
-        <div className="mt-6 space-y-3">
-          {categories.map((cat) => (
-            <div key={cat.id} className="flex items-center gap-2">
-              {editingId === cat.id ? (
-                <>
-                  <Input
-                    value={editName}
-                    onChange={(val) => setEditName(val)}
-                    className="flex-1"
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") handleUpdate(cat.id);
-                      if (e.key === "Escape") setEditingId(null);
-                    }}
-                    autoFocus
-                  />
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => handleUpdate(cat.id)}
-                    disabled={loading}
-                  >
-                    <Check className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setEditingId(null)}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </>
-              ) : (
-                <>
-                  <span className="flex-1 text-sm">{cat.name}</span>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => startEditing(cat.id, cat.name)}
-                  >
-                    <Pencil className="h-3 w-3" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => handleDelete(cat.id, cat.name)}
-                    className="text-error-primary hover:text-error-primary"
-                  >
-                    <Trash2 className="h-3 w-3" />
-                  </Button>
-                </>
-              )}
-            </div>
-          ))}
-
-          <div className="flex items-center gap-2 pt-4 border-t">
-            <Input
-              value={newName}
-              onChange={(val) => setNewName(val)}
-              placeholder="New category name"
-              className="flex-1"
-              onKeyDown={(e) => {
-                if (e.key === "Enter") handleCreate();
-              }}
-            />
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={handleCreate}
-              disabled={loading || !newName.trim()}
-            >
-              <Plus className="h-4 w-4" />
-            </Button>
-          </div>
+        <div className="mt-6">
+          {categoryList}
         </div>
       </SheetContent>
     </Sheet>

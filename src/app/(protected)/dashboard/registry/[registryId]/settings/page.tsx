@@ -12,6 +12,7 @@ import { Separator } from "@/components/ui/separator";
 import { createClient } from "@/utils/supabase/client";
 import { Checkbox } from "@/components/base/checkbox/checkbox";
 import { updateRegistry, deleteRegistry, updatePaymentMethods, updateZipCode } from "@/lib/actions/registry";
+import { CategoryManager } from "@/components/category-manager";
 import type { PaymentMethods } from "@/lib/types";
 
 export default function RegistrySettingsPage() {
@@ -37,19 +38,28 @@ export default function RegistrySettingsPage() {
   const [paymentSuccess, setPaymentSuccess] = useState(false);
   const [zipError, setZipError] = useState("");
   const [zipSuccess, setZipSuccess] = useState(false);
+  const [categories, setCategories] = useState<{ id: string; name: string; sort_order: number }[]>([]);
 
   useEffect(() => {
-    const fetchRegistry = async () => {
+    const fetchData = async () => {
       const supabase = createClient();
-      const { data } = await supabase
-        .from("registries")
-        .select("title, event_date, description, is_public, slug, settings")
-        .eq("id", registryId)
-        .single();
+      const [{ data }, { data: cats }] = await Promise.all([
+        supabase
+          .from("registries")
+          .select("title, event_date, description, is_public, slug, settings")
+          .eq("id", registryId)
+          .single(),
+        supabase
+          .from("categories")
+          .select("id, name, sort_order")
+          .eq("registry_id", registryId)
+          .order("sort_order"),
+      ]);
       setRegistry(data);
+      setCategories(cats || []);
       setLoading(false);
     };
-    fetchRegistry();
+    fetchData();
   }, [registryId]);
 
   const handleSave = async (formData: FormData) => {
@@ -199,6 +209,18 @@ export default function RegistrySettingsPage() {
               {saving ? "Saving..." : success ? "Saved!" : "Save changes"}
             </Button>
           </form>
+        </CardContent>
+      </Card>
+
+      <Separator className="my-8" />
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Categories</CardTitle>
+          <CardDescription>Organize your registry items into categories</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <CategoryManager registryId={registryId} categories={categories} inline />
         </CardContent>
       </Card>
 

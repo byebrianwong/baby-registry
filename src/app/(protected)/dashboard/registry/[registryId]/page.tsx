@@ -20,12 +20,13 @@ import { AddItemDialog } from "@/components/add-item-dialog";
 import { ItemCard } from "@/components/item-card";
 import { CopyLinkButton } from "@/components/copy-link-button";
 import { RegistryTabs } from "@/components/registry-tabs";
-import { CategoryManager } from "@/components/category-manager";
 import { CancelReservationButton } from "./cancel-reservation-button";
 import { SuggestionActions } from "./suggestion-actions";
 import { CategoryNav, type CategoryNavItem } from "@/components/category-nav";
 import { getCategorySectionId } from "@/lib/category-section-id";
 import { ScrollToTop } from "@/components/scroll-to-top";
+import { ProgressCircle } from "@/components/ui/progress-circle";
+import { getChecklistProgress } from "@/lib/checklist-matching";
 
 interface RegistryItem {
   id: string;
@@ -101,6 +102,7 @@ export default async function RegistryManagePage({
 
   const allItems = (items || []) as RegistryItem[];
   const allCategories = (categories || []) as Category[];
+  const checklistProgress = getChecklistProgress(allItems.map((i) => i.title));
 
   // Filter purchases to this registry
   const allPurchases = (purchases || []).filter((p: any) => {
@@ -249,19 +251,19 @@ export default async function RegistryManagePage({
           <>
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-semibold">Registry Items</h2>
-              <div className="flex gap-2">
+              <div className="flex items-center gap-2">
                 <Button variant="outline" asChild>
                   <Link href={`/dashboard/registry/${registryId}/checklist`}>
                     <span className="inline-flex items-center gap-1.5">
-                      <ClipboardList className="h-4 w-4 shrink-0" />
+                      <ProgressCircle
+                        value={checklistProgress.total > 0 ? (checklistProgress.matched / checklistProgress.total) * 100 : 0}
+                        size={20}
+                        strokeWidth={2}
+                      />
                       Checklist
                     </span>
                   </Link>
                 </Button>
-                <CategoryManager
-                  registryId={registryId}
-                  categories={allCategories}
-                />
                 <AddItemDialog registryId={registryId} categories={allCategories} zipCode={zipCode} />
               </div>
             </div>

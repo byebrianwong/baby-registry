@@ -87,7 +87,7 @@ export default function ChecklistPage() {
   const params = useParams();
   const registryId = params.registryId as string;
 
-  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set(DEFAULT_CHECKLIST.map((c) => c.name)));
   const [addedItems, setAddedItems] = useState<Set<string>>(new Set());
   const [addingItem, setAddingItem] = useState<string | null>(null);
   const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
@@ -216,24 +216,22 @@ export default function ChecklistPage() {
         </div>
 
         <div className="flex items-center gap-2">
-          <div className="flex rounded-md border">
+          <div className="flex gap-0.5 rounded-lg bg-secondary_alt ring-1 ring-inset ring-secondary">
             {(["all", "essential", "not-added"] as FilterMode[]).map((mode) => (
               <button
                 key={mode}
                 onClick={() => setFilter(mode)}
-                className={`px-3 py-1.5 text-xs font-medium transition-colors ${
+                className={`px-3 py-2 text-sm font-semibold rounded-md whitespace-nowrap transition duration-100 ease-linear ${
                   filter === mode
-                    ? "bg-brand-solid text-white"
-                    : "hover:bg-active"
-                } ${mode === "all" ? "rounded-l-md" : ""} ${
-                  mode === "not-added" ? "rounded-r-md" : ""
+                    ? "bg-primary_alt text-secondary shadow-xs ring-1 ring-primary ring-inset"
+                    : "text-quaternary hover:text-secondary"
                 }`}
               >
                 {mode === "all"
                   ? "All"
                   : mode === "essential"
                     ? "Essentials"
-                    : "Not Added"}
+                    : "Not added"}
               </button>
             ))}
           </div>
@@ -351,21 +349,23 @@ export default function ChecklistPage() {
                           ) : (
                             <Button
                               size="sm"
-                              variant="outline"
+                              variant="secondary"
                               className="shrink-0"
                               disabled={isAdding}
                               onClick={() =>
                                 handleAddItem(category.name, item)
                               }
                             >
-                              {isAdding ? (
-                                "Adding..."
-                              ) : (
-                                <>
-                                  <Plus className="h-3 w-3 mr-1" />
-                                  Add
-                                </>
-                              )}
+                              <span className="inline-flex items-center gap-1">
+                                {isAdding ? (
+                                  "Adding..."
+                                ) : (
+                                  <>
+                                    <Plus className="h-3 w-3 shrink-0" />
+                                    Add to registry
+                                  </>
+                                )}
+                              </span>
                             </Button>
                           )}
                         </div>
