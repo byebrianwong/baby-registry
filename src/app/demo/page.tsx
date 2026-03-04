@@ -680,7 +680,7 @@ export default function DemoPage() {
               }
             )}
           </p>
-          <p className="mx-auto mt-4 max-w-xl text-tertiary">
+          <p className="mx-auto mt-4 max-w-xl text-tertiary whitespace-pre-line">
             {DEMO_REGISTRY.description}
           </p>
           <div className="mx-auto mt-6 max-w-xs">
@@ -715,7 +715,7 @@ export default function DemoPage() {
                       <h3 className="font-semibold text-2xl leading-8">
                         {fund.title}
                       </h3>
-                      <p className="text-sm text-tertiary">
+                      <p className="text-sm text-tertiary whitespace-pre-line">
                         {fund.description}
                       </p>
                       <div className="flex flex-col gap-1">
@@ -815,7 +815,7 @@ export default function DemoPage() {
                                 </span>
                               </div>
                               {item.notes && (
-                                <p className="text-sm line-clamp-2">
+                                <p className="text-sm whitespace-pre-line line-clamp-2">
                                   {item.notes}
                                 </p>
                               )}

@@ -415,7 +415,7 @@ export default async function RegistryManagePage({
                             {purchase.message && (
                               <p className="mt-2 text-sm text-tertiary flex items-start gap-1">
                                 <MessageSquare className="h-3 w-3 mt-0.5 shrink-0" />
-                                &ldquo;{purchase.message}&rdquo;
+                                <span className="whitespace-pre-line">&ldquo;{purchase.message}&rdquo;</span>
                               </p>
                             )}
                           </div>
@@ -525,7 +525,7 @@ export default async function RegistryManagePage({
                             {suggestion.notes && (
                               <p className="mt-2 text-sm text-tertiary flex items-start gap-1">
                                 <MessageSquare className="h-3 w-3 mt-0.5 shrink-0" />
-                                &ldquo;{suggestion.notes}&rdquo;
+                                <span className="whitespace-pre-line">&ldquo;{suggestion.notes}&rdquo;</span>
                               </p>
                             )}
                           </div>

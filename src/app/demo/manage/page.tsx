@@ -728,7 +728,7 @@ function DemoItemCard({
             </div>
 
             {item.notes && (
-              <p className="text-sm line-clamp-2">{item.notes}</p>
+              <p className="text-sm whitespace-pre-line line-clamp-2">{item.notes}</p>
             )}
           </div>
         </div>
@@ -1377,7 +1377,7 @@ export default function DemoManagePage() {
                               {purchase.message && (
                                 <p className="mt-2 text-sm text-tertiary flex items-start gap-1">
                                   <MessageSquare className="h-3 w-3 mt-0.5 shrink-0" />
-                                  &ldquo;{purchase.message}&rdquo;
+                                  <span className="whitespace-pre-line">&ldquo;{purchase.message}&rdquo;</span>
                                 </p>
                               )}
                             </div>

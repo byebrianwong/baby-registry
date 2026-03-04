@@ -185,7 +185,7 @@ export default async function PublicRegistryPage({
             </p>
           )}
           {registry.description && (
-            <p className="mx-auto mt-4 max-w-xl text-tertiary">
+            <p className="mx-auto mt-4 max-w-xl text-tertiary whitespace-pre-line">
               {registry.description}
             </p>
           )}
@@ -228,7 +228,7 @@ export default async function PublicRegistryPage({
                             {fund.title}
                           </h3>
                           {fund.description && (
-                            <p className="text-sm text-[#535862]">
+                            <p className="text-sm text-[#535862] whitespace-pre-line">
                               {fund.description}
                             </p>
                           )}
@@ -338,7 +338,7 @@ export default async function PublicRegistryPage({
                                   </span>
                                 </div>
                                 {item.notes && (
-                                  <p className="text-sm text-[#414651] line-clamp-2">
+                                  <p className="text-sm text-[#414651] whitespace-pre-line line-clamp-2">
                                     {item.notes}
                                   </p>
                                 )}

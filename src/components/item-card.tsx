@@ -107,7 +107,7 @@ export function ItemCard({ item, registryId, isOwner, categories = [], zipCode }
             </div>
 
             {item.notes && (
-              <p className="text-sm line-clamp-2">{item.notes}</p>
+              <p className="text-sm whitespace-pre-line line-clamp-2">{item.notes}</p>
             )}
           </div>
         </div>
