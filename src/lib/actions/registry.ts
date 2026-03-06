@@ -35,7 +35,22 @@ export async function createRegistry(formData: FormData) {
   const title = formData.get("title") as string;
   const eventDate = formData.get("eventDate") as string;
   const description = formData.get("description") as string;
+  const isPublic = formData.get("isPublic") !== "false";
+  const zipCode = formData.get("zipCode") as string;
+  const taxEnabled = formData.get("taxEnabled") === "true";
+  const venmo = formData.get("venmo") as string;
+  const paypal = formData.get("paypal") as string;
+  const zelle = formData.get("zelle") as string;
   const slug = generateSlug(title);
+
+  const settings: Record<string, unknown> = {};
+  if (zipCode) settings.zip_code = zipCode;
+  settings.tax_enabled = taxEnabled;
+  const paymentMethods: Record<string, string> = {};
+  if (venmo) paymentMethods.venmo = venmo;
+  if (paypal) paymentMethods.paypal = paypal;
+  if (zelle) paymentMethods.zelle = zelle;
+  if (Object.keys(paymentMethods).length > 0) settings.payment_methods = paymentMethods;
 
   const { data: registry, error } = await supabase
     .from("registries")
@@ -45,7 +60,8 @@ export async function createRegistry(formData: FormData) {
       slug,
       event_date: eventDate || null,
       description: description || null,
-      is_public: true,
+      is_public: isPublic,
+      settings: Object.keys(settings).length > 0 ? settings : null,
     })
     .select()
     .single();
@@ -515,6 +531,61 @@ export async function updateZipCode(
   return { success: true };
 }
 
+export async function toggleChecklistDismissed(
+  registryId: string,
+  itemName: string,
+  dismissed: boolean
+) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/login");
+  }
+
+  const { data: registry } = await supabase
+    .from("registries")
+    .select("settings")
+    .eq("id", registryId)
+    .eq("owner_id", user.id)
+    .single();
+
+  if (!registry) {
+    return { error: "Registry not found" };
+  }
+
+  const settings = (registry.settings as Record<string, unknown>) || {};
+  const current = (settings.checklist_dismissed as string[]) || [];
+  const lower = itemName.toLowerCase();
+
+  if (dismissed) {
+    if (!current.includes(lower)) {
+      current.push(lower);
+    }
+  } else {
+    const idx = current.indexOf(lower);
+    if (idx !== -1) current.splice(idx, 1);
+  }
+
+  settings.checklist_dismissed = current;
+
+  const { error } = await supabase
+    .from("registries")
+    .update({ settings })
+    .eq("id", registryId)
+    .eq("owner_id", user.id);
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidatePath(`/dashboard/registry/${registryId}`);
+  revalidatePath(`/dashboard/registry/${registryId}/checklist`);
+  return { success: true };
+}
+
 export async function toggleParentPurchased(
   itemId: string,
   registryId: string,
@@ -784,11 +855,34 @@ export async function acceptSuggestion(formData: FormData) {
   // Update suggestion status
   const { error: updateError } = await supabase
     .from("suggestions")
-    .update({ status: "accepted" })
+    .update({ status: "added" })
     .eq("id", suggestionId);
 
   if (updateError) {
     return { error: updateError.message };
+  }
+
+  revalidatePath(`/dashboard/registry/${registryId}`);
+  return { success: true };
+}
+
+export async function acceptOffering(formData: FormData) {
+  const supabase = await createClient();
+  const suggestionId = formData.get("suggestionId") as string;
+  const registryId = formData.get("registryId") as string;
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
+
+  const { error } = await supabase
+    .from("suggestions")
+    .update({ status: "accepted" })
+    .eq("id", suggestionId);
+
+  if (error) {
+    return { error: error.message };
   }
 
   revalidatePath(`/dashboard/registry/${registryId}`);

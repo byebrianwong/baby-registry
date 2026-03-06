@@ -7,7 +7,6 @@ import {
   Mail,
   MessageSquare,
   DollarSign,
-  Lightbulb,
   Plus,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -21,7 +20,7 @@ import { ItemCard } from "@/components/item-card";
 import { CopyLinkButton } from "@/components/copy-link-button";
 import { RegistryTabs } from "@/components/registry-tabs";
 import { CancelReservationButton } from "./cancel-reservation-button";
-import { SuggestionActions } from "./suggestion-actions";
+import { SuggestionInbox } from "./suggestion-inbox";
 import { CategoryNav, type CategoryNavItem } from "@/components/category-nav";
 import { getCategorySectionId } from "@/lib/category-section-id";
 import { ScrollToTop } from "@/components/scroll-to-top";
@@ -102,7 +101,8 @@ export default async function RegistryManagePage({
 
   const allItems = (items || []) as RegistryItem[];
   const allCategories = (categories || []) as Category[];
-  const checklistProgress = getChecklistProgress(allItems.map((i) => i.title));
+  const dismissedChecklistItems = (registry.settings as Record<string, unknown> | null)?.checklist_dismissed as string[] | undefined;
+  const checklistProgress = getChecklistProgress(allItems.map((i) => i.title), dismissedChecklistItems);
 
   // Filter purchases to this registry
   const allPurchases = (purchases || []).filter((p: any) => {
@@ -122,11 +122,11 @@ export default async function RegistryManagePage({
     notes: string | null;
     suggested_by_name: string;
     suggested_by_email: string | null;
-    status: "pending" | "accepted" | "declined";
+    status: "pending" | "offering" | "added" | "accepted" | "declined";
     created_at: string;
   }[];
   const pendingSuggestionCount = allSuggestions.filter(
-    (s) => s.status === "pending"
+    (s) => s.status === "pending" || s.status === "offering"
   ).length;
 
   const totalItems = allItems.length;
@@ -445,101 +445,7 @@ export default async function RegistryManagePage({
           </>
         }
         suggestionsContent={
-          <>
-            <div className="mb-6">
-              <h2 className="text-xl font-semibold">Suggestion Inbox</h2>
-              <p className="text-sm text-tertiary">
-                Items suggested by your guests
-              </p>
-            </div>
-
-            {allSuggestions.length === 0 ? (
-              <Card>
-                <CardContent className="flex flex-col items-center justify-center py-12">
-                  <Lightbulb className="h-8 w-8 text-tertiary mb-2" />
-                  <p className="text-tertiary">
-                    No suggestions yet. Guests can suggest items from your registry page.
-                  </p>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="space-y-3">
-                {allSuggestions.map((suggestion) => (
-                  <Card key={suggestion.id} className="py-0">
-                    <CardContent className="p-4">
-                      <div className="flex flex-col gap-2">
-                        <div className="flex items-center gap-2.5">
-                          <span className="flex-1 min-w-0 text-base font-semibold text-secondary">
-                            {suggestion.title}
-                          </span>
-                          <span
-                            className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium shrink-0 ${
-                              suggestion.status === "pending"
-                                ? "border-[#717680] text-[#181d27]"
-                                : suggestion.status === "accepted"
-                                  ? "bg-[#004659] border-[#004659] text-white"
-                                  : "bg-[#f9b8b9] border-[#f9b8b9] text-[#181d27]"
-                            }`}
-                          >
-                            {suggestion.status === "pending"
-                              ? "Pending"
-                              : suggestion.status === "accepted"
-                                ? "Added"
-                                : "Declined"}
-                          </span>
-                          <span className="text-xs text-secondary shrink-0">
-                            {new Date(suggestion.created_at).toLocaleDateString("en-US", {
-                              month: "short",
-                              day: "numeric",
-                              year: "numeric",
-                            })}
-                          </span>
-                        </div>
-                        {suggestion.price && (
-                          <p className="text-sm font-semibold text-secondary">
-                            ${suggestion.price.toFixed(2)}
-                          </p>
-                        )}
-                        <div className="flex items-center gap-2.5 text-xs text-secondary">
-                          <span>Suggested by {suggestion.suggested_by_name}</span>
-                          {suggestion.suggested_by_email && (
-                            <span>{suggestion.suggested_by_email}</span>
-                          )}
-                        </div>
-                        {suggestion.notes && (
-                          <p className="text-xs text-secondary whitespace-pre-line">
-                            &ldquo;{suggestion.notes}&rdquo;
-                          </p>
-                        )}
-                        <div className="flex items-center justify-between pt-2">
-                          {suggestion.external_url ? (
-                            <Button variant="outline" size="sm" asChild>
-                              <a
-                                href={suggestion.external_url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                              >
-                                <ExternalLink className="h-4 w-4" />
-                                Shop
-                              </a>
-                            </Button>
-                          ) : (
-                            <div />
-                          )}
-                          {suggestion.status === "pending" && (
-                            <SuggestionActions
-                              suggestionId={suggestion.id}
-                              registryId={registryId}
-                            />
-                          )}
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )}
-          </>
+          <SuggestionInbox suggestions={allSuggestions} registryId={registryId} />
         }
       />
 

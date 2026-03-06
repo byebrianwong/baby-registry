@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useParams } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Copy, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/base/input/input";
 import { TextArea } from "@/components/base/textarea/textarea";
@@ -39,6 +39,7 @@ export default function RegistrySettingsPage() {
   const [zipError, setZipError] = useState("");
   const [zipSuccess, setZipSuccess] = useState(false);
   const [categories, setCategories] = useState<{ id: string; name: string; sort_order: number }[]>([]);
+  const [slugCopied, setSlugCopied] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -198,9 +199,29 @@ export default function RegistrySettingsPage() {
 
             <div className="space-y-1">
               <span className="text-sm font-medium text-secondary">Share URL</span>
-              <p className="text-sm text-tertiary font-mono">
-                /r/{registry.slug}
-              </p>
+              <div className="flex items-center gap-4">
+                <p className="text-sm text-tertiary font-mono">
+                  /r/{registry.slug}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigator.clipboard.writeText(`${window.location.origin}/r/${registry.slug}`);
+                    setSlugCopied(true);
+                    setTimeout(() => setSlugCopied(false), 2000);
+                  }}
+                  className="text-tertiary hover:text-secondary transition-colors"
+                >
+                  {slugCopied ? (
+                    <span className="inline-flex items-center gap-1 text-sm">
+                      <Check className="h-4 w-4" />
+                      Copied!
+                    </span>
+                  ) : (
+                    <Copy className="h-4 w-4" />
+                  )}
+                </button>
+              </div>
             </div>
 
             {error && <p className="text-sm text-error-primary">{error}</p>}

@@ -2,16 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Baby, LogOut, Menu } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Baby } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
-import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 
 export function Nav() {
   const pathname = usePathname();
-  const router = useRouter();
   const [user, setUser] = useState<{ email?: string; full_name?: string } | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -24,13 +20,6 @@ export function Nav() {
       setLoading(false);
     });
   }, []);
-
-  const handleSignOut = async () => {
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    router.push("/");
-    router.refresh();
-  };
 
   const isPublicRegistry = pathname.startsWith("/r/");
 
@@ -68,53 +57,15 @@ export function Nav() {
 
             <div className="ml-auto flex items-center gap-2">
               {loading ? null : user ? (
-                <>
-                  <span className="hidden text-sm text-tertiary md:inline">
-                    {user.email}
-                  </span>
-                  <Button variant="ghost" size="sm" onClick={handleSignOut}>
-                    <LogOut className="h-4 w-4" />
-                  </Button>
-                </>
+                <span className="text-sm text-tertiary">
+                  {user.email}
+                </span>
               ) : (
                 <>
-                  <Button variant="ghost" size="sm" asChild>
-                    <Link href="/login">Log in</Link>
-                  </Button>
-                  <Button size="sm" asChild>
-                    <Link href="/signup">Sign up</Link>
-                  </Button>
+                  <Link href="/login" className="text-sm text-tertiary hover:text-primary transition-colors">Log in</Link>
+                  <Link href="/signup" className="text-sm text-tertiary hover:text-primary transition-colors">Sign up</Link>
                 </>
               )}
-
-              <Sheet>
-                <SheetTrigger asChild className="md:hidden">
-                  <Button variant="ghost" size="icon">
-                    <Menu className="h-5 w-5" />
-                  </Button>
-                </SheetTrigger>
-                <SheetContent side="right">
-                  <nav className="flex flex-col gap-4 pt-8">
-                    {navLinks.map((link) => (
-                      <Link
-                        key={link.href}
-                        href={link.href}
-                        className="text-sm font-medium"
-                      >
-                        {link.label}
-                      </Link>
-                    ))}
-                    {user && (
-                      <button
-                        onClick={handleSignOut}
-                        className="text-sm text-tertiary text-left"
-                      >
-                        Sign out
-                      </button>
-                    )}
-                  </nav>
-                </SheetContent>
-              </Sheet>
             </div>
           </>
         )}

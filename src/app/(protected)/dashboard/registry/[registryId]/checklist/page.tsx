@@ -26,7 +26,7 @@ import { Progress } from "@/components/ui/progress";
 import { Card, CardContent } from "@/components/ui/card";
 import { DEFAULT_CHECKLIST, type ChecklistCategory, type ChecklistItem } from "@/lib/checklist-data";
 import { createClient } from "@/utils/supabase/client";
-import { addRegistryItem } from "@/lib/actions/registry";
+import { addRegistryItem, toggleChecklistDismissed } from "@/lib/actions/registry";
 
 const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   moon: Moon,
@@ -69,13 +69,7 @@ function buildMatchedChecklistItems(
         altKeywords.some(
           (keywords) =>
             keywords.length > 0 && keywords.every((kw) => title.includes(kw))
-        ) ||
-        // Relaxed: match if the longest keyword (most specific) from any alternative appears
-        altKeywords.some((keywords) => {
-          if (keywords.length === 0) return false;
-          const longest = keywords.reduce((a, b) => (a.length >= b.length ? a : b));
-          return longest.length >= 4 && title.includes(longest);
-        })
+        )
     );
 
     if (isMatched) matched.add(lower);
@@ -87,17 +81,19 @@ export default function ChecklistPage() {
   const params = useParams();
   const registryId = params.registryId as string;
 
-  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set(DEFAULT_CHECKLIST.map((c) => c.name)));
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const [addedItems, setAddedItems] = useState<Set<string>>(new Set());
+  const [dismissedItems, setDismissedItems] = useState<Set<string>>(new Set());
   const [addingItem, setAddingItem] = useState<string | null>(null);
+  const [dismissingItem, setDismissingItem] = useState<string | null>(null);
   const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
   const [filter, setFilter] = useState<FilterMode>("all");
 
-  // Fetch existing items and categories
+  // Fetch existing items, categories, and dismissed checklist items
   useEffect(() => {
     const fetchData = async () => {
       const supabase = createClient();
-      const [{ data: cats }, { data: items }] = await Promise.all([
+      const [{ data: cats }, { data: items }, { data: registry }] = await Promise.all([
         supabase
           .from("categories")
           .select("id, name")
@@ -106,6 +102,11 @@ export default function ChecklistPage() {
           .from("registry_items")
           .select("title")
           .eq("registry_id", registryId),
+        supabase
+          .from("registries")
+          .select("settings")
+          .eq("id", registryId)
+          .single(),
       ]);
       setCategories(cats || []);
       if (items) {
@@ -116,6 +117,9 @@ export default function ChecklistPage() {
           buildMatchedChecklistItems(allChecklistNames, items.map((i) => i.title))
         );
       }
+      const settings = registry?.settings as Record<string, unknown> | null;
+      const dismissed = (settings?.checklist_dismissed as string[]) || [];
+      setDismissedItems(new Set(dismissed.map((i) => i.toLowerCase())));
     };
     fetchData();
   }, [registryId]);
@@ -163,6 +167,25 @@ export default function ChecklistPage() {
     setAddingItem(null);
   };
 
+  const handleToggleDismissed = async (item: ChecklistItem) => {
+    const lower = item.name.toLowerCase();
+    const isDismissed = dismissedItems.has(lower);
+    setDismissingItem(item.name);
+    const result = await toggleChecklistDismissed(registryId, item.name, !isDismissed);
+    if (result?.success) {
+      setDismissedItems((prev) => {
+        const next = new Set(prev);
+        if (isDismissed) {
+          next.delete(lower);
+        } else {
+          next.add(lower);
+        }
+        return next;
+      });
+    }
+    setDismissingItem(null);
+  };
+
   // Calculate stats
   const totalItems = DEFAULT_CHECKLIST.reduce(
     (sum, cat) => sum + cat.items.length,
@@ -172,14 +195,19 @@ export default function ChecklistPage() {
     (sum, cat) => sum + cat.items.filter((i) => i.isEssential).length,
     0
   );
-  const addedCount = addedItems.size;
+  const addedCount = addedItems.size + dismissedItems.size;
+
+  const isItemCompleted = (name: string) => {
+    const lower = name.toLowerCase();
+    return addedItems.has(lower) || dismissedItems.has(lower);
+  };
 
   const filterItems = (items: ChecklistItem[]) => {
     switch (filter) {
       case "essential":
         return items.filter((i) => i.isEssential);
       case "not-added":
-        return items.filter((i) => !addedItems.has(i.name.toLowerCase()));
+        return items.filter((i) => !isItemCompleted(i.name));
       default:
         return items;
     }
@@ -251,13 +279,13 @@ export default function ChecklistPage() {
           const Icon = ICON_MAP[category.icon] || Package;
           const filteredItems = filterItems(category.items);
           const catAddedCount = category.items.filter((i) =>
-            addedItems.has(i.name.toLowerCase())
+            isItemCompleted(i.name)
           ).length;
           const catEssentials = category.items.filter(
             (i) => i.isEssential
           ).length;
           const catEssentialsAdded = category.items.filter(
-            (i) => i.isEssential && addedItems.has(i.name.toLowerCase())
+            (i) => i.isEssential && isItemCompleted(i.name)
           ).length;
 
           if (filteredItems.length === 0 && filter !== "all") return null;
@@ -302,20 +330,23 @@ export default function ChecklistPage() {
                   <div className="divide-y">
                     {filteredItems.map((item) => {
                       const isAdded = addedItems.has(item.name.toLowerCase());
+                      const isDismissed = dismissedItems.has(item.name.toLowerCase());
                       const isAdding = addingItem === item.name;
+                      const isDismissing = dismissingItem === item.name;
+                      const isCompleted = isAdded || isDismissed;
 
                       return (
                         <div
                           key={item.name}
                           className={`flex items-center gap-3 py-3 ${
-                            isAdded ? "opacity-50" : ""
+                            isCompleted ? "opacity-50" : ""
                           }`}
                         >
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2">
                               <span
                                 className={`text-sm font-medium ${
-                                  isAdded ? "line-through" : ""
+                                  isCompleted ? "line-through" : ""
                                 }`}
                               >
                                 {item.name}
@@ -346,27 +377,52 @@ export default function ChecklistPage() {
                               <Check className="h-3 w-3 mr-1" />
                               Added
                             </Badge>
+                          ) : isDismissed ? (
+                            <div className="flex items-center gap-2 shrink-0">
+                              <Badge variant="secondary" className="shrink-0">
+                                <Check className="h-3 w-3 mr-1" />
+                                Manually mark as registered
+                              </Badge>
+                              <button
+                                onClick={() => handleToggleDismissed(item)}
+                                disabled={isDismissing}
+                                className="text-xs text-tertiary hover:text-secondary transition-colors"
+                              >
+                                Undo
+                              </button>
+                            </div>
                           ) : (
-                            <Button
-                              size="sm"
-                              variant="secondary"
-                              className="shrink-0"
-                              disabled={isAdding}
-                              onClick={() =>
-                                handleAddItem(category.name, item)
-                              }
-                            >
-                              <span className="inline-flex items-center gap-1">
-                                {isAdding ? (
-                                  "Adding..."
-                                ) : (
-                                  <>
-                                    <Plus className="h-3 w-3 shrink-0" />
-                                    Add to registry
-                                  </>
-                                )}
-                              </span>
-                            </Button>
+                            <div className="flex items-center gap-4 shrink-0">
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="shrink-0"
+                                disabled={isDismissing}
+                                onClick={() => handleToggleDismissed(item)}
+                              >
+                                Manually mark as registered
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="secondary"
+                                className="shrink-0"
+                                disabled={isAdding}
+                                onClick={() =>
+                                  handleAddItem(category.name, item)
+                                }
+                              >
+                                <span className="inline-flex items-center gap-1">
+                                  {isAdding ? (
+                                    "Adding..."
+                                  ) : (
+                                    <>
+                                      <Plus className="h-3 w-3 shrink-0" />
+                                      Add to registry
+                                    </>
+                                  )}
+                                </span>
+                              </Button>
+                            </div>
                           )}
                         </div>
                       );

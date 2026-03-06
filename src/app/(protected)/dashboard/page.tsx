@@ -34,10 +34,12 @@ export default async function DashboardPage() {
             Manage your baby registries and track gifts
           </p>
         </div>
-        <Button asChild>
+        <Button asChild className="!bg-[#004659] hover:!bg-[#003847] !ring-[#004659] !text-white">
           <Link href="/dashboard/registry/new">
-            <Plus className="mr-2 h-4 w-4" />
-            New Registry
+            <span className="inline-flex items-center gap-1.5">
+              <Plus className="h-4 w-4 shrink-0" />
+              New Registry
+            </span>
           </Link>
         </Button>
       </div>
