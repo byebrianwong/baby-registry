@@ -239,32 +239,34 @@ export default async function PublicRegistryPage({
                         ? (fund.current_amount / fund.goal_amount) * 100
                         : 0;
                     return (
-                      <Card key={fund.id} className="py-0 gap-0 rounded-xl shadow-none border-[#e9eaeb]">
-                        <CardContent className="flex flex-col gap-4 p-4">
-                          <h3 className="font-semibold text-2xl leading-8 text-[#181d27]">
-                            {fund.title}
-                          </h3>
-                          {fund.description && (
-                            <p className="text-sm text-[#535862] whitespace-pre-line">
-                              {fund.description}
-                            </p>
-                          )}
-                          {fund.goal_amount && (
-                            <div className="flex flex-col gap-1">
-                              <div className="flex justify-between text-sm">
-                                <span>
-                                  ${fund.current_amount.toFixed(0)} raised
-                                </span>
-                                <span>
-                                  ${fund.goal_amount.toFixed(0)} goal
+                      <Card key={fund.id} className="py-0 gap-0 rounded-xl shadow-none border-[#d5d7da]">
+                        <CardContent className="flex h-full flex-col justify-between gap-4 p-4">
+                          <div className="flex flex-col gap-2">
+                            <h3 className="font-semibold text-lg text-[#181d27]">
+                              {fund.title}
+                            </h3>
+                            {fund.description && (
+                              <p className="text-sm text-[#535862] whitespace-pre-line">
+                                {fund.description}
+                              </p>
+                            )}
+                            {fund.goal_amount && fund.goal_amount > 0 && (
+                              <div className="flex flex-col gap-1">
+                                <div className="flex justify-between text-sm">
+                                  <span>
+                                    ${fund.current_amount.toFixed(0)} raised
+                                  </span>
+                                  <span>
+                                    ${fund.goal_amount.toFixed(0)} goal
+                                  </span>
+                                </div>
+                                <Progress value={fundProgress} />
+                                <span className="text-xs text-[#535862]">
+                                  ${Math.max(0, fund.goal_amount - fund.current_amount).toFixed(0)} remaining
                                 </span>
                               </div>
-                              <Progress value={fundProgress} />
-                              <span className="text-xs">
-                                ${Math.max(0, fund.goal_amount - fund.current_amount).toFixed(0)} remaining
-                              </span>
-                            </div>
-                          )}
+                            )}
+                          </div>
                           <div className="flex justify-end">
                             <ContributeFundDialog
                               fund={fund}
