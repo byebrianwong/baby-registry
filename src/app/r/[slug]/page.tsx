@@ -355,7 +355,7 @@ export default async function PublicRegistryPage({
                                   </span>
                                 </div>
                                 {item.notes && (
-                                  <p className="text-sm text-[#414651] whitespace-pre-line line-clamp-2">
+                                  <p className="text-sm text-[#414651] whitespace-pre-line">
                                     {item.notes}
                                   </p>
                                 )}

@@ -300,6 +300,64 @@ export async function addCashFund(registryId: string, formData: FormData) {
   return { success: true };
 }
 
+export async function updateCashFund(
+  fundId: string,
+  registryId: string,
+  formData: FormData
+) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/login");
+  }
+
+  const title = formData.get("title") as string;
+  const description = formData.get("description") as string;
+  const goalAmount = formData.get("goalAmount") as string;
+
+  const { error } = await supabase
+    .from("cash_funds")
+    .update({
+      title,
+      description: description || null,
+      goal_amount: goalAmount ? parseFloat(goalAmount) : null,
+    })
+    .eq("id", fundId);
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidatePath(`/dashboard/registry/${registryId}`);
+  return { success: true };
+}
+
+export async function deleteCashFund(fundId: string, registryId: string) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/login");
+  }
+
+  const { error } = await supabase
+    .from("cash_funds")
+    .delete()
+    .eq("id", fundId);
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidatePath(`/dashboard/registry/${registryId}`);
+  return { success: true };
+}
+
 export async function reserveItem(formData: FormData) {
   const supabase = await createClient();
 

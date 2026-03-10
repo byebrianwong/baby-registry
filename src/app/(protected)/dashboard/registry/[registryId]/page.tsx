@@ -26,6 +26,8 @@ import { getCategorySectionId } from "@/lib/category-section-id";
 import { ScrollToTop } from "@/components/scroll-to-top";
 import { ProgressCircle } from "@/components/ui/progress-circle";
 import { getChecklistProgress } from "@/lib/checklist-matching";
+import { AddCashFundDialog } from "@/components/add-cash-fund-dialog";
+import { CashFundCard } from "@/components/cash-fund-card";
 
 interface RegistryItem {
   id: string;
@@ -76,7 +78,7 @@ export default async function RegistryManagePage({
     notFound();
   }
 
-  const [{ data: categories }, { data: items }, { data: purchases }, { data: suggestions }] =
+  const [{ data: categories }, { data: items }, { data: purchases }, { data: suggestions }, { data: cashFunds }] =
     await Promise.all([
       supabase
         .from("categories")
@@ -97,10 +99,22 @@ export default async function RegistryManagePage({
         .select("*")
         .eq("registry_id", registryId)
         .order("created_at", { ascending: false }),
+      supabase
+        .from("cash_funds")
+        .select("*")
+        .eq("registry_id", registryId)
+        .order("created_at"),
     ]);
 
   const allItems = (items || []) as RegistryItem[];
   const allCategories = (categories || []) as Category[];
+  const allFunds = (cashFunds || []) as {
+    id: string;
+    title: string;
+    description: string | null;
+    goal_amount: number | null;
+    current_amount: number;
+  }[];
   const dismissedChecklistItems = (registry.settings as Record<string, unknown> | null)?.checklist_dismissed as string[] | undefined;
   const checklistProgress = getChecklistProgress(allItems.map((i) => i.title), dismissedChecklistItems);
 
@@ -333,6 +347,34 @@ export default async function RegistryManagePage({
                     </div>
                   )}
                 </div>
+              </div>
+            )}
+
+            {/* Gift Funds */}
+            <Separator className="my-8" />
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-semibold flex items-center gap-2">
+                <DollarSign className="h-5 w-5" />
+                Gift Funds
+              </h2>
+              <AddCashFundDialog registryId={registryId} />
+            </div>
+            {allFunds.length === 0 ? (
+              <Card>
+                <CardContent className="flex flex-col items-center justify-center py-12">
+                  <p className="text-tertiary">
+                    No gift funds yet. Create a fund to let guests contribute cash toward a goal.
+                  </p>
+                  <div className="mt-4">
+                    <AddCashFundDialog registryId={registryId} />
+                  </div>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid gap-3 md:grid-cols-2">
+                {allFunds.map((fund) => (
+                  <CashFundCard key={fund.id} fund={fund} registryId={registryId} />
+                ))}
               </div>
             )}
           </>
