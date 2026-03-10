@@ -1,12 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { DollarSign } from "lucide-react";
+import { DollarSign, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Input, InputBase } from "@/components/base/input/input";
-import { InputGroup } from "@/components/base/input/input-group";
+import { InputGroup, InputPrefix } from "@/components/base/input/input-group";
 import { TextArea } from "@/components/base/textarea/textarea";
 import {
   Dialog,
@@ -28,11 +28,21 @@ interface CashFundCardProps {
   registryId: string;
 }
 
+const currencySymbols: Record<string, string> = {
+  USD: "$",
+  EUR: "€",
+  GBP: "£",
+  JPY: "¥",
+  CAD: "CA$",
+  AUD: "A$",
+};
+
 export function CashFundCard({ fund, registryId }: CashFundCardProps) {
   const [editOpen, setEditOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState("");
+  const [currency, setCurrency] = useState("USD");
 
   const fundProgress =
     fund.goal_amount && fund.goal_amount > 0
@@ -122,8 +132,27 @@ export function CashFundCard({ fund, registryId }: CashFundCardProps) {
             <InputGroup
               label="Goal Amount (optional)"
               name="goalAmount"
-              defaultValue={fund.goal_amount?.toString() || ""}
-              prefix="$"
+              defaultValue={fund.goal_amount != null ? fund.goal_amount.toFixed(2) : ""}
+              prefix={currencySymbols[currency] || "$"}
+              trailingAddon={
+                <InputPrefix position="trailing">
+                  <span className="relative inline-flex items-center">
+                    <select
+                      className="appearance-none bg-transparent pr-5 text-primary outline-none cursor-pointer"
+                      value={currency}
+                      onChange={(e) => setCurrency(e.target.value)}
+                    >
+                      <option>USD</option>
+                      <option>EUR</option>
+                      <option>GBP</option>
+                      <option>JPY</option>
+                      <option>CAD</option>
+                      <option>AUD</option>
+                    </select>
+                    <ChevronDown className="pointer-events-none absolute right-0 h-4 w-4 text-tertiary" />
+                  </span>
+                </InputPrefix>
+              }
             >
               <InputBase
                 type="number"
