@@ -325,7 +325,7 @@ function DemoReserveDialog({
             >
               Cancel
             </Button>
-            <Button type="submit">I bought this item</Button>
+            <Button type="submit">I'm gifting this</Button>
           </div>
         </form>
       </DialogContent>

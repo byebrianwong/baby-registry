@@ -115,7 +115,7 @@ export function ReserveItemDialog({ item }: ReserveItemDialogProps) {
               Cancel
             </Button>
             <Button type="submit" disabled={loading} className="!bg-[#004659] hover:!bg-[#003847] !ring-[#004659] !text-white">
-              {loading ? "Reserving..." : "I bought this item"}
+              {loading ? "Reserving..." : "I'm gifting this"}
             </Button>
           </div>
         </form>
