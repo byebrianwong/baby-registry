@@ -6,7 +6,6 @@ import {
   ClipboardList,
   Mail,
   MessageSquare,
-  DollarSign,
   Plus,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -108,13 +107,6 @@ export default async function RegistryManagePage({
 
   const allItems = (items || []) as RegistryItem[];
   const allCategories = (categories || []) as Category[];
-  const allFunds = (cashFunds || []) as {
-    id: string;
-    title: string;
-    description: string | null;
-    goal_amount: number | null;
-    current_amount: number;
-  }[];
   const dismissedChecklistItems = (registry.settings as Record<string, unknown> | null)?.checklist_dismissed as string[] | undefined;
   const checklistProgress = getChecklistProgress(allItems.map((i) => i.title), dismissedChecklistItems);
 
@@ -178,6 +170,20 @@ export default async function RegistryManagePage({
       id: getCategorySectionId(null),
       name: "Other",
       count: uncategorizedItems.length,
+    });
+  }
+  const allFunds = (cashFunds || []) as {
+    id: string;
+    title: string;
+    description: string | null;
+    goal_amount: number | null;
+    current_amount: number;
+  }[];
+  if (allFunds.length > 0) {
+    navItems.unshift({
+      id: "gift-funds",
+      name: "Gift Funds",
+      count: allFunds.length,
     });
   }
 
@@ -278,6 +284,7 @@ export default async function RegistryManagePage({
                     </span>
                   </Link>
                 </Button>
+                <AddCashFundDialog registryId={registryId} />
                 <AddItemDialog registryId={registryId} categories={allCategories} zipCode={zipCode} />
               </div>
             </div>
@@ -302,6 +309,21 @@ export default async function RegistryManagePage({
               <div className="flex gap-8 items-start">
                 {navItems.length > 1 && <CategoryNav categories={navItems} />}
                 <div className="flex-1 min-w-0 space-y-8">
+                  {/* Gift Funds */}
+                  {allFunds.length > 0 && (
+                    <div id="gift-funds" className="scroll-mt-20">
+                      <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                        Gift Funds
+                        <Badge variant="secondary">{allFunds.length}</Badge>
+                      </h3>
+                      <div className="grid gap-3 md:grid-cols-2">
+                        {allFunds.map((fund) => (
+                          <CashFundCard key={fund.id} fund={fund} registryId={registryId} />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   {allCategories.map((category) => {
                     const categoryItems = itemsByCategory.get(category.id) || [];
                     if (categoryItems.length === 0) return null;
@@ -347,34 +369,6 @@ export default async function RegistryManagePage({
                     </div>
                   )}
                 </div>
-              </div>
-            )}
-
-            {/* Gift Funds */}
-            <Separator className="my-8" />
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-semibold flex items-center gap-2">
-                <DollarSign className="h-5 w-5" />
-                Gift Funds
-              </h2>
-              <AddCashFundDialog registryId={registryId} />
-            </div>
-            {allFunds.length === 0 ? (
-              <Card>
-                <CardContent className="flex flex-col items-center justify-center py-12">
-                  <p className="text-tertiary">
-                    No gift funds yet. Create a fund to let guests contribute cash toward a goal.
-                  </p>
-                  <div className="mt-4">
-                    <AddCashFundDialog registryId={registryId} />
-                  </div>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="grid gap-3 md:grid-cols-2">
-                {allFunds.map((fund) => (
-                  <CashFundCard key={fund.id} fund={fund} registryId={registryId} />
-                ))}
               </div>
             )}
           </>

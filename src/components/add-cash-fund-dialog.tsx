@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Plus } from "lucide-react";
+import { DollarSign } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input, InputBase } from "@/components/base/input/input";
 import { InputGroup } from "@/components/base/input/input-group";
@@ -40,9 +40,9 @@ export function AddCashFundDialog({ registryId }: AddCashFundDialogProps) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="!bg-[#004659] hover:!bg-[#003847] !ring-[#004659] !text-white">
+        <Button variant="outline">
           <span className="inline-flex items-center gap-1.5">
-            <Plus className="h-4 w-4 shrink-0" />
+            <DollarSign className="h-4 w-4 shrink-0" />
             Add Fund
           </span>
         </Button>
