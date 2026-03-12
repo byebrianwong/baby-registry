@@ -202,7 +202,7 @@ function DemoAddItemDialog({
   return (
     <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setScrapeStatus(""); setOpenToUsed(false); setCurrency("USD"); } }}>
       <DialogTrigger asChild>
-        <Button>
+        <Button className="!bg-[#004659] hover:!bg-[#003847] !ring-[#004659] !text-white">
           <span className="inline-flex items-center gap-1.5">
             <Plus className="h-4 w-4 shrink-0" />
             Add Item
@@ -372,7 +372,7 @@ function DemoAddItemDialog({
             >
               Cancel
             </Button>
-            <Button type="submit">Add item</Button>
+            <Button type="submit" className="!bg-[#004659] hover:!bg-[#003847] !ring-[#004659] !text-white">Add item</Button>
           </div>
         </form>
       </DialogContent>
@@ -649,7 +649,7 @@ function DemoEditItemDialog({
             >
               Remove item
             </Button>
-            <Button type="submit">Save changes</Button>
+            <Button type="submit" className="!bg-[#004659] hover:!bg-[#003847] !ring-[#004659] !text-white">Save changes</Button>
           </div>
         </form>
       </DialogContent>

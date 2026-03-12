@@ -1,19 +1,49 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { useRouter, useParams } from "next/navigation";
-import { ArrowLeft, Copy, Check } from "lucide-react";
+import { ArrowLeft, Copy, Check, X, Users, Mail, LinkIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/base/input/input";
 import { TextArea } from "@/components/base/textarea/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
 import { createClient } from "@/utils/supabase/client";
 import { Checkbox } from "@/components/base/checkbox/checkbox";
-import { updateRegistry, deleteRegistry, updatePaymentMethods, updateZipCode } from "@/lib/actions/registry";
+import {
+  updateRegistry,
+  deleteRegistry,
+  updatePaymentMethods,
+  updateZipCode,
+  inviteManagerByEmail,
+  generateInviteLink,
+  removeManager,
+  revokeInvite,
+  listManagers,
+  listInvites,
+} from "@/lib/actions/registry";
 import { CategoryManager } from "@/components/category-manager";
 import type { PaymentMethods } from "@/lib/types";
+
+interface Manager {
+  id: string;
+  userId: string;
+  role: string;
+  name: string;
+  email: string;
+  createdAt: string;
+}
+
+interface Invite {
+  id: string;
+  email: string | null;
+  max_uses: number | null;
+  use_count: number;
+  expires_at: string;
+  created_at: string;
+}
 
 export default function RegistrySettingsPage() {
   const router = useRouter();
@@ -26,6 +56,7 @@ export default function RegistrySettingsPage() {
     description: string | null;
     is_public: boolean;
     slug: string;
+    owner_id: string;
     settings: { payment_methods?: PaymentMethods; zip_code?: string; tax_enabled?: boolean };
   } | null>(null);
   const [loading, setLoading] = useState(true);
@@ -41,13 +72,37 @@ export default function RegistrySettingsPage() {
   const [categories, setCategories] = useState<{ id: string; name: string; sort_order: number }[]>([]);
   const [slugCopied, setSlugCopied] = useState(false);
 
+  // Manager state
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [managers, setManagers] = useState<Manager[]>([]);
+  const [invites, setInvites] = useState<Invite[]>([]);
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [invitingEmail, setInvitingEmail] = useState(false);
+  const [inviteEmailError, setInviteEmailError] = useState("");
+  const [inviteEmailSuccess, setInviteEmailSuccess] = useState(false);
+  const [generatingLink, setGeneratingLink] = useState(false);
+  const [generatedLink, setGeneratedLink] = useState("");
+  const [linkCopied, setLinkCopied] = useState(false);
+  const [maxUses, setMaxUses] = useState<string>("1");
+
+  const isOwner = currentUserId !== null && registry?.owner_id === currentUserId;
+
+  const fetchManagerData = useCallback(async () => {
+    const [managersResult, invitesResult] = await Promise.all([
+      listManagers(registryId),
+      listInvites(registryId),
+    ]);
+    setManagers(managersResult.managers);
+    setInvites(invitesResult.invites);
+  }, [registryId]);
+
   useEffect(() => {
     const fetchData = async () => {
       const supabase = createClient();
-      const [{ data }, { data: cats }] = await Promise.all([
+      const [{ data }, { data: cats }, { data: { user } }] = await Promise.all([
         supabase
           .from("registries")
-          .select("title, event_date, description, is_public, slug, settings")
+          .select("title, event_date, description, is_public, slug, owner_id, settings")
           .eq("id", registryId)
           .single(),
         supabase
@@ -55,13 +110,16 @@ export default function RegistrySettingsPage() {
           .select("id, name, sort_order")
           .eq("registry_id", registryId)
           .order("sort_order"),
+        supabase.auth.getUser(),
       ]);
       setRegistry(data);
       setCategories(cats || []);
+      setCurrentUserId(user?.id || null);
       setLoading(false);
     };
     fetchData();
-  }, [registryId]);
+    fetchManagerData();
+  }, [registryId, fetchManagerData]);
 
   const handleSave = async (formData: FormData) => {
     setSaving(true);
@@ -73,7 +131,6 @@ export default function RegistrySettingsPage() {
     } else if (registry) {
       setSuccess(true);
       setTimeout(() => setSuccess(false), 2000);
-      // Update local state so form values survive the revalidatePath remount
       setRegistry({
         ...registry,
         title: formData.get("title") as string,
@@ -121,6 +178,59 @@ export default function RegistrySettingsPage() {
     )
       return;
     await deleteRegistry(registryId);
+  };
+
+  const handleInviteByEmail = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!inviteEmail.trim()) return;
+    setInvitingEmail(true);
+    setInviteEmailError("");
+    setInviteEmailSuccess(false);
+    const result = await inviteManagerByEmail(registryId, inviteEmail.trim());
+    if (result.error) {
+      setInviteEmailError(result.error);
+    } else {
+      setInviteEmailSuccess(true);
+      setInviteEmail("");
+      setTimeout(() => setInviteEmailSuccess(false), 3000);
+      fetchManagerData();
+    }
+    setInvitingEmail(false);
+  };
+
+  const handleGenerateLink = async () => {
+    setGeneratingLink(true);
+    setGeneratedLink("");
+    const uses = maxUses === "unlimited" ? null : parseInt(maxUses);
+    const result = await generateInviteLink(registryId, uses);
+    if (result.error) {
+      setInviteEmailError(result.error);
+    } else if (result.token) {
+      const url = `${window.location.origin}/invite/${result.token}`;
+      setGeneratedLink(url);
+      fetchManagerData();
+    }
+    setGeneratingLink(false);
+  };
+
+  const handleRemoveManager = async (managerId: string) => {
+    if (!confirm("Remove this manager? They will lose access to the registry.")) return;
+    const result = await removeManager(registryId, managerId);
+    if (result.error) {
+      alert(result.error);
+    } else {
+      fetchManagerData();
+    }
+  };
+
+  const handleRevokeInvite = async (inviteId: string) => {
+    if (!confirm("Revoke this invite? The link will stop working.")) return;
+    const result = await revokeInvite(inviteId, registryId);
+    if (result.error) {
+      alert(result.error);
+    } else {
+      fetchManagerData();
+    }
   };
 
   if (loading || !registry) {
@@ -335,19 +445,197 @@ export default function RegistrySettingsPage() {
 
       <Separator className="my-8" />
 
-      <Card className="border-error-primary/50">
+      {/* Managers Section */}
+      <Card>
         <CardHeader>
-          <CardTitle className="text-error-primary">Danger Zone</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <Users className="h-5 w-5" />
+            Managers
+          </CardTitle>
           <CardDescription>
-            Permanently delete this registry and all its items
+            Invite others to help manage this registry. Managers can add/edit items, view gift activity, and manage categories.
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <Button variant="destructive" onClick={handleDelete}>
-            Delete registry
-          </Button>
+        <CardContent className="space-y-6">
+          {/* Current managers list */}
+          <div className="space-y-2">
+            <h4 className="text-sm font-medium text-secondary">Current managers</h4>
+            <div className="space-y-2">
+              {managers.map((m) => (
+                <div key={m.id} className="flex items-center justify-between rounded-md border px-3 py-2">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium truncate">{m.name}</p>
+                      <p className="text-xs text-tertiary truncate">{m.email}</p>
+                    </div>
+                    <Badge variant={m.role === "owner" ? "default" : "secondary"}>
+                      {m.role === "owner" ? "Owner" : "Manager"}
+                    </Badge>
+                  </div>
+                  {isOwner && m.role !== "owner" && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleRemoveManager(m.id)}
+                      className="text-error-primary hover:text-error-primary shrink-0"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <Separator />
+
+          {/* Invite by email */}
+          <div className="space-y-2">
+            <h4 className="text-sm font-medium text-secondary flex items-center gap-1.5">
+              <Mail className="h-4 w-4" />
+              Invite by email
+            </h4>
+            <form onSubmit={handleInviteByEmail} className="flex gap-2">
+              <div className="flex-1">
+                <Input
+                  type="email"
+                  placeholder="coparent@example.com"
+                  value={inviteEmail}
+                  onChange={(val) => setInviteEmail(val)}
+                />
+              </div>
+              <Button
+                type="submit"
+                disabled={invitingEmail || !inviteEmail.trim()}
+                className="!bg-[#004659] hover:!bg-[#003847] !ring-[#004659] !text-white shrink-0"
+              >
+                {invitingEmail ? "Sending..." : inviteEmailSuccess ? "Sent!" : "Send Invite"}
+              </Button>
+            </form>
+            {inviteEmailError && (
+              <p className="text-sm text-error-primary">{inviteEmailError}</p>
+            )}
+          </div>
+
+          <Separator />
+
+          {/* Generate invite link */}
+          <div className="space-y-2">
+            <h4 className="text-sm font-medium text-secondary flex items-center gap-1.5">
+              <LinkIcon className="h-4 w-4" />
+              Generate invite link
+            </h4>
+            <div className="flex gap-2 items-end">
+              <div>
+                <label className="text-xs text-tertiary">Max uses</label>
+                <select
+                  value={maxUses}
+                  onChange={(e) => setMaxUses(e.target.value)}
+                  className="block w-full rounded-md border px-3 py-2 text-sm bg-transparent"
+                >
+                  <option value="1">1 use</option>
+                  <option value="5">5 uses</option>
+                  <option value="10">10 uses</option>
+                  <option value="unlimited">Unlimited</option>
+                </select>
+              </div>
+              <Button
+                onClick={handleGenerateLink}
+                disabled={generatingLink}
+                variant="outline"
+                className="shrink-0"
+              >
+                {generatingLink ? "Generating..." : "Generate"}
+              </Button>
+            </div>
+            {generatedLink && (
+              <div className="flex items-center gap-2 mt-2 rounded-md border px-3 py-2 bg-muted/50">
+                <code className="text-xs break-all flex-1">{generatedLink}</code>
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigator.clipboard.writeText(generatedLink);
+                    setLinkCopied(true);
+                    setTimeout(() => setLinkCopied(false), 2000);
+                  }}
+                  className="text-tertiary hover:text-secondary transition-colors shrink-0"
+                >
+                  {linkCopied ? (
+                    <Check className="h-4 w-4" />
+                  ) : (
+                    <Copy className="h-4 w-4" />
+                  )}
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Active invites */}
+          {invites.length > 0 && (
+            <>
+              <Separator />
+              <div className="space-y-2">
+                <h4 className="text-sm font-medium text-secondary">Active invites</h4>
+                <div className="space-y-2">
+                  {invites.map((inv) => {
+                    const expired = new Date(inv.expires_at) < new Date();
+                    const fullyUsed = inv.max_uses !== null && inv.use_count >= inv.max_uses;
+                    return (
+                      <div
+                        key={inv.id}
+                        className={`flex items-center justify-between rounded-md border px-3 py-2 ${expired || fullyUsed ? "opacity-50" : ""}`}
+                      >
+                        <div className="min-w-0">
+                          <p className="text-sm truncate">
+                            {inv.email ? inv.email : "Link invite"}
+                          </p>
+                          <p className="text-xs text-tertiary">
+                            {inv.use_count}{inv.max_uses !== null ? `/${inv.max_uses}` : ""} uses
+                            {expired && " · Expired"}
+                            {fullyUsed && !expired && " · Fully used"}
+                            {!expired && !fullyUsed && ` · Expires ${new Date(inv.expires_at).toLocaleDateString()}`}
+                          </p>
+                        </div>
+                        {isOwner && !expired && !fullyUsed && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleRevokeInvite(inv.id)}
+                            className="text-error-primary hover:text-error-primary shrink-0"
+                          >
+                            Revoke
+                          </Button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </>
+          )}
         </CardContent>
       </Card>
+
+      {/* Danger Zone - only visible to owners */}
+      {isOwner && (
+        <>
+          <Separator className="my-8" />
+
+          <Card className="border-error-primary/50">
+            <CardHeader>
+              <CardTitle className="text-error-primary">Danger Zone</CardTitle>
+              <CardDescription>
+                Permanently delete this registry and all its items
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button variant="destructive" onClick={handleDelete}>
+                Delete registry
+              </Button>
+            </CardContent>
+          </Card>
+        </>
+      )}
     </div>
   );
 }

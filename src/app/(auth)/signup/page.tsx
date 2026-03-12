@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { Baby } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -11,11 +11,14 @@ import { createClient } from "@/utils/supabase/client";
 
 export default function SignupPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectTo = searchParams.get("redirect") || "/dashboard";
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [checkEmail, setCheckEmail] = useState(false);
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,13 +26,15 @@ export default function SignupPage() {
     setError("");
 
     const supabase = createClient();
-    const { error } = await supabase.auth.signUp({
+    const siteUrl = window.location.origin;
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         data: {
           full_name: fullName,
         },
+        emailRedirectTo: `${siteUrl}/auth/callback?next=${encodeURIComponent(redirectTo)}`,
       },
     });
 
@@ -39,9 +44,40 @@ export default function SignupPage() {
       return;
     }
 
-    router.push("/dashboard");
+    // If email confirmation is required, session will be null
+    if (!data.session) {
+      setCheckEmail(true);
+      setLoading(false);
+      return;
+    }
+
+    router.push(redirectTo);
     router.refresh();
   };
+
+  if (checkEmail) {
+    return (
+      <div className="flex min-h-screen items-center justify-center px-4">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <Link href="/" className="mx-auto flex items-center gap-2 font-semibold mb-4">
+              <Baby className="h-6 w-6 text-brand-600" />
+              <span className="text-xl">Baby Akachan</span>
+            </Link>
+            <CardTitle className="text-2xl">Check your email</CardTitle>
+          </CardHeader>
+          <CardContent className="text-center space-y-4">
+            <p className="text-secondary">
+              We sent a confirmation link to <strong>{email}</strong>.
+            </p>
+            <p className="text-tertiary text-sm">
+              Click the link in the email to verify your account and continue.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen items-center justify-center px-4">
@@ -90,7 +126,7 @@ export default function SignupPage() {
           </form>
           <p className="mt-4 text-center text-sm text-tertiary">
             Already have an account?{" "}
-            <Link href="/login" className="text-brand-600 underline-offset-4 hover:underline">
+            <Link href={redirectTo !== "/dashboard" ? `/login?redirect=${encodeURIComponent(redirectTo)}` : "/login"} className="text-brand-600 underline-offset-4 hover:underline">
               Sign in
             </Link>
           </p>

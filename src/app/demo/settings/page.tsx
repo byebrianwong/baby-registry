@@ -146,8 +146,8 @@ export default function DemoSettingsPage() {
                   </p>
                 </div>
 
-                <Button type="submit" disabled={saving}>
-                  {saving ? "Saving..." : saved ? "Saved!" : "Save Changes"}
+                <Button type="submit" disabled={saving} className="!bg-[#004659] hover:!bg-[#003847] !ring-[#004659] !text-white">
+                  {saving ? "Saving..." : saved ? "Saved!" : "Save changes"}
                 </Button>
               </form>
             </CardContent>
@@ -186,12 +186,12 @@ export default function DemoSettingsPage() {
                   defaultValue={pm?.zelle || ""}
                 />
 
-                <Button type="submit" disabled={savingPayment}>
+                <Button type="submit" disabled={savingPayment} className="!bg-[#004659] hover:!bg-[#003847] !ring-[#004659] !text-white">
                   {savingPayment
                     ? "Saving..."
                     : paymentSaved
                       ? "Saved!"
-                      : "Save Payment Methods"}
+                      : "Save payment methods"}
                 </Button>
               </form>
             </CardContent>
@@ -208,7 +208,7 @@ export default function DemoSettingsPage() {
             </CardHeader>
             <CardContent>
               <Button variant="destructive" onClick={handleDelete}>
-                Delete Registry
+                Delete registry
               </Button>
             </CardContent>
           </Card>

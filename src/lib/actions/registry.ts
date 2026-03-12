@@ -8,8 +8,10 @@ import {
   notifyCashFundContribution,
   notifyItemCovered,
   notifyNewSuggestion,
+  sendManagerInvite,
 } from "@/lib/email";
 import { supabaseAdmin } from "@/lib/supabase-admin";
+import crypto from "crypto";
 
 function generateSlug(title: string): string {
   return (
@@ -20,6 +22,42 @@ function generateSlug(title: string): string {
     "-" +
     Math.random().toString(36).substring(2, 8)
   );
+}
+
+async function requireManager(registryId: string) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { user: null, role: null, error: "Not authenticated" } as const;
+  }
+
+  // Try registry_managers table first
+  const { data: manager, error: managerError } = await supabaseAdmin
+    .from("registry_managers")
+    .select("role")
+    .eq("registry_id", registryId)
+    .eq("user_id", user.id)
+    .single();
+
+  if (manager) {
+    return { user, role: manager.role as "owner" | "manager", error: null } as const;
+  }
+
+  // Fall back to owner_id check if table doesn't exist or no record found
+  const { data: registry } = await supabaseAdmin
+    .from("registries")
+    .select("owner_id")
+    .eq("id", registryId)
+    .single();
+
+  if (registry?.owner_id === user.id) {
+    return { user, role: "owner" as const, error: null } as const;
+  }
+
+  return { user, role: null, error: "Not authorized" } as const;
 }
 
 export async function createRegistry(formData: FormData) {
@@ -96,15 +134,10 @@ export async function createRegistry(formData: FormData) {
 }
 
 export async function updateRegistry(registryId: string, formData: FormData) {
+  const { user, error: authError } = await requireManager(registryId);
+  if (authError || !user) return { error: authError || "Not authenticated" };
+
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    redirect("/login");
-  }
-
   const title = formData.get("title") as string;
   const eventDate = formData.get("eventDate") as string;
   const description = formData.get("description") as string;
@@ -118,8 +151,7 @@ export async function updateRegistry(registryId: string, formData: FormData) {
       description: description || null,
       is_public: isPublic,
     })
-    .eq("id", registryId)
-    .eq("owner_id", user.id);
+    .eq("id", registryId);
 
   if (error) {
     return { error: error.message };
@@ -501,25 +533,18 @@ export async function updatePaymentMethods(
   registryId: string,
   formData: FormData
 ) {
+  const { user, error: authError } = await requireManager(registryId);
+  if (authError || !user) return { error: authError || "Not authenticated" };
+
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    redirect("/login");
-  }
-
   const venmo = (formData.get("venmo") as string)?.trim() || undefined;
   const paypal = (formData.get("paypal") as string)?.trim() || undefined;
   const zelle = (formData.get("zelle") as string)?.trim() || undefined;
 
-  // Read existing settings first to merge
   const { data: registry } = await supabase
     .from("registries")
     .select("settings")
     .eq("id", registryId)
-    .eq("owner_id", user.id)
     .single();
 
   if (!registry) {
@@ -532,8 +557,7 @@ export async function updatePaymentMethods(
   const { error } = await supabase
     .from("registries")
     .update({ settings })
-    .eq("id", registryId)
-    .eq("owner_id", user.id);
+    .eq("id", registryId);
 
   if (error) {
     return { error: error.message };
@@ -547,15 +571,10 @@ export async function updateZipCode(
   registryId: string,
   formData: FormData
 ) {
+  const { user, error: authError } = await requireManager(registryId);
+  if (authError || !user) return { error: authError || "Not authenticated" };
+
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    redirect("/login");
-  }
-
   const zipCode = (formData.get("zipCode") as string)?.trim() || undefined;
   const taxEnabled = formData.get("taxEnabled") === "true";
 
@@ -563,7 +582,6 @@ export async function updateZipCode(
     .from("registries")
     .select("settings")
     .eq("id", registryId)
-    .eq("owner_id", user.id)
     .single();
 
   if (!registry) {
@@ -577,8 +595,7 @@ export async function updateZipCode(
   const { error } = await supabase
     .from("registries")
     .update({ settings })
-    .eq("id", registryId)
-    .eq("owner_id", user.id);
+    .eq("id", registryId);
 
   if (error) {
     return { error: error.message };
@@ -594,20 +611,14 @@ export async function toggleChecklistDismissed(
   itemName: string,
   dismissed: boolean
 ) {
+  const { user, error: authError } = await requireManager(registryId);
+  if (authError || !user) return { error: authError || "Not authenticated" };
+
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    redirect("/login");
-  }
-
   const { data: registry } = await supabase
     .from("registries")
     .select("settings")
     .eq("id", registryId)
-    .eq("owner_id", user.id)
     .single();
 
   if (!registry) {
@@ -632,8 +643,7 @@ export async function toggleChecklistDismissed(
   const { error } = await supabase
     .from("registries")
     .update({ settings })
-    .eq("id", registryId)
-    .eq("owner_id", user.id);
+    .eq("id", registryId);
 
   if (error) {
     return { error: error.message };
@@ -649,18 +659,10 @@ export async function toggleParentPurchased(
   registryId: string,
   purchased: boolean
 ) {
+  const { user, error: authError } = await requireManager(registryId);
+  if (authError || !user) return { error: authError || "Not authenticated" };
+
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    redirect("/login");
-  }
-
-  console.log(`[toggleParentPurchased] itemId=${itemId}, purchased=${purchased}`);
-
-  // Verify ownership
   const { data: item } = await supabase
     .from("registry_items")
     .select("id, quantity_needed, registry_id")
@@ -668,21 +670,7 @@ export async function toggleParentPurchased(
     .single();
 
   if (!item) {
-    console.log(`[toggleParentPurchased] Item not found`);
     return { error: "Item not found" };
-  }
-  console.log(`[toggleParentPurchased] Found item, registry_id=${item.registry_id}`);
-
-  const { data: registry } = await supabase
-    .from("registries")
-    .select("id")
-    .eq("id", item.registry_id)
-    .eq("owner_id", user.id)
-    .single();
-
-  if (!registry) {
-    console.log(`[toggleParentPurchased] Not authorized`);
-    return { error: "Not authorized" };
   }
 
   const { error } = await supabase
@@ -695,10 +683,8 @@ export async function toggleParentPurchased(
     .eq("id", itemId);
 
   if (error) {
-    console.log(`[toggleParentPurchased] Update error: ${error.message}`);
     return { error: error.message };
   }
-  console.log(`[toggleParentPurchased] Success`);
 
   revalidatePath(`/dashboard/registry/${registryId}`);
   return { success: true };
@@ -968,4 +954,190 @@ export async function declineSuggestion(formData: FormData) {
 
   revalidatePath(`/dashboard/registry/${registryId}`);
   return { success: true };
+}
+
+// ============================================================================
+// Manager & Invite Actions
+// ============================================================================
+
+export async function inviteManagerByEmail(registryId: string, email: string) {
+  const { user, role, error: authError } = await requireManager(registryId);
+  if (authError || !user) return { error: authError || "Not authenticated" };
+
+  const token = crypto.randomBytes(24).toString("hex");
+
+  const { error } = await supabaseAdmin.from("registry_invites").insert({
+    registry_id: registryId,
+    invited_by: user.id,
+    email: email.toLowerCase().trim(),
+    token,
+    max_uses: 1,
+  });
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  // Get inviter name and registry title for the email
+  const [{ data: profile }, { data: registry }] = await Promise.all([
+    supabaseAdmin.from("profiles").select("display_name, full_name").eq("id", user.id).single(),
+    supabaseAdmin.from("registries").select("title").eq("id", registryId).single(),
+  ]);
+
+  const inviterName = profile?.display_name || profile?.full_name || "Someone";
+
+  void sendManagerInvite({
+    toEmail: email.toLowerCase().trim(),
+    inviterName,
+    registryTitle: registry?.title || "a registry",
+    token,
+  });
+
+  revalidatePath(`/dashboard/registry/${registryId}/settings`);
+  return { success: true };
+}
+
+export async function generateInviteLink(registryId: string, maxUses: number | null) {
+  const { user, error: authError } = await requireManager(registryId);
+  if (authError || !user) return { error: authError || "Not authenticated" };
+
+  const token = crypto.randomBytes(24).toString("hex");
+
+  const { error } = await supabaseAdmin.from("registry_invites").insert({
+    registry_id: registryId,
+    invited_by: user.id,
+    token,
+    max_uses: maxUses,
+  });
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidatePath(`/dashboard/registry/${registryId}/settings`);
+  return { success: true, token };
+}
+
+export async function acceptInvite(token: string) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: "Not authenticated" };
+  }
+
+  const { data, error } = await supabase.rpc("accept_registry_invite", {
+    p_token: token,
+    p_user_id: user.id,
+  });
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidatePath("/dashboard");
+  return { success: true, managerId: data };
+}
+
+export async function removeManager(registryId: string, managerId: string) {
+  const { user, role, error: authError } = await requireManager(registryId);
+  if (authError || !user) return { error: authError || "Not authenticated" };
+
+  if (role !== "owner") {
+    return { error: "Only the registry owner can remove managers" };
+  }
+
+  // Don't allow removing the owner
+  const { data: target } = await supabaseAdmin
+    .from("registry_managers")
+    .select("role")
+    .eq("id", managerId)
+    .eq("registry_id", registryId)
+    .single();
+
+  if (!target) return { error: "Manager not found" };
+  if (target.role === "owner") return { error: "Cannot remove the registry owner" };
+
+  const { error } = await supabaseAdmin
+    .from("registry_managers")
+    .delete()
+    .eq("id", managerId)
+    .eq("registry_id", registryId);
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidatePath(`/dashboard/registry/${registryId}/settings`);
+  return { success: true };
+}
+
+export async function revokeInvite(inviteId: string, registryId: string) {
+  const { user, role, error: authError } = await requireManager(registryId);
+  if (authError || !user) return { error: authError || "Not authenticated" };
+
+  if (role !== "owner") {
+    return { error: "Only the registry owner can revoke invites" };
+  }
+
+  const { error } = await supabaseAdmin
+    .from("registry_invites")
+    .delete()
+    .eq("id", inviteId)
+    .eq("registry_id", registryId);
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidatePath(`/dashboard/registry/${registryId}/settings`);
+  return { success: true };
+}
+
+export async function listManagers(registryId: string) {
+  const { error: authError } = await requireManager(registryId);
+  if (authError) return { error: authError, managers: [] };
+
+  const { data: managers } = await supabaseAdmin
+    .from("registry_managers")
+    .select("id, user_id, role, created_at")
+    .eq("registry_id", registryId)
+    .order("created_at");
+
+  if (!managers) return { error: null, managers: [] };
+
+  // Fetch profile and email info for each manager
+  const enriched = await Promise.all(
+    managers.map(async (m) => {
+      const [{ data: profile }, { data: userData }] = await Promise.all([
+        supabaseAdmin.from("profiles").select("display_name, full_name").eq("id", m.user_id).single(),
+        supabaseAdmin.auth.admin.getUserById(m.user_id),
+      ]);
+      return {
+        id: m.id,
+        userId: m.user_id,
+        role: m.role,
+        name: profile?.display_name || profile?.full_name || "Unknown",
+        email: userData?.user?.email || "",
+        createdAt: m.created_at,
+      };
+    })
+  );
+
+  return { error: null, managers: enriched };
+}
+
+export async function listInvites(registryId: string) {
+  const { error: authError } = await requireManager(registryId);
+  if (authError) return { error: authError, invites: [] };
+
+  const { data: invites } = await supabaseAdmin
+    .from("registry_invites")
+    .select("id, email, max_uses, use_count, expires_at, created_at")
+    .eq("registry_id", registryId)
+    .order("created_at", { ascending: false });
+
+  return { error: null, invites: invites || [] };
 }

@@ -238,7 +238,7 @@ function DemoSuggestItemDialog() {
                 >
                   Cancel
                 </Button>
-                <Button type="submit">Suggest item</Button>
+                <Button type="submit" className="!bg-[#004659] hover:!bg-[#003847] !ring-[#004659] !text-white">Suggest item</Button>
               </div>
             </form>
           </>
@@ -325,7 +325,7 @@ function DemoReserveDialog({
             >
               Cancel
             </Button>
-            <Button type="submit">I'm gifting this</Button>
+            <Button type="submit" className="!bg-[#004659] hover:!bg-[#003847] !ring-[#004659] !text-white">I&apos;m gifting this</Button>
           </div>
         </form>
       </DialogContent>
@@ -421,7 +421,7 @@ function DemoCoverItemDialog({
             >
               Cancel
             </Button>
-            <Button type="submit">I&apos;ll cover this</Button>
+            <Button type="submit" className="!bg-[#004659] hover:!bg-[#003847] !ring-[#004659] !text-white">I&apos;ll cover this</Button>
           </div>
         </form>
       </DialogContent>
@@ -559,7 +559,7 @@ function DemoContributeFundDialog({
             >
               Cancel
             </Button>
-            <Button type="submit">Contribute</Button>
+            <Button type="submit" className="!bg-[#004659] hover:!bg-[#003847] !ring-[#004659] !text-white">Contribute</Button>
           </div>
         </form>
       </DialogContent>
