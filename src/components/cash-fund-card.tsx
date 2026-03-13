@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { DollarSign, ChevronDown } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -82,7 +82,6 @@ export function CashFundCard({ fund, registryId }: CashFundCardProps) {
             <h3 className="font-semibold text-lg text-[#181d27]">
               {fund.title}
             </h3>
-            <DollarSign className="h-5 w-5 text-[#09c69a] shrink-0" />
           </div>
           {fund.description && (
             <p className="text-sm text-[#535862] whitespace-pre-line">
