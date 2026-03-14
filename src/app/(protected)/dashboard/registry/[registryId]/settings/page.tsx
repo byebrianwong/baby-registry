@@ -153,9 +153,20 @@ export default function RegistrySettingsPage() {
     const result = await updatePaymentMethods(registryId, formData);
     if (result?.error) {
       setPaymentError(result.error);
-    } else {
+    } else if (registry) {
       setPaymentSuccess(true);
       setTimeout(() => setPaymentSuccess(false), 2000);
+      setRegistry({
+        ...registry,
+        settings: {
+          ...registry.settings,
+          payment_methods: {
+            venmo: (formData.get("venmo") as string)?.trim() || undefined,
+            paypal: (formData.get("paypal") as string)?.trim() || undefined,
+            zelle: (formData.get("zelle") as string)?.trim() || undefined,
+          },
+        },
+      });
     }
     setSavingPayment(false);
   };
@@ -167,9 +178,17 @@ export default function RegistrySettingsPage() {
     const result = await updateZipCode(registryId, formData);
     if (result?.error) {
       setZipError(result.error);
-    } else {
+    } else if (registry) {
       setZipSuccess(true);
       setTimeout(() => setZipSuccess(false), 2000);
+      setRegistry({
+        ...registry,
+        settings: {
+          ...registry.settings,
+          zip_code: (formData.get("zipCode") as string)?.trim() || undefined,
+          tax_enabled: formData.get("taxEnabled") === "true",
+        },
+      });
     }
     setSavingZip(false);
   };
@@ -182,9 +201,16 @@ export default function RegistrySettingsPage() {
     const result = await updateShippingAddress(registryId, address);
     if (result?.error) {
       setAddressError(result.error);
-    } else {
+    } else if (registry) {
       setAddressSuccess(true);
       setTimeout(() => setAddressSuccess(false), 2000);
+      setRegistry({
+        ...registry,
+        settings: {
+          ...registry.settings,
+          shipping_address: address.trim() || undefined,
+        },
+      });
     }
     setSavingAddress(false);
   };

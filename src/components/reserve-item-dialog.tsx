@@ -114,7 +114,7 @@ export function ReserveItemDialog({ item, parentName = "The parents", action, al
             icon={Mail01}
             isRequired
           />
-          {remaining > 1 && (
+          {item.quantity_needed > 1 && (
             <Input
               label="Quantity"
               name="quantity"

@@ -54,10 +54,13 @@ interface Category {
 
 export default async function RegistryManagePage({
   params,
+  searchParams,
 }: {
   params: Promise<{ registryId: string }>;
+  searchParams: Promise<{ highlight?: string }>;
 }) {
   const { registryId } = await params;
+  const { highlight } = await searchParams;
   const supabase = await createClient();
   const {
     data: { user },
@@ -139,6 +142,20 @@ export default async function RegistryManagePage({
     ...p,
     item_title: p.registry_items?.title || p.cash_funds?.title || "Unknown item",
   }));
+
+  // Build purchase lookup maps for item/fund cards
+  const purchasesByItemId = new Map<string, typeof allPurchases>();
+  const purchasesByFundId = new Map<string, typeof allPurchases>();
+  for (const p of allPurchases) {
+    if (p.registry_item_id) {
+      if (!purchasesByItemId.has(p.registry_item_id)) purchasesByItemId.set(p.registry_item_id, []);
+      purchasesByItemId.get(p.registry_item_id)!.push(p);
+    }
+    if (p.cash_fund_id) {
+      if (!purchasesByFundId.has(p.cash_fund_id)) purchasesByFundId.set(p.cash_fund_id, []);
+      purchasesByFundId.get(p.cash_fund_id)!.push(p);
+    }
+  }
 
   const allSuggestions = (suggestions || []) as {
     id: string;
@@ -338,7 +355,7 @@ export default async function RegistryManagePage({
                       </h3>
                       <div className="grid gap-3 md:grid-cols-2">
                         {allFunds.map((fund) => (
-                          <CashFundCard key={fund.id} fund={fund} registryId={registryId} />
+                          <CashFundCard key={fund.id} fund={fund} registryId={registryId} highlightId={highlight} purchases={purchasesByFundId.get(fund.id)} />
                         ))}
                       </div>
                     </div>
@@ -363,6 +380,8 @@ export default async function RegistryManagePage({
                               isOwner
                               categories={allCategories}
                               zipCode={zipCode}
+                              highlightId={highlight}
+                              purchases={purchasesByItemId.get(item.id)}
                             />
                           ))}
                         </div>
@@ -383,6 +402,8 @@ export default async function RegistryManagePage({
                             isOwner
                             categories={allCategories}
                             zipCode={zipCode}
+                            highlightId={highlight}
+                            purchases={purchasesByItemId.get(item.id)}
                           />
                         ))}
                       </div>

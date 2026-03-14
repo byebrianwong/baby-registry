@@ -14,9 +14,10 @@ interface TagProps {
   variant: TagVariant;
   children: React.ReactNode;
   className?: string;
+  onClick?: (e: React.MouseEvent) => void;
 }
 
-export function Tag({ variant, children, className }: TagProps) {
+export function Tag({ variant, children, className, onClick }: TagProps) {
   return (
     <span
       className={cn(
@@ -24,6 +25,7 @@ export function Tag({ variant, children, className }: TagProps) {
         variantStyles[variant],
         className
       )}
+      onClick={onClick}
     >
       {children}
     </span>
