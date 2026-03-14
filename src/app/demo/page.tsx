@@ -7,13 +7,8 @@ import {
   Calendar,
   ExternalLink,
   Package,
-  Gift,
-  Check,
   ArrowLeft,
-  HandCoins,
-  DollarSign,
   Lightbulb,
-  Loader2,
   ChevronDown,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -37,7 +32,9 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { PaymentMethodsDisplay } from "@/components/payment-methods-display";
+import { ReserveItemDialog } from "@/components/reserve-item-dialog";
+import { CoverItemDialog } from "@/components/cover-item-dialog";
+import { ContributeFundDialog } from "@/components/contribute-fund-dialog";
 import { CategoryNav, type CategoryNavItem } from "@/components/category-nav";
 import { getCategorySectionId } from "@/lib/category-section-id";
 import { ScrollToTop } from "@/components/scroll-to-top";
@@ -248,347 +245,30 @@ function DemoSuggestItemDialog() {
   );
 }
 
-function DemoReserveDialog({
-  item,
-  onReserve,
-}: {
-  item: DemoItem;
-  onReserve: (itemId: string, quantity: number) => void;
-}) {
-  const [open, setOpen] = useState(false);
-  const [reserved, setReserved] = useState(false);
-  const remaining = item.quantity_needed - item.quantity_fulfilled;
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onReserve(item.id, 1);
-    setReserved(true);
-  };
-
-  if (reserved) {
-    return (
-      <Button disabled variant="secondary">
-        <span className="inline-flex items-center gap-1.5"><Check className="h-4 w-4 shrink-0" />Reserved</span>
-      </Button>
-    );
-  }
-
-  return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button>
-          <span className="inline-flex items-center gap-1.5"><Gift className="h-4 w-4 shrink-0" />Mark as purchased</span>
-        </Button>
-      </DialogTrigger>
-      <DialogContent showCloseButton={false}>
-        <DialogHeader>
-          <DialogTitle>Mark &ldquo;{item.title}&rdquo; as purchased</DialogTitle>
-          <DialogDescription>
-            This is a demo — no actual reservation is made. In the real app,
-            this notifies the parents and prevents duplicate gifts.
-          </DialogDescription>
-        </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <Input
-            label="Your Name"
-            placeholder="Jane Doe"
-            isRequired
-          />
-          <Input
-            label="Your Email"
-            type="email"
-            placeholder="jane@example.com"
-            icon={Mail01}
-            isRequired
-          />
-          {item.quantity_needed > 1 && (
-            <Input
-              label="Quantity"
-              type="number"
-              min={1}
-              max={remaining}
-              placeholder="1"
-              isRequired
-              hint={`${remaining} of ${item.quantity_needed} still needed`}
-            />
-          )}
-          <TextArea
-            label="Message (optional)"
-            placeholder="Congratulations!"
-            rows={3}
-          />
-          <div className="flex justify-end gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setOpen(false)}
-            >
-              Cancel
-            </Button>
-            <Button type="submit" className="!bg-[#004659] hover:!bg-[#003847] !ring-[#004659] !text-white">I&apos;m gifting this</Button>
-          </div>
-        </form>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-function DemoCoverItemDialog({
-  item,
-  onCover,
-}: {
-  item: DemoItem;
-  onCover: (itemId: string) => void;
-}) {
-  const [open, setOpen] = useState(false);
-  const [covered, setCovered] = useState(false);
-  const remaining = item.quantity_needed - item.quantity_fulfilled;
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onCover(item.id);
-    setCovered(true);
-  };
-
-  if (covered) {
-    return (
-      <Button disabled variant="secondary">
-        <span className="inline-flex items-center gap-1.5"><HandCoins className="h-4 w-4 shrink-0" />Covered</span>
-      </Button>
-    );
-  }
-
-  return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button>
-          <span className="inline-flex items-center gap-1.5"><HandCoins className="h-4 w-4 shrink-0" />Cover the cost</span>
-        </Button>
-      </DialogTrigger>
-      <DialogContent showCloseButton={false}>
-        <DialogHeader>
-          <DialogTitle>Cover &ldquo;{item.title}&rdquo;</DialogTitle>
-          <DialogDescription>
-            This is a demo — no actual payment is made. The parents already
-            bought this item. You can reimburse them via the payment methods
-            below.
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="flex flex-col gap-2 overflow-hidden rounded-xl px-4">
-          {item.price && (
-            <p className="text-lg font-semibold">${item.price.toFixed(2)}</p>
-          )}
-          <PaymentMethodsDisplay
-            paymentMethods={DEMO_REGISTRY.settings.payment_methods}
-          />
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <Input
-            label="Your Name"
-            placeholder="Jane Doe"
-            isRequired
-          />
-          <Input
-            label="Your Email"
-            type="email"
-            placeholder="jane@example.com"
-            icon={Mail01}
-            isRequired
-          />
-          {item.quantity_needed > 1 && (
-            <Input
-              label="Quantity"
-              type="number"
-              min={1}
-              max={remaining}
-              placeholder="1"
-              isRequired
-              hint={`${remaining} of ${item.quantity_needed} still needed`}
-            />
-          )}
-          <TextArea
-            label="Message (optional)"
-            placeholder="Congratulations!"
-            rows={3}
-          />
-          <div className="flex justify-end gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setOpen(false)}
-            >
-              Cancel
-            </Button>
-            <Button type="submit" className="!bg-[#004659] hover:!bg-[#003847] !ring-[#004659] !text-white">I&apos;ll cover this</Button>
-          </div>
-        </form>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-function DemoContributeFundDialog({
-  fund,
-  onContribute,
-}: {
-  fund: DemoCashFund;
-  onContribute: (fundId: string, amount: number) => void;
-}) {
-  const [open, setOpen] = useState(false);
-  const [contributed, setContributed] = useState(false);
-  const [currency, setCurrency] = useState("USD");
-
-  const remaining = Math.max(0, fund.goal_amount - fund.current_amount);
-  const fundProgress =
-    fund.goal_amount > 0
-      ? (fund.current_amount / fund.goal_amount) * 100
-      : 0;
-
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const formData = new FormData(e.currentTarget);
-    const amount = parseFloat(formData.get("amount") as string) || 25;
-    onContribute(fund.id, amount);
-    setContributed(true);
-  };
-
-  if (contributed) {
-    return (
-      <Button disabled variant="secondary">
-        <span className="inline-flex items-center gap-1.5"><DollarSign className="h-4 w-4 shrink-0" />Contributed</span>
-      </Button>
-    );
-  }
-
-  return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button>
-          <span className="inline-flex items-center gap-1.5"><DollarSign className="h-4 w-4 shrink-0" />Contribute</span>
-        </Button>
-      </DialogTrigger>
-      <DialogContent showCloseButton={false}>
-        <DialogHeader>
-          <DialogTitle>
-            Contribute to &ldquo;{fund.title}&rdquo;
-          </DialogTitle>
-          <DialogDescription>
-            This is a demo — no actual payment is made. Pledge a contribution
-            and send payment directly to the parents.
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="flex flex-col gap-1">
-          <div className="flex justify-between text-sm">
-            <span>${fund.current_amount} raised</span>
-            <span>${fund.goal_amount} goal</span>
-          </div>
-          <Progress value={fundProgress} />
-          {remaining > 0 && (
-            <span className="text-xs">
-              ${remaining} remaining
-            </span>
-          )}
-        </div>
-
-        <div className="flex flex-col gap-2 overflow-hidden rounded-xl px-4">
-          <p className="text-lg font-semibold">${fund.goal_amount}</p>
-          <PaymentMethodsDisplay
-            paymentMethods={DEMO_REGISTRY.settings.payment_methods}
-          />
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <InputGroup
-            label="Amount"
-            prefix={currencySymbols[currency] || "$"}
-            isRequired
-            trailingAddon={
-              <InputPrefix position="trailing">
-                <span className="relative inline-flex items-center">
-                  <select
-                    className="appearance-none bg-transparent pr-5 text-primary outline-none cursor-pointer"
-                    value={currency}
-                    onChange={(e) => setCurrency(e.target.value)}
-                  >
-                    <option>USD</option>
-                    <option>EUR</option>
-                    <option>GBP</option>
-                    <option>JPY</option>
-                    <option>CAD</option>
-                    <option>AUD</option>
-                  </select>
-                  <ChevronDown className="pointer-events-none absolute right-0 h-4 w-4 text-tertiary" />
-                </span>
-              </InputPrefix>
-            }
-          >
-            <InputBase
-              name="amount"
-              type="number"
-              step="0.01"
-              min={1}
-              max={remaining}
-              placeholder="0.00"
-            />
-          </InputGroup>
-          <Input
-            label="Your Name"
-            placeholder="Jane Doe"
-            isRequired
-          />
-          <Input
-            label="Your Email"
-            type="email"
-            placeholder="jane@example.com"
-            icon={Mail01}
-            isRequired
-          />
-          <TextArea
-            label="Message (optional)"
-            placeholder="Congratulations!"
-            rows={3}
-          />
-          <div className="flex justify-end gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setOpen(false)}
-            >
-              Cancel
-            </Button>
-            <Button type="submit" className="!bg-[#004659] hover:!bg-[#003847] !ring-[#004659] !text-white">Contribute</Button>
-          </div>
-        </form>
-      </DialogContent>
-    </Dialog>
-  );
-}
+const DEMO_PARENT_NAME = "Sarah & Mike";
 
 export default function DemoPage() {
   const [items, setItems] = useState(DEMO_ITEMS);
   const [funds, setFunds] = useState(DEMO_CASH_FUNDS);
 
-  const handleReserve = (itemId: string, quantity: number) => {
+  const demoReserveAction = (itemId: string) => async (formData: FormData) => {
+    const quantity = parseInt(formData.get("quantity") as string) || 1;
     setItems((prev) =>
       prev.map((item) =>
         item.id === itemId
-          ? {
-              ...item,
-              quantity_fulfilled: item.quantity_fulfilled + quantity,
-            }
+          ? { ...item, quantity_fulfilled: item.quantity_fulfilled + quantity }
           : item
       )
     );
+    return undefined;
   };
 
-  const handleCoverItem = (itemId: string) => {
-    // In demo, just show the UI change — item stays parent-purchased
+  const demoCoverAction = async () => {
+    return undefined;
   };
 
-  const handleContribute = (fundId: string, amount: number) => {
+  const demoContributeAction = (fundId: string) => async (formData: FormData) => {
+    const amount = parseFloat(formData.get("amount") as string) || 25;
     setFunds((prev) =>
       prev.map((fund) =>
         fund.id === fundId
@@ -596,6 +276,7 @@ export default function DemoPage() {
           : fund
       )
     );
+    return undefined;
   };
 
   const totalItems = items.length;
@@ -656,8 +337,10 @@ export default function DemoPage() {
           </Link>
           <Button variant="outline" size="sm" asChild>
             <Link href="/">
-              <ArrowLeft className="mr-2 h-3 w-3" />
-              Back to Home
+              <span className="inline-flex items-center gap-1.5">
+                <ArrowLeft className="h-3 w-3 shrink-0" />
+                Back to Home
+              </span>
             </Link>
           </Button>
         </div>
@@ -729,9 +412,11 @@ export default function DemoPage() {
                         </span>
                       </div>
                       <div className="flex justify-end">
-                        <DemoContributeFundDialog
+                        <ContributeFundDialog
                           fund={fund}
-                          onContribute={handleContribute}
+                          paymentMethods={DEMO_REGISTRY.settings.payment_methods}
+                          parentName={DEMO_PARENT_NAME}
+                          action={demoContributeAction(fund.id)}
                         />
                       </div>
                     </CardContent>
@@ -825,15 +510,18 @@ export default function DemoPage() {
                           {(item.is_parent_purchased || !isFulfilled) && (
                             <div className="flex items-center justify-end gap-2">
                               {item.is_parent_purchased ? (
-                                <DemoCoverItemDialog
+                                <CoverItemDialog
                                   item={item}
-                                  onCover={handleCoverItem}
+                                  paymentMethods={DEMO_REGISTRY.settings.payment_methods}
+                                  parentName={DEMO_PARENT_NAME}
+                                  action={demoCoverAction}
                                 />
                               ) : (
                                 <>
-                                  <DemoReserveDialog
+                                  <ReserveItemDialog
                                     item={item}
-                                    onReserve={handleReserve}
+                                    parentName={DEMO_PARENT_NAME}
+                                    action={demoReserveAction(item.id)}
                                   />
                                   {item.external_url && (
                                     <Button

@@ -15,6 +15,9 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { reserveItem } from "@/lib/actions/registry";
+import { CelebrationDialog } from "@/components/celebration-dialog";
+
+type DialogAction = (formData: FormData) => Promise<{ error: string } | undefined>;
 
 interface ReserveItemDialogProps {
   item: {
@@ -24,13 +27,16 @@ interface ReserveItemDialogProps {
     quantity_needed: number;
     quantity_fulfilled: number;
   };
+  parentName?: string;
+  action?: DialogAction;
 }
 
-export function ReserveItemDialog({ item }: ReserveItemDialogProps) {
+export function ReserveItemDialog({ item, parentName = "The parents", action }: ReserveItemDialogProps) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+  const [showCelebration, setShowCelebration] = useState(false);
 
   const remaining = item.quantity_needed - item.quantity_fulfilled;
 
@@ -39,20 +45,30 @@ export function ReserveItemDialog({ item }: ReserveItemDialogProps) {
     setError("");
     formData.set("itemId", item.id);
 
-    const result = await reserveItem(formData);
+    const result = await (action ?? reserveItem)(formData);
     if (result?.error) {
       setError(result.error);
     } else {
       setSuccess(true);
+      setShowCelebration(true);
     }
     setLoading(false);
   };
 
   if (success) {
     return (
-      <Button disabled variant="secondary">
-        <span className="inline-flex items-center gap-1.5"><Check className="h-4 w-4 shrink-0" />Reserved</span>
-      </Button>
+      <>
+        <Button disabled variant="secondary">
+          <span className="inline-flex items-center gap-1.5"><Check className="h-4 w-4 shrink-0" />Reserved</span>
+        </Button>
+        <CelebrationDialog
+          open={showCelebration}
+          onClose={() => setShowCelebration(false)}
+          itemTitle={item.title}
+          parentName={parentName}
+          variant="reserve"
+        />
+      </>
     );
   }
 
