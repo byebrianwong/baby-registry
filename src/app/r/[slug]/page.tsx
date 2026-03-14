@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { cookies } from "next/headers";
 import { Baby, Calendar, ExternalLink, Package, HandCoins } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -120,6 +121,16 @@ export default async function PublicRegistryPage({
   const paymentMethods = (registry.settings as any)?.payment_methods as
     | PaymentMethods
     | undefined;
+
+  const shippingAddress = (registry.settings as any)?.shipping_address as string | undefined;
+
+  // Read guest purchase cookie
+  const cookieStore = await cookies();
+  const rawCookie = cookieStore.get("regibee_my_gifts")?.value;
+  let myGifts: { items?: Record<string, string>; funds?: Record<string, number> } = {};
+  try {
+    if (rawCookie) myGifts = JSON.parse(rawCookie);
+  } catch {}
 
   const totalItems = allItems.length;
   const fulfilledItems = allItems.filter(
@@ -245,6 +256,8 @@ export default async function PublicRegistryPage({
                       fund.goal_amount && fund.goal_amount > 0
                         ? (fund.current_amount / fund.goal_amount) * 100
                         : 0;
+                    const fundPurchased = !!(myGifts.funds && myGifts.funds[fund.id]);
+                    const fundPrevAmount = myGifts.funds?.[fund.id];
                     return (
                       <Card key={fund.id} className="py-0 gap-0 rounded-xl shadow-none border-[#d5d7da]">
                         <CardContent className="flex h-full flex-col justify-between gap-4 p-4">
@@ -279,6 +292,9 @@ export default async function PublicRegistryPage({
                               fund={fund}
                               paymentMethods={paymentMethods}
                               parentName={parentName}
+                              alreadyPurchased={fundPurchased}
+                              previousAmount={fundPrevAmount}
+                              shippingAddress={shippingAddress}
                             />
                           </div>
                         </CardContent>
@@ -309,6 +325,7 @@ export default async function PublicRegistryPage({
                         item.quantity_fulfilled >= item.quantity_needed;
                       const remaining =
                         item.quantity_needed - item.quantity_fulfilled;
+                      const itemPurchased = !!(myGifts.items && myGifts.items[item.id]);
 
                       return (
                         <Card
@@ -372,17 +389,19 @@ export default async function PublicRegistryPage({
                               </div>
                             </div>
 
-                            {(item.is_parent_purchased || !isFulfilled) && (
+                            {(item.is_parent_purchased || !isFulfilled || itemPurchased) && (
                               <div className="flex items-center justify-end gap-2">
                                 {item.is_parent_purchased ? (
                                   <CoverItemDialog
                                     item={item}
                                     paymentMethods={paymentMethods}
                                     parentName={parentName}
+                                    alreadyPurchased={itemPurchased}
+                                    shippingAddress={shippingAddress}
                                   />
                                 ) : (
                                   <>
-                                    {item.external_url && (
+                                    {item.external_url && !itemPurchased && (
                                       <Button
                                         variant="outline"
                                         asChild
@@ -395,7 +414,12 @@ export default async function PublicRegistryPage({
                                         </a>
                                       </Button>
                                     )}
-                                    <ReserveItemDialog item={item} parentName={parentName} />
+                                    <ReserveItemDialog
+                                      item={item}
+                                      parentName={parentName}
+                                      alreadyPurchased={itemPurchased}
+                                      shippingAddress={shippingAddress}
+                                    />
                                   </>
                                 )}
                               </div>
@@ -419,6 +443,7 @@ export default async function PublicRegistryPage({
                       item.quantity_fulfilled >= item.quantity_needed;
                     const remaining =
                       item.quantity_needed - item.quantity_fulfilled;
+                    const itemPurchased = !!(myGifts.items && myGifts.items[item.id]);
                     return (
                       <Card
                         key={item.id}
@@ -460,15 +485,23 @@ export default async function PublicRegistryPage({
                               </span>
                             </div>
                           </div>
-                          {(item.is_parent_purchased || !isFulfilled) && (
+                          {(item.is_parent_purchased || !isFulfilled || itemPurchased) && (
                             <div className="flex items-center justify-end gap-2">
                               {item.is_parent_purchased ? (
                                 <CoverItemDialog
                                   item={item}
                                   paymentMethods={paymentMethods}
+                                  parentName={parentName}
+                                  alreadyPurchased={itemPurchased}
+                                  shippingAddress={shippingAddress}
                                 />
                               ) : (
-                                <ReserveItemDialog item={item} parentName={parentName} />
+                                <ReserveItemDialog
+                                  item={item}
+                                  parentName={parentName}
+                                  alreadyPurchased={itemPurchased}
+                                  shippingAddress={shippingAddress}
+                                />
                               )}
                             </div>
                           )}

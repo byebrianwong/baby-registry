@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { ExternalLink, Package, ShoppingBag, Undo2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -8,6 +8,7 @@ import { Tag } from "@/components/ui/tag";
 import { UsedConditionTag } from "@/components/ui/used-condition-tag";
 import { toggleParentPurchased } from "@/lib/actions/registry";
 import { EditItemDialog } from "@/components/edit-item-dialog";
+import { GiftDetailModal, type Purchase } from "@/components/gift-detail-modal";
 
 interface ItemCardProps {
   item: {
@@ -29,13 +30,24 @@ interface ItemCardProps {
   isOwner?: boolean;
   categories?: { id: string; name: string }[];
   zipCode?: string;
+  highlightId?: string;
+  purchases?: Purchase[];
 }
 
-export function ItemCard({ item, registryId, isOwner, categories = [], zipCode }: ItemCardProps) {
+export function ItemCard({ item, registryId, isOwner, categories = [], zipCode, highlightId, purchases }: ItemCardProps) {
   const [toggling, setToggling] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
+  const [giftDetailOpen, setGiftDetailOpen] = useState(false);
+  const cardRef = useRef<HTMLDivElement>(null);
+  const isHighlighted = highlightId === item.id;
   const isFulfilled = item.quantity_fulfilled >= item.quantity_needed;
   const remaining = item.quantity_needed - item.quantity_fulfilled;
+
+  useEffect(() => {
+    if (isHighlighted && cardRef.current) {
+      cardRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }, [isHighlighted]);
 
   const handleToggleParentPurchased = async () => {
     setToggling(true);
@@ -46,6 +58,7 @@ export function ItemCard({ item, registryId, isOwner, categories = [], zipCode }
   return (
     <>
     <Card
+      ref={cardRef}
       className={`py-0 gap-0 rounded-xl ${
         isOwner ? "cursor-pointer transition-shadow hover:shadow-md" : ""
       } ${
@@ -55,6 +68,7 @@ export function ItemCard({ item, registryId, isOwner, categories = [], zipCode }
             ? "bg-secondary"
             : ""
       }`}
+      style={isHighlighted ? { animation: "highlight-pulse 1.5s ease-in-out 3" } : undefined}
       onClick={isOwner ? () => setEditOpen(true) : undefined}
     >
       <CardContent className="flex h-full flex-col justify-between gap-4 p-4">
@@ -79,7 +93,18 @@ export function ItemCard({ item, registryId, isOwner, categories = [], zipCode }
                   <Tag variant="purchased-by-you">Purchased by you</Tag>
                 )}
                 {isFulfilled && !item.is_parent_purchased && (
-                  <Tag variant="gifted">Gifted</Tag>
+                  purchases && purchases.length > 0 ? (
+                    <Tag
+                      variant="gifted"
+                      className="cursor-pointer hover:opacity-80"
+                      onClick={(e) => { e.stopPropagation(); setGiftDetailOpen(true); }}
+                    >
+                      Gifted by {purchases[0].buyer_name}
+                      {purchases.length > 1 ? ` + ${purchases.length - 1} other${purchases.length > 2 ? "s" : ""}` : ""}
+                    </Tag>
+                  ) : (
+                    <Tag variant="gifted">Gifted</Tag>
+                  )
                 )}
               </div>
             </div>
@@ -161,6 +186,14 @@ export function ItemCard({ item, registryId, isOwner, categories = [], zipCode }
         zipCode={zipCode}
         open={editOpen}
         onOpenChange={setEditOpen}
+      />
+    )}
+    {purchases && purchases.length > 0 && (
+      <GiftDetailModal
+        open={giftDetailOpen}
+        onOpenChange={setGiftDetailOpen}
+        itemTitle={item.title}
+        purchases={purchases}
       />
     )}
     </>

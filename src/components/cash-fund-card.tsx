@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -16,6 +16,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { updateCashFund, deleteCashFund } from "@/lib/actions/registry";
+import { Tag } from "@/components/ui/tag";
+import { GiftDetailModal, type Purchase } from "@/components/gift-detail-modal";
 
 interface CashFundCardProps {
   fund: {
@@ -26,6 +28,8 @@ interface CashFundCardProps {
     current_amount: number;
   };
   registryId: string;
+  highlightId?: string;
+  purchases?: Purchase[];
 }
 
 const currencySymbols: Record<string, string> = {
@@ -37,12 +41,21 @@ const currencySymbols: Record<string, string> = {
   AUD: "A$",
 };
 
-export function CashFundCard({ fund, registryId }: CashFundCardProps) {
+export function CashFundCard({ fund, registryId, highlightId, purchases }: CashFundCardProps) {
   const [editOpen, setEditOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState("");
   const [currency, setCurrency] = useState("USD");
+  const [giftDetailOpen, setGiftDetailOpen] = useState(false);
+  const cardRef = useRef<HTMLDivElement>(null);
+  const isHighlighted = highlightId === fund.id;
+
+  useEffect(() => {
+    if (isHighlighted && cardRef.current) {
+      cardRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }, [isHighlighted]);
 
   const fundProgress =
     fund.goal_amount && fund.goal_amount > 0
@@ -74,7 +87,9 @@ export function CashFundCard({ fund, registryId }: CashFundCardProps) {
   return (
     <>
       <Card
+        ref={cardRef}
         className="py-0 gap-0 rounded-xl cursor-pointer transition-shadow hover:shadow-md"
+        style={isHighlighted ? { animation: "highlight-pulse 1.5s ease-in-out 3" } : undefined}
         onClick={() => setEditOpen(true)}
       >
         <CardContent className="flex flex-col gap-3 p-4">
@@ -82,6 +97,17 @@ export function CashFundCard({ fund, registryId }: CashFundCardProps) {
             <h3 className="font-semibold text-lg text-[#181d27]">
               {fund.title}
             </h3>
+            {purchases && purchases.length > 0 && (
+              <Tag
+                variant="gifted"
+                className="cursor-pointer hover:opacity-80"
+                onClick={(e) => { e.stopPropagation(); setGiftDetailOpen(true); }}
+              >
+                {purchases[0].buyer_name}
+                {purchases.length > 1 ? ` + ${purchases.length - 1} other${purchases.length > 2 ? "s" : ""}` : ""}
+                {" contributed"}
+              </Tag>
+            )}
           </div>
           {fund.description && (
             <p className="text-sm text-[#535862] whitespace-pre-line">
@@ -196,6 +222,14 @@ export function CashFundCard({ fund, registryId }: CashFundCardProps) {
           </form>
         </DialogContent>
       </Dialog>
+      {purchases && purchases.length > 0 && (
+        <GiftDetailModal
+          open={giftDetailOpen}
+          onOpenChange={setGiftDetailOpen}
+          itemTitle={fund.title}
+          purchases={purchases}
+        />
+      )}
     </>
   );
 }

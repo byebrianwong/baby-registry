@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { DollarSign, ChevronDown } from "lucide-react";
+import { DollarSign, ChevronDown, Check } from "lucide-react";
 import { Mail01 } from "@untitledui/icons";
 import { Button } from "@/components/ui/button";
 import { Input, InputBase } from "@/components/base/input/input";
@@ -34,6 +34,9 @@ interface ContributeFundDialogProps {
   paymentMethods?: PaymentMethods;
   parentName?: string;
   action?: DialogAction;
+  alreadyPurchased?: boolean;
+  previousAmount?: number;
+  shippingAddress?: string;
 }
 
 const currencySymbols: Record<string, string> = {
@@ -50,13 +53,16 @@ export function ContributeFundDialog({
   paymentMethods,
   parentName = "The parents",
   action,
+  alreadyPurchased,
+  previousAmount,
+  shippingAddress,
 }: ContributeFundDialogProps) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState(false);
+  const [success, setSuccess] = useState(alreadyPurchased ?? false);
   const [showCelebration, setShowCelebration] = useState(false);
-  const [contributedAmount, setContributedAmount] = useState<number>(0);
+  const [contributedAmount, setContributedAmount] = useState<number>(previousAmount ?? 0);
   const [currency, setCurrency] = useState("USD");
 
   const remaining =
@@ -88,9 +94,18 @@ export function ContributeFundDialog({
   if (success) {
     return (
       <>
-        <Button disabled variant="secondary">
-          <span className="inline-flex items-center gap-1.5"><DollarSign className="h-4 w-4 shrink-0" />Contributed</span>
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button disabled variant="secondary">
+            <span className="inline-flex items-center gap-1.5"><Check className="h-4 w-4 shrink-0" />Contributed</span>
+          </Button>
+          <button
+            type="button"
+            onClick={() => setShowCelebration(true)}
+            className="text-xs font-medium text-[#004659] hover:underline"
+          >
+            View details
+          </button>
+        </div>
         <CelebrationDialog
           open={showCelebration}
           onClose={() => setShowCelebration(false)}
@@ -98,6 +113,7 @@ export function ContributeFundDialog({
           parentName={parentName}
           variant="contribute"
           amount={contributedAmount}
+          shippingAddress={shippingAddress}
         />
       </>
     );

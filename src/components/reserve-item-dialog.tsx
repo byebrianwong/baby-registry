@@ -29,13 +29,15 @@ interface ReserveItemDialogProps {
   };
   parentName?: string;
   action?: DialogAction;
+  alreadyPurchased?: boolean;
+  shippingAddress?: string;
 }
 
-export function ReserveItemDialog({ item, parentName = "The parents", action }: ReserveItemDialogProps) {
+export function ReserveItemDialog({ item, parentName = "The parents", action, alreadyPurchased, shippingAddress }: ReserveItemDialogProps) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState(false);
+  const [success, setSuccess] = useState(alreadyPurchased ?? false);
   const [showCelebration, setShowCelebration] = useState(false);
 
   const remaining = item.quantity_needed - item.quantity_fulfilled;
@@ -58,15 +60,25 @@ export function ReserveItemDialog({ item, parentName = "The parents", action }: 
   if (success) {
     return (
       <>
-        <Button disabled variant="secondary">
-          <span className="inline-flex items-center gap-1.5"><Check className="h-4 w-4 shrink-0" />Reserved</span>
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button disabled variant="secondary">
+            <span className="inline-flex items-center gap-1.5"><Check className="h-4 w-4 shrink-0" />Reserved</span>
+          </Button>
+          <button
+            type="button"
+            onClick={() => setShowCelebration(true)}
+            className="text-xs font-medium text-[#004659] hover:underline"
+          >
+            View details
+          </button>
+        </div>
         <CelebrationDialog
           open={showCelebration}
           onClose={() => setShowCelebration(false)}
           itemTitle={item.title}
           parentName={parentName}
           variant="reserve"
+          shippingAddress={shippingAddress}
         />
       </>
     );
@@ -102,7 +114,7 @@ export function ReserveItemDialog({ item, parentName = "The parents", action }: 
             icon={Mail01}
             isRequired
           />
-          {remaining > 1 && (
+          {item.quantity_needed > 1 && (
             <Input
               label="Quantity"
               name="quantity"

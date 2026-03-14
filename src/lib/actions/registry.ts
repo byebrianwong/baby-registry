@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/utils/supabase/server";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import {
@@ -9,9 +10,37 @@ import {
   notifyItemCovered,
   notifyNewSuggestion,
   sendManagerInvite,
+  confirmItemReserved,
+  confirmItemCovered,
+  confirmCashFundContribution,
+  getRegistryInfoForBuyer,
 } from "@/lib/email";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import crypto from "crypto";
+
+const COOKIE_NAME = "regibee_my_gifts";
+const COOKIE_MAX_AGE = 60 * 60 * 24 * 365; // 1 year
+
+async function addToMyGiftsCookie(
+  key: "items" | "funds",
+  id: string,
+  value: string | number
+) {
+  const cookieStore = await cookies();
+  const raw = cookieStore.get(COOKIE_NAME)?.value;
+  let data: { items?: Record<string, string>; funds?: Record<string, number> } = {};
+  try {
+    if (raw) data = JSON.parse(raw);
+  } catch {}
+  if (!data[key]) data[key] = {} as any;
+  (data[key] as any)[id] = value;
+  cookieStore.set(COOKIE_NAME, JSON.stringify(data), {
+    path: "/",
+    maxAge: COOKIE_MAX_AGE,
+    sameSite: "lax",
+    httpOnly: false,
+  });
+}
 
 function generateSlug(title: string): string {
   return (
@@ -420,23 +449,43 @@ export async function reserveItem(formData: FormData) {
     return { error: error.message };
   }
 
-  // Fire-and-forget email notification
-  supabaseAdmin
-    .from("registry_items")
-    .select("title")
-    .eq("id", itemId)
-    .single()
-    .then(({ data: item }) => {
-      if (item) {
-        void notifyItemReserved({
-          itemId,
-          itemTitle: item.title,
+  await addToMyGiftsCookie("items", itemId, "reserve");
+
+  // Fire-and-forget email notifications
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+  Promise.all([
+    supabaseAdmin
+      .from("registry_items")
+      .select("title, external_url")
+      .eq("id", itemId)
+      .single(),
+    getRegistryInfoForBuyer({ itemId }),
+  ]).then(([{ data: item }, registryInfo]) => {
+    if (item) {
+      void notifyItemReserved({
+        itemId,
+        itemTitle: item.title,
+        buyerName,
+        quantity,
+        message: message || null,
+      });
+      if (buyerEmail && registryInfo) {
+        const registryUrl = `${siteUrl}/r/${registryInfo.slug}`;
+        const shopUrl = item.external_url || undefined;
+        void confirmItemReserved({
+          buyerEmail,
           buyerName,
+          itemTitle: item.title,
           quantity,
-          message: message || null,
+          parentName: registryInfo.parentName,
+          registryTitle: registryInfo.registryTitle,
+          shippingAddress: registryInfo.shippingAddress,
+          registryUrl,
+          shopUrl,
         });
       }
-    });
+    }
+  });
 
   return { success: true, purchaseId: data };
 }
@@ -564,6 +613,41 @@ export async function updatePaymentMethods(
   }
 
   revalidatePath(`/dashboard/registry/${registryId}`);
+  return { success: true };
+}
+
+export async function updateShippingAddress(
+  registryId: string,
+  address: string
+) {
+  const { user, error: authError } = await requireManager(registryId);
+  if (authError || !user) return { error: authError || "Not authenticated" };
+
+  const supabase = await createClient();
+  const { data: registry } = await supabase
+    .from("registries")
+    .select("settings")
+    .eq("id", registryId)
+    .single();
+
+  if (!registry) {
+    return { error: "Registry not found" };
+  }
+
+  const settings = (registry.settings as Record<string, unknown>) || {};
+  settings.shipping_address = address.trim() || null;
+
+  const { error } = await supabase
+    .from("registries")
+    .update({ settings })
+    .eq("id", registryId);
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidatePath(`/dashboard/registry/${registryId}`);
+  revalidatePath(`/dashboard/registry/${registryId}/settings`);
   return { success: true };
 }
 
@@ -746,23 +830,41 @@ export async function contributeToCashFund(formData: FormData) {
     return { error: error.message };
   }
 
-  // Fire-and-forget email notification
-  supabaseAdmin
-    .from("cash_funds")
-    .select("title")
-    .eq("id", fundId)
-    .single()
-    .then(({ data: fund }) => {
-      if (fund) {
-        void notifyCashFundContribution({
-          fundId,
-          fundTitle: fund.title,
+  await addToMyGiftsCookie("funds", fundId, amount);
+
+  // Fire-and-forget email notifications
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+  Promise.all([
+    supabaseAdmin
+      .from("cash_funds")
+      .select("title")
+      .eq("id", fundId)
+      .single(),
+    getRegistryInfoForBuyer({ fundId }),
+  ]).then(([{ data: fund }, registryInfo]) => {
+    if (fund) {
+      void notifyCashFundContribution({
+        fundId,
+        fundTitle: fund.title,
+        buyerName,
+        amount,
+        message: message || null,
+      });
+      if (buyerEmail && registryInfo) {
+        const registryUrl = `${siteUrl}/r/${registryInfo.slug}`;
+        void confirmCashFundContribution({
+          buyerEmail,
           buyerName,
+          fundTitle: fund.title,
           amount,
-          message: message || null,
+          parentName: registryInfo.parentName,
+          registryTitle: registryInfo.registryTitle,
+          shippingAddress: registryInfo.shippingAddress,
+          registryUrl,
         });
       }
-    });
+    }
+  });
 
   return { success: true, purchaseId: data };
 }
@@ -841,22 +943,41 @@ export async function coverParentPurchasedItem(formData: FormData) {
     return { error: error.message };
   }
 
-  // Fire-and-forget email notification
-  supabaseAdmin
-    .from("registry_items")
-    .select("title")
-    .eq("id", itemId)
-    .single()
-    .then(({ data: item }) => {
-      if (item) {
-        void notifyItemCovered({
-          itemId,
-          itemTitle: item.title,
+  await addToMyGiftsCookie("items", itemId, "cover");
+
+  // Fire-and-forget email notifications
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+  Promise.all([
+    supabaseAdmin
+      .from("registry_items")
+      .select("title, external_url")
+      .eq("id", itemId)
+      .single(),
+    getRegistryInfoForBuyer({ itemId }),
+  ]).then(([{ data: item }, registryInfo]) => {
+    if (item) {
+      void notifyItemCovered({
+        itemId,
+        itemTitle: item.title,
+        buyerName,
+        message: message || null,
+      });
+      if (buyerEmail && registryInfo) {
+        const registryUrl = `${siteUrl}/r/${registryInfo.slug}`;
+        const shopUrl = item.external_url || undefined;
+        void confirmItemCovered({
+          buyerEmail,
           buyerName,
-          message: message || null,
+          itemTitle: item.title,
+          parentName: registryInfo.parentName,
+          registryTitle: registryInfo.registryTitle,
+          shippingAddress: registryInfo.shippingAddress,
+          registryUrl,
+          shopUrl,
         });
       }
-    });
+    }
+  });
 
   return { success: true, purchaseId: data };
 }
