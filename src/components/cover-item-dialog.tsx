@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { HandCoins } from "lucide-react";
+import { HandCoins, Check } from "lucide-react";
 import { Mail01 } from "@untitledui/icons";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/base/input/input";
@@ -30,13 +30,15 @@ interface CoverItemDialogProps {
   paymentMethods?: PaymentMethods;
   parentName?: string;
   action?: DialogAction;
+  alreadyPurchased?: boolean;
+  shippingAddress?: string;
 }
 
-export function CoverItemDialog({ item, paymentMethods, parentName = "The parents", action }: CoverItemDialogProps) {
+export function CoverItemDialog({ item, paymentMethods, parentName = "The parents", action, alreadyPurchased, shippingAddress }: CoverItemDialogProps) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState(false);
+  const [success, setSuccess] = useState(alreadyPurchased ?? false);
   const [showCelebration, setShowCelebration] = useState(false);
 
   const handleSubmit = async (formData: FormData) => {
@@ -57,15 +59,25 @@ export function CoverItemDialog({ item, paymentMethods, parentName = "The parent
   if (success) {
     return (
       <>
-        <Button disabled variant="secondary">
-          <span className="inline-flex items-center gap-1.5"><HandCoins className="h-4 w-4 shrink-0" />Covered</span>
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button disabled variant="secondary">
+            <span className="inline-flex items-center gap-1.5"><Check className="h-4 w-4 shrink-0" />Covered</span>
+          </Button>
+          <button
+            type="button"
+            onClick={() => setShowCelebration(true)}
+            className="text-xs font-medium text-[#004659] hover:underline"
+          >
+            View details
+          </button>
+        </div>
         <CelebrationDialog
           open={showCelebration}
           onClose={() => setShowCelebration(false)}
           itemTitle={item.title}
           parentName={parentName}
           variant="cover"
+          shippingAddress={shippingAddress}
         />
       </>
     );

@@ -12,6 +12,7 @@ export const DEMO_REGISTRY = {
       paypal: "sarahmike@email.com",
       zelle: "sarahmike@email.com",
     },
+    shipping_address: "Sarah & Mike Johnson\n123 Oak Street, Apt 4B\nSan Francisco, CA 94102",
   },
 };
 

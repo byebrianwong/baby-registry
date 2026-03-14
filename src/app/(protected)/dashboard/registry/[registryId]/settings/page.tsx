@@ -16,6 +16,7 @@ import {
   updateRegistry,
   deleteRegistry,
   updatePaymentMethods,
+  updateShippingAddress,
   updateZipCode,
   inviteManagerByEmail,
   generateInviteLink,
@@ -57,7 +58,7 @@ export default function RegistrySettingsPage() {
     is_public: boolean;
     slug: string;
     owner_id: string;
-    settings: { payment_methods?: PaymentMethods; zip_code?: string; tax_enabled?: boolean };
+    settings: { payment_methods?: PaymentMethods; shipping_address?: string; zip_code?: string; tax_enabled?: boolean };
   } | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -67,8 +68,11 @@ export default function RegistrySettingsPage() {
   const [success, setSuccess] = useState(false);
   const [paymentError, setPaymentError] = useState("");
   const [paymentSuccess, setPaymentSuccess] = useState(false);
+  const [savingAddress, setSavingAddress] = useState(false);
   const [zipError, setZipError] = useState("");
   const [zipSuccess, setZipSuccess] = useState(false);
+  const [addressError, setAddressError] = useState("");
+  const [addressSuccess, setAddressSuccess] = useState(false);
   const [categories, setCategories] = useState<{ id: string; name: string; sort_order: number }[]>([]);
   const [slugCopied, setSlugCopied] = useState(false);
 
@@ -168,6 +172,21 @@ export default function RegistrySettingsPage() {
       setTimeout(() => setZipSuccess(false), 2000);
     }
     setSavingZip(false);
+  };
+
+  const handleSaveAddress = async (formData: FormData) => {
+    setSavingAddress(true);
+    setAddressError("");
+    setAddressSuccess(false);
+    const address = formData.get("shippingAddress") as string;
+    const result = await updateShippingAddress(registryId, address);
+    if (result?.error) {
+      setAddressError(result.error);
+    } else {
+      setAddressSuccess(true);
+      setTimeout(() => setAddressSuccess(false), 2000);
+    }
+    setSavingAddress(false);
   };
 
   const handleDelete = async () => {
@@ -438,6 +457,40 @@ export default function RegistrySettingsPage() {
                 : paymentSuccess
                   ? "Saved!"
                   : "Save payment methods"}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+
+      <Separator className="my-8" />
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Shipping Address</CardTitle>
+          <CardDescription>
+            Share your shipping address with gift givers so they know where to send gifts.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form action={handleSaveAddress} className="space-y-4">
+            <TextArea
+              label="Address"
+              name="shippingAddress"
+              placeholder={"Jane & John Doe\n123 Main Street, Apt 4B\nNew York, NY 10001"}
+              defaultValue={registry.settings?.shipping_address || ""}
+              rows={3}
+            />
+
+            {addressError && (
+              <p className="text-sm text-error-primary">{addressError}</p>
+            )}
+
+            <Button type="submit" disabled={savingAddress} className="!bg-[#004659] hover:!bg-[#003847] !ring-[#004659] !text-white">
+              {savingAddress
+                ? "Saving..."
+                : addressSuccess
+                  ? "Saved!"
+                  : "Save address"}
             </Button>
           </form>
         </CardContent>

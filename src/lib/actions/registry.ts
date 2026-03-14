@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/utils/supabase/server";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import {
@@ -12,6 +13,30 @@ import {
 } from "@/lib/email";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import crypto from "crypto";
+
+const COOKIE_NAME = "regibee_my_gifts";
+const COOKIE_MAX_AGE = 60 * 60 * 24 * 365; // 1 year
+
+async function addToMyGiftsCookie(
+  key: "items" | "funds",
+  id: string,
+  value: string | number
+) {
+  const cookieStore = await cookies();
+  const raw = cookieStore.get(COOKIE_NAME)?.value;
+  let data: { items?: Record<string, string>; funds?: Record<string, number> } = {};
+  try {
+    if (raw) data = JSON.parse(raw);
+  } catch {}
+  if (!data[key]) data[key] = {} as any;
+  (data[key] as any)[id] = value;
+  cookieStore.set(COOKIE_NAME, JSON.stringify(data), {
+    path: "/",
+    maxAge: COOKIE_MAX_AGE,
+    sameSite: "lax",
+    httpOnly: false,
+  });
+}
 
 function generateSlug(title: string): string {
   return (
@@ -420,6 +445,8 @@ export async function reserveItem(formData: FormData) {
     return { error: error.message };
   }
 
+  await addToMyGiftsCookie("items", itemId, "reserve");
+
   // Fire-and-forget email notification
   supabaseAdmin
     .from("registry_items")
@@ -564,6 +591,41 @@ export async function updatePaymentMethods(
   }
 
   revalidatePath(`/dashboard/registry/${registryId}`);
+  return { success: true };
+}
+
+export async function updateShippingAddress(
+  registryId: string,
+  address: string
+) {
+  const { user, error: authError } = await requireManager(registryId);
+  if (authError || !user) return { error: authError || "Not authenticated" };
+
+  const supabase = await createClient();
+  const { data: registry } = await supabase
+    .from("registries")
+    .select("settings")
+    .eq("id", registryId)
+    .single();
+
+  if (!registry) {
+    return { error: "Registry not found" };
+  }
+
+  const settings = (registry.settings as Record<string, unknown>) || {};
+  settings.shipping_address = address.trim() || null;
+
+  const { error } = await supabase
+    .from("registries")
+    .update({ settings })
+    .eq("id", registryId);
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidatePath(`/dashboard/registry/${registryId}`);
+  revalidatePath(`/dashboard/registry/${registryId}/settings`);
   return { success: true };
 }
 
@@ -746,6 +808,8 @@ export async function contributeToCashFund(formData: FormData) {
     return { error: error.message };
   }
 
+  await addToMyGiftsCookie("funds", fundId, amount);
+
   // Fire-and-forget email notification
   supabaseAdmin
     .from("cash_funds")
@@ -840,6 +904,8 @@ export async function coverParentPurchasedItem(formData: FormData) {
   if (error) {
     return { error: error.message };
   }
+
+  await addToMyGiftsCookie("items", itemId, "cover");
 
   // Fire-and-forget email notification
   supabaseAdmin

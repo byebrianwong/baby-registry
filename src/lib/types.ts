@@ -6,6 +6,7 @@ export interface PaymentMethods {
 
 export interface RegistrySettings {
   payment_methods?: PaymentMethods;
+  shipping_address?: string;
   [key: string]: unknown;
 }
 

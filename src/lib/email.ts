@@ -9,7 +9,7 @@ function getResend() {
   return _resend;
 }
 
-const FROM = "Baby Registry <onboarding@resend.dev>";
+const FROM = "Regibee <notifications@regibee.com>";
 
 // Resend's free testing sender can only deliver to the account email.
 // Set this env var to override the recipient for testing.

@@ -246,6 +246,7 @@ function DemoSuggestItemDialog() {
 }
 
 const DEMO_PARENT_NAME = "Sarah & Mike";
+const DEMO_SHIPPING_ADDRESS = DEMO_REGISTRY.settings.shipping_address;
 
 export default function DemoPage() {
   const [items, setItems] = useState(DEMO_ITEMS);
@@ -417,6 +418,7 @@ export default function DemoPage() {
                           paymentMethods={DEMO_REGISTRY.settings.payment_methods}
                           parentName={DEMO_PARENT_NAME}
                           action={demoContributeAction(fund.id)}
+                          shippingAddress={DEMO_SHIPPING_ADDRESS}
                         />
                       </div>
                     </CardContent>
@@ -515,6 +517,7 @@ export default function DemoPage() {
                                   paymentMethods={DEMO_REGISTRY.settings.payment_methods}
                                   parentName={DEMO_PARENT_NAME}
                                   action={demoCoverAction}
+                                  shippingAddress={DEMO_SHIPPING_ADDRESS}
                                 />
                               ) : (
                                 <>
@@ -522,6 +525,7 @@ export default function DemoPage() {
                                     item={item}
                                     parentName={DEMO_PARENT_NAME}
                                     action={demoReserveAction(item.id)}
+                                    shippingAddress={DEMO_SHIPPING_ADDRESS}
                                   />
                                   {item.external_url && (
                                     <Button

@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import confetti from "canvas-confetti";
+import { Check, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -15,6 +16,7 @@ interface CelebrationDialogProps {
   parentName: string;
   variant: "reserve" | "cover" | "contribute";
   amount?: number;
+  shippingAddress?: string;
 }
 
 function getMessage(
@@ -40,7 +42,10 @@ export function CelebrationDialog({
   parentName,
   variant,
   amount,
+  shippingAddress,
 }: CelebrationDialogProps) {
+  const [copied, setCopied] = useState(false);
+
   useEffect(() => {
     if (!open) return;
 
@@ -58,6 +63,13 @@ export function CelebrationDialog({
     // Fire from right
     confetti({ ...defaults, particleCount: 40, origin: { x: 0.8, y: 0.6 }, angle: 120 });
   }, [open]);
+
+  const handleCopy = () => {
+    if (!shippingAddress) return;
+    navigator.clipboard.writeText(shippingAddress);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => { if (!isOpen) onClose(); }}>
@@ -81,6 +93,34 @@ export function CelebrationDialog({
           >
             {getMessage(variant, itemTitle, parentName, amount)}
           </p>
+
+          {shippingAddress && (
+            <div
+              className="w-full rounded-lg border border-[#d5d7da] bg-[#f9fafb] p-4 text-left"
+              style={{ animation: "celebration-fade-in 0.5s ease-out 0.5s both" }}
+            >
+              <p className="text-xs font-medium text-[#535862] mb-1">Ship to:</p>
+              <p className="text-sm text-[#181d27] whitespace-pre-line">{shippingAddress}</p>
+              <button
+                type="button"
+                onClick={handleCopy}
+                className="mt-2 inline-flex items-center gap-1.5 text-xs font-medium text-[#004659] hover:text-[#003847] transition-colors"
+              >
+                {copied ? (
+                  <>
+                    <Check className="h-3.5 w-3.5" />
+                    Copied!
+                  </>
+                ) : (
+                  <>
+                    <Copy className="h-3.5 w-3.5" />
+                    Copy address
+                  </>
+                )}
+              </button>
+            </div>
+          )}
+
           <Button
             onClick={onClose}
             className="!bg-[#004659] hover:!bg-[#003847] !ring-[#004659] !text-white mt-2"
