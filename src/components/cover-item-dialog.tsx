@@ -16,7 +16,10 @@ import {
 } from "@/components/ui/dialog";
 import { PaymentMethodsDisplay } from "@/components/payment-methods-display";
 import { coverParentPurchasedItem } from "@/lib/actions/registry";
+import { CelebrationDialog } from "@/components/celebration-dialog";
 import type { PaymentMethods } from "@/lib/types";
+
+type DialogAction = (formData: FormData) => Promise<{ error: string } | undefined>;
 
 interface CoverItemDialogProps {
   item: {
@@ -25,33 +28,46 @@ interface CoverItemDialogProps {
     price: number | null;
   };
   paymentMethods?: PaymentMethods;
+  parentName?: string;
+  action?: DialogAction;
 }
 
-export function CoverItemDialog({ item, paymentMethods }: CoverItemDialogProps) {
+export function CoverItemDialog({ item, paymentMethods, parentName = "The parents", action }: CoverItemDialogProps) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+  const [showCelebration, setShowCelebration] = useState(false);
 
   const handleSubmit = async (formData: FormData) => {
     setLoading(true);
     setError("");
     formData.set("itemId", item.id);
 
-    const result = await coverParentPurchasedItem(formData);
+    const result = await (action ?? coverParentPurchasedItem)(formData);
     if (result?.error) {
       setError(result.error);
     } else {
       setSuccess(true);
+      setShowCelebration(true);
     }
     setLoading(false);
   };
 
   if (success) {
     return (
-      <Button disabled variant="secondary">
-        <span className="inline-flex items-center gap-1.5"><HandCoins className="h-4 w-4 shrink-0" />Covered</span>
-      </Button>
+      <>
+        <Button disabled variant="secondary">
+          <span className="inline-flex items-center gap-1.5"><HandCoins className="h-4 w-4 shrink-0" />Covered</span>
+        </Button>
+        <CelebrationDialog
+          open={showCelebration}
+          onClose={() => setShowCelebration(false)}
+          itemTitle={item.title}
+          parentName={parentName}
+          variant="cover"
+        />
+      </>
     );
   }
 

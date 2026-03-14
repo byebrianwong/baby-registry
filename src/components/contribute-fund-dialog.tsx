@@ -18,7 +18,10 @@ import {
 } from "@/components/ui/dialog";
 import { PaymentMethodsDisplay } from "@/components/payment-methods-display";
 import { contributeToCashFund } from "@/lib/actions/registry";
+import { CelebrationDialog } from "@/components/celebration-dialog";
 import type { PaymentMethods } from "@/lib/types";
+
+type DialogAction = (formData: FormData) => Promise<{ error: string } | undefined>;
 
 interface ContributeFundDialogProps {
   fund: {
@@ -29,6 +32,8 @@ interface ContributeFundDialogProps {
     current_amount: number;
   };
   paymentMethods?: PaymentMethods;
+  parentName?: string;
+  action?: DialogAction;
 }
 
 const currencySymbols: Record<string, string> = {
@@ -43,11 +48,15 @@ const currencySymbols: Record<string, string> = {
 export function ContributeFundDialog({
   fund,
   paymentMethods,
+  parentName = "The parents",
+  action,
 }: ContributeFundDialogProps) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+  const [showCelebration, setShowCelebration] = useState(false);
+  const [contributedAmount, setContributedAmount] = useState<number>(0);
   const [currency, setCurrency] = useState("USD");
 
   const remaining =
@@ -65,20 +74,32 @@ export function ContributeFundDialog({
     setError("");
     formData.set("fundId", fund.id);
 
-    const result = await contributeToCashFund(formData);
+    const result = await (action ?? contributeToCashFund)(formData);
     if (result?.error) {
       setError(result.error);
     } else {
+      setContributedAmount(Number(formData.get("amount")) || 0);
       setSuccess(true);
+      setShowCelebration(true);
     }
     setLoading(false);
   };
 
   if (success) {
     return (
-      <Button disabled variant="secondary">
-        <span className="inline-flex items-center gap-1.5"><DollarSign className="h-4 w-4 shrink-0" />Contributed</span>
-      </Button>
+      <>
+        <Button disabled variant="secondary">
+          <span className="inline-flex items-center gap-1.5"><DollarSign className="h-4 w-4 shrink-0" />Contributed</span>
+        </Button>
+        <CelebrationDialog
+          open={showCelebration}
+          onClose={() => setShowCelebration(false)}
+          itemTitle={fund.title}
+          parentName={parentName}
+          variant="contribute"
+          amount={contributedAmount}
+        />
+      </>
     );
   }
 
