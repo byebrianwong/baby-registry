@@ -14,6 +14,7 @@ import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { createClient } from "@/utils/supabase/server";
+import { supabaseAdmin } from "@/lib/supabase-admin";
 import { AddItemDialog } from "@/components/add-item-dialog";
 import { ItemCard } from "@/components/item-card";
 import { CopyLinkButton } from "@/components/copy-link-button";
@@ -66,15 +67,34 @@ export default async function RegistryManagePage({
     redirect("/login");
   }
 
+  // Check if user is a manager of this registry (falls back to owner_id if migration not run)
+  let isOwner = false;
+  const { data: managerRecord, error: managerError } = await supabaseAdmin
+    .from("registry_managers")
+    .select("role")
+    .eq("registry_id", registryId)
+    .eq("user_id", user.id)
+    .single();
+
   const { data: registry } = await supabase
     .from("registries")
     .select("*")
     .eq("id", registryId)
-    .eq("owner_id", user.id)
     .single();
 
   if (!registry) {
     notFound();
+  }
+
+  // Determine access: use registry_managers if available, fall back to owner_id
+  if (managerRecord) {
+    isOwner = managerRecord.role === "owner";
+  } else if (managerError || !managerRecord) {
+    // Table may not exist yet (migration not run) — fall back to owner_id
+    if (registry.owner_id !== user.id) {
+      notFound();
+    }
+    isOwner = true;
   }
 
   const [{ data: categories }, { data: items }, { data: purchases }, { data: suggestions }, { data: cashFunds }] =

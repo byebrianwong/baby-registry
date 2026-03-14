@@ -1,7 +1,13 @@
 import { Resend } from "resend";
 import { supabaseAdmin } from "./supabase-admin";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+let _resend: Resend | null = null;
+function getResend() {
+  if (!_resend) {
+    _resend = new Resend(process.env.RESEND_API_KEY);
+  }
+  return _resend;
+}
 
 const FROM = "Baby Registry <onboarding@resend.dev>";
 
@@ -74,7 +80,7 @@ export async function notifyItemReserved(opts: {
 
     const qtyText = opts.quantity > 1 ? ` (×${opts.quantity})` : "";
 
-    await resend.emails.send({
+    await getResend().emails.send({
       from: FROM,
       to: TEST_RECIPIENT_OVERRIDE || owner.email,
       subject: `🎁 ${opts.buyerName} reserved "${opts.itemTitle}"`,
@@ -106,7 +112,7 @@ export async function notifyCashFundContribution(opts: {
       currency: "USD",
     }).format(opts.amount);
 
-    await resend.emails.send({
+    await getResend().emails.send({
       from: FROM,
       to: TEST_RECIPIENT_OVERRIDE || owner.email,
       subject: `💵 ${opts.buyerName} contributed ${formatted} to "${opts.fundTitle}"`,
@@ -132,7 +138,7 @@ export async function notifyItemCovered(opts: {
     const owner = await getRegistryOwnerEmail({ itemId: opts.itemId });
     if (!owner) return;
 
-    await resend.emails.send({
+    await getResend().emails.send({
       from: FROM,
       to: TEST_RECIPIENT_OVERRIDE || owner.email,
       subject: `🎉 ${opts.buyerName} is covering "${opts.itemTitle}"`,
@@ -145,6 +151,38 @@ export async function notifyItemCovered(opts: {
     });
   } catch (err) {
     console.error("[email] Failed to send item covered notification:", err);
+  }
+}
+
+export async function sendManagerInvite(opts: {
+  toEmail: string;
+  inviterName: string;
+  registryTitle: string;
+  token: string;
+}) {
+  try {
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+    const inviteUrl = `${siteUrl}/invite/${opts.token}`;
+
+    await getResend().emails.send({
+      from: FROM,
+      to: TEST_RECIPIENT_OVERRIDE || opts.toEmail,
+      subject: `${opts.inviterName} invited you to manage "${opts.registryTitle}"`,
+      html: `
+        <p>Hi there,</p>
+        <p><strong>${opts.inviterName}</strong> has invited you to help manage the baby registry <strong>${opts.registryTitle}</strong>.</p>
+        <p>As a manager, you'll be able to add and edit items, view gift activity, and help organize the registry.</p>
+        <p style="margin: 24px 0;">
+          <a href="${inviteUrl}" style="background-color: #004659; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
+            Accept Invitation
+          </a>
+        </p>
+        <p style="color:#888;font-size:13px;">Or copy this link: ${inviteUrl}</p>
+        <p style="color:#888;font-size:13px;">This invite expires in 7 days.</p>
+      `,
+    });
+  } catch (err) {
+    console.error("[email] Failed to send manager invite:", err);
   }
 }
 
@@ -163,7 +201,7 @@ export async function notifyNewSuggestion(opts: {
       ? ` (${new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(opts.price)})`
       : "";
 
-    await resend.emails.send({
+    await getResend().emails.send({
       from: FROM,
       to: TEST_RECIPIENT_OVERRIDE || owner.email,
       subject: `💡 ${opts.suggestedByName} suggested "${opts.title}"`,
