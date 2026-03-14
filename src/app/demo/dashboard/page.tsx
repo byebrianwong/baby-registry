@@ -48,7 +48,7 @@ export default function DemoDashboardPage() {
             className="flex items-center gap-2 font-semibold"
           >
             <Baby className="h-5 w-5 text-brand-600" />
-            <span>Baby Akachan</span>
+            <span>Regibee</span>
           </Link>
           <nav className="ml-6 hidden items-center gap-4 md:flex">
             <Link

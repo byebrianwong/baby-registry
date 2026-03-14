@@ -70,7 +70,7 @@ function SignupForm() {
           <CardHeader className="text-center">
             <Link href="/" className="mx-auto flex items-center gap-2 font-semibold mb-4">
               <Baby className="h-6 w-6 text-brand-600" />
-              <span className="text-xl">Baby Akachan</span>
+              <span className="text-xl">Regibee</span>
             </Link>
             <CardTitle className="text-2xl">Check your email</CardTitle>
           </CardHeader>
@@ -93,7 +93,7 @@ function SignupForm() {
         <CardHeader className="text-center">
           <Link href="/" className="mx-auto flex items-center gap-2 font-semibold mb-4">
             <Baby className="h-6 w-6 text-brand-600" />
-            <span className="text-xl">Baby Akachan</span>
+            <span className="text-xl">Regibee</span>
           </Link>
           <CardTitle className="text-2xl">Create your account</CardTitle>
           <CardDescription>Start building your baby registry today</CardDescription>

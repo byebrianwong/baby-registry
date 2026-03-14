@@ -34,7 +34,7 @@ export function Nav() {
       <div className="container mx-auto flex h-14 items-center px-4">
         <Link href={user ? "/dashboard" : "/"} className="flex items-center gap-2 font-semibold">
           <Baby className="h-5 w-5 text-brand-600" />
-          <span>Baby Akachan</span>
+          <span>Regibee</span>
         </Link>
 
         {!isPublicRegistry && (

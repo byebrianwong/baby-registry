@@ -129,7 +129,7 @@ export default function DemoChecklistPage() {
             className="flex items-center gap-2 font-semibold"
           >
             <Baby className="h-5 w-5 text-brand-600" />
-            <span>Baby Akachan</span>
+            <span>Regibee</span>
           </Link>
           <span className="ml-auto text-sm text-tertiary hidden md:inline">
             demo@example.com

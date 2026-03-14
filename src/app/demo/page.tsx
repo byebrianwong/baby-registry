@@ -652,7 +652,7 @@ export default function DemoPage() {
             className="flex items-center gap-2 font-semibold"
           >
             <Baby className="h-5 w-5 text-brand-600" />
-            <span>Baby Akachan</span>
+            <span>Regibee</span>
           </Link>
           <Button variant="outline" size="sm" asChild>
             <Link href="/">
@@ -866,7 +866,7 @@ export default function DemoPage() {
             href="/"
             className="font-medium text-brand-600 hover:underline"
           >
-            Baby Akachan
+            Regibee
           </Link>
         </div>
       </footer>

@@ -125,7 +125,7 @@ export default async function HomePage() {
               Ready to Build Your Registry?
             </h2>
             <p className="mt-4 text-tertiary">
-              Join thousands of parents who trust Baby Akachan for their registry.
+              Join thousands of parents who trust Regibee for their registry.
             </p>
             <Button size="lg" className="mt-8" asChild>
               <Link href={ctaHref}>Get Started Free</Link>
@@ -136,7 +136,7 @@ export default async function HomePage() {
 
       <footer className="border-t py-8">
         <div className="container mx-auto px-4 text-center text-sm text-tertiary">
-          &copy; {new Date().getFullYear()} Baby Akachan. All rights reserved.
+          &copy; {new Date().getFullYear()} Regibee. All rights reserved.
         </div>
       </footer>
     </div>

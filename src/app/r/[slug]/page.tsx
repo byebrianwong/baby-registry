@@ -64,7 +64,7 @@ export async function generateMetadata({
   if (!registry) return { title: "Registry Not Found" };
 
   return {
-    title: `${registry.title} | Baby Akachan`,
+    title: `${registry.title} | Regibee`,
     description: registry.description || `View and shop ${registry.title}`,
     ...(!registry.is_public && { robots: { index: false, follow: false } }),
   };
@@ -165,7 +165,7 @@ export default async function PublicRegistryPage({
         <div className="container mx-auto px-4 py-3">
           <a href="/" className="flex items-center gap-2 font-semibold">
             <Baby className="h-5 w-5 text-brand-600" />
-            <span>Baby Akachan</span>
+            <span>Regibee</span>
           </a>
         </div>
       </header>
@@ -479,7 +479,7 @@ export default async function PublicRegistryPage({
         <div className="container mx-auto px-4 text-center text-sm text-tertiary">
           Powered by{" "}
           <a href="/" className="font-medium text-brand-600 hover:underline">
-            Baby Akachan
+            Regibee
           </a>
         </div>
       </footer>
