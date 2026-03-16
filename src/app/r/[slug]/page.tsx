@@ -189,7 +189,7 @@ export default async function PublicRegistryPage({
       </header>
 
       {/* Hero Banner */}
-      <section className="relative flex h-[400px] items-center justify-center overflow-hidden bg-white">
+      <section className="relative flex min-h-[400px] items-center justify-center bg-white py-12">
         {/* Decorative illustrations — hidden on small screens, pinned to a 1440px canvas */}
         <div className="pointer-events-none absolute inset-0 mx-auto hidden max-w-[1440px] lg:block" aria-hidden="true">
           {/* Left side */}
