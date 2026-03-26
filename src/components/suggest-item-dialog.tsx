@@ -20,9 +20,12 @@ import {
 } from "@/components/ui/dialog";
 import { suggestItem } from "@/lib/actions/registry";
 
+type DialogAction = (formData: FormData) => Promise<{ error: string } | undefined>;
+
 interface SuggestItemDialogProps {
   registryId: string;
   categories?: { id: string; name: string }[];
+  action?: DialogAction;
 }
 
 const currencySymbols: Record<string, string> = {
@@ -34,7 +37,7 @@ const currencySymbols: Record<string, string> = {
   AUD: "A$",
 };
 
-export function SuggestItemDialog({ registryId, categories = [] }: SuggestItemDialogProps) {
+export function SuggestItemDialog({ registryId, categories = [], action }: SuggestItemDialogProps) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -51,7 +54,7 @@ export function SuggestItemDialog({ registryId, categories = [] }: SuggestItemDi
       formData.set("externalUrl", `http://${externalUrl}`);
     }
 
-    const result = await suggestItem(formData);
+    const result = await (action ?? suggestItem)(formData);
     if (result?.error) {
       setError(result.error);
     } else {
