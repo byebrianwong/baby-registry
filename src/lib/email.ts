@@ -1,5 +1,15 @@
 import { Resend } from "resend";
 import { supabaseAdmin } from "./supabase-admin";
+import {
+  itemReservedBuyerHtml,
+  itemCoveredBuyerHtml,
+  cashFundContributionBuyerHtml,
+  itemReservedOwnerHtml,
+  itemCoveredOwnerHtml,
+  cashFundContributionOwnerHtml,
+  newSuggestionOwnerHtml,
+  managerInviteHtml,
+} from "./email-templates";
 
 let _resend: Resend | null = null;
 function getResend() {
@@ -129,27 +139,11 @@ export async function confirmItemReserved(opts: {
   shopUrl?: string;
 }) {
   try {
-    const qtyText = opts.quantity > 1 ? ` (×${opts.quantity})` : "";
-    const addressBlock = opts.shippingAddress
-      ? `<p><strong>Shipping address:</strong><br/>${opts.shippingAddress.replace(/\n/g, "<br/>")}</p>`
-      : "";
-    const linksBlock = [
-      opts.registryUrl ? `<a href="${opts.registryUrl}" style="color:#004659;">View Registry</a>` : "",
-      opts.shopUrl ? `<a href="${opts.shopUrl}" style="color:#004659;">Shop This Item</a>` : "",
-    ].filter(Boolean).join(" &nbsp;|&nbsp; ");
-
     await getResend().emails.send({
       from: FROM,
       to: TEST_RECIPIENT_OVERRIDE || opts.buyerEmail,
       subject: `Your gift is confirmed — "${opts.itemTitle}"`,
-      html: `
-        <p>Hi ${opts.buyerName},</p>
-        <p>Thanks for reserving <strong>${opts.itemTitle}</strong>${qtyText} on <em>${opts.registryTitle}</em>!</p>
-        <p>${opts.parentName} will really appreciate it.</p>
-        ${addressBlock}
-        ${linksBlock ? `<p style="margin: 16px 0;">${linksBlock}</p>` : ""}
-        <p style="color:#888;font-size:13px;">You're receiving this because you reserved a gift on a Regibee registry.</p>
-      `,
+      html: itemReservedBuyerHtml(opts),
     });
   } catch (err) {
     console.error("[email] Failed to send buyer item reserved confirmation:", err);
@@ -167,26 +161,11 @@ export async function confirmItemCovered(opts: {
   shopUrl?: string;
 }) {
   try {
-    const addressBlock = opts.shippingAddress
-      ? `<p><strong>Shipping address:</strong><br/>${opts.shippingAddress.replace(/\n/g, "<br/>")}</p>`
-      : "";
-    const linksBlock = [
-      opts.registryUrl ? `<a href="${opts.registryUrl}" style="color:#004659;">View Registry</a>` : "",
-      opts.shopUrl ? `<a href="${opts.shopUrl}" style="color:#004659;">Shop This Item</a>` : "",
-    ].filter(Boolean).join(" &nbsp;|&nbsp; ");
-
     await getResend().emails.send({
       from: FROM,
       to: TEST_RECIPIENT_OVERRIDE || opts.buyerEmail,
       subject: `Your gift is confirmed — "${opts.itemTitle}"`,
-      html: `
-        <p>Hi ${opts.buyerName},</p>
-        <p>Thanks for covering <strong>${opts.itemTitle}</strong> on <em>${opts.registryTitle}</em>!</p>
-        <p>${opts.parentName} will really appreciate it.</p>
-        ${addressBlock}
-        ${linksBlock ? `<p style="margin: 16px 0;">${linksBlock}</p>` : ""}
-        <p style="color:#888;font-size:13px;">You're receiving this because you covered a gift on a Regibee registry.</p>
-      `,
+      html: itemCoveredBuyerHtml(opts),
     });
   } catch (err) {
     console.error("[email] Failed to send buyer item covered confirmation:", err);
@@ -204,30 +183,11 @@ export async function confirmCashFundContribution(opts: {
   registryUrl?: string;
 }) {
   try {
-    const formatted = new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-    }).format(opts.amount);
-
-    const addressBlock = opts.shippingAddress
-      ? `<p><strong>Shipping address:</strong><br/>${opts.shippingAddress.replace(/\n/g, "<br/>")}</p>`
-      : "";
-    const linkBlock = opts.registryUrl
-      ? `<p style="margin: 16px 0;"><a href="${opts.registryUrl}" style="color:#004659;">View Registry</a></p>`
-      : "";
-
     await getResend().emails.send({
       from: FROM,
       to: TEST_RECIPIENT_OVERRIDE || opts.buyerEmail,
       subject: `Your contribution is confirmed — "${opts.fundTitle}"`,
-      html: `
-        <p>Hi ${opts.buyerName},</p>
-        <p>Thanks for contributing <strong>${formatted}</strong> to <strong>${opts.fundTitle}</strong> on <em>${opts.registryTitle}</em>!</p>
-        <p>${opts.parentName} will really appreciate it.</p>
-        ${addressBlock}
-        ${linkBlock}
-        <p style="color:#888;font-size:13px;">You're receiving this because you contributed to a cash fund on a Regibee registry.</p>
-      `,
+      html: cashFundContributionBuyerHtml(opts),
     });
   } catch (err) {
     console.error("[email] Failed to send buyer cash fund confirmation:", err);
@@ -249,19 +209,20 @@ export async function notifyItemReserved(opts: {
 
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
     const dashboardLink = `${siteUrl}/dashboard/registry/${owner.registryId}?highlight=${opts.itemId}`;
-    const qtyText = opts.quantity > 1 ? ` (×${opts.quantity})` : "";
 
     await getResend().emails.send({
       from: FROM,
       to: TEST_RECIPIENT_OVERRIDE || owner.email,
       subject: `🎁 ${opts.buyerName} reserved "${opts.itemTitle}"`,
-      html: `
-        <p>Hi ${owner.name},</p>
-        <p><strong>${opts.buyerName}</strong> just reserved <strong>${opts.itemTitle}</strong>${qtyText} on your registry <em>${owner.registryTitle}</em>.</p>
-        ${opts.message ? `<p>Their message: "${opts.message}"</p>` : ""}
-        <p style="margin: 16px 0;"><a href="${dashboardLink}" style="color:#004659;">View on Dashboard</a></p>
-        <p style="color:#888;font-size:13px;">You're receiving this because someone interacted with your baby registry.</p>
-      `,
+      html: itemReservedOwnerHtml({
+        ownerName: owner.name,
+        registryTitle: owner.registryTitle,
+        buyerName: opts.buyerName,
+        itemTitle: opts.itemTitle,
+        quantity: opts.quantity,
+        message: opts.message,
+        dashboardLink,
+      }),
     });
   } catch (err) {
     console.error("[email] Failed to send item reserved notification:", err);
@@ -290,13 +251,15 @@ export async function notifyCashFundContribution(opts: {
       from: FROM,
       to: TEST_RECIPIENT_OVERRIDE || owner.email,
       subject: `💵 ${opts.buyerName} contributed ${formatted} to "${opts.fundTitle}"`,
-      html: `
-        <p>Hi ${owner.name},</p>
-        <p><strong>${opts.buyerName}</strong> contributed <strong>${formatted}</strong> to your cash fund <strong>${opts.fundTitle}</strong> on <em>${owner.registryTitle}</em>.</p>
-        ${opts.message ? `<p>Their message: "${opts.message}"</p>` : ""}
-        <p style="margin: 16px 0;"><a href="${dashboardLink}" style="color:#004659;">View on Dashboard</a></p>
-        <p style="color:#888;font-size:13px;">You're receiving this because someone interacted with your baby registry.</p>
-      `,
+      html: cashFundContributionOwnerHtml({
+        ownerName: owner.name,
+        registryTitle: owner.registryTitle,
+        buyerName: opts.buyerName,
+        fundTitle: opts.fundTitle,
+        amount: opts.amount,
+        message: opts.message,
+        dashboardLink,
+      }),
     });
   } catch (err) {
     console.error("[email] Failed to send cash fund notification:", err);
@@ -320,13 +283,14 @@ export async function notifyItemCovered(opts: {
       from: FROM,
       to: TEST_RECIPIENT_OVERRIDE || owner.email,
       subject: `🎉 ${opts.buyerName} is covering "${opts.itemTitle}"`,
-      html: `
-        <p>Hi ${owner.name},</p>
-        <p><strong>${opts.buyerName}</strong> offered to cover the cost of <strong>${opts.itemTitle}</strong> on your registry <em>${owner.registryTitle}</em>.</p>
-        ${opts.message ? `<p>Their message: "${opts.message}"</p>` : ""}
-        <p style="margin: 16px 0;"><a href="${dashboardLink}" style="color:#004659;">View on Dashboard</a></p>
-        <p style="color:#888;font-size:13px;">You're receiving this because someone interacted with your baby registry.</p>
-      `,
+      html: itemCoveredOwnerHtml({
+        ownerName: owner.name,
+        registryTitle: owner.registryTitle,
+        buyerName: opts.buyerName,
+        itemTitle: opts.itemTitle,
+        message: opts.message,
+        dashboardLink,
+      }),
     });
   } catch (err) {
     console.error("[email] Failed to send item covered notification:", err);
@@ -347,18 +311,11 @@ export async function sendManagerInvite(opts: {
       from: FROM,
       to: TEST_RECIPIENT_OVERRIDE || opts.toEmail,
       subject: `${opts.inviterName} invited you to manage "${opts.registryTitle}"`,
-      html: `
-        <p>Hi there,</p>
-        <p><strong>${opts.inviterName}</strong> has invited you to help manage the baby registry <strong>${opts.registryTitle}</strong>.</p>
-        <p>As a manager, you'll be able to add and edit items, view gift activity, and help organize the registry.</p>
-        <p style="margin: 24px 0;">
-          <a href="${inviteUrl}" style="background-color: #004659; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
-            Accept Invitation
-          </a>
-        </p>
-        <p style="color:#888;font-size:13px;">Or copy this link: ${inviteUrl}</p>
-        <p style="color:#888;font-size:13px;">This invite expires in 7 days.</p>
-      `,
+      html: managerInviteHtml({
+        inviterName: opts.inviterName,
+        registryTitle: opts.registryTitle,
+        inviteUrl,
+      }),
     });
   } catch (err) {
     console.error("[email] Failed to send manager invite:", err);
@@ -376,21 +333,18 @@ export async function notifyNewSuggestion(opts: {
     const owner = await getRegistryOwnerEmail({ registryId: opts.registryId });
     if (!owner) return;
 
-    const priceText = opts.price
-      ? ` (${new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(opts.price)})`
-      : "";
-
     await getResend().emails.send({
       from: FROM,
       to: TEST_RECIPIENT_OVERRIDE || owner.email,
       subject: `💡 ${opts.suggestedByName} suggested "${opts.title}"`,
-      html: `
-        <p>Hi ${owner.name},</p>
-        <p><strong>${opts.suggestedByName}</strong> suggested adding <strong>${opts.title}</strong>${priceText} to your registry <em>${owner.registryTitle}</em>.</p>
-        ${opts.notes ? `<p>Their note: "${opts.notes}"</p>` : ""}
-        <p>Head to your dashboard to accept or decline this suggestion.</p>
-        <p style="color:#888;font-size:13px;">You're receiving this because someone interacted with your baby registry.</p>
-      `,
+      html: newSuggestionOwnerHtml({
+        ownerName: owner.name,
+        registryTitle: owner.registryTitle,
+        suggestedByName: opts.suggestedByName,
+        title: opts.title,
+        price: opts.price,
+        notes: opts.notes,
+      }),
     });
   } catch (err) {
     console.error("[email] Failed to send suggestion notification:", err);

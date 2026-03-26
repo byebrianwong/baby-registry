@@ -1,11 +1,18 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { ReserveItemDialog } from "./reserve-item-dialog";
 
+const mockAction = async () => {
+  await new Promise((r) => setTimeout(r, 800));
+  return undefined;
+};
+
 const meta: Meta<typeof ReserveItemDialog> = {
   title: "Components/ReserveItemDialog",
   component: ReserveItemDialog,
-  parameters: {
-    layout: "centered",
+  parameters: { layout: "centered" },
+  args: {
+    action: mockAction,
+    parentName: "Brian & Sarah",
   },
 };
 export default meta;
@@ -44,5 +51,19 @@ export const Expensive: Story = {
       quantity_needed: 1,
       quantity_fulfilled: 0,
     },
+  },
+};
+
+export const SuccessState: Story = {
+  args: {
+    item: {
+      id: "1",
+      title: "Hatch Rest+ Sound Machine",
+      price: 69.99,
+      quantity_needed: 1,
+      quantity_fulfilled: 0,
+    },
+    alreadyPurchased: true,
+    shippingAddress: "123 Main St\nApt 4B\nSan Francisco, CA 94102",
   },
 };

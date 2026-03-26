@@ -36,6 +36,14 @@ yarn-error.log*
 
 # storybook
 /storybook-static
+build-storybook.log
+debug-storybook.log
+
+# supabase
+supabase/.temp/
+
+# lockfiles (project uses npm)
+yarn.lock
 
 # vercel
 .vercel
