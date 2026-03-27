@@ -155,6 +155,42 @@ export const OwnerNewSuggestion: Story = {
   },
 };
 
+// ── Missing Name Fallbacks ───────────────────────────────────
+
+export const BuyerItemReservedNoName: Story = {
+  name: "Buyer: Item Reserved (Owner Has No Name)",
+  args: {
+    subject: 'Your gift is confirmed — "Hatch Rest+ Sound Machine"',
+    html: itemReservedBuyerHtml({
+      buyerName: "Jane",
+      itemTitle: "Hatch Rest+ Sound Machine",
+      quantity: 1,
+      parentName: "the registry owner",
+      registryTitle: "Baby Wong Registry",
+      shippingAddress: sampleAddress,
+      registryUrl: "https://regibee.com/r/baby-wong",
+      shopUrl: "https://amazon.com/dp/B07WFXGNGB",
+    }),
+  },
+};
+
+export const OwnerItemReservedNoName: Story = {
+  name: "Owner: Item Reserved (Owner Has No Name)",
+  args: {
+    subject: 'Jane Doe reserved "Hatch Rest+ Sound Machine"',
+    to: "brian@example.com",
+    html: itemReservedOwnerHtml({
+      ownerName: "there",
+      registryTitle: "Baby Wong Registry",
+      buyerName: "Jane Doe",
+      itemTitle: "Hatch Rest+ Sound Machine",
+      quantity: 1,
+      message: "Can't wait to meet the little one!",
+      dashboardLink: "https://regibee.com/dashboard/registry/abc?highlight=123",
+    }),
+  },
+};
+
 // ── Invitations ──────────────────────────────────────────────
 
 export const ManagerInvite: Story = {
