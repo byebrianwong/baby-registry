@@ -83,19 +83,12 @@ export default async function InvitePage({
   // Get registry info
   const { data: registry } = await supabaseAdmin
     .from("registries")
-    .select("title, owner_id")
+    .select("title, parent_names")
     .eq("id", invite.registry_id)
     .single();
 
-  // Get inviter info
-  const { data: ownerProfile } = await supabaseAdmin
-    .from("profiles")
-    .select("display_name, full_name")
-    .eq("id", registry?.owner_id)
-    .single();
-
   const registryTitle = registry?.title || "a registry";
-  const ownerName = ownerProfile?.display_name || ownerProfile?.full_name || "Someone";
+  const ownerName = registry?.parent_names || "Someone";
 
   // Check if user is logged in
   const {

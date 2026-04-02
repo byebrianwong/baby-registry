@@ -25,11 +25,19 @@ const FROM = "Regibee <notifications@regibee.com>";
 // Set this env var to override the recipient for testing.
 const TEST_RECIPIENT_OVERRIDE = process.env.RESEND_TEST_RECIPIENT;
 
-async function getRegistryOwnerEmail(opts: {
+interface ManagerEmailInfo {
+  email: string;
+  name: string;
+  registryTitle: string;
+  registryId: string;
+  parentNames: string;
+}
+
+async function getRegistryManagerEmails(opts: {
   itemId?: string;
   fundId?: string;
   registryId?: string;
-}): Promise<{ email: string; name: string; registryTitle: string; registryId: string } | null> {
+}): Promise<ManagerEmailInfo[] | null> {
   let registryId = opts.registryId;
 
   if (opts.itemId) {
@@ -52,30 +60,41 @@ async function getRegistryOwnerEmail(opts: {
 
   const { data: registry } = await supabaseAdmin
     .from("registries")
-    .select("owner_id, title")
+    .select("title, parent_names")
     .eq("id", registryId)
     .single();
 
   if (!registry) return null;
 
-  const { data: userData } = await supabaseAdmin.auth.admin.getUserById(
-    registry.owner_id
-  );
+  const parentNames = registry.parent_names || "there";
 
-  if (!userData?.user?.email) return null;
+  // Fetch all managers for this registry
+  const { data: managers } = await supabaseAdmin
+    .from("registry_managers")
+    .select("user_id")
+    .eq("registry_id", registryId);
 
-  const { data: profile } = await supabaseAdmin
-    .from("profiles")
-    .select("display_name")
-    .eq("id", registry.owner_id)
-    .single();
+  if (!managers || managers.length === 0) return null;
 
-  return {
-    email: userData.user.email,
-    name: profile?.display_name || "there",
-    registryTitle: registry.title,
-    registryId,
-  };
+  // Look up each manager's email and name
+  const results: ManagerEmailInfo[] = [];
+  for (const m of managers) {
+    const [{ data: userData }, { data: profile }] = await Promise.all([
+      supabaseAdmin.auth.admin.getUserById(m.user_id),
+      supabaseAdmin.from("profiles").select("full_name").eq("id", m.user_id).single(),
+    ]);
+    if (userData?.user?.email) {
+      results.push({
+        email: userData.user.email,
+        name: profile?.full_name || parentNames,
+        registryTitle: registry.title,
+        registryId,
+        parentNames,
+      });
+    }
+  }
+
+  return results.length > 0 ? results : null;
 }
 
 async function getRegistryInfoForBuyer(opts: {
@@ -104,23 +123,17 @@ async function getRegistryInfoForBuyer(opts: {
 
   const { data: registry } = await supabaseAdmin
     .from("registries")
-    .select("owner_id, title, settings, slug")
+    .select("title, parent_names, settings, slug")
     .eq("id", registryId)
     .single();
 
   if (!registry) return null;
 
-  const { data: profile } = await supabaseAdmin
-    .from("profiles")
-    .select("display_name")
-    .eq("id", registry.owner_id)
-    .single();
-
   const settings = registry.settings as Record<string, unknown> | null;
   const shippingAddress = (settings?.shipping_address as string) || undefined;
 
   return {
-    parentName: profile?.display_name || "the registry owner",
+    parentName: registry.parent_names || "the registry owner",
     registryTitle: registry.title,
     shippingAddress,
     slug: registry.slug,
@@ -204,26 +217,30 @@ export async function notifyItemReserved(opts: {
   message?: string | null;
 }) {
   try {
-    const owner = await getRegistryOwnerEmail({ itemId: opts.itemId });
-    if (!owner) return;
+    const managers = await getRegistryManagerEmails({ itemId: opts.itemId });
+    if (!managers) return;
 
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
-    const dashboardLink = `${siteUrl}/dashboard/registry/${owner.registryId}?highlight=${opts.itemId}`;
+    const dashboardLink = `${siteUrl}/dashboard/registry/${managers[0].registryId}?highlight=${opts.itemId}`;
 
-    await getResend().emails.send({
-      from: FROM,
-      to: TEST_RECIPIENT_OVERRIDE || owner.email,
-      subject: `🎁 ${opts.buyerName} reserved "${opts.itemTitle}"`,
-      html: itemReservedOwnerHtml({
-        ownerName: owner.name,
-        registryTitle: owner.registryTitle,
-        buyerName: opts.buyerName,
-        itemTitle: opts.itemTitle,
-        quantity: opts.quantity,
-        message: opts.message,
-        dashboardLink,
-      }),
-    });
+    await Promise.all(
+      managers.map((m) =>
+        getResend().emails.send({
+          from: FROM,
+          to: TEST_RECIPIENT_OVERRIDE || m.email,
+          subject: `🎁 ${opts.buyerName} reserved "${opts.itemTitle}"`,
+          html: itemReservedOwnerHtml({
+            ownerName: m.name,
+            registryTitle: m.registryTitle,
+            buyerName: opts.buyerName,
+            itemTitle: opts.itemTitle,
+            quantity: opts.quantity,
+            message: opts.message,
+            dashboardLink,
+          }),
+        })
+      )
+    );
   } catch (err) {
     console.error("[email] Failed to send item reserved notification:", err);
   }
@@ -237,30 +254,34 @@ export async function notifyCashFundContribution(opts: {
   message?: string | null;
 }) {
   try {
-    const owner = await getRegistryOwnerEmail({ fundId: opts.fundId });
-    if (!owner) return;
+    const managers = await getRegistryManagerEmails({ fundId: opts.fundId });
+    if (!managers) return;
 
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
-    const dashboardLink = `${siteUrl}/dashboard/registry/${owner.registryId}?highlight=${opts.fundId}`;
+    const dashboardLink = `${siteUrl}/dashboard/registry/${managers[0].registryId}?highlight=${opts.fundId}`;
     const formatted = new Intl.NumberFormat("en-US", {
       style: "currency",
       currency: "USD",
     }).format(opts.amount);
 
-    await getResend().emails.send({
-      from: FROM,
-      to: TEST_RECIPIENT_OVERRIDE || owner.email,
-      subject: `💵 ${opts.buyerName} contributed ${formatted} to "${opts.fundTitle}"`,
-      html: cashFundContributionOwnerHtml({
-        ownerName: owner.name,
-        registryTitle: owner.registryTitle,
-        buyerName: opts.buyerName,
-        fundTitle: opts.fundTitle,
-        amount: opts.amount,
-        message: opts.message,
-        dashboardLink,
-      }),
-    });
+    await Promise.all(
+      managers.map((m) =>
+        getResend().emails.send({
+          from: FROM,
+          to: TEST_RECIPIENT_OVERRIDE || m.email,
+          subject: `💵 ${opts.buyerName} contributed ${formatted} to "${opts.fundTitle}"`,
+          html: cashFundContributionOwnerHtml({
+            ownerName: m.name,
+            registryTitle: m.registryTitle,
+            buyerName: opts.buyerName,
+            fundTitle: opts.fundTitle,
+            amount: opts.amount,
+            message: opts.message,
+            dashboardLink,
+          }),
+        })
+      )
+    );
   } catch (err) {
     console.error("[email] Failed to send cash fund notification:", err);
   }
@@ -273,25 +294,29 @@ export async function notifyItemCovered(opts: {
   message?: string | null;
 }) {
   try {
-    const owner = await getRegistryOwnerEmail({ itemId: opts.itemId });
-    if (!owner) return;
+    const managers = await getRegistryManagerEmails({ itemId: opts.itemId });
+    if (!managers) return;
 
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
-    const dashboardLink = `${siteUrl}/dashboard/registry/${owner.registryId}?highlight=${opts.itemId}`;
+    const dashboardLink = `${siteUrl}/dashboard/registry/${managers[0].registryId}?highlight=${opts.itemId}`;
 
-    await getResend().emails.send({
-      from: FROM,
-      to: TEST_RECIPIENT_OVERRIDE || owner.email,
-      subject: `🎉 ${opts.buyerName} is covering "${opts.itemTitle}"`,
-      html: itemCoveredOwnerHtml({
-        ownerName: owner.name,
-        registryTitle: owner.registryTitle,
-        buyerName: opts.buyerName,
-        itemTitle: opts.itemTitle,
-        message: opts.message,
-        dashboardLink,
-      }),
-    });
+    await Promise.all(
+      managers.map((m) =>
+        getResend().emails.send({
+          from: FROM,
+          to: TEST_RECIPIENT_OVERRIDE || m.email,
+          subject: `🎉 ${opts.buyerName} is covering "${opts.itemTitle}"`,
+          html: itemCoveredOwnerHtml({
+            ownerName: m.name,
+            registryTitle: m.registryTitle,
+            buyerName: opts.buyerName,
+            itemTitle: opts.itemTitle,
+            message: opts.message,
+            dashboardLink,
+          }),
+        })
+      )
+    );
   } catch (err) {
     console.error("[email] Failed to send item covered notification:", err);
   }
@@ -330,22 +355,26 @@ export async function notifyNewSuggestion(opts: {
   notes?: string | null;
 }) {
   try {
-    const owner = await getRegistryOwnerEmail({ registryId: opts.registryId });
-    if (!owner) return;
+    const managers = await getRegistryManagerEmails({ registryId: opts.registryId });
+    if (!managers) return;
 
-    await getResend().emails.send({
-      from: FROM,
-      to: TEST_RECIPIENT_OVERRIDE || owner.email,
-      subject: `💡 ${opts.suggestedByName} suggested "${opts.title}"`,
-      html: newSuggestionOwnerHtml({
-        ownerName: owner.name,
-        registryTitle: owner.registryTitle,
-        suggestedByName: opts.suggestedByName,
-        title: opts.title,
-        price: opts.price,
-        notes: opts.notes,
-      }),
-    });
+    await Promise.all(
+      managers.map((m) =>
+        getResend().emails.send({
+          from: FROM,
+          to: TEST_RECIPIENT_OVERRIDE || m.email,
+          subject: `💡 ${opts.suggestedByName} suggested "${opts.title}"`,
+          html: newSuggestionOwnerHtml({
+            ownerName: m.name,
+            registryTitle: m.registryTitle,
+            suggestedByName: opts.suggestedByName,
+            title: opts.title,
+            price: opts.price,
+            notes: opts.notes,
+          }),
+        })
+      )
+    );
   } catch (err) {
     console.error("[email] Failed to send suggestion notification:", err);
   }

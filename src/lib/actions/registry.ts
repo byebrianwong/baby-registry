@@ -168,6 +168,7 @@ export async function updateRegistry(registryId: string, formData: FormData) {
 
   const supabase = await createClient();
   const title = formData.get("title") as string;
+  const parentNames = formData.get("parentNames") as string;
   const eventDate = formData.get("eventDate") as string;
   const description = formData.get("description") as string;
   const isPublic = formData.get("isPublic") === "true";
@@ -176,6 +177,7 @@ export async function updateRegistry(registryId: string, formData: FormData) {
     .from("registries")
     .update({
       title,
+      parent_names: parentNames || null,
       event_date: eventDate || null,
       description: description || null,
       is_public: isPublic,
@@ -1099,17 +1101,16 @@ export async function inviteManagerByEmail(registryId: string, email: string) {
     return { error: error.message };
   }
 
-  // Get inviter name and registry title for the email
-  const [{ data: profile }, { data: registry }] = await Promise.all([
-    supabaseAdmin.from("profiles").select("display_name, full_name").eq("id", user.id).single(),
-    supabaseAdmin.from("registries").select("title").eq("id", registryId).single(),
-  ]);
-
-  const inviterName = profile?.display_name || profile?.full_name || "Someone";
+  // Get registry info for the email
+  const { data: registry } = await supabaseAdmin
+    .from("registries")
+    .select("title, parent_names")
+    .eq("id", registryId)
+    .single();
 
   void sendManagerInvite({
     toEmail: email.toLowerCase().trim(),
-    inviterName,
+    inviterName: registry?.parent_names || "Someone",
     registryTitle: registry?.title || "a registry",
     token,
   });
@@ -1233,14 +1234,14 @@ export async function listManagers(registryId: string) {
   const enriched = await Promise.all(
     managers.map(async (m) => {
       const [{ data: profile }, { data: userData }] = await Promise.all([
-        supabaseAdmin.from("profiles").select("display_name, full_name").eq("id", m.user_id).single(),
+        supabaseAdmin.from("profiles").select("full_name").eq("id", m.user_id).single(),
         supabaseAdmin.auth.admin.getUserById(m.user_id),
       ]);
       return {
         id: m.id,
         userId: m.user_id,
         role: m.role,
-        name: profile?.display_name || profile?.full_name || "Unknown",
+        name: profile?.full_name || "Unknown",
         email: userData?.user?.email || "",
         createdAt: m.created_at,
       };

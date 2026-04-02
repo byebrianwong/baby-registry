@@ -7,7 +7,6 @@ import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/utils/supabase/server";
-import { supabaseAdmin } from "@/lib/supabase-admin";
 import { ReserveItemDialog } from "@/components/reserve-item-dialog";
 import { CoverItemDialog } from "@/components/cover-item-dialog";
 import { ContributeFundDialog } from "@/components/contribute-fund-dialog";
@@ -90,7 +89,7 @@ export default async function PublicRegistryPage({
     notFound();
   }
 
-  const [{ data: categories }, { data: items }, { data: cashFunds }, { data: ownerProfile }] =
+  const [{ data: categories }, { data: items }, { data: cashFunds }] =
     await Promise.all([
       supabase
         .from("categories")
@@ -106,17 +105,12 @@ export default async function PublicRegistryPage({
         .from("cash_funds")
         .select("*")
         .eq("registry_id", registry.id),
-      supabaseAdmin
-        .from("profiles")
-        .select("display_name, full_name")
-        .eq("id", registry.owner_id)
-        .single(),
     ]);
 
   const allItems = (items || []) as RegistryItem[];
   const allCategories = (categories || []) as Category[];
   const allFunds = (cashFunds || []) as CashFund[];
-  const parentName = ownerProfile?.display_name || ownerProfile?.full_name || "The parents";
+  const parentName = registry.parent_names || "The parents";
 
   const paymentMethods = (registry.settings as any)?.payment_methods as
     | PaymentMethods

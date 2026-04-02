@@ -53,6 +53,7 @@ export default function RegistrySettingsPage() {
 
   const [registry, setRegistry] = useState<{
     title: string;
+    parent_names: string | null;
     event_date: string | null;
     description: string | null;
     is_public: boolean;
@@ -106,7 +107,7 @@ export default function RegistrySettingsPage() {
       const [{ data }, { data: cats }, { data: { user } }] = await Promise.all([
         supabase
           .from("registries")
-          .select("title, event_date, description, is_public, slug, owner_id, settings")
+          .select("title, parent_names, event_date, description, is_public, slug, owner_id, settings")
           .eq("id", registryId)
           .single(),
         supabase
@@ -138,6 +139,7 @@ export default function RegistrySettingsPage() {
       setRegistry({
         ...registry,
         title: formData.get("title") as string,
+        parent_names: (formData.get("parentNames") as string) || null,
         event_date: (formData.get("eventDate") as string) || null,
         description: (formData.get("description") as string) || null,
         is_public: formData.get("isPublic") === "true",
@@ -311,6 +313,14 @@ export default function RegistrySettingsPage() {
               name="title"
               defaultValue={registry.title}
               isRequired
+            />
+
+            <Input
+              label="Parent Names"
+              name="parentNames"
+              placeholder='e.g., "Denise & Brian"'
+              defaultValue={registry.parent_names || ""}
+              hint="The name shown to gift givers and in email notifications."
             />
 
             <Input

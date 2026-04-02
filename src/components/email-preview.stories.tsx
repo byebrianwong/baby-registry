@@ -38,7 +38,7 @@ export const BuyerItemReserved: Story = {
       buyerName: "Jane",
       itemTitle: "Hatch Rest+ Sound Machine",
       quantity: 1,
-      parentName: "Brian & Sarah",
+      parentName: "Denise & Brian",
       registryTitle: "Baby Wong Registry",
       shippingAddress: sampleAddress,
       registryUrl: "https://regibee.com/r/baby-wong",
@@ -54,7 +54,7 @@ export const BuyerItemReservedMultiQty: Story = {
       buyerName: "Jane",
       itemTitle: "Fitted Crib Sheets",
       quantity: 3,
-      parentName: "Brian & Sarah",
+      parentName: "Denise & Brian",
       registryTitle: "Baby Wong Registry",
       registryUrl: "https://regibee.com/r/baby-wong",
     }),
@@ -67,7 +67,7 @@ export const BuyerItemCovered: Story = {
     html: itemCoveredBuyerHtml({
       buyerName: "Jane",
       itemTitle: "UPPAbaby Vista V2 Stroller",
-      parentName: "Brian & Sarah",
+      parentName: "Denise & Brian",
       registryTitle: "Baby Wong Registry",
       shippingAddress: sampleAddress,
       registryUrl: "https://regibee.com/r/baby-wong",
@@ -83,7 +83,7 @@ export const BuyerCashFundContribution: Story = {
       buyerName: "Jane",
       fundTitle: "Nursery Furniture Fund",
       amount: 50,
-      parentName: "Brian & Sarah",
+      parentName: "Denise & Brian",
       registryTitle: "Baby Wong Registry",
       shippingAddress: sampleAddress,
       registryUrl: "https://regibee.com/r/baby-wong",
@@ -98,7 +98,7 @@ export const OwnerItemReserved: Story = {
     subject: 'Jane Doe reserved "Hatch Rest+ Sound Machine"',
     to: "brian@example.com",
     html: itemReservedOwnerHtml({
-      ownerName: "Brian",
+      ownerName: "Denise",
       registryTitle: "Baby Wong Registry",
       buyerName: "Jane Doe",
       itemTitle: "Hatch Rest+ Sound Machine",
@@ -155,10 +155,48 @@ export const OwnerNewSuggestion: Story = {
   },
 };
 
+// ── Multi-Manager Notifications ─────────────────────────────
+// When a gift is reserved, ALL managers receive a notification
+// addressed to them individually.
+
+export const ManagerNotifDenise: Story = {
+  name: "Multi-Manager: Notification to Denise",
+  args: {
+    subject: '🎁 Jane Doe reserved "Hatch Rest+ Sound Machine"',
+    to: "denise@example.com",
+    html: itemReservedOwnerHtml({
+      ownerName: "Denise",
+      registryTitle: "Baby Wong Registry",
+      buyerName: "Jane Doe",
+      itemTitle: "Hatch Rest+ Sound Machine",
+      quantity: 1,
+      message: "Can't wait to meet the little one!",
+      dashboardLink: "https://regibee.com/dashboard/registry/abc?highlight=123",
+    }),
+  },
+};
+
+export const ManagerNotifBrian: Story = {
+  name: "Multi-Manager: Notification to Brian",
+  args: {
+    subject: '🎁 Jane Doe reserved "Hatch Rest+ Sound Machine"',
+    to: "brian@example.com",
+    html: itemReservedOwnerHtml({
+      ownerName: "Brian",
+      registryTitle: "Baby Wong Registry",
+      buyerName: "Jane Doe",
+      itemTitle: "Hatch Rest+ Sound Machine",
+      quantity: 1,
+      message: "Can't wait to meet the little one!",
+      dashboardLink: "https://regibee.com/dashboard/registry/abc?highlight=123",
+    }),
+  },
+};
+
 // ── Missing Name Fallbacks ───────────────────────────────────
 
 export const BuyerItemReservedNoName: Story = {
-  name: "Buyer: Item Reserved (Owner Has No Name)",
+  name: "Buyer: Item Reserved (No Parent Names Set)",
   args: {
     subject: 'Your gift is confirmed — "Hatch Rest+ Sound Machine"',
     html: itemReservedBuyerHtml({
@@ -175,7 +213,7 @@ export const BuyerItemReservedNoName: Story = {
 };
 
 export const OwnerItemReservedNoName: Story = {
-  name: "Owner: Item Reserved (Owner Has No Name)",
+  name: "Owner: Item Reserved (No Parent Names Set)",
   args: {
     subject: 'Jane Doe reserved "Hatch Rest+ Sound Machine"',
     to: "brian@example.com",
@@ -195,10 +233,10 @@ export const OwnerItemReservedNoName: Story = {
 
 export const ManagerInvite: Story = {
   args: {
-    subject: 'Brian Wong invited you to manage "Baby Wong Registry"',
-    to: "sarah@example.com",
+    subject: 'Denise & Brian invited you to manage "Baby Wong Registry"',
+    to: "grandma@example.com",
     html: managerInviteHtml({
-      inviterName: "Brian Wong",
+      inviterName: "Denise & Brian",
       registryTitle: "Baby Wong Registry",
       inviteUrl: "https://regibee.com/invite/abc123token",
     }),

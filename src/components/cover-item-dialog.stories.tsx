@@ -12,7 +12,7 @@ const meta: Meta<typeof CoverItemDialog> = {
   parameters: { layout: "centered" },
   args: {
     action: mockAction,
-    parentName: "Brian & Sarah",
+    parentName: "Denise & Brian",
   },
 };
 export default meta;
