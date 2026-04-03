@@ -87,7 +87,7 @@ export function CoverItemDialog({ item, paymentMethods, parentName = "the regist
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button className="!bg-[#09c69a] hover:!bg-[#08b38b] !ring-[#09c69a] !text-white">
-          <span className="inline-flex items-center gap-1.5"><HandCoins className="h-4 w-4 shrink-0" />Cover the cost</span>
+          <span className="inline-flex items-center gap-1.5"><HandCoins className="h-4 w-4 shrink-0" />Gift this</span>
         </Button>
       </DialogTrigger>
       <DialogContent showCloseButton={false}>

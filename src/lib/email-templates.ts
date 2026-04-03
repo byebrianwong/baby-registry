@@ -8,10 +8,10 @@ function formatPaymentBlock(paymentMethods?: { venmo?: string; paypal?: string; 
     return "";
   }
   const lines = [];
-  if (paymentMethods.venmo) lines.push(`<strong>Venmo:</strong> ${paymentMethods.venmo}`);
-  if (paymentMethods.paypal) lines.push(`<strong>PayPal:</strong> ${paymentMethods.paypal}`);
-  if (paymentMethods.zelle) lines.push(`<strong>Zelle:</strong> ${paymentMethods.zelle}`);
-  return `<p><strong>Send payment via:</strong><br/>${lines.join("<br/>")}</p>`;
+  if (paymentMethods.venmo) lines.push(`Venmo: ${paymentMethods.venmo}`);
+  if (paymentMethods.paypal) lines.push(`PayPal: ${paymentMethods.paypal}`);
+  if (paymentMethods.zelle) lines.push(`Zelle: ${paymentMethods.zelle}`);
+  return `<p style="color:#999;font-size:13px;">If not sent yet, send payment via:<br/>${lines.join("<br/>")}</p>`;
 }
 
 function formatUSD(amount: number): string {
