@@ -68,8 +68,11 @@ export const SuccessState: Story = {
       goal_amount: 2000,
       current_amount: 450,
     },
+    paymentMethods: {
+      venmo: "@brian-wong",
+      paypal: "brian@example.com",
+    },
     alreadyPurchased: true,
     previousAmount: 75,
-    shippingAddress: "123 Main St\nApt 4B\nSan Francisco, CA 94102",
   },
 };

@@ -48,7 +48,10 @@ export const NoPaymentMethods: Story = {
 export const SuccessState: Story = {
   args: {
     item: { id: "1", title: "UPPAbaby Vista V2 Stroller", price: 979.99 },
+    paymentMethods: {
+      venmo: "@brian-wong",
+      paypal: "brian@example.com",
+    },
     alreadyPurchased: true,
-    shippingAddress: "123 Main St\nApt 4B\nSan Francisco, CA 94102",
   },
 };

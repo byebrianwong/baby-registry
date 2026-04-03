@@ -34,7 +34,7 @@ interface CoverItemDialogProps {
   shippingAddress?: string;
 }
 
-export function CoverItemDialog({ item, paymentMethods, parentName = "The parents", action, alreadyPurchased, shippingAddress }: CoverItemDialogProps) {
+export function CoverItemDialog({ item, paymentMethods, parentName = "the registry owner", action, alreadyPurchased, shippingAddress }: CoverItemDialogProps) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -77,7 +77,7 @@ export function CoverItemDialog({ item, paymentMethods, parentName = "The parent
           itemTitle={item.title}
           parentName={parentName}
           variant="cover"
-          shippingAddress={shippingAddress}
+          paymentMethods={paymentMethods}
         />
       </>
     );
@@ -92,10 +92,10 @@ export function CoverItemDialog({ item, paymentMethods, parentName = "The parent
       </DialogTrigger>
       <DialogContent showCloseButton={false}>
         <DialogHeader>
-          <DialogTitle>Cover &ldquo;{item.title}&rdquo;</DialogTitle>
+          <DialogTitle>Gift &ldquo;{item.title}&rdquo;</DialogTitle>
           <DialogDescription>
-            The parents already bought this item. You can reimburse them by
-            sending payment directly.
+            Great taste! {parentName} found a deal for this one and now it&apos;s
+            on its way to baby. Gift this item by sending payment directly.
           </DialogDescription>
         </DialogHeader>
 
@@ -139,7 +139,7 @@ export function CoverItemDialog({ item, paymentMethods, parentName = "The parent
               Cancel
             </Button>
             <Button type="submit" disabled={loading} className="!bg-[#004659] hover:!bg-[#003847] !ring-[#004659] !text-white">
-              {loading ? "Sending..." : "I'll cover this"}
+              {loading ? "Sending..." : "Mark as Covered and Gifted!"}
             </Button>
           </div>
         </form>

@@ -8,7 +8,7 @@ const meta: Meta<typeof CelebrationDialog> = {
   args: {
     open: true,
     onClose: () => {},
-    parentName: "Brian & Sarah",
+    parentName: "Denise & Brian",
   },
 };
 export default meta;
@@ -29,19 +29,25 @@ export const ItemReservedWithAddress: Story = {
   },
 };
 
-export const ItemCovered: Story = {
+export const ItemCoveredWithPayment: Story = {
   args: {
     variant: "cover",
     itemTitle: "UPPAbaby Vista V2 Stroller",
-    shippingAddress: "123 Main St\nApt 4B\nSan Francisco, CA 94102",
+    paymentMethods: {
+      venmo: "@brian-wong",
+      paypal: "brian@example.com",
+    },
   },
 };
 
-export const CashFundContribution: Story = {
+export const CashFundWithPayment: Story = {
   args: {
     variant: "contribute",
     itemTitle: "Nursery Furniture Fund",
     amount: 50,
-    shippingAddress: "123 Main St\nApt 4B\nSan Francisco, CA 94102",
+    paymentMethods: {
+      venmo: "@brian-wong",
+      zelle: "brian@example.com",
+    },
   },
 };

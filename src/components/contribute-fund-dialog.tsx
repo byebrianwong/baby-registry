@@ -113,7 +113,7 @@ export function ContributeFundDialog({
           parentName={parentName}
           variant="contribute"
           amount={contributedAmount}
-          shippingAddress={shippingAddress}
+          paymentMethods={paymentMethods}
         />
       </>
     );

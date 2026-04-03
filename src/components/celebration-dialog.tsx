@@ -8,6 +8,8 @@ import {
   Dialog,
   DialogContent,
 } from "@/components/ui/dialog";
+import { PaymentMethodsDisplay } from "@/components/payment-methods-display";
+import type { PaymentMethods } from "@/lib/types";
 
 interface CelebrationDialogProps {
   open: boolean;
@@ -17,6 +19,7 @@ interface CelebrationDialogProps {
   variant: "reserve" | "cover" | "contribute";
   amount?: number;
   shippingAddress?: string;
+  paymentMethods?: PaymentMethods;
 }
 
 function getMessage(
@@ -29,7 +32,7 @@ function getMessage(
     case "reserve":
       return `You're gifting "${itemTitle}"! ${parentName} thanks you so much. ❤️`;
     case "cover":
-      return `You're covering "${itemTitle}"! ${parentName} thanks you so much. ❤️`;
+      return `You're gifting "${itemTitle}"! ${parentName} thanks you so much. ❤️`;
     case "contribute":
       return `You contributed $${amount} to "${itemTitle}"! ${parentName} thanks you so much. ❤️`;
   }
@@ -43,6 +46,7 @@ export function CelebrationDialog({
   variant,
   amount,
   shippingAddress,
+  paymentMethods,
 }: CelebrationDialogProps) {
   const [copied, setCopied] = useState(false);
 
@@ -94,7 +98,14 @@ export function CelebrationDialog({
             {getMessage(variant, itemTitle, parentName, amount)}
           </p>
 
-          {shippingAddress && (
+          {paymentMethods && (paymentMethods.venmo || paymentMethods.paypal || paymentMethods.zelle) ? (
+            <div
+              className="w-full rounded-lg border border-[#d5d7da] bg-[#f9fafb] p-4 text-left"
+              style={{ animation: "celebration-fade-in 0.5s ease-out 0.5s both" }}
+            >
+              <PaymentMethodsDisplay paymentMethods={paymentMethods} />
+            </div>
+          ) : shippingAddress ? (
             <div
               className="w-full rounded-lg border border-[#d5d7da] bg-[#f9fafb] p-4 text-left"
               style={{ animation: "celebration-fade-in 0.5s ease-out 0.5s both" }}
@@ -119,7 +130,7 @@ export function CelebrationDialog({
                 )}
               </button>
             </div>
-          )}
+          ) : null}
 
           <Button
             onClick={onClose}

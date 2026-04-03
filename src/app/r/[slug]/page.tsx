@@ -405,7 +405,7 @@ export default async function PublicRegistryPage({
                                 </h3>
                                 <div className="flex flex-wrap gap-2.5">
                                   {item.is_parent_purchased ? (
-                                    <Tag variant="parent-purchased">Purchased by parent</Tag>
+                                    <Tag variant="parent-purchased">On its way</Tag>
                                   ) : isFulfilled ? (
                                     <Tag variant="guest-purchased">Already purchased by guest</Tag>
                                   ) : (
@@ -508,7 +508,7 @@ export default async function PublicRegistryPage({
                             <h3 className="font-medium text-sm">{item.title}</h3>
                             <div className="flex flex-wrap gap-2.5">
                               {item.is_parent_purchased ? (
-                                <Tag variant="parent-purchased">Purchased by parent</Tag>
+                                <Tag variant="parent-purchased">On its way</Tag>
                               ) : isFulfilled ? (
                                 <Tag variant="guest-purchased">Already purchased by guest</Tag>
                               ) : (
