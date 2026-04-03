@@ -203,7 +203,7 @@ export const BuyerItemReservedNoName: Story = {
       buyerName: "Jane",
       itemTitle: "Hatch Rest+ Sound Machine",
       quantity: 1,
-      parentName: "the registry owner",
+      parentName: "The Registry Owner",
       registryTitle: "Baby Wong Registry",
       shippingAddress: sampleAddress,
       registryUrl: "https://regibee.com/r/baby-wong?email=jane%40example.com&sig=a1b2c3d4e5f6a7b8",

@@ -115,7 +115,7 @@ export default async function PublicRegistryPage({
   const allItems = (items || []) as RegistryItem[];
   const allCategories = (categories || []) as Category[];
   const allFunds = (cashFunds || []) as CashFund[];
-  const parentName = registry.parent_names || "the registry owner";
+  const parentName = registry.parent_names || "The Registry Owner";
 
   const paymentMethods = (registry.settings as any)?.payment_methods as
     | PaymentMethods
@@ -310,9 +310,19 @@ export default async function PublicRegistryPage({
                       <Card key={fund.id} className="py-0 gap-0 rounded-xl shadow-none border-[#d5d7da]">
                         <CardContent className="flex h-full flex-col justify-between gap-4 p-4">
                           <div className="flex flex-col gap-2">
-                            <h3 className="font-semibold text-lg text-[#181d27]">
-                              {fund.title}
-                            </h3>
+                            <div className="flex items-center gap-2">
+                              <h3 className="font-semibold text-lg text-[#181d27]">
+                                {fund.title}
+                              </h3>
+                              {fundPurchased && (
+                                <img
+                                  src="/hero/panda.svg"
+                                  alt=""
+                                  className="h-8 w-8 shrink-0"
+                                  style={{ animation: "celebration-bounce 1.2s ease-in-out infinite" }}
+                                />
+                              )}
+                            </div>
                             {fund.description && (
                               <p className="text-sm text-[#535862] whitespace-pre-line">
                                 {fund.description}
@@ -388,7 +398,7 @@ export default async function PublicRegistryPage({
                         >
                           <CardContent className="flex h-full flex-col justify-between gap-4 p-4">
                             <div className="flex gap-3">
-                              <div className="flex size-16 shrink-0 items-center justify-center rounded-md bg-[#fdfdfd]">
+                              <div className="relative flex size-16 shrink-0 items-center justify-center rounded-md bg-[#fdfdfd]">
                                 {item.image_url ? (
                                   <img
                                     src={item.image_url}
@@ -397,6 +407,14 @@ export default async function PublicRegistryPage({
                                   />
                                 ) : (
                                   <Package className="h-6 w-6 text-tertiary" />
+                                )}
+                                {itemPurchased && (
+                                  <img
+                                    src="/hero/panda.svg"
+                                    alt=""
+                                    className="absolute -bottom-2 -right-2 h-8 w-8"
+                                    style={{ animation: "celebration-bounce 1.2s ease-in-out infinite" }}
+                                  />
                                 )}
                               </div>
                               <div className="flex-1 min-w-0 flex flex-col gap-2 items-start">
@@ -505,7 +523,17 @@ export default async function PublicRegistryPage({
                       >
                         <CardContent className="flex h-full flex-col justify-between gap-4 p-4">
                           <div className="flex-1 min-w-0 flex flex-col gap-2 items-start">
-                            <h3 className="font-medium text-sm">{item.title}</h3>
+                            <div className="flex items-center gap-2">
+                              <h3 className="font-medium text-sm">{item.title}</h3>
+                              {itemPurchased && (
+                                <img
+                                  src="/hero/panda.svg"
+                                  alt=""
+                                  className="h-7 w-7 shrink-0"
+                                  style={{ animation: "celebration-bounce 1.2s ease-in-out infinite" }}
+                                />
+                              )}
+                            </div>
                             <div className="flex flex-wrap gap-2.5">
                               {item.is_parent_purchased ? (
                                 <Tag variant="parent-purchased">On its way</Tag>

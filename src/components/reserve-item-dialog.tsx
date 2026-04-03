@@ -43,7 +43,7 @@ function getDomainName(url: string): string {
   }
 }
 
-export function ReserveItemDialog({ item, parentName = "the registry owner", action, alreadyPurchased, shippingAddress }: ReserveItemDialogProps) {
+export function ReserveItemDialog({ item, parentName = "The Registry Owner", action, alreadyPurchased, shippingAddress }: ReserveItemDialogProps) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");

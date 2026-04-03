@@ -34,7 +34,7 @@ interface CoverItemDialogProps {
   shippingAddress?: string;
 }
 
-export function CoverItemDialog({ item, paymentMethods, parentName = "the registry owner", action, alreadyPurchased, shippingAddress }: CoverItemDialogProps) {
+export function CoverItemDialog({ item, paymentMethods, parentName = "The Registry Owner", action, alreadyPurchased, shippingAddress }: CoverItemDialogProps) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");

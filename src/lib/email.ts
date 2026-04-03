@@ -144,7 +144,7 @@ async function getRegistryInfoForBuyer(opts: {
   const paymentMethods = pm && (pm.venmo || pm.paypal || pm.zelle) ? pm : undefined;
 
   return {
-    parentName: registry.parent_names || "the registry owner",
+    parentName: registry.parent_names || "The Registry Owner",
     registryTitle: registry.title,
     shippingAddress,
     paymentMethods,
