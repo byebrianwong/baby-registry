@@ -7,6 +7,8 @@ import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/utils/supabase/server";
+import { supabaseAdmin } from "@/lib/supabase-admin";
+import { verifyBuyerLink } from "@/lib/buyer-link";
 import { ReserveItemDialog } from "@/components/reserve-item-dialog";
 import { CoverItemDialog } from "@/components/cover-item-dialog";
 import { ContributeFundDialog } from "@/components/contribute-fund-dialog";
@@ -73,10 +75,13 @@ export async function generateMetadata({
 
 export default async function PublicRegistryPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<{ email?: string; sig?: string }>;
 }) {
   const { slug } = await params;
+  const { email: buyerEmail, sig } = await searchParams;
   const supabase = await createClient();
 
   const { data: registry } = await supabase
@@ -125,6 +130,55 @@ export default async function PublicRegistryPage({
   try {
     if (rawCookie) myGifts = JSON.parse(rawCookie);
   } catch {}
+
+  // If the visitor arrived via a signed buyer link, look up their purchases
+  // for this specific registry and merge with cookie-based highlights.
+  if (buyerEmail && sig) {
+    try {
+      if (verifyBuyerLink(buyerEmail, slug, sig)) {
+        const itemIds = allItems.map((i) => i.id);
+        const fundIds = allFunds.map((f) => f.id);
+
+        const queries = [];
+        if (itemIds.length > 0) {
+          queries.push(
+            supabaseAdmin
+              .from("purchases")
+              .select("registry_item_id, cash_fund_id, amount")
+              .eq("buyer_email", buyerEmail.toLowerCase())
+              .neq("status", "cancelled")
+              .in("registry_item_id", itemIds)
+          );
+        }
+        if (fundIds.length > 0) {
+          queries.push(
+            supabaseAdmin
+              .from("purchases")
+              .select("registry_item_id, cash_fund_id, amount")
+              .eq("buyer_email", buyerEmail.toLowerCase())
+              .neq("status", "cancelled")
+              .in("cash_fund_id", fundIds)
+          );
+        }
+
+        const results = await Promise.all(queries);
+        const allPurchases = results.flatMap((r) => r.data || []);
+
+        for (const p of allPurchases) {
+          if (p.registry_item_id) {
+            if (!myGifts.items) myGifts.items = {};
+            myGifts.items[p.registry_item_id] = "reserved";
+          }
+          if (p.cash_fund_id && p.amount) {
+            if (!myGifts.funds) myGifts.funds = {};
+            myGifts.funds[p.cash_fund_id] = (myGifts.funds[p.cash_fund_id] || 0) + Number(p.amount);
+          }
+        }
+      }
+    } catch {
+      // Invalid signature — ignore silently
+    }
+  }
 
   const totalItems = allItems.length;
   const fulfilledItems = allItems.filter(

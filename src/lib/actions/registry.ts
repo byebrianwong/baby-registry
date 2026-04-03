@@ -16,6 +16,7 @@ import {
   getRegistryInfoForBuyer,
 } from "@/lib/email";
 import { supabaseAdmin } from "@/lib/supabase-admin";
+import { buildBuyerRegistryUrl } from "@/lib/buyer-link";
 import crypto from "crypto";
 
 const COOKIE_NAME = "regibee_my_gifts";
@@ -472,7 +473,7 @@ export async function reserveItem(formData: FormData) {
         message: message || null,
       });
       if (buyerEmail && registryInfo) {
-        const registryUrl = `${siteUrl}/r/${registryInfo.slug}`;
+        const registryUrl = buildBuyerRegistryUrl({ siteUrl, slug: registryInfo.slug, buyerEmail });
         const shopUrl = item.external_url || undefined;
         void confirmItemReserved({
           buyerEmail,
@@ -853,7 +854,7 @@ export async function contributeToCashFund(formData: FormData) {
         message: message || null,
       });
       if (buyerEmail && registryInfo) {
-        const registryUrl = `${siteUrl}/r/${registryInfo.slug}`;
+        const registryUrl = buildBuyerRegistryUrl({ siteUrl, slug: registryInfo.slug, buyerEmail });
         void confirmCashFundContribution({
           buyerEmail,
           buyerName,
@@ -965,7 +966,7 @@ export async function coverParentPurchasedItem(formData: FormData) {
         message: message || null,
       });
       if (buyerEmail && registryInfo) {
-        const registryUrl = `${siteUrl}/r/${registryInfo.slug}`;
+        const registryUrl = buildBuyerRegistryUrl({ siteUrl, slug: registryInfo.slug, buyerEmail });
         const shopUrl = item.external_url || undefined;
         void confirmItemCovered({
           buyerEmail,
