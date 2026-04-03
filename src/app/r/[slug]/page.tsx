@@ -115,7 +115,7 @@ export default async function PublicRegistryPage({
   const allItems = (items || []) as RegistryItem[];
   const allCategories = (categories || []) as Category[];
   const allFunds = (cashFunds || []) as CashFund[];
-  const parentName = registry.parent_names || "The parents";
+  const parentName = registry.parent_names || "the registry owner";
 
   const paymentMethods = (registry.settings as any)?.payment_methods as
     | PaymentMethods

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Gift, Check } from "lucide-react";
+import { Gift, Check, ExternalLink } from "lucide-react";
 import { Mail01 } from "@untitledui/icons";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/base/input/input";
@@ -26,6 +26,7 @@ interface ReserveItemDialogProps {
     price: number | null;
     quantity_needed: number;
     quantity_fulfilled: number;
+    external_url?: string | null;
   };
   parentName?: string;
   action?: DialogAction;
@@ -33,7 +34,16 @@ interface ReserveItemDialogProps {
   shippingAddress?: string;
 }
 
-export function ReserveItemDialog({ item, parentName = "The parents", action, alreadyPurchased, shippingAddress }: ReserveItemDialogProps) {
+function getDomainName(url: string): string {
+  try {
+    const hostname = new URL(url).hostname;
+    return hostname.replace(/^www\./, "");
+  } catch {
+    return url;
+  }
+}
+
+export function ReserveItemDialog({ item, parentName = "the registry owner", action, alreadyPurchased, shippingAddress }: ReserveItemDialogProps) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -88,18 +98,28 @@ export function ReserveItemDialog({ item, parentName = "The parents", action, al
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button className="!bg-[#004659] hover:!bg-[#003847] !ring-[#004659] !text-white">
-          <span className="inline-flex items-center gap-1.5"><Gift className="h-4 w-4 shrink-0" />Mark as purchased</span>
+          <span className="inline-flex items-center gap-1.5"><Gift className="h-4 w-4 shrink-0" />Gift this</span>
         </Button>
       </DialogTrigger>
       <DialogContent showCloseButton={false}>
         <DialogHeader>
-          <DialogTitle>Mark &ldquo;{item.title}&rdquo; as purchased</DialogTitle>
+          <DialogTitle>Purchase and Gift &ldquo;{item.title}&rdquo;</DialogTitle>
           <DialogDescription>
-            Let the parents know you&apos;re getting this gift. No account
+            Let {parentName} know you&apos;re getting this gift. No account
             required.
           </DialogDescription>
         </DialogHeader>
         <form action={handleSubmit} className="space-y-4">
+          {item.external_url && (
+            <Button variant="outline" className="w-full" asChild>
+              <a href={item.external_url} target="_blank" rel="noopener noreferrer">
+                <span className="inline-flex items-center gap-1.5">
+                  <ExternalLink className="h-4 w-4 shrink-0" />
+                  Purchase from {getDomainName(item.external_url)}
+                </span>
+              </a>
+            </Button>
+          )}
           <Input
             label="Your Name"
             name="buyerName"
@@ -143,7 +163,7 @@ export function ReserveItemDialog({ item, parentName = "The parents", action, al
               Cancel
             </Button>
             <Button type="submit" disabled={loading} className="!bg-[#004659] hover:!bg-[#003847] !ring-[#004659] !text-white">
-              {loading ? "Reserving..." : "I'm gifting this"}
+              {loading ? "Reserving..." : "Mark as purchased"}
             </Button>
           </div>
         </form>

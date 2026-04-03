@@ -26,6 +26,19 @@ export const SingleQuantity: Story = {
       price: 69.99,
       quantity_needed: 1,
       quantity_fulfilled: 0,
+      external_url: "https://www.amazon.com/dp/B07WFXGNGB",
+    },
+  },
+};
+
+export const WithoutUrl: Story = {
+  args: {
+    item: {
+      id: "1",
+      title: "Hatch Rest+ Sound Machine",
+      price: 69.99,
+      quantity_needed: 1,
+      quantity_fulfilled: 0,
     },
   },
 };
@@ -38,6 +51,7 @@ export const MultiQuantity: Story = {
       price: 24.99,
       quantity_needed: 4,
       quantity_fulfilled: 1,
+      external_url: "https://www.target.com/p/fitted-crib-sheets",
     },
   },
 };
@@ -50,6 +64,22 @@ export const Expensive: Story = {
       price: 979.99,
       quantity_needed: 1,
       quantity_fulfilled: 0,
+      external_url: "https://uppababy.com/vista/",
+    },
+  },
+};
+
+export const NoParentName: Story = {
+  name: "No Parent Name (fallback)",
+  args: {
+    parentName: undefined,
+    item: {
+      id: "1",
+      title: "Hatch Rest+ Sound Machine",
+      price: 69.99,
+      quantity_needed: 1,
+      quantity_fulfilled: 0,
+      external_url: "https://www.amazon.com/dp/B07WFXGNGB",
     },
   },
 };
