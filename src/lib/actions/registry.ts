@@ -4,6 +4,7 @@ import { createClient } from "@/utils/supabase/server";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 import {
   notifyItemReserved,
   notifyCashFundContribution,
@@ -454,41 +455,46 @@ export async function reserveItem(formData: FormData) {
 
   await addToMyGiftsCookie("items", itemId, "reserve");
 
-  // Fire-and-forget email notifications
+  // Send email notifications after the response (keeps the function alive)
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
-  Promise.all([
-    supabaseAdmin
-      .from("registry_items")
-      .select("title, external_url")
-      .eq("id", itemId)
-      .single(),
-    getRegistryInfoForBuyer({ itemId }),
-  ]).then(([{ data: item }, registryInfo]) => {
-    if (item) {
-      void notifyItemReserved({
-        itemId,
-        itemTitle: item.title,
-        buyerName,
-        quantity,
-        message: message || null,
-      });
-      if (buyerEmail && registryInfo) {
-        const registryUrl = buildBuyerRegistryUrl({ siteUrl, slug: registryInfo.slug, buyerEmail });
-        const shopUrl = item.external_url || undefined;
-        void confirmItemReserved({
-          buyerEmail,
-          buyerName,
+  after(async () => {
+    try {
+      const [{ data: item }, registryInfo] = await Promise.all([
+        supabaseAdmin
+          .from("registry_items")
+          .select("title, external_url")
+          .eq("id", itemId)
+          .single(),
+        getRegistryInfoForBuyer({ itemId }),
+      ]);
+      if (item) {
+        await notifyItemReserved({
+          itemId,
           itemTitle: item.title,
+          buyerName,
           quantity,
-          parentName: registryInfo.parentName,
-          registryTitle: registryInfo.registryTitle,
-          shippingAddress: registryInfo.shippingAddress,
-          registryUrl,
-          shopUrl,
+          message: message || null,
         });
+        if (buyerEmail && registryInfo) {
+          const registryUrl = buildBuyerRegistryUrl({ siteUrl, slug: registryInfo.slug, buyerEmail });
+          const shopUrl = item.external_url || undefined;
+          await confirmItemReserved({
+            buyerEmail,
+            buyerName,
+            itemTitle: item.title,
+            quantity,
+            parentName: registryInfo.parentName,
+            registryTitle: registryInfo.registryTitle,
+            shippingAddress: registryInfo.shippingAddress,
+            registryUrl,
+            shopUrl,
+          });
+        }
       }
+    } catch (err) {
+      console.error("[email] Failed to send reserve emails:", err);
     }
-  }).catch((err) => console.error("[email] Failed to send reserve emails:", err));
+  });
 
   return { success: true, purchaseId: data };
 }
@@ -835,39 +841,44 @@ export async function contributeToCashFund(formData: FormData) {
 
   await addToMyGiftsCookie("funds", fundId, amount);
 
-  // Fire-and-forget email notifications
+  // Send email notifications after the response
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
-  Promise.all([
-    supabaseAdmin
-      .from("cash_funds")
-      .select("title")
-      .eq("id", fundId)
-      .single(),
-    getRegistryInfoForBuyer({ fundId }),
-  ]).then(([{ data: fund }, registryInfo]) => {
-    if (fund) {
-      void notifyCashFundContribution({
-        fundId,
-        fundTitle: fund.title,
-        buyerName,
-        amount,
-        message: message || null,
-      });
-      if (buyerEmail && registryInfo) {
-        const registryUrl = buildBuyerRegistryUrl({ siteUrl, slug: registryInfo.slug, buyerEmail });
-        void confirmCashFundContribution({
-          buyerEmail,
-          buyerName,
+  after(async () => {
+    try {
+      const [{ data: fund }, registryInfo] = await Promise.all([
+        supabaseAdmin
+          .from("cash_funds")
+          .select("title")
+          .eq("id", fundId)
+          .single(),
+        getRegistryInfoForBuyer({ fundId }),
+      ]);
+      if (fund) {
+        await notifyCashFundContribution({
+          fundId,
           fundTitle: fund.title,
+          buyerName,
           amount,
-          parentName: registryInfo.parentName,
-          registryTitle: registryInfo.registryTitle,
-          shippingAddress: registryInfo.shippingAddress,
-          registryUrl,
+          message: message || null,
         });
+        if (buyerEmail && registryInfo) {
+          const registryUrl = buildBuyerRegistryUrl({ siteUrl, slug: registryInfo.slug, buyerEmail });
+          await confirmCashFundContribution({
+            buyerEmail,
+            buyerName,
+            fundTitle: fund.title,
+            amount,
+            parentName: registryInfo.parentName,
+            registryTitle: registryInfo.registryTitle,
+            shippingAddress: registryInfo.shippingAddress,
+            registryUrl,
+          });
+        }
       }
+    } catch (err) {
+      console.error("[email] Failed to send fund contribution emails:", err);
     }
-  }).catch((err) => console.error("[email] Failed to send fund contribution emails:", err));
+  });
 
   return { success: true, purchaseId: data };
 }
@@ -906,13 +917,19 @@ export async function suggestItem(formData: FormData) {
     return { error: error.message };
   }
 
-  // Fire-and-forget email notification
-  void notifyNewSuggestion({
-    registryId,
-    title,
-    suggestedByName,
-    price: price ? parseFloat(price) : null,
-    notes: notes || null,
+  // Send email notification after the response
+  after(async () => {
+    try {
+      await notifyNewSuggestion({
+        registryId,
+        title,
+        suggestedByName,
+        price: price ? parseFloat(price) : null,
+        notes: notes || null,
+      });
+    } catch (err) {
+      console.error("[email] Failed to send suggestion notification:", err);
+    }
   });
 
   return { success: true };
@@ -948,39 +965,44 @@ export async function coverParentPurchasedItem(formData: FormData) {
 
   await addToMyGiftsCookie("items", itemId, "cover");
 
-  // Fire-and-forget email notifications
+  // Send email notifications after the response
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
-  Promise.all([
-    supabaseAdmin
-      .from("registry_items")
-      .select("title, external_url")
-      .eq("id", itemId)
-      .single(),
-    getRegistryInfoForBuyer({ itemId }),
-  ]).then(([{ data: item }, registryInfo]) => {
-    if (item) {
-      void notifyItemCovered({
-        itemId,
-        itemTitle: item.title,
-        buyerName,
-        message: message || null,
-      });
-      if (buyerEmail && registryInfo) {
-        const registryUrl = buildBuyerRegistryUrl({ siteUrl, slug: registryInfo.slug, buyerEmail });
-        const shopUrl = item.external_url || undefined;
-        void confirmItemCovered({
-          buyerEmail,
-          buyerName,
+  after(async () => {
+    try {
+      const [{ data: item }, registryInfo] = await Promise.all([
+        supabaseAdmin
+          .from("registry_items")
+          .select("title, external_url")
+          .eq("id", itemId)
+          .single(),
+        getRegistryInfoForBuyer({ itemId }),
+      ]);
+      if (item) {
+        await notifyItemCovered({
+          itemId,
           itemTitle: item.title,
-          parentName: registryInfo.parentName,
-          registryTitle: registryInfo.registryTitle,
-          shippingAddress: registryInfo.shippingAddress,
-          registryUrl,
-          shopUrl,
+          buyerName,
+          message: message || null,
         });
+        if (buyerEmail && registryInfo) {
+          const registryUrl = buildBuyerRegistryUrl({ siteUrl, slug: registryInfo.slug, buyerEmail });
+          const shopUrl = item.external_url || undefined;
+          await confirmItemCovered({
+            buyerEmail,
+            buyerName,
+            itemTitle: item.title,
+            parentName: registryInfo.parentName,
+            registryTitle: registryInfo.registryTitle,
+            shippingAddress: registryInfo.shippingAddress,
+            registryUrl,
+            shopUrl,
+          });
+        }
       }
+    } catch (err) {
+      console.error("[email] Failed to send cover item emails:", err);
     }
-  }).catch((err) => console.error("[email] Failed to send cover item emails:", err));
+  });
 
   return { success: true, purchaseId: data };
 }
@@ -1109,11 +1131,17 @@ export async function inviteManagerByEmail(registryId: string, email: string) {
     .eq("id", registryId)
     .single();
 
-  void sendManagerInvite({
-    toEmail: email.toLowerCase().trim(),
-    inviterName: registry?.parent_names || "Someone",
-    registryTitle: registry?.title || "a registry",
-    token,
+  after(async () => {
+    try {
+      await sendManagerInvite({
+        toEmail: email.toLowerCase().trim(),
+        inviterName: registry?.parent_names || "Someone",
+        registryTitle: registry?.title || "a registry",
+        token,
+      });
+    } catch (err) {
+      console.error("[email] Failed to send manager invite:", err);
+    }
   });
 
   revalidatePath(`/dashboard/registry/${registryId}/settings`);
