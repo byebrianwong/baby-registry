@@ -100,10 +100,16 @@ async function getRegistryManagerEmails(opts: {
   return results.length > 0 ? results : null;
 }
 
+interface PaymentMethods {
+  venmo?: string;
+  paypal?: string;
+  zelle?: string;
+}
+
 async function getRegistryInfoForBuyer(opts: {
   itemId?: string;
   fundId?: string;
-}): Promise<{ parentName: string; registryTitle: string; shippingAddress?: string; slug: string } | null> {
+}): Promise<{ parentName: string; registryTitle: string; shippingAddress?: string; paymentMethods?: PaymentMethods; slug: string } | null> {
   let registryId: string | undefined;
 
   if (opts.itemId) {
@@ -134,11 +140,14 @@ async function getRegistryInfoForBuyer(opts: {
 
   const settings = registry.settings as Record<string, unknown> | null;
   const shippingAddress = (settings?.shipping_address as string) || undefined;
+  const pm = settings?.payment_methods as PaymentMethods | undefined;
+  const paymentMethods = pm && (pm.venmo || pm.paypal || pm.zelle) ? pm : undefined;
 
   return {
     parentName: registry.parent_names || "the registry owner",
     registryTitle: registry.title,
     shippingAddress,
+    paymentMethods,
     slug: registry.slug,
   };
 }
@@ -172,7 +181,7 @@ export async function confirmItemCovered(opts: {
   itemTitle: string;
   parentName: string;
   registryTitle: string;
-  shippingAddress?: string;
+  paymentMethods?: { venmo?: string; paypal?: string; zelle?: string };
   registryUrl?: string;
   shopUrl?: string;
 }) {
@@ -195,7 +204,7 @@ export async function confirmCashFundContribution(opts: {
   amount: number;
   parentName: string;
   registryTitle: string;
-  shippingAddress?: string;
+  paymentMethods?: { venmo?: string; paypal?: string; zelle?: string };
   registryUrl?: string;
 }) {
   try {

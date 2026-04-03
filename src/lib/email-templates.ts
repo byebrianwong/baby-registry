@@ -3,6 +3,17 @@
  * Used by email.ts for sending and by Storybook for visual preview.
  */
 
+function formatPaymentBlock(paymentMethods?: { venmo?: string; paypal?: string; zelle?: string }): string {
+  if (!paymentMethods || (!paymentMethods.venmo && !paymentMethods.paypal && !paymentMethods.zelle)) {
+    return "";
+  }
+  const lines = [];
+  if (paymentMethods.venmo) lines.push(`<strong>Venmo:</strong> ${paymentMethods.venmo}`);
+  if (paymentMethods.paypal) lines.push(`<strong>PayPal:</strong> ${paymentMethods.paypal}`);
+  if (paymentMethods.zelle) lines.push(`<strong>Zelle:</strong> ${paymentMethods.zelle}`);
+  return `<p><strong>Send payment via:</strong><br/>${lines.join("<br/>")}</p>`;
+}
+
 function formatUSD(amount: number): string {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
@@ -46,13 +57,11 @@ export function itemCoveredBuyerHtml(opts: {
   itemTitle: string;
   parentName: string;
   registryTitle: string;
-  shippingAddress?: string;
+  paymentMethods?: { venmo?: string; paypal?: string; zelle?: string };
   registryUrl?: string;
   shopUrl?: string;
 }): string {
-  const addressBlock = opts.shippingAddress
-    ? `<p><strong>Shipping address:</strong><br/>${opts.shippingAddress.replace(/\n/g, "<br/>")}</p>`
-    : "";
+  const paymentBlock = formatPaymentBlock(opts.paymentMethods);
   const linksBlock = [
     opts.registryUrl ? `<a href="${opts.registryUrl}" style="color:#004659;">View Registry</a>` : "",
     opts.shopUrl ? `<a href="${opts.shopUrl}" style="color:#004659;">Shop This Item</a>` : "",
@@ -60,9 +69,9 @@ export function itemCoveredBuyerHtml(opts: {
 
   return `
     <p>Hi ${opts.buyerName},</p>
-    <p>Thanks for covering <strong>${opts.itemTitle}</strong> on <em>${opts.registryTitle}</em>!</p>
+    <p>Thanks for gifting <strong>${opts.itemTitle}</strong> on <em>${opts.registryTitle}</em>!</p>
     <p>${opts.parentName} will really appreciate it.</p>
-    ${addressBlock}
+    ${paymentBlock}
     ${linksBlock ? `<p style="margin: 16px 0;">${linksBlock}</p>` : ""}
     <p style="color:#888;font-size:13px;">You're receiving this because you covered a gift on a Regibee registry.</p>
   `;
@@ -74,13 +83,11 @@ export function cashFundContributionBuyerHtml(opts: {
   amount: number;
   parentName: string;
   registryTitle: string;
-  shippingAddress?: string;
+  paymentMethods?: { venmo?: string; paypal?: string; zelle?: string };
   registryUrl?: string;
 }): string {
   const formatted = formatUSD(opts.amount);
-  const addressBlock = opts.shippingAddress
-    ? `<p><strong>Shipping address:</strong><br/>${opts.shippingAddress.replace(/\n/g, "<br/>")}</p>`
-    : "";
+  const paymentBlock = formatPaymentBlock(opts.paymentMethods);
   const linkBlock = opts.registryUrl
     ? `<p style="margin: 16px 0;"><a href="${opts.registryUrl}" style="color:#004659;">View Registry</a></p>`
     : "";
@@ -89,7 +96,7 @@ export function cashFundContributionBuyerHtml(opts: {
     <p>Hi ${opts.buyerName},</p>
     <p>Thanks for contributing <strong>${formatted}</strong> to <strong>${opts.fundTitle}</strong> on <em>${opts.registryTitle}</em>!</p>
     <p>${opts.parentName} will really appreciate it.</p>
-    ${addressBlock}
+    ${paymentBlock}
     ${linkBlock}
     <p style="color:#888;font-size:13px;">You're receiving this because you contributed to a cash fund on a Regibee registry.</p>
   `;

@@ -870,7 +870,7 @@ export async function contributeToCashFund(formData: FormData) {
             amount,
             parentName: registryInfo.parentName,
             registryTitle: registryInfo.registryTitle,
-            shippingAddress: registryInfo.shippingAddress,
+            paymentMethods: registryInfo.paymentMethods,
             registryUrl,
           });
         }
@@ -993,7 +993,7 @@ export async function coverParentPurchasedItem(formData: FormData) {
             itemTitle: item.title,
             parentName: registryInfo.parentName,
             registryTitle: registryInfo.registryTitle,
-            shippingAddress: registryInfo.shippingAddress,
+            paymentMethods: registryInfo.paymentMethods,
             registryUrl,
             shopUrl,
           });
