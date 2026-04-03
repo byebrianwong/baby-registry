@@ -60,7 +60,7 @@ async function getRegistryManagerEmails(opts: {
 
   const { data: registry } = await supabaseAdmin
     .from("registries")
-    .select("title, parent_names")
+    .select("title, parent_names, owner_id")
     .eq("id", registryId)
     .single();
 
@@ -74,14 +74,17 @@ async function getRegistryManagerEmails(opts: {
     .select("user_id")
     .eq("registry_id", registryId);
 
-  if (!managers || managers.length === 0) return null;
+  // Fall back to the registry owner if registry_managers has no rows
+  const userIds = managers && managers.length > 0
+    ? managers.map((m) => m.user_id)
+    : [registry.owner_id];
 
   // Look up each manager's email and name
   const results: ManagerEmailInfo[] = [];
-  for (const m of managers) {
+  for (const uid of userIds) {
     const [{ data: userData }, { data: profile }] = await Promise.all([
-      supabaseAdmin.auth.admin.getUserById(m.user_id),
-      supabaseAdmin.from("profiles").select("full_name").eq("id", m.user_id).single(),
+      supabaseAdmin.auth.admin.getUserById(uid),
+      supabaseAdmin.from("profiles").select("full_name").eq("id", uid).single(),
     ]);
     if (userData?.user?.email) {
       results.push({
