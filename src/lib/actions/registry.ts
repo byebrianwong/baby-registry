@@ -488,7 +488,7 @@ export async function reserveItem(formData: FormData) {
         });
       }
     }
-  });
+  }).catch((err) => console.error("[email] Failed to send reserve emails:", err));
 
   return { success: true, purchaseId: data };
 }
@@ -867,7 +867,7 @@ export async function contributeToCashFund(formData: FormData) {
         });
       }
     }
-  });
+  }).catch((err) => console.error("[email] Failed to send fund contribution emails:", err));
 
   return { success: true, purchaseId: data };
 }
@@ -980,7 +980,7 @@ export async function coverParentPurchasedItem(formData: FormData) {
         });
       }
     }
-  });
+  }).catch((err) => console.error("[email] Failed to send cover item emails:", err));
 
   return { success: true, purchaseId: data };
 }
