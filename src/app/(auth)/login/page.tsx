@@ -68,13 +68,20 @@ function LoginForm() {
               onChange={(val) => setEmail(val)}
               isRequired
             />
-            <Input
-              label="Password"
-              type="password"
-              value={password}
-              onChange={(val) => setPassword(val)}
-              isRequired
-            />
+            <div>
+              <Input
+                label="Password"
+                type="password"
+                value={password}
+                onChange={(val) => setPassword(val)}
+                isRequired
+              />
+              <div className="mt-1 text-right">
+                <Link href="/forgot-password" className="text-sm text-brand-600 underline-offset-4 hover:underline">
+                  Forgot password?
+                </Link>
+              </div>
+            </div>
             {error && (
               <p className="text-sm text-error-primary">{error}</p>
             )}
