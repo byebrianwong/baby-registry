@@ -123,6 +123,20 @@ export default async function PublicRegistryPage({
 
   const shippingAddress = (registry.settings as any)?.shipping_address as string | undefined;
 
+  // Check which parent-purchased items have already been covered by anyone
+  const parentPurchasedIds = allItems.filter((i) => i.is_parent_purchased).map((i) => i.id);
+  const coveredItemIds = new Set<string>();
+  if (parentPurchasedIds.length > 0) {
+    const { data: coverPurchases } = await supabaseAdmin
+      .from("purchases")
+      .select("registry_item_id")
+      .in("registry_item_id", parentPurchasedIds)
+      .neq("status", "cancelled");
+    for (const p of coverPurchases || []) {
+      if (p.registry_item_id) coveredItemIds.add(p.registry_item_id);
+    }
+  }
+
   // Read guest purchase cookie
   const cookieStore = await cookies();
   const rawCookie = cookieStore.get("regibee_my_gifts")?.value;
@@ -462,7 +476,7 @@ export default async function PublicRegistryPage({
                                     item={item}
                                     paymentMethods={paymentMethods}
                                     parentName={parentName}
-                                    alreadyPurchased={itemPurchased}
+                                    alreadyPurchased={itemPurchased || coveredItemIds.has(item.id)}
                                     shippingAddress={shippingAddress}
                                   />
                                 ) : (
@@ -568,7 +582,7 @@ export default async function PublicRegistryPage({
                                   item={item}
                                   paymentMethods={paymentMethods}
                                   parentName={parentName}
-                                  alreadyPurchased={itemPurchased}
+                                  alreadyPurchased={itemPurchased || coveredItemIds.has(item.id)}
                                   shippingAddress={shippingAddress}
                                 />
                               ) : (
