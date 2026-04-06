@@ -31,10 +31,11 @@ interface CoverItemDialogProps {
   parentName?: string;
   action?: DialogAction;
   alreadyPurchased?: boolean;
+  isCovered?: boolean;
   shippingAddress?: string;
 }
 
-export function CoverItemDialog({ item, paymentMethods, parentName = "The Registry Owner", action, alreadyPurchased, shippingAddress }: CoverItemDialogProps) {
+export function CoverItemDialog({ item, paymentMethods, parentName = "The Registry Owner", action, alreadyPurchased, isCovered, shippingAddress }: CoverItemDialogProps) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -55,6 +56,15 @@ export function CoverItemDialog({ item, paymentMethods, parentName = "The Regist
     }
     setLoading(false);
   };
+
+  // Someone else already covered all quantities — just show disabled button
+  if (!success && isCovered) {
+    return (
+      <Button disabled variant="secondary">
+        <span className="inline-flex items-center gap-1.5"><Check className="h-4 w-4 shrink-0" />Covered</span>
+      </Button>
+    );
+  }
 
   if (success) {
     return (

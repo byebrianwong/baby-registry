@@ -123,17 +123,19 @@ export default async function PublicRegistryPage({
 
   const shippingAddress = (registry.settings as any)?.shipping_address as string | undefined;
 
-  // Check which parent-purchased items have already been covered by anyone
+  // Check which parent-purchased items have been covered and how many times
   const parentPurchasedIds = allItems.filter((i) => i.is_parent_purchased).map((i) => i.id);
-  const coveredItemIds = new Set<string>();
+  const coverCounts = new Map<string, number>();
   if (parentPurchasedIds.length > 0) {
     const { data: coverPurchases } = await supabaseAdmin
       .from("purchases")
-      .select("registry_item_id")
+      .select("registry_item_id, quantity")
       .in("registry_item_id", parentPurchasedIds)
       .neq("status", "cancelled");
     for (const p of coverPurchases || []) {
-      if (p.registry_item_id) coveredItemIds.add(p.registry_item_id);
+      if (p.registry_item_id) {
+        coverCounts.set(p.registry_item_id, (coverCounts.get(p.registry_item_id) || 0) + (p.quantity || 1));
+      }
     }
   }
 
@@ -476,7 +478,8 @@ export default async function PublicRegistryPage({
                                     item={item}
                                     paymentMethods={paymentMethods}
                                     parentName={parentName}
-                                    alreadyPurchased={itemPurchased || coveredItemIds.has(item.id)}
+                                    alreadyPurchased={itemPurchased}
+                                    isCovered={(coverCounts.get(item.id) || 0) >= item.quantity_needed}
                                     shippingAddress={shippingAddress}
                                   />
                                 ) : (
@@ -582,7 +585,8 @@ export default async function PublicRegistryPage({
                                   item={item}
                                   paymentMethods={paymentMethods}
                                   parentName={parentName}
-                                  alreadyPurchased={itemPurchased || coveredItemIds.has(item.id)}
+                                  alreadyPurchased={itemPurchased}
+                                  isCovered={(coverCounts.get(item.id) || 0) >= item.quantity_needed}
                                   shippingAddress={shippingAddress}
                                 />
                               ) : (
