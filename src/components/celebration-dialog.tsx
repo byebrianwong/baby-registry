@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import confetti from "canvas-confetti";
-import { Check, Copy } from "lucide-react";
+import { Check, Copy, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -20,6 +20,7 @@ interface CelebrationDialogProps {
   amount?: number;
   shippingAddress?: string;
   paymentMethods?: PaymentMethods;
+  shopUrl?: string;
 }
 
 function getMessage(
@@ -47,6 +48,7 @@ export function CelebrationDialog({
   amount,
   shippingAddress,
   paymentMethods,
+  shopUrl,
 }: CelebrationDialogProps) {
   const [copied, setCopied] = useState(false);
 
@@ -97,6 +99,22 @@ export function CelebrationDialog({
           >
             {getMessage(variant, itemTitle, parentName, amount)}
           </p>
+
+          {shopUrl && (
+            <Button
+              variant="outline"
+              asChild
+              className="w-full"
+              style={{ animation: "celebration-fade-in 0.5s ease-out 0.45s both" }}
+            >
+              <a href={shopUrl} target="_blank" rel="noopener noreferrer">
+                <span className="inline-flex items-center gap-1.5">
+                  <ExternalLink className="h-4 w-4 shrink-0" />
+                  Purchase this item
+                </span>
+              </a>
+            </Button>
+          )}
 
           {paymentMethods && (paymentMethods.venmo || paymentMethods.paypal || paymentMethods.zelle) ? (
             <div

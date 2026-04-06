@@ -89,6 +89,7 @@ export function ReserveItemDialog({ item, parentName = "The Registry Owner", act
           parentName={parentName}
           variant="reserve"
           shippingAddress={shippingAddress}
+          shopUrl={item.external_url || undefined}
         />
       </>
     );
