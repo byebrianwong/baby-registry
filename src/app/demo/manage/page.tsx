@@ -670,6 +670,9 @@ function DemoItemCard({
 }) {
   const isFulfilled = item.quantity_fulfilled >= item.quantity_needed;
   const remaining = item.quantity_needed - item.quantity_fulfilled;
+  const availableToGift = item.is_parent_purchased
+    ? item.quantity_needed
+    : remaining;
 
   return (
     <Card
@@ -722,7 +725,9 @@ function DemoItemCard({
                 </span>
               )}
               <span className="text-xs">
-                {remaining} of {item.quantity_needed} still needed
+                {item.is_parent_purchased
+                  ? `${availableToGift} of ${item.quantity_needed} available to gift`
+                  : `${remaining} of ${item.quantity_needed} still needed`}
               </span>
             </div>
 

@@ -42,6 +42,12 @@ export function ItemCard({ item, registryId, isOwner, categories = [], zipCode, 
   const isHighlighted = highlightId === item.id;
   const isFulfilled = item.quantity_fulfilled >= item.quantity_needed;
   const remaining = item.quantity_needed - item.quantity_fulfilled;
+  const coveredQuantity = item.is_parent_purchased
+    ? (purchases || []).reduce((sum, p) => sum + (p.quantity || 0), 0)
+    : 0;
+  const availableToGift = item.is_parent_purchased
+    ? item.quantity_needed - coveredQuantity
+    : remaining;
 
   useEffect(() => {
     if (isHighlighted && cardRef.current) {
@@ -127,7 +133,9 @@ export function ItemCard({ item, registryId, isOwner, categories = [], zipCode, 
                 </span>
               )}
               <span className="text-xs">
-                {remaining} of {item.quantity_needed} still needed
+                {item.is_parent_purchased
+                  ? `${availableToGift} of ${item.quantity_needed} available to gift`
+                  : `${remaining} of ${item.quantity_needed} still needed`}
               </span>
             </div>
 

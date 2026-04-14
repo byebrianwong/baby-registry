@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Tag } from "@/components/ui/tag";
+import { UsedConditionTag } from "@/components/ui/used-condition-tag";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
@@ -56,6 +57,8 @@ interface DemoItem {
   quantity_fulfilled: number;
   is_essential: boolean;
   is_parent_purchased: boolean;
+  is_open_to_used: boolean;
+  minimum_condition: string | null;
   notes: string | null;
   sort_order: number;
 }
@@ -264,7 +267,14 @@ export default function DemoPage() {
     return undefined;
   };
 
-  const demoCoverAction = async () => {
+  const [demoCoverCounts, setDemoCoverCounts] = useState<Record<string, number>>({});
+
+  const demoCoverAction = (itemId: string) => async (formData: FormData) => {
+    const quantity = parseInt(formData.get("quantity") as string) || 1;
+    setDemoCoverCounts((prev) => ({
+      ...prev,
+      [itemId]: (prev[itemId] || 0) + quantity,
+    }));
     return undefined;
   };
 
@@ -449,26 +459,29 @@ export default function DemoPage() {
                       item.quantity_fulfilled >= item.quantity_needed;
                     const remaining =
                       item.quantity_needed - item.quantity_fulfilled;
+                    const availableToGift = item.is_parent_purchased
+                      ? item.quantity_needed - (demoCoverCounts[item.id] || 0)
+                      : remaining;
 
                     return (
                       <Card
                         key={item.id}
                         className={`py-0 gap-0 rounded-xl shadow-none ${
                           isFulfilled && !item.is_parent_purchased
-                            ? "bg-secondary/50 border-secondary"
+                            ? "opacity-60 border-[#f5f5f5]"
                             : item.is_parent_purchased
-                              ? "bg-brand-600/10"
-                              : ""
+                              ? "bg-[rgba(160,228,212,0.2)] border-[#d5d7da]"
+                              : "border-[#d5d7da]"
                         }`}
                       >
                         <CardContent className="flex h-full flex-col justify-between gap-4 p-4">
                           <div className="flex gap-3">
-                            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-md bg-secondary">
+                            <div className="relative flex size-16 shrink-0 items-center justify-center rounded-md bg-[#fdfdfd]">
                               {item.image_url ? (
                                 <img
                                   src={item.image_url}
                                   alt={item.title}
-                                  className="h-16 w-16 rounded-md object-cover"
+                                  className="size-16 rounded-md object-cover"
                                 />
                               ) : (
                                 <Package className="h-6 w-6 text-tertiary" />
@@ -490,6 +503,9 @@ export default function DemoPage() {
                                     )}
                                   </>
                                 )}
+                                {item.is_open_to_used && (
+                                  <UsedConditionTag condition={item.minimum_condition} />
+                                )}
                               </div>
                               <div className="flex items-center gap-2.5">
                                 {item.price && (
@@ -497,44 +513,52 @@ export default function DemoPage() {
                                     ${item.price.toFixed(2)}
                                   </span>
                                 )}
-                                <span className="text-xs">
-                                  {remaining} of {item.quantity_needed} still needed
+                                <span className="text-xs text-[#414651]">
+                                  {item.is_parent_purchased
+                                    ? `${availableToGift} of ${item.quantity_needed} available to gift`
+                                    : `${remaining} of ${item.quantity_needed} still needed`}
                                 </span>
                               </div>
                               {item.notes && (
-                                <p className="text-sm whitespace-pre-line line-clamp-2">
+                                <p className="text-sm text-[#414651] whitespace-pre-line">
                                   {item.notes}
                                 </p>
                               )}
                             </div>
                           </div>
 
-                          {(item.is_parent_purchased || !isFulfilled) && (
+                          {(item.is_parent_purchased ? availableToGift > 0 || (demoCoverCounts[item.id] || 0) > 0 : !isFulfilled) && (
                             <div className="flex items-center justify-end gap-2">
                               {item.is_parent_purchased ? (
                                 <CoverItemDialog
                                   item={item}
+                                  availableToGift={availableToGift}
                                   paymentMethods={DEMO_REGISTRY.settings.payment_methods}
                                   parentName={DEMO_PARENT_NAME}
-                                  action={demoCoverAction}
+                                  action={demoCoverAction(item.id)}
                                   shippingAddress={DEMO_SHIPPING_ADDRESS}
                                 />
                               ) : (
                                 <>
+                                  {item.external_url && (
+                                    <Button
+                                      variant="outline"
+                                      asChild
+                                    >
+                                      <a href={item.external_url} target="_blank" rel="noopener noreferrer">
+                                        <span className="inline-flex items-center gap-1.5">
+                                          <ExternalLink className="h-4 w-4 shrink-0" />
+                                          Shop
+                                        </span>
+                                      </a>
+                                    </Button>
+                                  )}
                                   <ReserveItemDialog
                                     item={item}
                                     parentName={DEMO_PARENT_NAME}
                                     action={demoReserveAction(item.id)}
                                     shippingAddress={DEMO_SHIPPING_ADDRESS}
                                   />
-                                  {item.external_url && (
-                                    <Button
-                                      variant="outline"
-                                      onClick={() => window.open(item.external_url!, '_blank', 'noopener,noreferrer')}
-                                    >
-                                      <span className="inline-flex items-center gap-1.5"><ExternalLink className="h-4 w-4 shrink-0" />Shop</span>
-                                    </Button>
-                                  )}
                                 </>
                               )}
                             </div>
