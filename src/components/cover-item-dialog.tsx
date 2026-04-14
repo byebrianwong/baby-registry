@@ -172,7 +172,7 @@ export function CoverItemDialog({ item, availableToGift, paymentMethods, parentN
               Cancel
             </Button>
             <Button type="submit" disabled={loading} className="!bg-[#004659] hover:!bg-[#003847] !ring-[#004659] !text-white">
-              {loading ? "Sending..." : "Mark as Covered and Gifted!"}
+              {loading ? "Sending..." : "Mark as covered and gifted"}
             </Button>
           </div>
         </form>
