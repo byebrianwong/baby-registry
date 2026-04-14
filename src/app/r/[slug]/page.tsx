@@ -400,6 +400,9 @@ export default async function PublicRegistryPage({
                       const remaining =
                         item.quantity_needed - item.quantity_fulfilled;
                       const itemPurchased = !!(myGifts.items && myGifts.items[item.id]);
+                      const availableToGift = item.is_parent_purchased
+                        ? item.quantity_needed - (coverCounts.get(item.id) || 0)
+                        : remaining;
 
                       return (
                         <Card
@@ -460,7 +463,9 @@ export default async function PublicRegistryPage({
                                     </span>
                                   )}
                                   <span className="text-xs text-[#414651]">
-                                    {remaining} of {item.quantity_needed} still needed
+                                    {item.is_parent_purchased
+                                      ? `${availableToGift} of ${item.quantity_needed} available to gift`
+                                      : `${remaining} of ${item.quantity_needed} still needed`}
                                   </span>
                                 </div>
                                 {item.notes && (
@@ -471,11 +476,12 @@ export default async function PublicRegistryPage({
                               </div>
                             </div>
 
-                            {(item.is_parent_purchased || !isFulfilled || itemPurchased) && (
+                            {(item.is_parent_purchased ? availableToGift > 0 || itemPurchased : !isFulfilled || itemPurchased) && (
                               <div className="flex items-center justify-end gap-2">
                                 {item.is_parent_purchased ? (
                                   <CoverItemDialog
                                     item={item}
+                                    availableToGift={availableToGift}
                                     paymentMethods={paymentMethods}
                                     parentName={parentName}
                                     alreadyPurchased={itemPurchased}
@@ -527,6 +533,9 @@ export default async function PublicRegistryPage({
                     const remaining =
                       item.quantity_needed - item.quantity_fulfilled;
                     const itemPurchased = !!(myGifts.items && myGifts.items[item.id]);
+                    const availableToGift = item.is_parent_purchased
+                      ? item.quantity_needed - (coverCounts.get(item.id) || 0)
+                      : remaining;
                     return (
                       <Card
                         key={item.id}
@@ -574,15 +583,18 @@ export default async function PublicRegistryPage({
                                 </span>
                               )}
                               <span className="text-xs text-[#414651]">
-                                {remaining} of {item.quantity_needed} still needed
+                                {item.is_parent_purchased
+                                  ? `${availableToGift} of ${item.quantity_needed} available to gift`
+                                  : `${remaining} of ${item.quantity_needed} still needed`}
                               </span>
                             </div>
                           </div>
-                          {(item.is_parent_purchased || !isFulfilled || itemPurchased) && (
+                          {(item.is_parent_purchased ? availableToGift > 0 || itemPurchased : !isFulfilled || itemPurchased) && (
                             <div className="flex items-center justify-end gap-2">
                               {item.is_parent_purchased ? (
                                 <CoverItemDialog
                                   item={item}
+                                  availableToGift={availableToGift}
                                   paymentMethods={paymentMethods}
                                   parentName={parentName}
                                   alreadyPurchased={itemPurchased}

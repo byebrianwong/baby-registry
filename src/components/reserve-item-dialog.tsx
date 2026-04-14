@@ -143,7 +143,7 @@ export function ReserveItemDialog({ item, parentName = "The Registry Owner", act
               min={1}
               max={remaining}
               defaultValue="1"
-              hint={`${remaining} of ${item.quantity_needed} still needed`}
+              hint={`${remaining} of ${item.quantity_needed} available to gift`}
             />
           )}
           <TextArea

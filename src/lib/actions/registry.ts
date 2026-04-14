@@ -942,6 +942,7 @@ export async function coverParentPurchasedItem(formData: FormData) {
   const buyerName = formData.get("buyerName") as string;
   const buyerEmail = formData.get("buyerEmail") as string;
   const message = formData.get("message") as string;
+  const quantity = parseInt(formData.get("quantity") as string, 10) || 1;
 
   // Ensure the gift giver has at least an anonymous session
   const {
@@ -956,6 +957,7 @@ export async function coverParentPurchasedItem(formData: FormData) {
     p_item_id: itemId,
     p_buyer_name: buyerName,
     p_buyer_email: buyerEmail,
+    p_quantity: quantity,
     p_message: message || null,
   });
 
