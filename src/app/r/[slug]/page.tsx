@@ -403,12 +403,13 @@ export default async function PublicRegistryPage({
                       const availableToGift = item.is_parent_purchased
                         ? item.quantity_needed - (coverCounts.get(item.id) || 0)
                         : remaining;
+                      const isFullyCovered = item.is_parent_purchased && (coverCounts.get(item.id) || 0) >= item.quantity_needed;
 
                       return (
                         <Card
                           key={item.id}
                           className={`py-0 gap-0 rounded-xl shadow-none ${
-                            isFulfilled && !item.is_parent_purchased
+                            (isFulfilled && !item.is_parent_purchased) || isFullyCovered
                               ? "opacity-60 border-[#f5f5f5]"
                               : item.is_parent_purchased
                                 ? "bg-[rgba(160,228,212,0.2)] border-[#d5d7da]"
@@ -536,11 +537,12 @@ export default async function PublicRegistryPage({
                     const availableToGift = item.is_parent_purchased
                       ? item.quantity_needed - (coverCounts.get(item.id) || 0)
                       : remaining;
+                    const isFullyCovered = item.is_parent_purchased && (coverCounts.get(item.id) || 0) >= item.quantity_needed;
                     return (
                       <Card
                         key={item.id}
                         className={`py-0 gap-0 rounded-xl shadow-none ${
-                          isFulfilled && !item.is_parent_purchased
+                          (isFulfilled && !item.is_parent_purchased) || isFullyCovered
                             ? "opacity-60 border-[#f5f5f5]"
                             : item.is_parent_purchased
                               ? "bg-[rgba(160,228,212,0.2)] border-[#d5d7da]"
