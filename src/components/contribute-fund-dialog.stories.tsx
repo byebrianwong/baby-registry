@@ -12,7 +12,7 @@ const meta: Meta<typeof ContributeFundDialog> = {
   parameters: { layout: "centered" },
   args: {
     action: mockAction,
-    parentName: "Denise & Brian",
+    parentName: "Remi & Max",
   },
 };
 export default meta;
@@ -28,8 +28,8 @@ export const Default: Story = {
       current_amount: 450,
     },
     paymentMethods: {
-      venmo: "@brian-wong",
-      paypal: "brian@example.com",
+      venmo: "@remi-and-max",
+      paypal: "max@example.com",
     },
   },
 };
@@ -43,7 +43,7 @@ export const AlmostFunded: Story = {
       goal_amount: 1000,
       current_amount: 950,
     },
-    paymentMethods: { venmo: "@brian-wong" },
+    paymentMethods: { venmo: "@remi-and-max" },
   },
 };
 
@@ -69,8 +69,8 @@ export const SuccessState: Story = {
       current_amount: 450,
     },
     paymentMethods: {
-      venmo: "@brian-wong",
-      paypal: "brian@example.com",
+      venmo: "@remi-and-max",
+      paypal: "max@example.com",
     },
     alreadyPurchased: true,
     previousAmount: 75,

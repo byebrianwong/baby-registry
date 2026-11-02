@@ -12,7 +12,7 @@ const meta: Meta<typeof CoverItemDialog> = {
   parameters: { layout: "centered" },
   args: {
     action: mockAction,
-    parentName: "Denise & Brian",
+    parentName: "Remi & Max",
   },
 };
 export default meta;
@@ -22,8 +22,8 @@ export const Default: Story = {
   args: {
     item: { id: "1", title: "UPPAbaby Vista V2 Stroller", price: 979.99, quantity_needed: 1 },
     paymentMethods: {
-      venmo: "@brian-wong",
-      paypal: "brian@example.com",
+      venmo: "@remi-and-max",
+      paypal: "max@example.com",
     },
   },
 };
@@ -32,9 +32,9 @@ export const WithAllPaymentMethods: Story = {
   args: {
     item: { id: "2", title: "Ergobaby Carrier", price: 189.0, quantity_needed: 1 },
     paymentMethods: {
-      venmo: "@brian-wong",
-      paypal: "brian@example.com",
-      zelle: "brian@example.com",
+      venmo: "@remi-and-max",
+      paypal: "max@example.com",
+      zelle: "max@example.com",
     },
   },
 };
@@ -50,7 +50,7 @@ export const MultiQuantity: Story = {
     item: { id: "4", title: "Muslin Swaddle Blankets", price: 12.99, quantity_needed: 5 },
     availableToGift: 3,
     paymentMethods: {
-      venmo: "@brian-wong",
+      venmo: "@remi-and-max",
     },
   },
 };
@@ -59,8 +59,8 @@ export const SuccessState: Story = {
   args: {
     item: { id: "1", title: "UPPAbaby Vista V2 Stroller", price: 979.99, quantity_needed: 1 },
     paymentMethods: {
-      venmo: "@brian-wong",
-      paypal: "brian@example.com",
+      venmo: "@remi-and-max",
+      paypal: "max@example.com",
     },
     alreadyPurchased: true,
   },

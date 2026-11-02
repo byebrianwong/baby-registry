@@ -1,6 +1,6 @@
 # Baby Registry App — Implementation Plan
 
-Built on the research foundation in `baby registry research.md`. Tech stack: **Next.js (App Router) + Supabase + Vercel**.
+Tech stack: **Next.js (App Router) + Supabase + Vercel**.
 
 ---
 
@@ -17,7 +17,7 @@ Built on the research foundation in `baby registry research.md`. Tech stack: **N
   - `SUPABASE_SERVICE_ROLE_KEY` (server-only)
 
 ### 1.2 Supabase Client Utilities
-Create three client files per the research's recommendation:
+Create three client files:
 - `src/utils/supabase/client.ts` — browser client for Client Components
 - `src/utils/supabase/server.ts` — server client for Server Components & Server Actions
 - `src/utils/supabase/middleware.ts` — session refresh in Next.js middleware
@@ -75,7 +75,7 @@ Write and run SQL migrations for the six core tables:
 - **Purchases:** Insert allowed for authenticated users (including anonymous sessions) via the `reserve_registry_item` security-definer function
 
 ### 2.3 Reserve Item Function
-Implement the `reserve_registry_item` PostgreSQL function with `SELECT FOR UPDATE` row locking to prevent double-purchasing (see research doc for exact SQL).
+Implement the `reserve_registry_item` PostgreSQL function with `SELECT FOR UPDATE` row locking to prevent double-purchasing (see `supabase/migrations/001_initial_schema.sql`).
 
 ### 2.4 Registry CRUD (Server Actions)
 - Create registry (generate unique slug, seed default categories)
@@ -278,7 +278,7 @@ Create a seed file with the canonical ~125 items across 10 categories, each tagg
 | Completion discount tracker | High | Surface Target/Amazon discount eligibility and timelines |
 | Registry quiz / onboarding flow | Medium | Generate personalized starter checklist from due date + preferences |
 | Group gifting on high-ticket items | Medium | Multiple contributors toward one item, with progress bar |
-| 1:1 registry consultant chat | Low | Differentiator from Babylist — could use AI initially |
+| 1:1 registry consultant chat | Low | Could use AI initially |
 | Email parsing for purchase detection | Low | Scan gift giver confirmation emails to auto-mark purchases |
 | Mobile app (React Native) | Low | PWA may suffice initially |
 | Welcome box partnerships | Low | Negotiate with brands for free sample kits |
@@ -293,7 +293,7 @@ Create a seed file with the canonical ~125 items across 10 categories, each tagg
 | Database | Supabase (PostgreSQL) | RLS, Realtime, Storage, Auth in one platform; $25/month Pro tier |
 | Auth strategy | Full accounts for parents, anonymous sessions for gift givers | Zero friction for gift givers while RLS still works |
 | Concurrency control | `SELECT FOR UPDATE` in PostgreSQL function | Prevents double-purchasing — the hardest technical problem |
-| Payments | Stripe Connect Express | Direct bank transfer for cash funds (competitive advantage over Babylist's store credit) |
+| Payments | Stripe Connect Express | Direct bank transfer for cash funds |
 | Hosting | Vercel | Native Next.js support, preview deployments, free tier sufficient |
 | Styling | Tailwind CSS + shadcn/ui | Rapid development with consistent, accessible components |
 | Image handling | Supabase Storage + Next.js Image | Cache external product images to prevent broken links |

@@ -318,7 +318,7 @@ export default function RegistrySettingsPage() {
             <Input
               label="Parent Names"
               name="parentNames"
-              placeholder='e.g., "Denise & Brian"'
+              placeholder='e.g., "Remi & Max"'
               defaultValue={registry.parent_names || ""}
               hint="The name shown to gift givers and in email notifications."
             />
