@@ -6,11 +6,14 @@ import {
   Baby,
   Calendar,
   ExternalLink,
-  Package,
   ArrowLeft,
   Lightbulb,
   ChevronDown,
+  Search,
+  SlidersHorizontal,
+  LockOpen,
 } from "lucide-react";
+import { ItemImage } from "@/components/item-image";
 import { Badge } from "@/components/ui/badge";
 import { Tag } from "@/components/ui/tag";
 import { UsedConditionTag } from "@/components/ui/used-condition-tag";
@@ -251,9 +254,21 @@ function DemoSuggestItemDialog() {
 const DEMO_PARENT_NAME = "Sarah & Mike";
 const DEMO_SHIPPING_ADDRESS = DEMO_REGISTRY.settings.shipping_address;
 
+type SortMode = "default" | "most-wanted" | "price-asc" | "price-desc";
+const PRICE_BUCKETS = [
+  { value: "any", label: "Any price", max: Infinity },
+  { value: "25", label: "Under $25", max: 25 },
+  { value: "50", label: "Under $50", max: 50 },
+  { value: "100", label: "Under $100", max: 100 },
+  { value: "250", label: "Under $250", max: 250 },
+];
+
 export default function DemoPage() {
   const [items, setItems] = useState(DEMO_ITEMS);
   const [funds, setFunds] = useState(DEMO_CASH_FUNDS);
+  const [search, setSearch] = useState("");
+  const [priceBucket, setPriceBucket] = useState("any");
+  const [sort, setSort] = useState<SortMode>("default");
 
   const demoReserveAction = (itemId: string) => async (formData: FormData) => {
     const quantity = parseInt(formData.get("quantity") as string) || 1;
@@ -297,9 +312,36 @@ export default function DemoPage() {
   const progress =
     totalItems > 0 ? (fulfilledItems / totalItems) * 100 : 0;
 
+  // Apply search + price filter + sort
+  const normalizedQuery = search.trim().toLowerCase();
+  const priceMax =
+    PRICE_BUCKETS.find((b) => b.value === priceBucket)?.max ?? Infinity;
+  const filteredItems = items.filter((item) => {
+    if (normalizedQuery) {
+      const haystack = `${item.title} ${item.notes ?? ""}`.toLowerCase();
+      if (!haystack.includes(normalizedQuery)) return false;
+    }
+    if (priceMax !== Infinity && (item.price ?? Infinity) > priceMax) return false;
+    return true;
+  });
+  const sortedItems = [...filteredItems].sort((a, b) => {
+    switch (sort) {
+      case "most-wanted":
+        return (b.is_essential ? 1 : 0) - (a.is_essential ? 1 : 0);
+      case "price-asc":
+        return (a.price ?? Infinity) - (b.price ?? Infinity);
+      case "price-desc":
+        return (b.price ?? -Infinity) - (a.price ?? -Infinity);
+      default:
+        return a.sort_order - b.sort_order;
+    }
+  });
+  const filtersActive =
+    normalizedQuery !== "" || priceBucket !== "any" || sort !== "default";
+
   // Group items by category
   const itemsByCategory = new Map<string, DemoItem[]>();
-  for (const item of items) {
+  for (const item of sortedItems) {
     if (!itemsByCategory.has(item.category_id)) {
       itemsByCategory.set(item.category_id, []);
     }
@@ -386,6 +428,10 @@ export default function DemoPage() {
             </div>
             <Progress value={progress} />
           </div>
+          <p className="mt-4 inline-flex items-center gap-1.5 text-xs text-tertiary">
+            <LockOpen className="h-3.5 w-3.5" />
+            Reserve a gift in 10 seconds — no sign-up required.
+          </p>
         </div>
       </section>
 
@@ -394,6 +440,59 @@ export default function DemoPage() {
         <div className="flex gap-8 items-start">
           {navItems.length > 1 && <CategoryNav categories={navItems} suggestButton={<DemoSuggestItemDialog />} />}
           <div className="flex-1 min-w-0 space-y-10">
+          {/* Toolbar: search + price + sort */}
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="relative flex-1 max-w-md">
+              <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-tertiary" />
+              <input
+                type="search"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search items"
+                className="w-full rounded-md border border-[#d5d7da] bg-primary py-2 pl-9 pr-3 text-sm placeholder:text-tertiary focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <SlidersHorizontal className="h-4 w-4 text-tertiary shrink-0" />
+              <select
+                value={priceBucket}
+                onChange={(e) => setPriceBucket(e.target.value)}
+                className="rounded-md border border-[#d5d7da] bg-primary px-3 py-2 text-sm cursor-pointer focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+              >
+                {PRICE_BUCKETS.map((b) => (
+                  <option key={b.value} value={b.value}>
+                    {b.label}
+                  </option>
+                ))}
+              </select>
+              <select
+                value={sort}
+                onChange={(e) => setSort(e.target.value as SortMode)}
+                className="rounded-md border border-[#d5d7da] bg-primary px-3 py-2 text-sm cursor-pointer focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+              >
+                <option value="default">Default order</option>
+                <option value="most-wanted">Most wanted first</option>
+                <option value="price-asc">Price: low to high</option>
+                <option value="price-desc">Price: high to low</option>
+              </select>
+            </div>
+          </div>
+          {filtersActive && filteredItems.length === 0 && (
+            <div className="rounded-lg border border-dashed border-[#d5d7da] bg-secondary p-8 text-center text-sm text-tertiary">
+              No items match your filters.{" "}
+              <button
+                type="button"
+                onClick={() => {
+                  setSearch("");
+                  setPriceBucket("any");
+                  setSort("default");
+                }}
+                className="font-medium text-brand-600 hover:underline"
+              >
+                Clear filters
+              </button>
+            </div>
+          )}
           {/* Cash Funds */}
           <div id={getCategorySectionId("gift-funds")} className="scroll-mt-4">
             <h2 className="text-xl font-semibold mb-4">Gift Funds</h2>
@@ -476,17 +575,11 @@ export default function DemoPage() {
                       >
                         <CardContent className="flex h-full flex-col justify-between gap-4 p-4">
                           <div className="flex gap-3">
-                            <div className="relative flex size-16 shrink-0 items-center justify-center rounded-md bg-[#fdfdfd]">
-                              {item.image_url ? (
-                                <img
-                                  src={item.image_url}
-                                  alt={item.title}
-                                  className="size-16 rounded-md object-cover"
-                                />
-                              ) : (
-                                <Package className="h-6 w-6 text-tertiary" />
-                              )}
-                            </div>
+                            <ItemImage
+                              imageUrl={item.image_url}
+                              title={item.title}
+                              categoryName={category.name}
+                            />
                             <div className="flex-1 min-w-0 flex flex-col gap-2 items-start">
                               <h3 className="font-medium text-sm leading-tight">
                                 {item.title}
