@@ -25,6 +25,7 @@ import {
   Lightbulb,
 } from "lucide-react";
 import { Link01 } from "@untitledui/icons";
+import { ItemImage } from "@/components/item-image";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tag } from "@/components/ui/tag";
@@ -213,13 +214,24 @@ function DemoAddItemDialog({
         <DialogHeader>
           <DialogTitle>Add item to registry</DialogTitle>
           <DialogDescription>
-            This is a demo — paste a URL to see auto-fill in action.
+            Add anything from any store, in two taps.
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-1.5">
-            <Label>Product URL</Label>
-            <div className="flex items-center gap-4">
+        <form onSubmit={handleSubmit} className="space-y-5">
+          {/* Step 1 — URL hero */}
+          <div className="rounded-xl border border-[#c3e3e8] bg-[#f0fafc] p-4 space-y-2">
+            <div className="flex items-center gap-2">
+              <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-[#004659] text-xs font-semibold text-white">
+                1
+              </span>
+              <Label className="!text-sm !font-semibold !text-primary">
+                Paste a product link from any store
+              </Label>
+            </div>
+            <p className="text-xs text-tertiary pl-8">
+              Target, Amazon, Etsy, or a small shop — we&apos;ll pull the name, price, and image.
+            </p>
+            <div className="flex items-stretch gap-2 pl-8">
               <InputGroup
                 leadingAddon={<InputPrefix>http://</InputPrefix>}
                 className="flex-1"
@@ -228,30 +240,44 @@ function DemoAddItemDialog({
                   ref={urlRef}
                   name="externalUrl"
                   type="url"
-                  placeholder="www.untitledui.com"
+                  placeholder="www.target.com/..."
                   onBlur={(e) => handleDemoScrape((e.target as HTMLInputElement).value)}
                 />
               </InputGroup>
               <Button
                 type="button"
-                variant="ghost"
-                size="icon-lg"
                 disabled={scraping}
                 onClick={() => {
                   if (urlRef.current?.value) handleDemoScrape(urlRef.current.value);
                 }}
-                title="Fetch product details"
+                className="!bg-[#004659] hover:!bg-[#003847] !ring-[#004659] !text-white"
               >
-                {scraping ? (
-                  <Loader2 className="h-6 w-6 animate-spin" />
-                ) : (
-                  <Link01 className="h-6 w-6" />
-                )}
+                <span className="inline-flex items-center gap-1.5">
+                  {scraping ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Link01 className="h-4 w-4" />
+                  )}
+                  {scraping ? "Fetching…" : "Fetch"}
+                </span>
               </Button>
             </div>
             {scrapeStatus && (
-              <p className="text-xs text-tertiary">{scrapeStatus}</p>
+              <p className={`text-xs pl-8 text-[#004659]`}>{scrapeStatus}</p>
             )}
+          </div>
+
+          {/* Step 2 — details */}
+          <div className="flex items-center gap-2 pt-1">
+            <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-secondary text-xs font-semibold text-tertiary">
+              2
+            </span>
+            <span className="text-sm font-semibold text-primary">
+              Confirm the details
+            </span>
+            <span className="ml-auto text-xs text-tertiary">
+              or fill in manually
+            </span>
           </div>
 
           <Input
@@ -659,11 +685,13 @@ function DemoEditItemDialog({
 
 function DemoItemCard({
   item,
+  categoryName,
   onDelete,
   onToggleParentPurchased,
   onClick,
 }: {
   item: DemoItem;
+  categoryName?: string;
   onDelete: (id: string) => void;
   onToggleParentPurchased: (id: string) => void;
   onClick: () => void;
@@ -687,15 +715,23 @@ function DemoItemCard({
     >
       <CardContent className="flex h-full flex-col justify-between gap-4 p-4">
         <div className="flex gap-3">
-          <div className="flex size-[106px] shrink-0 items-center justify-center rounded-[10px] bg-tertiary">
+          <div className="relative size-[106px] shrink-0">
             {item.image_url ? (
-              <img
-                src={item.image_url}
-                alt={item.title}
-                className="size-[106px] rounded-[10px] object-cover"
-              />
+              <div className="flex size-[106px] items-center justify-center rounded-[10px] bg-tertiary">
+                <img
+                  src={item.image_url}
+                  alt={item.title}
+                  className="size-[106px] rounded-[10px] object-cover"
+                />
+              </div>
             ) : (
-              <Package className="h-10 w-10 text-tertiary" />
+              <ItemImage
+                imageUrl={null}
+                title={item.title}
+                categoryName={categoryName}
+                size="md"
+                className="!size-[106px] !rounded-[10px]"
+              />
             )}
           </div>
 
@@ -1259,6 +1295,7 @@ export default function DemoManagePage() {
                             <DemoItemCard
                               key={item.id}
                               item={item}
+                              categoryName={category.name}
                               onDelete={handleDeleteItem}
                               onToggleParentPurchased={
                                 handleToggleParentPurchased

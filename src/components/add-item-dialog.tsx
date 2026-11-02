@@ -250,40 +250,65 @@ export function AddItemDialog({
         <DialogHeader>
           <DialogTitle>Add item to registry</DialogTitle>
           <DialogDescription>
-            Paste a product URL to auto-fill, or add a custom item.
+            Add anything from any store, in two taps.
           </DialogDescription>
         </DialogHeader>
-        <form action={handleSubmit} className="min-w-0 space-y-4">
-          <div className="space-y-1.5">
-            <Label>Product URL</Label>
-            <div className="flex items-center gap-4">
+        <form action={handleSubmit} className="min-w-0 space-y-5">
+          {/* Step 1 — URL hero */}
+          <div className="rounded-xl border border-[#c3e3e8] bg-[#f0fafc] p-4 space-y-2">
+            <div className="flex items-center gap-2">
+              <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-[#004659] text-xs font-semibold text-white">
+                1
+              </span>
+              <Label className="!text-sm !font-semibold !text-primary">
+                Paste a product link from any store
+              </Label>
+            </div>
+            <p className="text-xs text-tertiary pl-8">
+              Target, Amazon, Etsy, or a small shop — we&apos;ll pull the name, price, and image.
+            </p>
+            <div className="flex items-stretch gap-2 pl-8">
               <Input
                 ref={urlRef}
                 name="externalUrl"
-                placeholder="https://www.example.com"
+                placeholder="https://www.target.com/..."
                 onBlur={(e) => handleScrape((e.target as HTMLInputElement).value)}
                 className="flex-1"
               />
               <Button
                 type="button"
-                variant="ghost"
-                size="icon-lg"
                 disabled={scraping}
                 onClick={() => {
                   if (urlRef.current?.value) handleScrape(urlRef.current.value);
                 }}
-                title="Fetch product details"
+                className="!bg-[#004659] hover:!bg-[#003847] !ring-[#004659] !text-white"
               >
-                {scraping ? (
-                  <Loader2 className="h-6 w-6 animate-spin" />
-                ) : (
-                  <Link01 className="h-6 w-6" />
-                )}
+                <span className="inline-flex items-center gap-1.5">
+                  {scraping ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Link01 className="h-4 w-4" />
+                  )}
+                  {scraping ? "Fetching…" : "Fetch"}
+                </span>
               </Button>
             </div>
             {scrapeStatus && (
-              <p className={`text-xs ${scrapeIsError ? "text-error-primary" : "text-tertiary"}`}>{scrapeStatus}</p>
+              <p className={`text-xs pl-8 ${scrapeIsError ? "text-error-primary" : "text-[#004659]"}`}>{scrapeStatus}</p>
             )}
+          </div>
+
+          {/* Step 2 — details */}
+          <div className="flex items-center gap-2 pt-1">
+            <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-secondary text-xs font-semibold text-tertiary">
+              2
+            </span>
+            <span className="text-sm font-semibold text-primary">
+              Confirm the details
+            </span>
+            <span className="ml-auto text-xs text-tertiary">
+              or fill in manually
+            </span>
           </div>
 
           <Input

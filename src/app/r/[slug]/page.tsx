@@ -1,25 +1,15 @@
 import { notFound } from "next/navigation";
 import { cookies } from "next/headers";
-import { Baby, Calendar, ExternalLink, Package, HandCoins } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
+import { Baby, Calendar, LockOpen } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
-import { Separator } from "@/components/ui/separator";
-import { Button } from "@/components/ui/button";
 import { createClient } from "@/utils/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { verifyBuyerLink } from "@/lib/buyer-link";
-import { ReserveItemDialog } from "@/components/reserve-item-dialog";
-import { CoverItemDialog } from "@/components/cover-item-dialog";
-import { ContributeFundDialog } from "@/components/contribute-fund-dialog";
 import type { PaymentMethods } from "@/lib/types";
 import type { Metadata } from "next";
-import { CategoryNav, type CategoryNavItem } from "@/components/category-nav";
-import { getCategorySectionId } from "@/lib/category-section-id";
 import { ScrollToTop } from "@/components/scroll-to-top";
 import { SuggestItemDialog } from "@/components/suggest-item-dialog";
-import { Tag } from "@/components/ui/tag";
-import { UsedConditionTag } from "@/components/ui/used-condition-tag";
+import { PublicRegistryGrid } from "@/components/public-registry-grid";
 
 interface RegistryItem {
   id: string;
@@ -202,43 +192,8 @@ export default async function PublicRegistryPage({
   ).length;
   const progress = totalItems > 0 ? (fulfilledItems / totalItems) * 100 : 0;
 
-  // Group items by category
-  const itemsByCategory = new Map<string | null, RegistryItem[]>();
-  for (const item of allItems) {
-    const key = item.category_id;
-    if (!itemsByCategory.has(key)) {
-      itemsByCategory.set(key, []);
-    }
-    itemsByCategory.get(key)!.push(item);
-  }
-
-  // Build navigation items for category sidebar
-  const navItems: CategoryNavItem[] = [];
-  if (allFunds.length > 0) {
-    navItems.push({
-      id: getCategorySectionId("gift-funds"),
-      name: "Gift Funds",
-      count: allFunds.length,
-    });
-  }
-  for (const category of allCategories) {
-    const categoryItems = itemsByCategory.get(category.id) || [];
-    if (categoryItems.length > 0) {
-      navItems.push({
-        id: getCategorySectionId(category.id),
-        name: category.name,
-        count: categoryItems.length,
-      });
-    }
-  }
-  const uncategorizedItems = itemsByCategory.get(null) || [];
-  if (uncategorizedItems.length > 0) {
-    navItems.push({
-      id: getCategorySectionId(null),
-      name: "Other Items",
-      count: uncategorizedItems.length,
-    });
-  }
+  const coverCountsObj: Record<string, number> = {};
+  for (const [k, v] of coverCounts) coverCountsObj[k] = v;
 
   return (
     <div className="min-h-screen bg-primary">
@@ -297,6 +252,10 @@ export default async function PublicRegistryPage({
             </div>
             <Progress value={progress} />
           </div>
+          <p className="inline-flex items-center gap-1.5 text-xs text-[#535862]">
+            <LockOpen className="h-3.5 w-3.5" />
+            Reserve a gift in 10 seconds — no sign-up required.
+          </p>
         </div>
       </section>
 
@@ -307,321 +266,22 @@ export default async function PublicRegistryPage({
             <p>This registry doesn&apos;t have any items yet.</p>
           </div>
         ) : (
-          <div className="flex gap-8 items-start">
-            {navItems.length > 1 && <CategoryNav categories={navItems} suggestButton={<SuggestItemDialog registryId={registry.id} categories={allCategories.map((c) => ({ id: c.id, name: c.name }))} />} />}
-            <div className="flex-1 min-w-0 space-y-10">
-            {/* Cash Funds */}
-            {allFunds.length > 0 && (
-              <div id={getCategorySectionId("gift-funds")} className="scroll-mt-4">
-                <h2 className="text-xl font-semibold mb-4">Gift Funds</h2>
-                <div className="grid gap-4 md:grid-cols-2">
-                  {allFunds.map((fund) => {
-                    const fundProgress =
-                      fund.goal_amount && fund.goal_amount > 0
-                        ? (fund.current_amount / fund.goal_amount) * 100
-                        : 0;
-                    const fundPurchased = !!(myGifts.funds && myGifts.funds[fund.id]);
-                    const fundPrevAmount = myGifts.funds?.[fund.id];
-                    return (
-                      <Card key={fund.id} className="py-0 gap-0 rounded-xl shadow-none border-[#d5d7da]">
-                        <CardContent className="flex h-full flex-col justify-between gap-4 p-4">
-                          <div className="flex flex-col gap-2">
-                            <div className="flex items-center gap-2">
-                              <h3 className="font-semibold text-lg text-[#181d27]">
-                                {fund.title}
-                              </h3>
-                              {fundPurchased && (
-                                <img
-                                  src="/hero/panda.svg"
-                                  alt=""
-                                  className="h-8 w-8 shrink-0"
-                                  style={{ animation: "celebration-bounce 1.2s ease-in-out infinite" }}
-                                />
-                              )}
-                            </div>
-                            {fund.description && (
-                              <p className="text-sm text-[#535862] whitespace-pre-line">
-                                {fund.description}
-                              </p>
-                            )}
-                            {fund.goal_amount && fund.goal_amount > 0 && (
-                              <div className="flex flex-col gap-1">
-                                <div className="flex justify-between text-sm">
-                                  <span>
-                                    ${fund.current_amount.toFixed(0)} raised
-                                  </span>
-                                  <span>
-                                    ${fund.goal_amount.toFixed(0)} goal
-                                  </span>
-                                </div>
-                                <Progress value={fundProgress} />
-                                <span className="text-xs text-[#535862]">
-                                  ${Math.max(0, fund.goal_amount - fund.current_amount).toFixed(0)} remaining
-                                </span>
-                              </div>
-                            )}
-                          </div>
-                          <div className="flex justify-end">
-                            <ContributeFundDialog
-                              fund={fund}
-                              paymentMethods={paymentMethods}
-                              parentName={parentName}
-                              alreadyPurchased={fundPurchased}
-                              previousAmount={fundPrevAmount}
-                              shippingAddress={shippingAddress}
-                            />
-                          </div>
-                        </CardContent>
-                      </Card>
-                    );
-                  })}
-                </div>
-                <Separator className="mt-10" />
-              </div>
-            )}
-
-            {/* Items by category */}
-            {allCategories.map((category) => {
-              const categoryItems = itemsByCategory.get(category.id) || [];
-              if (categoryItems.length === 0) return null;
-
-              return (
-                <div key={category.id} id={getCategorySectionId(category.id)} className="scroll-mt-4">
-                  <h2 className="text-xl font-semibold mb-4">
-                    {category.name}
-                    <Badge variant="secondary" className="ml-2">
-                      {categoryItems.length}
-                    </Badge>
-                  </h2>
-                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                    {categoryItems.map((item) => {
-                      const isFulfilled =
-                        item.quantity_fulfilled >= item.quantity_needed;
-                      const remaining =
-                        item.quantity_needed - item.quantity_fulfilled;
-                      const itemPurchased = !!(myGifts.items && myGifts.items[item.id]);
-                      const availableToGift = item.is_parent_purchased
-                        ? item.quantity_needed - (coverCounts.get(item.id) || 0)
-                        : remaining;
-                      const isFullyCovered = item.is_parent_purchased && (coverCounts.get(item.id) || 0) >= item.quantity_needed;
-
-                      return (
-                        <Card
-                          key={item.id}
-                          className={`py-0 gap-0 rounded-xl shadow-none ${
-                            (isFulfilled && !item.is_parent_purchased) || isFullyCovered
-                              ? "opacity-60 border-[#f5f5f5]"
-                              : item.is_parent_purchased
-                                ? "bg-[rgba(160,228,212,0.2)] border-[#d5d7da]"
-                                : "border-[#d5d7da]"
-                          }`}
-                        >
-                          <CardContent className="flex h-full flex-col justify-between gap-4 p-4">
-                            <div className="flex gap-3">
-                              <div className="relative flex size-16 shrink-0 items-center justify-center rounded-md bg-[#fdfdfd]">
-                                {item.image_url ? (
-                                  <img
-                                    src={item.image_url}
-                                    alt={item.title}
-                                    className="size-16 rounded-md object-cover"
-                                  />
-                                ) : (
-                                  <Package className="h-6 w-6 text-tertiary" />
-                                )}
-                                {itemPurchased && (
-                                  <img
-                                    src="/hero/panda.svg"
-                                    alt=""
-                                    className="absolute -bottom-2 -right-2 h-8 w-8"
-                                    style={{ animation: "celebration-bounce 1.2s ease-in-out infinite" }}
-                                  />
-                                )}
-                              </div>
-                              <div className="flex-1 min-w-0 flex flex-col gap-2 items-start">
-                                <h3 className="font-medium text-sm leading-tight">
-                                  {item.title}
-                                </h3>
-                                <div className="flex flex-wrap gap-2.5">
-                                  {item.is_parent_purchased ? (
-                                    <Tag variant="parent-purchased">Purchased by parent</Tag>
-                                  ) : isFulfilled ? (
-                                    <Tag variant="guest-purchased">Already purchased by guest</Tag>
-                                  ) : (
-                                    <>
-                                      {item.is_essential && (
-                                        <Tag variant="most-wanted">Most wanted</Tag>
-                                      )}
-                                    </>
-                                  )}
-                                  {item.is_open_to_used && (
-                                    <UsedConditionTag condition={item.minimum_condition} />
-                                  )}
-                                </div>
-                                <div className="flex items-center gap-2.5">
-                                  {item.price && (
-                                    <span className="text-sm font-semibold">
-                                      ${item.price.toFixed(2)}
-                                    </span>
-                                  )}
-                                  <span className="text-xs text-[#414651]">
-                                    {item.is_parent_purchased
-                                      ? `${availableToGift} of ${item.quantity_needed} available to gift`
-                                      : `${remaining} of ${item.quantity_needed} still needed`}
-                                  </span>
-                                </div>
-                                {item.notes && (
-                                  <p className="text-sm text-[#414651] whitespace-pre-line">
-                                    {item.notes}
-                                  </p>
-                                )}
-                              </div>
-                            </div>
-
-                            {(item.is_parent_purchased ? availableToGift > 0 || itemPurchased : !isFulfilled || itemPurchased) && (
-                              <div className="flex items-center justify-end gap-2">
-                                {item.is_parent_purchased ? (
-                                  <CoverItemDialog
-                                    item={item}
-                                    availableToGift={availableToGift}
-                                    paymentMethods={paymentMethods}
-                                    parentName={parentName}
-                                    alreadyPurchased={itemPurchased}
-                                    isCovered={(coverCounts.get(item.id) || 0) >= item.quantity_needed}
-                                    shippingAddress={shippingAddress}
-                                  />
-                                ) : (
-                                  <>
-                                    {item.external_url && !itemPurchased && (
-                                      <Button
-                                        variant="outline"
-                                        asChild
-                                      >
-                                        <a href={item.external_url} target="_blank" rel="noopener noreferrer">
-                                          <span className="inline-flex items-center gap-1.5">
-                                            <ExternalLink className="h-4 w-4 shrink-0" />
-                                            Shop
-                                          </span>
-                                        </a>
-                                      </Button>
-                                    )}
-                                    <ReserveItemDialog
-                                      item={item}
-                                      parentName={parentName}
-                                      alreadyPurchased={itemPurchased}
-                                      shippingAddress={shippingAddress}
-                                    />
-                                  </>
-                                )}
-                              </div>
-                            )}
-                          </CardContent>
-                        </Card>
-                      );
-                    })}
-                  </div>
-                </div>
-              );
-            })}
-
-            {/* Uncategorized */}
-            {(itemsByCategory.get(null) || []).length > 0 && (
-              <div id={getCategorySectionId(null)} className="scroll-mt-4">
-                <h2 className="text-xl font-semibold mb-4">Other Items</h2>
-                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                  {itemsByCategory.get(null)!.map((item) => {
-                    const isFulfilled =
-                      item.quantity_fulfilled >= item.quantity_needed;
-                    const remaining =
-                      item.quantity_needed - item.quantity_fulfilled;
-                    const itemPurchased = !!(myGifts.items && myGifts.items[item.id]);
-                    const availableToGift = item.is_parent_purchased
-                      ? item.quantity_needed - (coverCounts.get(item.id) || 0)
-                      : remaining;
-                    const isFullyCovered = item.is_parent_purchased && (coverCounts.get(item.id) || 0) >= item.quantity_needed;
-                    return (
-                      <Card
-                        key={item.id}
-                        className={`py-0 gap-0 rounded-xl shadow-none ${
-                          (isFulfilled && !item.is_parent_purchased) || isFullyCovered
-                            ? "opacity-60 border-[#f5f5f5]"
-                            : item.is_parent_purchased
-                              ? "bg-[rgba(160,228,212,0.2)] border-[#d5d7da]"
-                              : "border-[#d5d7da]"
-                        }`}
-                      >
-                        <CardContent className="flex h-full flex-col justify-between gap-4 p-4">
-                          <div className="flex-1 min-w-0 flex flex-col gap-2 items-start">
-                            <div className="flex items-center gap-2">
-                              <h3 className="font-medium text-sm">{item.title}</h3>
-                              {itemPurchased && (
-                                <img
-                                  src="/hero/panda.svg"
-                                  alt=""
-                                  className="h-7 w-7 shrink-0"
-                                  style={{ animation: "celebration-bounce 1.2s ease-in-out infinite" }}
-                                />
-                              )}
-                            </div>
-                            <div className="flex flex-wrap gap-2.5">
-                              {item.is_parent_purchased ? (
-                                <Tag variant="parent-purchased">Purchased by parent</Tag>
-                              ) : isFulfilled ? (
-                                <Tag variant="guest-purchased">Already purchased by guest</Tag>
-                              ) : (
-                                <>
-                                  {item.is_essential && (
-                                    <Tag variant="most-wanted">Most wanted</Tag>
-                                  )}
-                                </>
-                              )}
-                              {item.is_open_to_used && (
-                                <UsedConditionTag condition={item.minimum_condition} />
-                              )}
-                            </div>
-                            <div className="flex items-center gap-2.5">
-                              {item.price && (
-                                <span className="text-sm font-semibold">
-                                  ${item.price.toFixed(2)}
-                                </span>
-                              )}
-                              <span className="text-xs text-[#414651]">
-                                {item.is_parent_purchased
-                                  ? `${availableToGift} of ${item.quantity_needed} available to gift`
-                                  : `${remaining} of ${item.quantity_needed} still needed`}
-                              </span>
-                            </div>
-                          </div>
-                          {(item.is_parent_purchased ? availableToGift > 0 || itemPurchased : !isFulfilled || itemPurchased) && (
-                            <div className="flex items-center justify-end gap-2">
-                              {item.is_parent_purchased ? (
-                                <CoverItemDialog
-                                  item={item}
-                                  availableToGift={availableToGift}
-                                  paymentMethods={paymentMethods}
-                                  parentName={parentName}
-                                  alreadyPurchased={itemPurchased}
-                                  isCovered={(coverCounts.get(item.id) || 0) >= item.quantity_needed}
-                                  shippingAddress={shippingAddress}
-                                />
-                              ) : (
-                                <ReserveItemDialog
-                                  item={item}
-                                  parentName={parentName}
-                                  alreadyPurchased={itemPurchased}
-                                  shippingAddress={shippingAddress}
-                                />
-                              )}
-                            </div>
-                          )}
-                        </CardContent>
-                      </Card>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-            </div>
-          </div>
+          <PublicRegistryGrid
+            items={allItems}
+            categories={allCategories}
+            cashFunds={allFunds}
+            parentName={parentName}
+            paymentMethods={paymentMethods}
+            shippingAddress={shippingAddress}
+            myGifts={myGifts}
+            coverCounts={coverCountsObj}
+            suggestButton={
+              <SuggestItemDialog
+                registryId={registry.id}
+                categories={allCategories.map((c) => ({ id: c.id, name: c.name }))}
+              />
+            }
+          />
         )}
       </main>
 
