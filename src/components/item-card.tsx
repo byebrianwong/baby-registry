@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { ExternalLink, Package, ShoppingBag, Undo2 } from "lucide-react";
+import { ExternalLink, ShoppingBag, Undo2 } from "lucide-react";
+import { ItemImage } from "@/components/item-image";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tag } from "@/components/ui/tag";
@@ -79,15 +80,23 @@ export function ItemCard({ item, registryId, isOwner, categories = [], zipCode, 
     >
       <CardContent className="flex h-full flex-col justify-between gap-4 p-4">
         <div className="flex gap-3">
-          <div className="flex size-[106px] shrink-0 items-center justify-center rounded-[10px] bg-tertiary">
+          <div className="relative size-[106px] shrink-0">
             {item.image_url ? (
-              <img
-                src={item.image_url}
-                alt={item.title}
-                className="size-[106px] rounded-[10px] object-cover"
-              />
+              <div className="flex size-[106px] items-center justify-center rounded-[10px] bg-tertiary">
+                <img
+                  src={item.image_url}
+                  alt={item.title}
+                  className="size-[106px] rounded-[10px] object-cover"
+                />
+              </div>
             ) : (
-              <Package className="h-10 w-10 text-tertiary" />
+              <ItemImage
+                imageUrl={null}
+                title={item.title}
+                categoryName={categories.find((c) => c.id === item.category_id)?.name}
+                size="md"
+                className="!size-[106px] !rounded-[10px]"
+              />
             )}
           </div>
 
