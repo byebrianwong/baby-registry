@@ -2,7 +2,6 @@ import { notFound } from "next/navigation";
 import { cookies } from "next/headers";
 import { Baby, Calendar, LockOpen } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
-import { createClient } from "@/utils/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { verifyBuyerLink } from "@/lib/buyer-link";
 import type { PaymentMethods } from "@/lib/types";
@@ -47,8 +46,7 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const supabase = await createClient();
-  const { data: registry } = await supabase
+  const { data: registry } = await supabaseAdmin
     .from("registries")
     .select("title, description, is_public")
     .eq("slug", slug)
@@ -72,9 +70,12 @@ export default async function PublicRegistryPage({
 }) {
   const { slug } = await params;
   const { email: buyerEmail, sig } = await searchParams;
-  const supabase = await createClient();
 
-  const { data: registry } = await supabase
+  // Registry data is read with the service-role client, always filtered by the
+  // slug in the URL. Anonymous database clients have no read access to these
+  // tables (see supabase/migrations/009_restrict_registry_reads.sql), so the
+  // full list of registries can't be pulled with the public anon key.
+  const { data: registry } = await supabaseAdmin
     .from("registries")
     .select("*")
     .eq("slug", slug)
@@ -86,17 +87,17 @@ export default async function PublicRegistryPage({
 
   const [{ data: categories }, { data: items }, { data: cashFunds }] =
     await Promise.all([
-      supabase
+      supabaseAdmin
         .from("categories")
         .select("*")
         .eq("registry_id", registry.id)
         .order("sort_order"),
-      supabase
+      supabaseAdmin
         .from("registry_items")
         .select("*")
         .eq("registry_id", registry.id)
         .order("sort_order"),
-      supabase
+      supabaseAdmin
         .from("cash_funds")
         .select("*")
         .eq("registry_id", registry.id),
