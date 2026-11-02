@@ -98,7 +98,7 @@ export const OwnerItemReserved: Story = {
     subject: 'Jane Doe reserved "Hatch Rest+ Sound Machine"',
     to: "brian@example.com",
     html: itemReservedOwnerHtml({
-      ownerName: "Denise",
+      ownerName: "Brian",
       registryTitle: "Baby Wong Registry",
       buyerName: "Jane Doe",
       itemTitle: "Hatch Rest+ Sound Machine",

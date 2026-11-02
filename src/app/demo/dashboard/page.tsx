@@ -138,7 +138,7 @@ export default function DemoDashboardPage() {
                     >
                       <Link href="/demo/manage">Manage</Link>
                     </Button>
-                    <Button variant="outline" size="sm" asChild>
+                    <Button variant="outline" size="sm" className="h-auto" asChild>
                       <Link href="/demo" target="_blank">
                         <ExternalLink className="h-3 w-3" />
                       </Link>

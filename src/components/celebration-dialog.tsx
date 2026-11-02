@@ -31,11 +31,11 @@ function getMessage(
 ) {
   switch (variant) {
     case "reserve":
-      return `You're gifting "${itemTitle}"! ${parentName} thanks you so much. ❤️`;
+      return `You're gifting "${itemTitle}"! ${parentName} will really appreciate it. ❤️`;
     case "cover":
-      return `You're gifting "${itemTitle}"! ${parentName} thanks you so much. ❤️`;
+      return `You're gifting "${itemTitle}"! ${parentName} will really appreciate it. ❤️`;
     case "contribute":
-      return `You contributed $${amount} to "${itemTitle}"! ${parentName} thanks you so much. ❤️`;
+      return `You contributed $${amount} to "${itemTitle}"! ${parentName} will really appreciate it. ❤️`;
   }
 }
 

@@ -110,7 +110,7 @@ export default async function InvitePage({
           </CardHeader>
           <CardContent className="text-center space-y-4">
             <p className="text-secondary">
-              <strong>{ownerName}</strong> has invited you to help manage{" "}
+              <strong>{ownerName}</strong> invited you to help manage{" "}
               <strong>{registryTitle}</strong>.
             </p>
             <p className="text-tertiary text-sm">
@@ -147,7 +147,7 @@ export default async function InvitePage({
         </CardHeader>
         <CardContent className="text-center space-y-4">
           <p className="text-secondary">
-            <strong>{ownerName}</strong> has invited you to help manage{" "}
+            <strong>{ownerName}</strong> invited you to help manage{" "}
             <strong>{registryTitle}</strong>.
           </p>
           <p className="text-tertiary text-sm">

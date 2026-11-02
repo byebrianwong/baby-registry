@@ -93,7 +93,7 @@ function RegistryCard({ registry, badge }: { registry: any; badge?: string }) {
                 Manage
               </Link>
             </Button>
-            <Button variant="outline" size="sm" asChild>
+            <Button variant="outline" size="sm" className="h-auto" asChild>
               <Link
                 href={`/r/${registry.slug}`}
                 target="_blank"

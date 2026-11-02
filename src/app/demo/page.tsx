@@ -574,48 +574,51 @@ export default function DemoPage() {
                         }`}
                       >
                         <CardContent className="flex h-full flex-col justify-between gap-4 p-4">
-                          <div className="flex gap-3">
-                            <ItemImage
-                              imageUrl={item.image_url}
-                              title={item.title}
-                              categoryName={category.name}
-                            />
-                            <div className="flex-1 min-w-0 flex flex-col gap-2 items-start">
-                              <h3 className="font-medium text-sm leading-tight">
-                                {item.title}
-                              </h3>
-                              <div className="flex flex-wrap gap-2.5">
-                                {item.is_parent_purchased ? (
-                                  <Tag variant="parent-purchased">Purchased by parent</Tag>
-                                ) : isFulfilled ? (
-                                  <Tag variant="guest-purchased">Already purchased by guest</Tag>
-                                ) : (
-                                  <>
-                                    {item.is_essential && (
-                                      <Tag variant="most-wanted">Most wanted</Tag>
-                                    )}
-                                  </>
-                                )}
-                                {item.is_open_to_used && (
-                                  <UsedConditionTag condition={item.minimum_condition} />
-                                )}
-                              </div>
-                              <div className="flex items-center gap-2.5">
-                                {item.price && (
-                                  <span className="text-sm font-semibold">
-                                    ${item.price.toFixed(2)}
+                          <div className="flex flex-col gap-3">
+                            <div className="flex gap-3">
+                              <ItemImage
+                                imageUrl={item.image_url}
+                                title={item.title}
+                                categoryName={category.name}
+                              />
+                              <div className="flex-1 min-w-0 flex flex-col gap-2 items-start">
+                                <h3 className="font-medium text-sm leading-tight">
+                                  {item.title}
+                                </h3>
+                                <div className="flex flex-wrap items-center gap-x-2.5">
+                                  {item.price && (
+                                    <span className="text-sm font-semibold">
+                                      ${item.price.toFixed(2)}
+                                    </span>
+                                  )}
+                                  <span className="text-xs text-[#414651]">
+                                    {item.is_parent_purchased
+                                      ? `${availableToGift} of ${item.quantity_needed} available to gift`
+                                      : `${remaining} of ${item.quantity_needed} still needed`}
                                   </span>
+                                </div>
+                                {item.notes && (
+                                  <p className="text-sm text-[#414651] whitespace-pre-line">
+                                    {item.notes}
+                                  </p>
                                 )}
-                                <span className="text-xs text-[#414651]">
-                                  {item.is_parent_purchased
-                                    ? `${availableToGift} of ${item.quantity_needed} available to gift`
-                                    : `${remaining} of ${item.quantity_needed} still needed`}
-                                </span>
                               </div>
-                              {item.notes && (
-                                <p className="text-sm text-[#414651] whitespace-pre-line">
-                                  {item.notes}
-                                </p>
+                            </div>
+                            {/* Tags sit below the image because the column beside it is too narrow for them in a three-column grid. */}
+                            <div className="flex flex-wrap gap-2.5 empty:hidden">
+                              {item.is_parent_purchased ? (
+                                <Tag variant="parent-purchased">Purchased by parent</Tag>
+                              ) : isFulfilled ? (
+                                <Tag variant="guest-purchased">Already purchased by guest</Tag>
+                              ) : (
+                                <>
+                                  {item.is_essential && (
+                                    <Tag variant="most-wanted">Most wanted</Tag>
+                                  )}
+                                </>
+                              )}
+                              {item.is_open_to_used && (
+                                <UsedConditionTag condition={item.minimum_condition} />
                               )}
                             </div>
                           </div>
