@@ -12,7 +12,7 @@ const meta: Meta<typeof ReserveItemDialog> = {
   parameters: { layout: "centered" },
   args: {
     action: mockAction,
-    parentName: "Denise & Brian",
+    parentName: "Remi & Max",
   },
 };
 export default meta;

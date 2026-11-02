@@ -1,6 +1,92 @@
 "use server";
 
+import { lookup } from "node:dns/promises";
+import { isIP } from "node:net";
 import * as cheerio from "cheerio";
+import { createClient } from "@/utils/supabase/server";
+
+const MAX_REDIRECTS = 5;
+const BLOCKED_URL_ERROR =
+  "This URL can't be fetched automatically. Please enter the item details manually.";
+
+const REQUEST_HEADERS = {
+  "User-Agent":
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+  Accept:
+    "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+  "Accept-Language": "en-US,en;q=0.9",
+  "Accept-Encoding": "gzip, deflate, br",
+  "Sec-Fetch-Dest": "document",
+  "Sec-Fetch-Mode": "navigate",
+  "Sec-Fetch-Site": "none",
+  "Sec-Fetch-User": "?1",
+  "Sec-Ch-Ua":
+    '"Google Chrome";v="131", "Chromium";v="131", "Not_A Brand";v="24"',
+  "Sec-Ch-Ua-Mobile": "?0",
+  "Sec-Ch-Ua-Platform": '"macOS"',
+  "Upgrade-Insecure-Requests": "1",
+  "Cache-Control": "max-age=0",
+};
+
+function isBlockedIPv4(ip: string): boolean {
+  const [a, b, c] = ip.split(".").map(Number);
+  return (
+    a === 0 || // 0.0.0.0/8 "this network"
+    a === 10 || // 10.0.0.0/8 private
+    a === 127 || // 127.0.0.0/8 loopback
+    (a === 100 && b >= 64 && b <= 127) || // 100.64.0.0/10 carrier-grade NAT
+    (a === 169 && b === 254) || // 169.254.0.0/16 link-local, cloud metadata
+    (a === 172 && b >= 16 && b <= 31) || // 172.16.0.0/12 private
+    (a === 192 && b === 0 && c === 0) || // 192.0.0.0/24 IETF protocol assignments
+    (a === 192 && b === 168) || // 192.168.0.0/16 private
+    (a === 198 && (b === 18 || b === 19)) || // 198.18.0.0/15 benchmarking
+    a >= 224 // multicast and reserved
+  );
+}
+
+function isBlockedIPv6(ip: string): boolean {
+  // Only global unicast (2000::/3) is routable on the public internet. This
+  // rejects loopback, unspecified, link-local, unique local, multicast, and
+  // IPv4-mapped or NAT64 forms that could point at a private IPv4 address.
+  const firstGroup = parseInt(ip.split(":")[0], 16);
+  return !(firstGroup >= 0x2000 && firstGroup <= 0x3fff);
+}
+
+function isBlockedAddress(ip: string): boolean {
+  const version = isIP(ip);
+  if (version === 4) return isBlockedIPv4(ip);
+  if (version === 6) return isBlockedIPv6(ip);
+  return true;
+}
+
+/**
+ * Returns an error message if the server should not request this URL, or null
+ * if it is safe to fetch. Blocks non-web protocols, non-default ports, and any
+ * hostname that resolves to a private, loopback or link-local address.
+ */
+async function checkFetchableUrl(url: URL): Promise<string | null> {
+  if (url.protocol !== "http:" && url.protocol !== "https:") {
+    return "URL must start with http:// or https://";
+  }
+  // URL.port is "" when the port is the scheme's default (80 or 443).
+  if (url.port !== "") {
+    return BLOCKED_URL_ERROR;
+  }
+
+  const hostname = url.hostname.replace(/^\[|\]$/g, "");
+  let addresses: { address: string }[];
+  try {
+    addresses = await lookup(hostname, { all: true, verbatim: true });
+  } catch {
+    return "Couldn't find that website. Check the URL and try again.";
+  }
+
+  if (addresses.length === 0 || addresses.some((a) => isBlockedAddress(a.address))) {
+    console.log(`[scrape] Blocked request to non-public address: ${url.hostname}`);
+    return BLOCKED_URL_ERROR;
+  }
+  return null;
+}
 
 interface ScrapeResult {
   title?: string;
@@ -66,11 +152,21 @@ function decodeHtmlEntities(text: string): string {
 }
 
 export async function scrapeProductUrl(url: string): Promise<ScrapeResult> {
+  // Server actions can be called directly, not only from the add/edit item
+  // dialogs, so require a signed-in (non-guest) user here.
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user || user.is_anonymous) {
+    return { error: "Please sign in to fetch product details." };
+  }
+
   // Validate URL format
   let parsedUrl: URL;
   try {
     parsedUrl = new URL(url);
-    if (!parsedUrl.protocol.startsWith("http")) {
+    if (parsedUrl.protocol !== "http:" && parsedUrl.protocol !== "https:") {
       return { error: "URL must start with http:// or https://" };
     }
   } catch {
@@ -83,35 +179,43 @@ export async function scrapeProductUrl(url: string): Promise<ScrapeResult> {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 10000);
 
-    console.log(`[scrape] Fetching: ${parsedUrl.toString()}`);
+    // Follow redirects manually so every hop gets the same address check.
+    let currentUrl = parsedUrl;
+    let response: Response | null = null;
+    for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
+      const blockedReason = await checkFetchableUrl(currentUrl);
+      if (blockedReason) {
+        clearTimeout(timeout);
+        return { error: blockedReason };
+      }
 
-    const response = await fetch(parsedUrl.toString(), {
-      signal: controller.signal,
-      headers: {
-        "User-Agent":
-          "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
-        Accept:
-          "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
-        "Accept-Language": "en-US,en;q=0.9",
-        "Accept-Encoding": "gzip, deflate, br",
-        "Sec-Fetch-Dest": "document",
-        "Sec-Fetch-Mode": "navigate",
-        "Sec-Fetch-Site": "none",
-        "Sec-Fetch-User": "?1",
-        "Sec-Ch-Ua":
-          '"Google Chrome";v="131", "Chromium";v="131", "Not_A Brand";v="24"',
-        "Sec-Ch-Ua-Mobile": "?0",
-        "Sec-Ch-Ua-Platform": '"macOS"',
-        "Upgrade-Insecure-Requests": "1",
-        "Cache-Control": "max-age=0",
-      },
-      redirect: "follow",
-    });
+      console.log(`[scrape] Fetching: ${currentUrl.toString()}`);
+
+      const res = await fetch(currentUrl.toString(), {
+        signal: controller.signal,
+        headers: REQUEST_HEADERS,
+        redirect: "manual",
+      });
+
+      const location = res.headers.get("location");
+      if (res.status >= 300 && res.status < 400 && location) {
+        await res.body?.cancel();
+        currentUrl = new URL(location, currentUrl);
+        continue;
+      }
+
+      response = res;
+      break;
+    }
 
     clearTimeout(timeout);
 
+    if (!response) {
+      return { error: "Too many redirects" };
+    }
+
     console.log(`[scrape] Response: ${response.status} ${response.statusText}`);
-    console.log(`[scrape] Response URL (after redirects): ${response.url}`);
+    console.log(`[scrape] Response URL (after redirects): ${currentUrl.toString()}`);
     console.log(`[scrape] Content-Type: ${response.headers.get("content-type")}`);
 
     if (!response.ok) {
