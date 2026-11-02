@@ -1,0 +1,22 @@
+name: Chromatic
+
+# Runs on push, not pull_request. Chromatic's docs advise this because a
+# pull_request run tests GitHub's temporary merge commit, which has no baseline.
+on: push
+
+jobs:
+  chromatic:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0 # onlyChanged needs the full git history
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - uses: chromaui/action@v18.13.6
+        with:
+          projectToken: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
+          onlyChanged: true # only snapshot stories affected by the commit
