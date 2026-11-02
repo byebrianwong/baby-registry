@@ -71,6 +71,8 @@ export function AddItemDialog({
   const [price, setPrice] = useState(defaultValues?.price ? parseFloat(defaultValues.price).toFixed(2) : "");
   const [imageUrl, setImageUrl] = useState("");
   const [imageError, setImageError] = useState(false);
+  const [imageCandidates, setImageCandidates] = useState<string[]>([]);
+  const [brokenCandidates, setBrokenCandidates] = useState<Set<string>>(new Set());
   const [categoryId, setCategoryId] = useState<string | undefined>(defaultValues?.categoryId);
 
   const urlRef = useRef<HTMLInputElement>(null);
@@ -170,10 +172,15 @@ export function AddItemDialog({
         setPrice(finalPrice);
         filled.push("price" + taxNote);
       }
-      if (result.imageUrl && !imageUrl) {
-        setImageUrl(result.imageUrl);
-        setImageError(false);
-        filled.push("image");
+      const candidates = result.imageUrls ?? (result.imageUrl ? [result.imageUrl] : []);
+      if (candidates.length > 0) {
+        setImageCandidates(candidates);
+        setBrokenCandidates(new Set());
+        if (!imageUrl) {
+          setImageUrl(candidates[0]);
+          setImageError(false);
+          filled.push(candidates.length > 1 ? `image (${candidates.length} options)` : "image");
+        }
       }
       const titleForCategory = result.title || title;
       if (titleForCategory && !categoryId) {
@@ -218,6 +225,8 @@ export function AddItemDialog({
       setPrice(defaultValues?.price ? parseFloat(defaultValues.price).toFixed(2) : "");
       setImageUrl("");
       setImageError(false);
+      setImageCandidates([]);
+      setBrokenCandidates(new Set());
       setCategoryId(defaultValues?.categoryId);
       setError("");
       setOpen(false);
@@ -226,7 +235,7 @@ export function AddItemDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setScrapeStatus(""); setScrapeIsError(false); setParentPurchased(false); setOpenToUsed(false); setTaxInfo(null); setCurrency("USD"); setTitle(defaultValues?.title || ""); setPrice(defaultValues?.price ? parseFloat(defaultValues.price).toFixed(2) : ""); setImageUrl(""); setImageError(false); setCategoryId(defaultValues?.categoryId); setError(""); } }}>
+    <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setScrapeStatus(""); setScrapeIsError(false); setParentPurchased(false); setOpenToUsed(false); setTaxInfo(null); setCurrency("USD"); setTitle(defaultValues?.title || ""); setPrice(defaultValues?.price ? parseFloat(defaultValues.price).toFixed(2) : ""); setImageUrl(""); setImageError(false); setImageCandidates([]); setBrokenCandidates(new Set()); setCategoryId(defaultValues?.categoryId); setError(""); } }}>
       <DialogTrigger asChild>
         {trigger || (
           <Button className="!bg-[#004659] hover:!bg-[#003847] !ring-[#004659] !text-white">
@@ -244,7 +253,7 @@ export function AddItemDialog({
             Add anything from any store, in two taps.
           </DialogDescription>
         </DialogHeader>
-        <form action={handleSubmit} className="space-y-5">
+        <form action={handleSubmit} className="min-w-0 space-y-5">
           {/* Step 1 — URL hero */}
           <div className="rounded-xl border border-[#c3e3e8] bg-[#f0fafc] p-4 space-y-2">
             <div className="flex items-center gap-2">
@@ -345,6 +354,50 @@ export function AddItemDialog({
                   className="size-16 rounded-lg object-cover"
                   onError={() => setImageError(true)}
                 />
+              </div>
+            )}
+            {imageCandidates.filter((c) => !brokenCandidates.has(c)).length > 1 && (
+              <div className="space-y-1.5">
+                <p className="text-xs text-tertiary">
+                  Choose which image to use:
+                </p>
+                <div className="flex gap-2 overflow-x-auto pb-1">
+                  {imageCandidates
+                    .filter((candidate) => !brokenCandidates.has(candidate))
+                    .map((candidate) => {
+                      const selected = candidate === imageUrl;
+                      return (
+                        <button
+                          key={candidate}
+                          type="button"
+                          onClick={() => {
+                            setImageUrl(candidate);
+                            setImageError(false);
+                          }}
+                          aria-label="Use this image"
+                          aria-pressed={selected}
+                          className={`relative size-14 shrink-0 overflow-hidden rounded-md border-2 bg-tertiary transition ${
+                            selected
+                              ? "border-[#004659] ring-2 ring-[#004659]/30"
+                              : "border-transparent hover:border-secondary"
+                          }`}
+                        >
+                          <img
+                            src={candidate}
+                            alt=""
+                            className="size-full object-cover"
+                            onError={() =>
+                              setBrokenCandidates((prev) => {
+                                const next = new Set(prev);
+                                next.add(candidate);
+                                return next;
+                              })
+                            }
+                          />
+                        </button>
+                      );
+                    })}
+                </div>
               </div>
             )}
           </div>
