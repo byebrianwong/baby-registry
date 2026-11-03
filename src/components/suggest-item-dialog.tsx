@@ -88,7 +88,7 @@ export function SuggestItemDialog({ registryId, categories = [], action }: Sugge
             <DialogHeader>
               <DialogTitle>Thank you!</DialogTitle>
               <DialogDescription>
-                Your suggestion has been sent to the parents. They&apos;ll
+                Your suggestion has been sent to the registry owner. They&apos;ll
                 review it and decide whether to add it to their registry.
               </DialogDescription>
             </DialogHeader>
@@ -99,7 +99,7 @@ export function SuggestItemDialog({ registryId, categories = [], action }: Sugge
             <DialogHeader>
               <DialogTitle>Suggest an item</DialogTitle>
               <DialogDescription>
-                Know something the parents might love? Suggest it here and
+                Know something they might love? Suggest it here and
                 they&apos;ll be notified.
               </DialogDescription>
             </DialogHeader>

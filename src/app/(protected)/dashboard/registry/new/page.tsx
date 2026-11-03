@@ -1,18 +1,34 @@
 "use client";
 
-import { Baby } from "lucide-react";
+import { Baby, Gift } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/base/input/input";
 import { TextArea } from "@/components/base/textarea/textarea";
 import { Checkbox } from "@/components/base/checkbox/checkbox";
 import { Card, CardContent } from "@/components/ui/card";
 import { createRegistry } from "@/lib/actions/registry";
-import { useState } from "react";
+import {
+  PERSONAL_EVENT_TYPE_OPTIONS,
+  copyFor,
+} from "@/lib/registry-copy";
+import type { PersonalEventType, RegistryType } from "@/lib/types";
+import { useMemo, useState } from "react";
 
 export default function NewRegistryPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [isPublic, setIsPublic] = useState(true);
+  const [registryType, setRegistryType] = useState<RegistryType>("baby");
+  const [eventType, setEventType] = useState<PersonalEventType | "">("");
+
+  const copy = useMemo(
+    () =>
+      copyFor({
+        registryType,
+        eventType: registryType === "personal" && eventType ? eventType : null,
+      }),
+    [registryType, eventType],
+  );
 
   const handleSubmit = async (formData: FormData) => {
     setLoading(true);
@@ -24,6 +40,8 @@ export default function NewRegistryPage() {
     }
   };
 
+  const Icon = registryType === "baby" ? Baby : Gift;
+
   return (
     <div className="container mx-auto max-w-xl px-4 py-8">
       <Card>
@@ -32,14 +50,86 @@ export default function NewRegistryPage() {
             {/* Header */}
             <div className="flex flex-col items-center gap-2 text-center">
               <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#4f7e60]/10">
-                <Baby className="h-6 w-6 text-[#4f7e60]" />
+                <Icon className="h-6 w-6 text-[#4f7e60]" />
               </div>
               <h1 className="text-2xl font-medium text-primary">
                 Create Your Registry
               </h1>
-              <p className="text-xs text-tertiary">
-                Set up your baby registry in just a few steps
-              </p>
+              <p className="text-xs text-tertiary">{copy.tagline}</p>
+            </div>
+
+            {/* Registry type picker */}
+            <div className="space-y-2">
+              <span className="text-sm font-medium text-secondary">
+                Registry type
+              </span>
+              <input type="hidden" name="registryType" value={registryType} />
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setRegistryType("baby")}
+                  className={`rounded-lg border p-3 text-left transition ${
+                    registryType === "baby"
+                      ? "border-[#004659] bg-[#004659]/5 ring-1 ring-[#004659]"
+                      : "border-secondary hover:border-primary"
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <Baby className="h-4 w-4" />
+                    <span className="font-medium">Baby</span>
+                  </div>
+                  <p className="mt-1 text-xs text-tertiary">
+                    Baby shower, expecting a new arrival
+                  </p>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRegistryType("personal")}
+                  className={`rounded-lg border p-3 text-left transition ${
+                    registryType === "personal"
+                      ? "border-[#004659] bg-[#004659]/5 ring-1 ring-[#004659]"
+                      : "border-secondary hover:border-primary"
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <Gift className="h-4 w-4" />
+                    <span className="font-medium">Personal</span>
+                  </div>
+                  <p className="mt-1 text-xs text-tertiary">
+                    Birthday, Christmas, wedding, housewarming, more
+                  </p>
+                </button>
+              </div>
+
+              {registryType === "personal" && (
+                <div className="space-y-1 pt-2">
+                  <label
+                    htmlFor="eventType"
+                    className="text-sm font-medium text-secondary"
+                  >
+                    Occasion (optional)
+                  </label>
+                  <select
+                    id="eventType"
+                    name="eventType"
+                    value={eventType}
+                    onChange={(e) =>
+                      setEventType(e.target.value as PersonalEventType | "")
+                    }
+                    className="w-full rounded-lg border border-secondary bg-primary px-3 py-2 text-sm"
+                  >
+                    <option value="">No specific occasion</option>
+                    {PERSONAL_EVENT_TYPE_OPTIONS.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-tertiary">
+                    Tunes labels and placeholders. You can leave this blank.
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* General Information */}
@@ -49,15 +139,15 @@ export default function NewRegistryPage() {
               <Input
                 label="Registry Title"
                 name="title"
-                placeholder="The Smith Family Baby Registry"
+                placeholder={copy.titlePlaceholder}
                 isRequired
               />
 
               <Input
-                label="Due Date (optional)"
+                label={`${copy.eventDateLabel} (optional)`}
                 name="eventDate"
                 type="date"
-                hint="Used for personalized recommendations and reminders"
+                hint={copy.eventDatePlaceholderHint}
               />
 
               <TextArea

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import { ExternalLink, Search, SlidersHorizontal } from "lucide-react";
+import { ExternalLink, Search } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -57,6 +57,8 @@ interface Props {
   myGifts: { items?: Record<string, string>; funds?: Record<string, number> };
   coverCounts: Record<string, number>;
   suggestButton: ReactNode;
+  selfPurchasedLabel?: string;
+  coverFlavor?: string;
 }
 
 type SortMode = "default" | "most-wanted" | "price-asc" | "price-desc";
@@ -79,6 +81,8 @@ export function PublicRegistryGrid({
   myGifts,
   coverCounts,
   suggestButton,
+  selfPurchasedLabel = "Purchased by parent",
+  coverFlavor,
 }: Props) {
   const [search, setSearch] = useState("");
   const [priceBucket, setPriceBucket] = useState("any");
@@ -155,7 +159,7 @@ export function PublicRegistryGrid({
 
   return (
     <div className="flex gap-8 items-start">
-      {navItems.length > 1 && (
+      {navItems.length >= 1 && (
         <CategoryNav categories={navItems} suggestButton={suggestButton} />
       )}
       <div className="flex-1 min-w-0 space-y-10">
@@ -172,7 +176,6 @@ export function PublicRegistryGrid({
             />
           </div>
           <div className="flex items-center gap-2">
-            <SlidersHorizontal className="h-4 w-4 text-tertiary shrink-0" />
             <select
               value={priceBucket}
               onChange={(e) => setPriceBucket(e.target.value)}
@@ -308,6 +311,8 @@ export function PublicRegistryGrid({
                     paymentMethods={paymentMethods}
                     parentName={parentName}
                     shippingAddress={shippingAddress}
+                    selfPurchasedLabel={selfPurchasedLabel}
+                    coverFlavor={coverFlavor}
                   />
                 ))}
               </div>
@@ -330,6 +335,8 @@ export function PublicRegistryGrid({
                   paymentMethods={paymentMethods}
                   parentName={parentName}
                   shippingAddress={shippingAddress}
+                  selfPurchasedLabel={selfPurchasedLabel}
+                  coverFlavor={coverFlavor}
                 />
               ))}
             </div>
@@ -348,6 +355,8 @@ function PublicItemCard({
   paymentMethods,
   parentName,
   shippingAddress,
+  selfPurchasedLabel = "Purchased by parent",
+  coverFlavor,
 }: {
   item: RegistryItem;
   categoryName: string | null;
@@ -356,6 +365,8 @@ function PublicItemCard({
   paymentMethods?: PaymentMethods;
   parentName: string;
   shippingAddress?: string;
+  selfPurchasedLabel?: string;
+  coverFlavor?: string;
 }) {
   const isFulfilled = item.quantity_fulfilled >= item.quantity_needed;
   const remaining = item.quantity_needed - item.quantity_fulfilled;
@@ -397,7 +408,7 @@ function PublicItemCard({
             <h3 className="font-medium text-sm leading-tight">{item.title}</h3>
             <div className="flex flex-wrap gap-2.5">
               {item.is_parent_purchased ? (
-                <Tag variant="parent-purchased">Purchased by parent</Tag>
+                <Tag variant="parent-purchased">{selfPurchasedLabel}</Tag>
               ) : isFulfilled ? (
                 <Tag variant="guest-purchased">Already purchased by guest</Tag>
               ) : (
@@ -437,6 +448,7 @@ function PublicItemCard({
                 availableToGift={availableToGift}
                 paymentMethods={paymentMethods}
                 parentName={parentName}
+                coverFlavor={coverFlavor}
                 alreadyPurchased={itemPurchased}
                 isCovered={coveredQty >= item.quantity_needed}
                 shippingAddress={shippingAddress}

@@ -75,7 +75,7 @@ export function AddCashFundDialog({ registryId }: AddCashFundDialogProps) {
           <TextArea
             label="Description (optional)"
             name="description"
-            placeholder="Help us stock up on diapers..."
+            placeholder="What's this fund for?"
             rows={3}
           />
 

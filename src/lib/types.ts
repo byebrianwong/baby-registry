@@ -10,6 +10,16 @@ export interface RegistrySettings {
   [key: string]: unknown;
 }
 
+export type RegistryType = "baby" | "personal";
+
+export type PersonalEventType =
+  | "birthday"
+  | "christmas"
+  | "wedding"
+  | "housewarming"
+  | "graduation"
+  | "other";
+
 export interface Registry {
   id: string;
   owner_id: string;
@@ -20,6 +30,10 @@ export interface Registry {
   description: string | null;
   photo_url: string | null;
   settings: RegistrySettings;
+  registry_type: RegistryType;
+  event_type: PersonalEventType | null;
+  honoree_names: string | null;
+  parent_names?: string | null;
   created_at: string;
   updated_at: string;
 }

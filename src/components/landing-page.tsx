@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Baby, Gift, Link2, Shield } from "lucide-react";
+import { Baby, Cake, Gift, Link2, PartyPopper, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Nav } from "@/components/nav";
 
@@ -12,22 +12,37 @@ export function LandingPage({ ctaHref }: { ctaHref: string }) {
         <section className="container mx-auto px-4 py-24 text-center">
           <h1 className="text-4xl font-bold tracking-tight sm:text-6xl">
             One Registry,{" "}
-            <span className="text-brand-600">Every Store</span>
+            <span className="text-brand-600">Every Occasion</span>
           </h1>
           <p className="mx-auto mt-6 max-w-2xl text-lg text-tertiary">
-            Create your baby registry with items from any store. Share a single
-            link with friends and family. No more juggling multiple lists.
+            Baby showers, birthdays, Christmas, weddings — build a wishlist with
+            items from any store and share a single link. No more juggling
+            multiple lists.
           </p>
           <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
             <Button size="lg" asChild>
               <Link href={ctaHref}>Create Your Registry</Link>
             </Button>
             <Button size="lg" variant="outline" asChild>
-              <Link href="/demo/dashboard">Demo: Parent Dashboard</Link>
+              <Link href="/demo/dashboard">Demo: Owner Dashboard</Link>
             </Button>
             <Button size="lg" variant="outline" asChild>
               <Link href="/demo">Demo: Gift Giver View</Link>
             </Button>
+          </div>
+          <div className="mt-10 flex flex-wrap items-center justify-center gap-3 text-sm text-tertiary">
+            <span className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1">
+              <Baby className="h-4 w-4" /> Baby
+            </span>
+            <span className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1">
+              <Cake className="h-4 w-4" /> Birthday
+            </span>
+            <span className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1">
+              <PartyPopper className="h-4 w-4" /> Christmas
+            </span>
+            <span className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1">
+              <Gift className="h-4 w-4" /> Any occasion
+            </span>
           </div>
         </section>
 
@@ -38,12 +53,12 @@ export function LandingPage({ ctaHref }: { ctaHref: string }) {
             <div className="mt-16 grid gap-8 md:grid-cols-3">
               <div className="text-center">
                 <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-brand-600/10">
-                  <Baby className="h-8 w-8 text-brand-600" />
+                  <Gift className="h-8 w-8 text-brand-600" />
                 </div>
                 <h3 className="mt-6 text-xl font-semibold">1. Create Your Registry</h3>
                 <p className="mt-2 text-tertiary">
-                  Sign up and set up your registry in under 5 minutes. Add your
-                  due date, a personal message, and you&apos;re ready.
+                  Pick an occasion — baby shower, birthday, Christmas, wedding,
+                  anything — and set up your registry in under 5 minutes.
                 </p>
               </div>
               <div className="text-center">
@@ -91,12 +106,12 @@ export function LandingPage({ ctaHref }: { ctaHref: string }) {
                 {
                   icon: Gift,
                   title: "Cash Funds",
-                  desc: "Set up funds for diapers, college savings, or anything you need.",
+                  desc: "Set up funds for diapers, college savings, honeymoons, or anything you need.",
                 },
                 {
                   icon: Baby,
-                  title: "Expert Checklist",
-                  desc: "Start with a curated list of 125+ items across 10 categories.",
+                  title: "Baby Checklist",
+                  desc: "Baby registries get a curated list of 125+ essentials across 10 categories.",
                 },
               ].map((feature) => (
                 <div
@@ -121,7 +136,8 @@ export function LandingPage({ ctaHref }: { ctaHref: string }) {
               Ready to Build Your Registry?
             </h2>
             <p className="mt-4 text-tertiary">
-              Join thousands of parents who trust Regibee for their registry.
+              Join thousands of people who trust Regibee for their registry — baby
+              shower, birthday, Christmas, or anything in between.
             </p>
             <Button size="lg" className="mt-8" asChild>
               <Link href={ctaHref}>Get Started Free</Link>

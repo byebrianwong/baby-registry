@@ -14,9 +14,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Regibee - One Registry, Every Store",
+  title: "Regibee - One Registry, Every Occasion",
   description:
-    "Create your baby registry with items from any store. Share one link with friends and family.",
+    "Create a registry for a baby shower, birthday, Christmas, wedding, or any occasion — with items from any store. Share one link with friends and family.",
 };
 
 export default function RootLayout({
