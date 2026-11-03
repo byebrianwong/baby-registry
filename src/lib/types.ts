@@ -27,6 +27,7 @@ export interface Registry {
   slug: string;
   event_date: string | null;
   is_public: boolean;
+  listed_on_profile: boolean;
   description: string | null;
   photo_url: string | null;
   settings: RegistrySettings;

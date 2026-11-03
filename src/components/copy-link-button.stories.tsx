@@ -13,6 +13,6 @@ type Story = StoryObj<typeof CopyLinkButton>;
 
 export const Default: Story = {
   args: {
-    slug: "sarah-and-mikes-baby-registry-abc123",
+    path: "/r/sarah-and-mikes-baby-registry-abc123",
   },
 };

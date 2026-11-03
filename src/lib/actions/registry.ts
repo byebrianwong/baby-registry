@@ -128,6 +128,7 @@ export async function createRegistry(formData: FormData) {
   const eventDate = formData.get("eventDate") as string;
   const description = formData.get("description") as string;
   const isPublic = formData.get("isPublic") !== "false";
+  const listedOnProfile = isPublic && formData.get("listedOnProfile") === "true";
   const zipCode = formData.get("zipCode") as string;
   const taxEnabled = formData.get("taxEnabled") === "true";
   const venmo = formData.get("venmo") as string;
@@ -168,6 +169,7 @@ export async function createRegistry(formData: FormData) {
       event_date: eventDate || null,
       description: description || null,
       is_public: isPublic,
+      listed_on_profile: listedOnProfile,
       registry_type: registryType,
       event_type: eventType,
       settings: Object.keys(settings).length > 0 ? settings : null,
@@ -195,7 +197,7 @@ export async function createRegistry(formData: FormData) {
 }
 
 export async function updateRegistry(registryId: string, formData: FormData) {
-  const { user, error: authError } = await requireManager(registryId);
+  const { user, role, error: authError } = await requireManager(registryId);
   if (authError || !user) return { error: authError || "Not authenticated" };
 
   const supabase = await createClient();
@@ -211,6 +213,16 @@ export async function updateRegistry(registryId: string, formData: FormData) {
   const description = formData.get("description") as string;
   const isPublic = formData.get("isPublic") === "true";
 
+  // A listed registry appears under its owner's name, so only the owner can
+  // change this. Going private always unlists it, whoever makes the change.
+  const listedField = formData.get("listedOnProfile");
+  const listing: { listed_on_profile?: boolean } = {};
+  if (!isPublic) {
+    listing.listed_on_profile = false;
+  } else if (role === "owner" && listedField !== null) {
+    listing.listed_on_profile = listedField === "true";
+  }
+
   const { error } = await supabase
     .from("registries")
     .update({
@@ -220,6 +232,7 @@ export async function updateRegistry(registryId: string, formData: FormData) {
       event_date: eventDate || null,
       description: description || null,
       is_public: isPublic,
+      ...listing,
     })
     .eq("id", registryId);
 

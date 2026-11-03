@@ -172,6 +172,14 @@ export default async function DashboardPage() {
 
   const hasNoRegistries = (!registries || registries.length === 0) && sharedRegistries.length === 0;
 
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("username")
+    .eq("id", user.id)
+    .single();
+  const showProfilePrompt =
+    !user.is_anonymous && !profile?.username && Boolean(registries && registries.length > 0);
+
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex items-center justify-between">
@@ -190,6 +198,20 @@ export default async function DashboardPage() {
           </Link>
         </Button>
       </div>
+
+      {showProfilePrompt && (
+        <div className="mt-6 flex flex-col gap-3 rounded-xl border border-secondary p-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="font-medium">Give friends one link to all your registries</p>
+            <p className="text-sm text-tertiary">
+              Claim a username to get a public profile. You choose what appears on it.
+            </p>
+          </div>
+          <Button variant="outline" size="sm" className="shrink-0" asChild>
+            <Link href="/dashboard/account">Set up profile</Link>
+          </Button>
+        </div>
+      )}
 
       {hasNoRegistries ? (
         <Card className="mt-8">

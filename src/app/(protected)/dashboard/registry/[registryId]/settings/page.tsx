@@ -26,6 +26,7 @@ import {
   listInvites,
 } from "@/lib/actions/registry";
 import { CategoryManager } from "@/components/category-manager";
+import { ProfileListingField } from "@/components/profile-listing-field";
 import type { PaymentMethods, PersonalEventType, RegistryType } from "@/lib/types";
 import { copyFor } from "@/lib/registry-copy";
 
@@ -59,6 +60,7 @@ export default function RegistrySettingsPage() {
     event_date: string | null;
     description: string | null;
     is_public: boolean;
+    listed_on_profile: boolean;
     slug: string;
     owner_id: string;
     registry_type: RegistryType;
@@ -80,6 +82,9 @@ export default function RegistrySettingsPage() {
   const [addressSuccess, setAddressSuccess] = useState(false);
   const [categories, setCategories] = useState<{ id: string; name: string; sort_order: number }[]>([]);
   const [slugCopied, setSlugCopied] = useState(false);
+  const [username, setUsername] = useState<string | null | undefined>(undefined);
+  const [isPublicChoice, setIsPublicChoice] = useState(true);
+  const [listedChoice, setListedChoice] = useState(false);
 
   // Manager state
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
@@ -111,7 +116,7 @@ export default function RegistrySettingsPage() {
       const [{ data }, { data: cats }, { data: { user } }] = await Promise.all([
         supabase
           .from("registries")
-          .select("title, parent_names, honoree_names, event_date, description, is_public, slug, owner_id, registry_type, event_type, settings")
+          .select("title, parent_names, honoree_names, event_date, description, is_public, listed_on_profile, slug, owner_id, registry_type, event_type, settings")
           .eq("id", registryId)
           .single(),
         supabase
@@ -122,8 +127,18 @@ export default function RegistrySettingsPage() {
         supabase.auth.getUser(),
       ]);
       setRegistry(data);
+      setIsPublicChoice(data?.is_public ?? true);
+      setListedChoice(data?.listed_on_profile ?? false);
       setCategories(cats || []);
       setCurrentUserId(user?.id || null);
+      if (user) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("username")
+          .eq("id", user.id)
+          .single();
+        setUsername(profile?.username ?? null);
+      }
       setLoading(false);
     };
     fetchData();
@@ -144,6 +159,7 @@ export default function RegistrySettingsPage() {
         (formData.get("honoreeNames") as string) ||
         (formData.get("parentNames") as string) ||
         "";
+      const savedIsPublic = formData.get("isPublic") === "true";
       setRegistry({
         ...registry,
         title: formData.get("title") as string,
@@ -151,7 +167,8 @@ export default function RegistrySettingsPage() {
         honoree_names: honoreeNames || null,
         event_date: (formData.get("eventDate") as string) || null,
         description: (formData.get("description") as string) || null,
-        is_public: formData.get("isPublic") === "true",
+        is_public: savedIsPublic,
+        listed_on_profile: savedIsPublic && (isOwner ? listedChoice : registry.listed_on_profile),
       });
     }
     setSaving(false);
@@ -316,7 +333,16 @@ export default function RegistrySettingsPage() {
           <CardDescription>Update your registry details</CardDescription>
         </CardHeader>
         <CardContent>
-          <form action={handleSave} className="space-y-4">
+          {/* onSubmit, not action: React resets a form after its action runs, which
+              would put the listing checkbox back to its old value and unlist the
+              registry on the next save. */}
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleSave(new FormData(e.currentTarget));
+            }}
+            className="space-y-4"
+          >
             <Input
               label="Title"
               name="title"
@@ -356,6 +382,7 @@ export default function RegistrySettingsPage() {
                     name="isPublic"
                     value="true"
                     defaultChecked={registry.is_public}
+                    onChange={() => setIsPublicChoice(true)}
                   />
                   <span className="text-sm">Public — searchable by search engines</span>
                 </label>
@@ -365,11 +392,22 @@ export default function RegistrySettingsPage() {
                     name="isPublic"
                     value="false"
                     defaultChecked={!registry.is_public}
+                    onChange={() => setIsPublicChoice(false)}
                   />
                   <span className="text-sm">Private — only accessible with link</span>
                 </label>
               </div>
             </div>
+
+            {isOwner && username !== undefined && (
+              <ProfileListingField
+                username={username}
+                isPublic={isPublicChoice}
+                isSelected={listedChoice}
+                onChange={setListedChoice}
+                hasShippingAddress={Boolean(registry.settings?.shipping_address)}
+              />
+            )}
 
             <div className="space-y-1">
               <span className="text-sm font-medium text-secondary">Share URL</span>

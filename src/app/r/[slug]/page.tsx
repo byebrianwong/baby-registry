@@ -1,16 +1,6 @@
 import { notFound } from "next/navigation";
 import { cookies } from "next/headers";
-import {
-  Baby,
-  Cake,
-  Calendar,
-  Gift,
-  GraduationCap,
-  Heart,
-  Home,
-  LockOpen,
-  TreePine,
-} from "lucide-react";
+import { Calendar, LockOpen } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { verifyBuyerLink } from "@/lib/buyer-link";
@@ -20,18 +10,8 @@ import { ScrollToTop } from "@/components/scroll-to-top";
 import { SuggestItemDialog } from "@/components/suggest-item-dialog";
 import { PublicRegistryGrid } from "@/components/public-registry-grid";
 import { copyForRegistry, honoreeDisplayName } from "@/lib/registry-copy";
+import { RegistryIcon } from "@/components/registry-icon";
 import type { PersonalEventType, RegistryType } from "@/lib/types";
-
-const HERO_ICON: Record<string, React.ComponentType<{ className?: string }>> = {
-  baby: Baby,
-  birthday: Cake,
-  christmas: TreePine,
-  wedding: Heart,
-  housewarming: Home,
-  graduation: GraduationCap,
-  other: Gift,
-  personal: Gift,
-};
 
 interface RegistryItem {
   id: string;
@@ -133,8 +113,6 @@ export default async function PublicRegistryPage({
   const copy = copyForRegistry(registry);
   const registryType = (registry.registry_type as RegistryType | undefined) || "baby";
   const eventType = registry.event_type as PersonalEventType | null;
-  const heroIconKey = registryType === "baby" ? "baby" : eventType || "personal";
-  const HeroIcon = HERO_ICON[heroIconKey] || Gift;
   const isBabyRegistry = registryType === "baby";
 
   const paymentMethods = (registry.settings as any)?.payment_methods as
@@ -231,7 +209,7 @@ export default async function PublicRegistryPage({
       <header className="border-b">
         <div className="container mx-auto px-4 py-3">
           <a href="/" className="flex items-center gap-2 font-semibold">
-            <HeroIcon className="h-5 w-5 text-brand-600" />
+            <RegistryIcon registryType={registryType} eventType={eventType} className="h-5 w-5 text-brand-600" />
             <span>Regibee</span>
           </a>
         </div>
