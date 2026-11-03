@@ -129,7 +129,7 @@ export function ItemCard({ item, registryId, isOwner, categories = [], zipCode, 
             </div>
 
             {(item.is_essential || item.is_open_to_used) && (
-              <div className="flex gap-2.5 flex-wrap">
+              <div className="flex w-full min-w-0 gap-2.5 flex-wrap">
                 {item.is_essential && (
                   <Tag variant="most-wanted">Most wanted</Tag>
                 )}

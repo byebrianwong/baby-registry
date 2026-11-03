@@ -427,7 +427,7 @@ function PublicItemCard({
             </div>
           </div>
           {/* Tags sit below the image because the column beside it is too narrow for them in a three-column grid. */}
-          <div className="flex flex-wrap gap-2.5 empty:hidden">
+          <div className="flex w-full min-w-0 flex-wrap gap-2.5 empty:hidden">
             {item.is_parent_purchased ? (
               <Tag variant="parent-purchased">{selfPurchasedLabel}</Tag>
             ) : isFulfilled ? (
