@@ -8,7 +8,7 @@ const meta: Meta<typeof CelebrationDialog> = {
   args: {
     open: true,
     onClose: () => {},
-    parentName: "Denise & Brian",
+    parentName: "Remi & Max",
   },
 };
 export default meta;
@@ -34,8 +34,8 @@ export const ItemCoveredWithPayment: Story = {
     variant: "cover",
     itemTitle: "UPPAbaby Vista V2 Stroller",
     paymentMethods: {
-      venmo: "@brian-wong",
-      paypal: "brian@example.com",
+      venmo: "@remi-and-max",
+      paypal: "max@example.com",
     },
   },
 };
@@ -46,8 +46,8 @@ export const CashFundWithPayment: Story = {
     itemTitle: "Nursery Furniture Fund",
     amount: 50,
     paymentMethods: {
-      venmo: "@brian-wong",
-      zelle: "brian@example.com",
+      venmo: "@remi-and-max",
+      zelle: "max@example.com",
     },
   },
 };

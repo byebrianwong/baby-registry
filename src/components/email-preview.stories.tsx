@@ -38,10 +38,10 @@ export const BuyerItemReserved: Story = {
       buyerName: "Jane",
       itemTitle: "Hatch Rest+ Sound Machine",
       quantity: 1,
-      parentName: "Denise & Brian",
-      registryTitle: "Baby Wong Registry",
+      parentName: "Remi & Max",
+      registryTitle: "Remi & Max's Baby Registry",
       shippingAddress: sampleAddress,
-      registryUrl: "https://regibee.com/r/baby-wong?email=jane%40example.com&sig=a1b2c3d4e5f6a7b8",
+      registryUrl: "https://regibee.com/r/remi-and-max?email=jane%40example.com&sig=a1b2c3d4e5f6a7b8",
       shopUrl: "https://amazon.com/dp/B07WFXGNGB",
     }),
   },
@@ -54,9 +54,9 @@ export const BuyerItemReservedMultiQty: Story = {
       buyerName: "Jane",
       itemTitle: "Fitted Crib Sheets",
       quantity: 3,
-      parentName: "Denise & Brian",
-      registryTitle: "Baby Wong Registry",
-      registryUrl: "https://regibee.com/r/baby-wong?email=jane%40example.com&sig=a1b2c3d4e5f6a7b8",
+      parentName: "Remi & Max",
+      registryTitle: "Remi & Max's Baby Registry",
+      registryUrl: "https://regibee.com/r/remi-and-max?email=jane%40example.com&sig=a1b2c3d4e5f6a7b8",
     }),
   },
 };
@@ -67,10 +67,10 @@ export const BuyerItemCovered: Story = {
     html: itemCoveredBuyerHtml({
       buyerName: "Jane",
       itemTitle: "UPPAbaby Vista V2 Stroller",
-      parentName: "Denise & Brian",
-      registryTitle: "Baby Wong Registry",
-      paymentMethods: { venmo: "@brian-wong", paypal: "brian@example.com" },
-      registryUrl: "https://regibee.com/r/baby-wong?email=jane%40example.com&sig=a1b2c3d4e5f6a7b8",
+      parentName: "Remi & Max",
+      registryTitle: "Remi & Max's Baby Registry",
+      paymentMethods: { venmo: "@remi-and-max", paypal: "max@example.com" },
+      registryUrl: "https://regibee.com/r/remi-and-max?email=jane%40example.com&sig=a1b2c3d4e5f6a7b8",
       shopUrl: "https://amazon.com/dp/B08XYZ",
     }),
   },
@@ -83,10 +83,10 @@ export const BuyerCashFundContribution: Story = {
       buyerName: "Jane",
       fundTitle: "Nursery Furniture Fund",
       amount: 50,
-      parentName: "Denise & Brian",
-      registryTitle: "Baby Wong Registry",
-      paymentMethods: { venmo: "@brian-wong", zelle: "brian@example.com" },
-      registryUrl: "https://regibee.com/r/baby-wong?email=jane%40example.com&sig=a1b2c3d4e5f6a7b8",
+      parentName: "Remi & Max",
+      registryTitle: "Remi & Max's Baby Registry",
+      paymentMethods: { venmo: "@remi-and-max", zelle: "max@example.com" },
+      registryUrl: "https://regibee.com/r/remi-and-max?email=jane%40example.com&sig=a1b2c3d4e5f6a7b8",
     }),
   },
 };
@@ -96,10 +96,10 @@ export const BuyerCashFundContribution: Story = {
 export const OwnerItemReserved: Story = {
   args: {
     subject: 'Jane Doe reserved "Hatch Rest+ Sound Machine"',
-    to: "brian@example.com",
+    to: "max@example.com",
     html: itemReservedOwnerHtml({
-      ownerName: "Denise",
-      registryTitle: "Baby Wong Registry",
+      ownerName: "Remi",
+      registryTitle: "Remi & Max's Baby Registry",
       buyerName: "Jane Doe",
       itemTitle: "Hatch Rest+ Sound Machine",
       quantity: 2,
@@ -112,10 +112,10 @@ export const OwnerItemReserved: Story = {
 export const OwnerItemCovered: Story = {
   args: {
     subject: 'Jane Doe is covering "UPPAbaby Vista V2 Stroller"',
-    to: "brian@example.com",
+    to: "max@example.com",
     html: itemCoveredOwnerHtml({
-      ownerName: "Brian",
-      registryTitle: "Baby Wong Registry",
+      ownerName: "Max",
+      registryTitle: "Remi & Max's Baby Registry",
       buyerName: "Jane Doe",
       itemTitle: "UPPAbaby Vista V2 Stroller",
       message: "Happy to help with the big stuff!",
@@ -127,10 +127,10 @@ export const OwnerItemCovered: Story = {
 export const OwnerCashFundContribution: Story = {
   args: {
     subject: 'Jane Doe contributed $50.00 to "Nursery Furniture Fund"',
-    to: "brian@example.com",
+    to: "max@example.com",
     html: cashFundContributionOwnerHtml({
-      ownerName: "Brian",
-      registryTitle: "Baby Wong Registry",
+      ownerName: "Max",
+      registryTitle: "Remi & Max's Baby Registry",
       buyerName: "Jane Doe",
       fundTitle: "Nursery Furniture Fund",
       amount: 50,
@@ -143,10 +143,10 @@ export const OwnerCashFundContribution: Story = {
 export const OwnerNewSuggestion: Story = {
   args: {
     subject: 'Aunt Mary suggested "Baby Monitor Pro"',
-    to: "brian@example.com",
+    to: "max@example.com",
     html: newSuggestionOwnerHtml({
-      ownerName: "Brian",
-      registryTitle: "Baby Wong Registry",
+      ownerName: "Max",
+      registryTitle: "Remi & Max's Baby Registry",
       suggestedByName: "Aunt Mary",
       title: "Baby Monitor Pro",
       price: 129.99,
@@ -159,14 +159,14 @@ export const OwnerNewSuggestion: Story = {
 // When a gift is reserved, ALL managers receive a notification
 // addressed to them individually.
 
-export const ManagerNotifDenise: Story = {
-  name: "Multi-Manager: Notification to Denise",
+export const ManagerNotifRemi: Story = {
+  name: "Multi-Manager: Notification to Remi",
   args: {
     subject: '🎁 Jane Doe reserved "Hatch Rest+ Sound Machine"',
-    to: "denise@example.com",
+    to: "remi@example.com",
     html: itemReservedOwnerHtml({
-      ownerName: "Denise",
-      registryTitle: "Baby Wong Registry",
+      ownerName: "Remi",
+      registryTitle: "Remi & Max's Baby Registry",
       buyerName: "Jane Doe",
       itemTitle: "Hatch Rest+ Sound Machine",
       quantity: 1,
@@ -176,14 +176,14 @@ export const ManagerNotifDenise: Story = {
   },
 };
 
-export const ManagerNotifBrian: Story = {
-  name: "Multi-Manager: Notification to Brian",
+export const ManagerNotifMax: Story = {
+  name: "Multi-Manager: Notification to Max",
   args: {
     subject: '🎁 Jane Doe reserved "Hatch Rest+ Sound Machine"',
-    to: "brian@example.com",
+    to: "max@example.com",
     html: itemReservedOwnerHtml({
-      ownerName: "Brian",
-      registryTitle: "Baby Wong Registry",
+      ownerName: "Max",
+      registryTitle: "Remi & Max's Baby Registry",
       buyerName: "Jane Doe",
       itemTitle: "Hatch Rest+ Sound Machine",
       quantity: 1,
@@ -204,9 +204,9 @@ export const BuyerItemReservedNoName: Story = {
       itemTitle: "Hatch Rest+ Sound Machine",
       quantity: 1,
       parentName: "The Registry Owner",
-      registryTitle: "Baby Wong Registry",
+      registryTitle: "Remi & Max's Baby Registry",
       shippingAddress: sampleAddress,
-      registryUrl: "https://regibee.com/r/baby-wong?email=jane%40example.com&sig=a1b2c3d4e5f6a7b8",
+      registryUrl: "https://regibee.com/r/remi-and-max?email=jane%40example.com&sig=a1b2c3d4e5f6a7b8",
       shopUrl: "https://amazon.com/dp/B07WFXGNGB",
     }),
   },
@@ -216,10 +216,10 @@ export const OwnerItemReservedNoName: Story = {
   name: "Owner: Item Reserved (No Parent Names Set)",
   args: {
     subject: 'Jane Doe reserved "Hatch Rest+ Sound Machine"',
-    to: "brian@example.com",
+    to: "max@example.com",
     html: itemReservedOwnerHtml({
       ownerName: "there",
-      registryTitle: "Baby Wong Registry",
+      registryTitle: "Remi & Max's Baby Registry",
       buyerName: "Jane Doe",
       itemTitle: "Hatch Rest+ Sound Machine",
       quantity: 1,
@@ -233,11 +233,11 @@ export const OwnerItemReservedNoName: Story = {
 
 export const ManagerInvite: Story = {
   args: {
-    subject: 'Denise & Brian invited you to manage "Baby Wong Registry"',
+    subject: `Remi & Max invited you to manage "Remi & Max's Baby Registry"`,
     to: "grandma@example.com",
     html: managerInviteHtml({
-      inviterName: "Denise & Brian",
-      registryTitle: "Baby Wong Registry",
+      inviterName: "Remi & Max",
+      registryTitle: "Remi & Max's Baby Registry",
       inviteUrl: "https://regibee.com/invite/abc123token",
     }),
   },
