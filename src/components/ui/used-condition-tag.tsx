@@ -20,13 +20,13 @@ export function UsedConditionTag({ condition, className }: UsedConditionTagProps
   return (
     <span
       className={cn(
-        "inline-flex flex-wrap items-center gap-1 rounded-full border bg-[#fdfdfd] px-2.5 py-1 text-xs font-medium text-[#181d27]",
+        "inline-flex flex-wrap items-center gap-1 rounded-full border bg-[#fdfdfd] px-2.5 py-0.5 text-xs font-medium text-[#181d27]",
         colors.border,
         className
       )}
     >
       Open to
-      <span className={cn("rounded px-1 whitespace-nowrap", colors.badge)}>
+      <span className={cn("inline-flex items-center rounded px-1.5 whitespace-nowrap", colors.badge)}>
         {label}
       </span>
       used condition

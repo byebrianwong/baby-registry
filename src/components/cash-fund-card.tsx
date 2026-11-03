@@ -93,19 +93,19 @@ export function CashFundCard({ fund, registryId, highlightId, purchases }: CashF
         onClick={() => setEditOpen(true)}
       >
         <CardContent className="flex flex-col gap-3 p-4">
-          <div className="flex items-start justify-between gap-2">
-            <h3 className="font-semibold text-lg text-[#181d27]">
+          <div className="flex items-start justify-between gap-2 min-w-0">
+            <h3 className="font-semibold text-lg text-[#181d27] min-w-0 flex-1 break-words">
               {fund.title}
             </h3>
             {purchases && purchases.length > 0 && (
               <Tag
                 variant="gifted"
-                className="cursor-pointer hover:opacity-80"
+                className="cursor-pointer hover:opacity-80 max-w-[55%] overflow-hidden text-ellipsis block shrink-0"
                 onClick={(e) => { e.stopPropagation(); setGiftDetailOpen(true); }}
               >
-                {purchases[0].buyer_name}
-                {purchases.length > 1 ? ` + ${purchases.length - 1} other${purchases.length > 2 ? "s" : ""}` : ""}
-                {" contributed"}
+                {purchases.length > 1
+                  ? `${purchases[0].buyer_name} + ${purchases.length - 1} other${purchases.length > 2 ? "s" : ""} contributed`
+                  : `${purchases[0].buyer_name} contributed`}
               </Tag>
             )}
           </div>

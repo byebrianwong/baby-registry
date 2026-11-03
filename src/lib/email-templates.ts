@@ -120,7 +120,7 @@ export function itemReservedOwnerHtml(opts: {
     <p><strong>${opts.buyerName}</strong> just reserved <strong>${opts.itemTitle}</strong>${qtyText} on your registry <em>${opts.registryTitle}</em>.</p>
     ${opts.message ? `<p>Their message: "${opts.message}"</p>` : ""}
     <p style="margin: 16px 0;"><a href="${opts.dashboardLink}" style="color:#004659;">View on Dashboard</a></p>
-    <p style="color:#888;font-size:13px;">You're receiving this because someone interacted with your baby registry.</p>
+    <p style="color:#888;font-size:13px;">You're receiving this because someone interacted with your registry.</p>
   `;
 }
 
@@ -137,7 +137,7 @@ export function itemCoveredOwnerHtml(opts: {
     <p><strong>${opts.buyerName}</strong> offered to cover the cost of <strong>${opts.itemTitle}</strong> on your registry <em>${opts.registryTitle}</em>.</p>
     ${opts.message ? `<p>Their message: "${opts.message}"</p>` : ""}
     <p style="margin: 16px 0;"><a href="${opts.dashboardLink}" style="color:#004659;">View on Dashboard</a></p>
-    <p style="color:#888;font-size:13px;">You're receiving this because someone interacted with your baby registry.</p>
+    <p style="color:#888;font-size:13px;">You're receiving this because someone interacted with your registry.</p>
   `;
 }
 
@@ -157,7 +157,7 @@ export function cashFundContributionOwnerHtml(opts: {
     <p><strong>${opts.buyerName}</strong> contributed <strong>${formatted}</strong> to your cash fund <strong>${opts.fundTitle}</strong> on <em>${opts.registryTitle}</em>.</p>
     ${opts.message ? `<p>Their message: "${opts.message}"</p>` : ""}
     <p style="margin: 16px 0;"><a href="${opts.dashboardLink}" style="color:#004659;">View on Dashboard</a></p>
-    <p style="color:#888;font-size:13px;">You're receiving this because someone interacted with your baby registry.</p>
+    <p style="color:#888;font-size:13px;">You're receiving this because someone interacted with your registry.</p>
   `;
 }
 
@@ -176,7 +176,7 @@ export function newSuggestionOwnerHtml(opts: {
     <p><strong>${opts.suggestedByName}</strong> suggested adding <strong>${opts.title}</strong>${priceText} to your registry <em>${opts.registryTitle}</em>.</p>
     ${opts.notes ? `<p>Their note: "${opts.notes}"</p>` : ""}
     <p>Head to your dashboard to accept or decline this suggestion.</p>
-    <p style="color:#888;font-size:13px;">You're receiving this because someone interacted with your baby registry.</p>
+    <p style="color:#888;font-size:13px;">You're receiving this because someone interacted with your registry.</p>
   `;
 }
 
@@ -189,7 +189,7 @@ export function managerInviteHtml(opts: {
 }): string {
   return `
     <p>Hi there,</p>
-    <p><strong>${opts.inviterName}</strong> invited you to help manage the baby registry <strong>${opts.registryTitle}</strong>.</p>
+    <p><strong>${opts.inviterName}</strong> invited you to help manage the registry <strong>${opts.registryTitle}</strong>.</p>
     <p>As a manager, you'll be able to add and edit items, view gift activity, and help organize the registry.</p>
     <p style="margin: 24px 0;">
       <a href="${opts.inviteUrl}" style="background-color: #004659; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
@@ -225,7 +225,7 @@ export function confirmSignupHtml(opts: {
         <h1 style="font-size: 20px; margin: 12px 0 0; color: #004659;">Regibee</h1>
       </div>
       <h2 style="font-size: 18px; text-align: center;">Confirm your email</h2>
-      <p style="color: #414651; line-height: 1.6;">Thanks for signing up! Click the button below to confirm your email address and start building your baby registry.</p>
+      <p style="color: #414651; line-height: 1.6;">Thanks for signing up! Click the button below to confirm your email address and start building your registry.</p>
       <p style="text-align: center; margin: 24px 0;">
         <a href="${opts.confirmUrl}" style="background-color: #004659; color: white; padding: 12px 32px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 500;">
           Confirm Email

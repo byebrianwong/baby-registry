@@ -60,13 +60,14 @@ async function getRegistryManagerEmails(opts: {
 
   const { data: registry } = await supabaseAdmin
     .from("registries")
-    .select("title, parent_names, owner_id")
+    .select("title, parent_names, honoree_names, owner_id, registry_type, event_type")
     .eq("id", registryId)
     .single();
 
   if (!registry) return null;
 
-  const parentNames = registry.parent_names || "there";
+  const parentNames =
+    registry.honoree_names || registry.parent_names || "there";
 
   // Fetch all managers for this registry
   const { data: managers } = await supabaseAdmin
@@ -132,7 +133,7 @@ async function getRegistryInfoForBuyer(opts: {
 
   const { data: registry } = await supabaseAdmin
     .from("registries")
-    .select("title, parent_names, settings, slug")
+    .select("title, parent_names, honoree_names, settings, slug")
     .eq("id", registryId)
     .single();
 
@@ -144,7 +145,10 @@ async function getRegistryInfoForBuyer(opts: {
   const paymentMethods = pm && (pm.venmo || pm.paypal || pm.zelle) ? pm : undefined;
 
   return {
-    parentName: registry.parent_names || "The Registry Owner",
+    parentName:
+      registry.honoree_names ||
+      registry.parent_names ||
+      "The Registry Owner",
     registryTitle: registry.title,
     shippingAddress,
     paymentMethods,

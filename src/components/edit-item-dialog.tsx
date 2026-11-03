@@ -17,9 +17,21 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { updateRegistryItem, deleteRegistryItem } from "@/lib/actions/registry";
+import {
+  createCategory,
+  deleteRegistryItem,
+  toggleParentPurchased,
+  updateRegistryItem,
+} from "@/lib/actions/registry";
 import { scrapeProductUrl } from "@/lib/actions/scrape";
 import { estimateTax } from "@/lib/actions/tax";
+import { copyFor } from "@/lib/registry-copy";
+import type { PersonalEventType, RegistryType } from "@/lib/types";
+
+interface Category {
+  id: string;
+  name: string;
+}
 
 interface EditItemDialogProps {
   item: {
@@ -38,8 +50,10 @@ interface EditItemDialogProps {
     category_id: string | null;
   };
   registryId: string;
-  categories: { id: string; name: string }[];
+  categories: Category[];
   zipCode?: string;
+  registryType?: RegistryType;
+  eventType?: PersonalEventType | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
@@ -56,11 +70,15 @@ const currencySymbols: Record<string, string> = {
 export function EditItemDialog({
   item,
   registryId,
-  categories,
+  categories: initialCategories,
   zipCode,
+  registryType = "baby",
+  eventType = null,
   open,
   onOpenChange,
 }: EditItemDialogProps) {
+  const isBaby = registryType === "baby";
+  const copy = copyFor({ registryType, eventType });
   const [loading, setLoading] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [scraping, setScraping] = useState(false);
@@ -68,6 +86,7 @@ export function EditItemDialog({
   const [scrapeIsError, setScrapeIsError] = useState(false);
   const [error, setError] = useState("");
   const [openToUsed, setOpenToUsed] = useState(item.is_open_to_used);
+  const [parentPurchased, setParentPurchased] = useState(item.is_parent_purchased);
   const [currency, setCurrency] = useState("USD");
   const [title, setTitle] = useState(item.title);
   const [price, setPrice] = useState(item.price != null ? item.price.toFixed(2) : "");
@@ -75,6 +94,14 @@ export function EditItemDialog({
   const [imageError, setImageError] = useState(false);
   const [externalUrl, setExternalUrl] = useState(item.external_url || "");
   const [taxInfo, setTaxInfo] = useState<{ original: string; rate: number } | null>(null);
+  const [categories, setCategories] = useState<Category[]>(initialCategories);
+  const [categoryId, setCategoryId] = useState<string | undefined>(
+    item.category_id ?? undefined,
+  );
+  const [addingCategory, setAddingCategory] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState("");
+  const [creatingCategory, setCreatingCategory] = useState(false);
+  const [categoryError, setCategoryError] = useState("");
 
   const urlRef = useRef<HTMLInputElement>(null);
 
@@ -174,10 +201,15 @@ export function EditItemDialog({
     const result = await updateRegistryItem(item.id, registryId, formData);
     if (result?.error) {
       setError(result.error);
-    } else {
-      onOpenChange(false);
-      setScrapeStatus("");
+      setLoading(false);
+      return;
     }
+    // Apply the self-purchase toggle via the dedicated action if it changed.
+    if (parentPurchased !== item.is_parent_purchased) {
+      await toggleParentPurchased(item.id, registryId, parentPurchased);
+    }
+    onOpenChange(false);
+    setScrapeStatus("");
     setLoading(false);
   };
 
@@ -194,7 +226,7 @@ export function EditItemDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={(v) => { onOpenChange(v); if (!v) { setScrapeStatus(""); setScrapeIsError(false); setOpenToUsed(item.is_open_to_used); setCurrency("USD"); setError(""); setTitle(item.title); setPrice(item.price != null ? item.price.toFixed(2) : ""); setImageUrl(item.image_url || ""); setImageError(false); setExternalUrl(item.external_url || ""); setTaxInfo(null); } }}>
+    <Dialog open={open} onOpenChange={(v) => { onOpenChange(v); if (!v) { setScrapeStatus(""); setScrapeIsError(false); setOpenToUsed(item.is_open_to_used); setParentPurchased(item.is_parent_purchased); setCurrency("USD"); setError(""); setTitle(item.title); setPrice(item.price != null ? item.price.toFixed(2) : ""); setImageUrl(item.image_url || ""); setImageError(false); setExternalUrl(item.external_url || ""); setTaxInfo(null); setCategoryId(item.category_id ?? undefined); setAddingCategory(false); setNewCategoryName(""); setCategoryError(""); } }}>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg" showCloseButton={false}>
         <DialogHeader>
           <DialogTitle>Edit item in registry</DialogTitle>
@@ -240,7 +272,7 @@ export function EditItemDialog({
           <Input
             label="Item Name"
             name="title"
-            placeholder="e.g., Convertible Crib"
+            placeholder={isBaby ? "e.g., Convertible Crib" : "e.g., Wireless Headphones"}
             value={title}
             onChange={setTitle}
             isRequired
@@ -253,15 +285,87 @@ export function EditItemDialog({
             label="Mark as most wanted item"
           />
 
-          <Select
-            name="categoryId"
-            label="Category"
-            defaultSelectedKey={item.category_id || undefined}
-            placeholder="Select a category"
-            items={categories.map((cat) => ({ id: cat.id, label: cat.name }))}
-          >
-            {(catItem) => <Select.Item id={catItem.id} label={catItem.label} />}
-          </Select>
+          <div className="space-y-1.5">
+            {addingCategory ? (
+              <div className="space-y-1.5">
+                <Label>New category</Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    name="newCategoryName"
+                    placeholder="e.g., Kitchen"
+                    value={newCategoryName}
+                    onChange={setNewCategoryName}
+                    className="flex-1"
+                  />
+                  <Button
+                    type="button"
+                    disabled={!newCategoryName.trim() || creatingCategory}
+                    onClick={async () => {
+                      setCreatingCategory(true);
+                      setCategoryError("");
+                      const result = await createCategory(
+                        registryId,
+                        newCategoryName.trim(),
+                      );
+                      if (result?.error) {
+                        setCategoryError(result.error);
+                      } else if (result?.category) {
+                        const next = [...categories, result.category];
+                        setCategories(next);
+                        setCategoryId(result.category.id);
+                        setAddingCategory(false);
+                        setNewCategoryName("");
+                      }
+                      setCreatingCategory(false);
+                    }}
+                  >
+                    {creatingCategory ? "Adding..." : "Add"}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      setAddingCategory(false);
+                      setNewCategoryName("");
+                      setCategoryError("");
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+                {categoryError && (
+                  <p className="text-xs text-error-primary">{categoryError}</p>
+                )}
+              </div>
+            ) : (
+              <>
+                <Select
+                  name="categoryId"
+                  label="Category"
+                  selectedKey={categoryId ?? null}
+                  onSelectionChange={(key) =>
+                    setCategoryId(key?.toString() || undefined)
+                  }
+                  placeholder={
+                    categories.length === 0
+                      ? "No categories yet"
+                      : "Select a category"
+                  }
+                  items={categories.map((cat) => ({ id: cat.id, label: cat.name }))}
+                  isDisabled={categories.length === 0}
+                >
+                  {(catItem) => <Select.Item id={catItem.id} label={catItem.label} />}
+                </Select>
+                <button
+                  type="button"
+                  onClick={() => setAddingCategory(true)}
+                  className="text-xs font-medium text-[#004659] hover:underline"
+                >
+                  + Create category
+                </button>
+              </>
+            )}
+          </div>
 
           <div className="space-y-1.5">
             <Input
@@ -331,6 +435,12 @@ export function EditItemDialog({
               ${taxInfo.original} + ~{(taxInfo.rate * 100).toFixed(1)}% tax
             </p>
           )}
+
+          <Checkbox
+            isSelected={parentPurchased}
+            onChange={setParentPurchased}
+            label={copy.selfPurchaseButton}
+          />
 
           <Checkbox
             name="isOpenToUsed"

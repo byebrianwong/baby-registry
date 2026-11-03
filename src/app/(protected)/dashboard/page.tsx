@@ -178,7 +178,7 @@ export default async function DashboardPage() {
         <div>
           <h1 className="text-3xl font-bold">My Registries</h1>
           <p className="text-tertiary">
-            Manage your baby registries and track gifts
+            Manage your registries and track gifts
           </p>
         </div>
         <Button asChild className="!bg-[#004659] hover:!bg-[#003847] !ring-[#004659] !text-white">

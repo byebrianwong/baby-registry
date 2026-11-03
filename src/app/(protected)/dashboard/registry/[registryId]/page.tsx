@@ -28,6 +28,7 @@ import { ProgressCircle } from "@/components/ui/progress-circle";
 import { getChecklistProgress } from "@/lib/checklist-matching";
 import { AddCashFundDialog } from "@/components/add-cash-fund-dialog";
 import { CashFundCard } from "@/components/cash-fund-card";
+import { copyForRegistry } from "@/lib/registry-copy";
 
 interface RegistryItem {
   id: string;
@@ -132,6 +133,8 @@ export default async function RegistryManagePage({
   const allCategories = (categories || []) as Category[];
   const dismissedChecklistItems = (registry.settings as Record<string, unknown> | null)?.checklist_dismissed as string[] | undefined;
   const checklistProgress = getChecklistProgress(allItems.map((i) => i.title), dismissedChecklistItems);
+  const copy = copyForRegistry(registry);
+  const showChecklist = copy.checklistAvailable;
 
   // Filter purchases to this registry
   const allPurchases = (purchases || []).filter((p: any) => {
@@ -237,7 +240,7 @@ export default async function RegistryManagePage({
           <h1 className="text-3xl font-bold">{registry.title}</h1>
           {registry.event_date && (
             <p className="text-tertiary">
-              Due date:{" "}
+              {copy.eventDateLabel}:{" "}
               {new Date(registry.event_date + "T00:00:00").toLocaleDateString("en-US", {
                 month: "long",
                 day: "numeric",
@@ -309,20 +312,22 @@ export default async function RegistryManagePage({
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-semibold">Registry Items</h2>
               <div className="flex items-center gap-2">
-                <Button variant="outline" asChild>
-                  <Link href={`/dashboard/registry/${registryId}/checklist`}>
-                    <span className="inline-flex items-center gap-1.5">
-                      <ProgressCircle
-                        value={checklistProgress.total > 0 ? (checklistProgress.matched / checklistProgress.total) * 100 : 0}
-                        size={20}
-                        strokeWidth={2}
-                      />
-                      Checklist
-                    </span>
-                  </Link>
-                </Button>
+                {showChecklist && (
+                  <Button variant="outline" asChild>
+                    <Link href={`/dashboard/registry/${registryId}/checklist`}>
+                      <span className="inline-flex items-center gap-1.5">
+                        <ProgressCircle
+                          value={checklistProgress.total > 0 ? (checklistProgress.matched / checklistProgress.total) * 100 : 0}
+                          size={20}
+                          strokeWidth={2}
+                        />
+                        Checklist
+                      </span>
+                    </Link>
+                  </Button>
+                )}
                 <AddCashFundDialog registryId={registryId} />
-                <AddItemDialog registryId={registryId} categories={allCategories} zipCode={zipCode} />
+                <AddItemDialog registryId={registryId} categories={allCategories} zipCode={zipCode} registryType={registry.registry_type} eventType={registry.event_type} />
               </div>
             </div>
 
@@ -330,15 +335,19 @@ export default async function RegistryManagePage({
               <Card>
                 <CardContent className="flex flex-col items-center justify-center py-12">
                   <p className="text-tertiary">
-                    No items yet. Add items manually or browse the checklist.
+                    {showChecklist
+                      ? "No items yet. Add items manually or browse the checklist."
+                      : "No items yet. Add items from any store to get started."}
                   </p>
                   <div className="mt-4 flex gap-2">
-                    <AddItemDialog registryId={registryId} categories={allCategories} zipCode={zipCode} />
-                    <Button variant="outline" asChild>
-                      <Link href={`/dashboard/registry/${registryId}/checklist`}>
-                        Browse Checklist
-                      </Link>
-                    </Button>
+                    <AddItemDialog registryId={registryId} categories={allCategories} zipCode={zipCode} registryType={registry.registry_type} eventType={registry.event_type} />
+                    {showChecklist && (
+                      <Button variant="outline" asChild>
+                        <Link href={`/dashboard/registry/${registryId}/checklist`}>
+                          Browse Checklist
+                        </Link>
+                      </Button>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -382,6 +391,9 @@ export default async function RegistryManagePage({
                               zipCode={zipCode}
                               highlightId={highlight}
                               purchases={purchasesByItemId.get(item.id)}
+                              selfPurchaseButtonLabel={copy.selfPurchaseButton}
+                              registryType={registry.registry_type}
+                              eventType={registry.event_type}
                             />
                           ))}
                         </div>
@@ -404,6 +416,9 @@ export default async function RegistryManagePage({
                             zipCode={zipCode}
                             highlightId={highlight}
                             purchases={purchasesByItemId.get(item.id)}
+                            selfPurchaseButtonLabel={copy.selfPurchaseButton}
+                              registryType={registry.registry_type}
+                              eventType={registry.event_type}
                           />
                         ))}
                       </div>
