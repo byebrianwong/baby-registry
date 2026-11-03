@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import { ExternalLink, Search, SlidersHorizontal } from "lucide-react";
+import { ExternalLink, Search } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -176,7 +176,6 @@ export function PublicRegistryGrid({
             />
           </div>
           <div className="flex items-center gap-2">
-            <SlidersHorizontal className="h-4 w-4 text-tertiary shrink-0" />
             <select
               value={priceBucket}
               onChange={(e) => setPriceBucket(e.target.value)}

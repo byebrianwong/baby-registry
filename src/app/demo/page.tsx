@@ -10,7 +10,6 @@ import {
   Lightbulb,
   ChevronDown,
   Search,
-  SlidersHorizontal,
   LockOpen,
 } from "lucide-react";
 import { ItemImage } from "@/components/item-image";
@@ -453,7 +452,6 @@ export default function DemoPage() {
               />
             </div>
             <div className="flex items-center gap-2">
-              <SlidersHorizontal className="h-4 w-4 text-tertiary shrink-0" />
               <select
                 value={priceBucket}
                 onChange={(e) => setPriceBucket(e.target.value)}
