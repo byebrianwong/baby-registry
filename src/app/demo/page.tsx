@@ -15,6 +15,7 @@ import {
 import { ItemImage } from "@/components/item-image";
 import { Badge } from "@/components/ui/badge";
 import { Tag } from "@/components/ui/tag";
+import { TightSelect } from "@/components/ui/tight-select";
 import { UsedConditionTag } from "@/components/ui/used-condition-tag";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -452,27 +453,23 @@ export default function DemoPage() {
               />
             </div>
             <div className="flex items-center gap-2">
-              <select
+              <TightSelect
+                ariaLabel="Price filter"
                 value={priceBucket}
-                onChange={(e) => setPriceBucket(e.target.value)}
-                className="rounded-md border border-[#d5d7da] bg-primary px-3 py-2 text-sm cursor-pointer focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
-              >
-                {PRICE_BUCKETS.map((b) => (
-                  <option key={b.value} value={b.value}>
-                    {b.label}
-                  </option>
-                ))}
-              </select>
-              <select
+                onChange={setPriceBucket}
+                options={PRICE_BUCKETS.map((b) => ({ value: b.value, label: b.label }))}
+              />
+              <TightSelect<SortMode>
+                ariaLabel="Sort order"
                 value={sort}
-                onChange={(e) => setSort(e.target.value as SortMode)}
-                className="rounded-md border border-[#d5d7da] bg-primary px-3 py-2 text-sm cursor-pointer focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
-              >
-                <option value="default">Default order</option>
-                <option value="most-wanted">Most wanted first</option>
-                <option value="price-asc">Price: low to high</option>
-                <option value="price-desc">Price: high to low</option>
-              </select>
+                onChange={setSort}
+                options={[
+                  { value: "default", label: "Default order" },
+                  { value: "most-wanted", label: "Most wanted first" },
+                  { value: "price-asc", label: "Price: low to high" },
+                  { value: "price-desc", label: "Price: high to low" },
+                ]}
+              />
             </div>
           </div>
           {filtersActive && filteredItems.length === 0 && (
