@@ -32,9 +32,12 @@ interface ItemCardProps {
   zipCode?: string;
   highlightId?: string;
   purchases?: Purchase[];
+  selfPurchaseButtonLabel?: string;
+  registryType?: "baby" | "personal";
+  eventType?: string | null;
 }
 
-export function ItemCard({ item, registryId, isOwner, categories = [], zipCode, highlightId, purchases }: ItemCardProps) {
+export function ItemCard({ item, registryId, isOwner, categories = [], zipCode, highlightId, purchases, selfPurchaseButtonLabel = "Mark as bought by parent", registryType = "baby", eventType = null }: ItemCardProps) {
   const [toggling, setToggling] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [giftDetailOpen, setGiftDetailOpen] = useState(false);
@@ -92,21 +95,22 @@ export function ItemCard({ item, registryId, isOwner, categories = [], zipCode, 
           </div>
 
           <div className="flex-1 min-w-0 flex flex-col gap-2">
-            <div className="flex items-center justify-between gap-2">
-              <h3 className="text-sm font-medium">{item.title}</h3>
-              <div className="shrink-0 h-6">
+            <div className="flex items-start justify-between gap-2 min-w-0">
+              <h3 className="text-sm font-medium min-w-0 flex-1 break-words">{item.title}</h3>
+              <div className="min-w-0 max-w-[45%] shrink">
                 {item.is_parent_purchased && (
-                  <Tag variant="purchased-by-you">Purchased by you</Tag>
+                  <Tag variant="purchased-by-you" className="max-w-full overflow-hidden text-ellipsis block">Purchased by you</Tag>
                 )}
                 {isFulfilled && !item.is_parent_purchased && (
                   purchases && purchases.length > 0 ? (
                     <Tag
                       variant="gifted"
-                      className="cursor-pointer hover:opacity-80"
+                      className="cursor-pointer hover:opacity-80 max-w-full overflow-hidden text-ellipsis block"
                       onClick={(e) => { e.stopPropagation(); setGiftDetailOpen(true); }}
                     >
-                      Gifted by {purchases[0].buyer_name}
-                      {purchases.length > 1 ? ` + ${purchases.length - 1} other${purchases.length > 2 ? "s" : ""}` : ""}
+                      {purchases.length > 1
+                        ? `Gifted by ${purchases[0].buyer_name} + ${purchases.length - 1} other${purchases.length > 2 ? "s" : ""}`
+                        : `Gifted by ${purchases[0].buyer_name}`}
                     </Tag>
                   ) : (
                     <Tag variant="gifted">Gifted</Tag>
@@ -166,7 +170,7 @@ export function ItemCard({ item, registryId, isOwner, categories = [], zipCode, 
               >
                 <span className="inline-flex items-center gap-1.5">
                   <ShoppingBag className="h-4 w-4 shrink-0" />
-                  {toggling ? "Saving..." : "Mark as bought by parent"}
+                  {toggling ? "Saving..." : selfPurchaseButtonLabel}
                 </span>
               </Button>
             )}
@@ -192,6 +196,8 @@ export function ItemCard({ item, registryId, isOwner, categories = [], zipCode, 
         registryId={registryId}
         categories={categories}
         zipCode={zipCode}
+        registryType={registryType}
+        eventType={eventType as never}
         open={editOpen}
         onOpenChange={setEditOpen}
       />

@@ -18,9 +18,11 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { addRegistryItem } from "@/lib/actions/registry";
+import { addRegistryItem, createCategory } from "@/lib/actions/registry";
 import { scrapeProductUrl } from "@/lib/actions/scrape";
 import { estimateTax } from "@/lib/actions/tax";
+import type { PersonalEventType, RegistryType } from "@/lib/types";
+import { copyFor } from "@/lib/registry-copy";
 
 interface Category {
   id: string;
@@ -31,6 +33,8 @@ interface AddItemDialogProps {
   registryId: string;
   categories: Category[];
   zipCode?: string;
+  registryType?: RegistryType;
+  eventType?: PersonalEventType | null;
   defaultValues?: {
     title?: string;
     price?: string;
@@ -52,11 +56,15 @@ const currencySymbols: Record<string, string> = {
 
 export function AddItemDialog({
   registryId,
-  categories,
+  categories: initialCategories,
   zipCode,
+  registryType = "baby",
+  eventType = null,
   defaultValues,
   trigger,
 }: AddItemDialogProps) {
+  const copy = copyFor({ registryType, eventType });
+  const isBaby = registryType === "baby";
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [scraping, setScraping] = useState(false);
@@ -72,6 +80,11 @@ export function AddItemDialog({
   const [imageUrl, setImageUrl] = useState("");
   const [imageError, setImageError] = useState(false);
   const [categoryId, setCategoryId] = useState<string | undefined>(defaultValues?.categoryId);
+  const [categories, setCategories] = useState<Category[]>(initialCategories);
+  const [addingCategory, setAddingCategory] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState("");
+  const [creatingCategory, setCreatingCategory] = useState(false);
+  const [categoryError, setCategoryError] = useState("");
 
   const urlRef = useRef<HTMLInputElement>(null);
 
@@ -280,7 +293,7 @@ export function AddItemDialog({
           <Input
             label="Item Name"
             name="title"
-            placeholder="e.g., Convertible Crib"
+            placeholder={isBaby ? "e.g., Convertible Crib" : "e.g., Wireless Headphones"}
             value={title}
             onChange={setTitle}
             isRequired
@@ -293,16 +306,87 @@ export function AddItemDialog({
             label="Mark as most wanted item"
           />
 
-          <Select
-            name="categoryId"
-            label="Category"
-            selectedKey={categoryId ?? null}
-            onSelectionChange={(key) => setCategoryId(key?.toString() || undefined)}
-            placeholder="Select a category"
-            items={categories.map((cat) => ({ id: cat.id, label: cat.name }))}
-          >
-            {(item) => <Select.Item id={item.id} label={item.label} />}
-          </Select>
+          <div className="space-y-1.5">
+            {addingCategory ? (
+              <div className="space-y-1.5">
+                <Label>New category</Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    name="newCategoryName"
+                    placeholder="e.g., Kitchen"
+                    value={newCategoryName}
+                    onChange={setNewCategoryName}
+                    className="flex-1"
+                  />
+                  <Button
+                    type="button"
+                    disabled={!newCategoryName.trim() || creatingCategory}
+                    onClick={async () => {
+                      setCreatingCategory(true);
+                      setCategoryError("");
+                      const result = await createCategory(
+                        registryId,
+                        newCategoryName.trim(),
+                      );
+                      if (result?.error) {
+                        setCategoryError(result.error);
+                      } else if (result?.category) {
+                        const next = [...categories, result.category];
+                        setCategories(next);
+                        setCategoryId(result.category.id);
+                        setAddingCategory(false);
+                        setNewCategoryName("");
+                      }
+                      setCreatingCategory(false);
+                    }}
+                  >
+                    {creatingCategory ? "Adding..." : "Add"}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      setAddingCategory(false);
+                      setNewCategoryName("");
+                      setCategoryError("");
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+                {categoryError && (
+                  <p className="text-xs text-error-primary">{categoryError}</p>
+                )}
+              </div>
+            ) : (
+              <>
+                <Select
+                  name="categoryId"
+                  label="Category"
+                  selectedKey={categoryId ?? null}
+                  onSelectionChange={(key) =>
+                    setCategoryId(key?.toString() || undefined)
+                  }
+                  placeholder={
+                    categories.length === 0
+                      ? "No categories yet"
+                      : "Select a category"
+                  }
+                  items={categories.map((cat) => ({ id: cat.id, label: cat.name }))}
+                  isDisabled={categories.length === 0}
+                >
+                  {(item) => <Select.Item id={item.id} label={item.label} />}
+                </Select>
+                <button
+                  type="button"
+                  onClick={() => setAddingCategory(true)}
+                  className="text-xs font-medium text-[#004659] hover:underline"
+                >
+                  + Create category
+                </button>
+              </>
+            )}
+          </div>
 
           <div className="space-y-1.5">
             <Input
@@ -378,7 +462,7 @@ export function AddItemDialog({
             value="true"
             isSelected={parentPurchased}
             onChange={setParentPurchased}
-            label="Mark as purchased by parent"
+            label={copy.selfPurchaseButton}
           />
 
           <Checkbox

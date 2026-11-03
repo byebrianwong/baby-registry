@@ -15,7 +15,7 @@ export function PaymentMethodsDisplay({
   ) {
     return (
       <p className="text-sm text-tertiary">
-        Contact the parents directly to arrange payment.
+        Contact the registry owner directly to arrange payment.
       </p>
     );
   }

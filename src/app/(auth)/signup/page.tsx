@@ -96,7 +96,7 @@ function SignupForm() {
             <span className="text-xl">Regibee</span>
           </Link>
           <CardTitle className="text-2xl">Create your account</CardTitle>
-          <CardDescription>Start building your baby registry today</CardDescription>
+          <CardDescription>Start building your registry today</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSignup} className="space-y-4">

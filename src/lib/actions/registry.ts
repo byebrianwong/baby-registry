@@ -91,6 +91,29 @@ async function requireManager(registryId: string) {
   return { user, role: null, error: "Not authorized" } as const;
 }
 
+const BABY_DEFAULT_CATEGORIES = [
+  "Nursery & Sleep",
+  "Feeding",
+  "Diapering",
+  "Gear & Travel",
+  "Bath",
+  "Clothing",
+  "Health & Safety",
+  "Toys & Books",
+  "Maternity & Postpartum",
+  "Gifts & Extras",
+];
+
+const VALID_REGISTRY_TYPES = ["baby", "personal"] as const;
+const VALID_EVENT_TYPES = [
+  "birthday",
+  "christmas",
+  "wedding",
+  "housewarming",
+  "graduation",
+  "other",
+] as const;
+
 export async function createRegistry(formData: FormData) {
   const supabase = await createClient();
   const {
@@ -112,6 +135,21 @@ export async function createRegistry(formData: FormData) {
   const zelle = formData.get("zelle") as string;
   const slug = generateSlug(title);
 
+  const rawRegistryType = (formData.get("registryType") as string) || "baby";
+  const registryType = (VALID_REGISTRY_TYPES as readonly string[]).includes(
+    rawRegistryType,
+  )
+    ? (rawRegistryType as (typeof VALID_REGISTRY_TYPES)[number])
+    : "baby";
+
+  const rawEventType = formData.get("eventType") as string | null;
+  const eventType =
+    registryType === "personal" &&
+    rawEventType &&
+    (VALID_EVENT_TYPES as readonly string[]).includes(rawEventType)
+      ? (rawEventType as (typeof VALID_EVENT_TYPES)[number])
+      : null;
+
   const settings: Record<string, unknown> = {};
   if (zipCode) settings.zip_code = zipCode;
   settings.tax_enabled = taxEnabled;
@@ -130,6 +168,8 @@ export async function createRegistry(formData: FormData) {
       event_date: eventDate || null,
       description: description || null,
       is_public: isPublic,
+      registry_type: registryType,
+      event_type: eventType,
       settings: Object.keys(settings).length > 0 ? settings : null,
     })
     .select()
@@ -139,27 +179,17 @@ export async function createRegistry(formData: FormData) {
     return { error: error.message };
   }
 
-  // Seed default categories
-  const defaultCategories = [
-    "Nursery & Sleep",
-    "Feeding",
-    "Diapering",
-    "Gear & Travel",
-    "Bath",
-    "Clothing",
-    "Health & Safety",
-    "Toys & Books",
-    "Maternity & Postpartum",
-    "Gifts & Extras",
-  ];
-
-  await supabase.from("categories").insert(
-    defaultCategories.map((name, index) => ({
-      registry_id: registry.id,
-      name,
-      sort_order: index,
-    }))
-  );
+  // Baby registries get the curated 10-category seed; personal registries start
+  // empty and the owner adds categories as they go.
+  if (registryType === "baby") {
+    await supabase.from("categories").insert(
+      BABY_DEFAULT_CATEGORIES.map((name, index) => ({
+        registry_id: registry.id,
+        name,
+        sort_order: index,
+      })),
+    );
+  }
 
   redirect(`/dashboard/registry/${registry.id}`);
 }
@@ -170,7 +200,13 @@ export async function updateRegistry(registryId: string, formData: FormData) {
 
   const supabase = await createClient();
   const title = formData.get("title") as string;
-  const parentNames = formData.get("parentNames") as string;
+  // honoreeNames is the new neutral field; parentNames is kept as an alias
+  // for the baby settings form until that UI is migrated.
+  const honoreeNamesRaw =
+    (formData.get("honoreeNames") as string | null) ??
+    (formData.get("parentNames") as string | null) ??
+    "";
+  const honoreeNames = honoreeNamesRaw.trim();
   const eventDate = formData.get("eventDate") as string;
   const description = formData.get("description") as string;
   const isPublic = formData.get("isPublic") === "true";
@@ -179,7 +215,8 @@ export async function updateRegistry(registryId: string, formData: FormData) {
     .from("registries")
     .update({
       title,
-      parent_names: parentNames || null,
+      honoree_names: honoreeNames || null,
+      parent_names: honoreeNames || null,
       event_date: eventDate || null,
       description: description || null,
       is_public: isPublic,
@@ -523,18 +560,22 @@ export async function createCategory(registryId: string, name: string) {
 
   const nextOrder = existing && existing.length > 0 ? existing[0].sort_order + 1 : 0;
 
-  const { error } = await supabase.from("categories").insert({
-    registry_id: registryId,
-    name,
-    sort_order: nextOrder,
-  });
+  const { data, error } = await supabase
+    .from("categories")
+    .insert({
+      registry_id: registryId,
+      name,
+      sort_order: nextOrder,
+    })
+    .select("id, name, sort_order")
+    .single();
 
   if (error) {
     return { error: error.message };
   }
 
   revalidatePath(`/dashboard/registry/${registryId}`);
-  return { success: true };
+  return { success: true, category: data };
 }
 
 export async function updateCategory(
@@ -1129,7 +1170,7 @@ export async function inviteManagerByEmail(registryId: string, email: string) {
   // Get registry info for the email
   const { data: registry } = await supabaseAdmin
     .from("registries")
-    .select("title, parent_names")
+    .select("title, parent_names, honoree_names")
     .eq("id", registryId)
     .single();
 
@@ -1137,7 +1178,8 @@ export async function inviteManagerByEmail(registryId: string, email: string) {
     try {
       await sendManagerInvite({
         toEmail: email.toLowerCase().trim(),
-        inviterName: registry?.parent_names || "Someone",
+        inviterName:
+          registry?.honoree_names || registry?.parent_names || "Someone",
         registryTitle: registry?.title || "a registry",
         token,
       });

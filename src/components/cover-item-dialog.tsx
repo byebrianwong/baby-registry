@@ -31,13 +31,14 @@ interface CoverItemDialogProps {
   availableToGift?: number;
   paymentMethods?: PaymentMethods;
   parentName?: string;
+  coverFlavor?: string;
   action?: DialogAction;
   alreadyPurchased?: boolean;
   isCovered?: boolean;
   shippingAddress?: string;
 }
 
-export function CoverItemDialog({ item, availableToGift, paymentMethods, parentName = "The Registry Owner", action, alreadyPurchased, isCovered, shippingAddress }: CoverItemDialogProps) {
+export function CoverItemDialog({ item, availableToGift, paymentMethods, parentName = "The Registry Owner", coverFlavor, action, alreadyPurchased, isCovered, shippingAddress }: CoverItemDialogProps) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -112,8 +113,10 @@ export function CoverItemDialog({ item, availableToGift, paymentMethods, parentN
         <DialogHeader>
           <DialogTitle>Gift &ldquo;{item.title}&rdquo;</DialogTitle>
           <DialogDescription>
-            Great taste! {parentName} found a deal for this one and now it&apos;s
-            on its way to baby. Gift this item by sending payment directly.
+            Great taste!{" "}
+            {coverFlavor ||
+              `${parentName} found a deal for this one and now it's on its way to baby.`}{" "}
+            Gift this item by sending payment directly.
           </DialogDescription>
         </DialogHeader>
 

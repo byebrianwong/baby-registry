@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   ChevronDown,
@@ -79,6 +79,7 @@ function buildMatchedChecklistItems(
 
 export default function ChecklistPage() {
   const params = useParams();
+  const router = useRouter();
   const registryId = params.registryId as string;
 
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
@@ -104,10 +105,16 @@ export default function ChecklistPage() {
           .eq("registry_id", registryId),
         supabase
           .from("registries")
-          .select("settings")
+          .select("settings, registry_type")
           .eq("id", registryId)
           .single(),
       ]);
+      // The curated checklist is only for baby registries. If someone navigates
+      // here on a personal registry, bounce them back.
+      if (registry?.registry_type && registry.registry_type !== "baby") {
+        router.replace(`/dashboard/registry/${registryId}`);
+        return;
+      }
       setCategories(cats || []);
       if (items) {
         const allChecklistNames = DEFAULT_CHECKLIST.flatMap((c) =>
@@ -122,7 +129,7 @@ export default function ChecklistPage() {
       setDismissedItems(new Set(dismissed.map((i) => i.toLowerCase())));
     };
     fetchData();
-  }, [registryId]);
+  }, [registryId, router]);
 
   const toggleCategory = (name: string) => {
     setExpandedCategories((prev) => {

@@ -26,7 +26,8 @@ import {
   listInvites,
 } from "@/lib/actions/registry";
 import { CategoryManager } from "@/components/category-manager";
-import type { PaymentMethods } from "@/lib/types";
+import type { PaymentMethods, PersonalEventType, RegistryType } from "@/lib/types";
+import { copyFor } from "@/lib/registry-copy";
 
 interface Manager {
   id: string;
@@ -54,11 +55,14 @@ export default function RegistrySettingsPage() {
   const [registry, setRegistry] = useState<{
     title: string;
     parent_names: string | null;
+    honoree_names: string | null;
     event_date: string | null;
     description: string | null;
     is_public: boolean;
     slug: string;
     owner_id: string;
+    registry_type: RegistryType;
+    event_type: PersonalEventType | null;
     settings: { payment_methods?: PaymentMethods; shipping_address?: string; zip_code?: string; tax_enabled?: boolean };
   } | null>(null);
   const [loading, setLoading] = useState(true);
@@ -107,7 +111,7 @@ export default function RegistrySettingsPage() {
       const [{ data }, { data: cats }, { data: { user } }] = await Promise.all([
         supabase
           .from("registries")
-          .select("title, parent_names, event_date, description, is_public, slug, owner_id, settings")
+          .select("title, parent_names, honoree_names, event_date, description, is_public, slug, owner_id, registry_type, event_type, settings")
           .eq("id", registryId)
           .single(),
         supabase
@@ -136,10 +140,15 @@ export default function RegistrySettingsPage() {
     } else if (registry) {
       setSuccess(true);
       setTimeout(() => setSuccess(false), 2000);
+      const honoreeNames =
+        (formData.get("honoreeNames") as string) ||
+        (formData.get("parentNames") as string) ||
+        "";
       setRegistry({
         ...registry,
         title: formData.get("title") as string,
-        parent_names: (formData.get("parentNames") as string) || null,
+        parent_names: honoreeNames || null,
+        honoree_names: honoreeNames || null,
         event_date: (formData.get("eventDate") as string) || null,
         description: (formData.get("description") as string) || null,
         is_public: formData.get("isPublic") === "true",
@@ -316,15 +325,15 @@ export default function RegistrySettingsPage() {
             />
 
             <Input
-              label="Parent Names"
-              name="parentNames"
-              placeholder='e.g., "Denise & Brian"'
-              defaultValue={registry.parent_names || ""}
+              label={copyFor({ registryType: registry.registry_type, eventType: registry.event_type }).honoreeLabel}
+              name="honoreeNames"
+              placeholder={copyFor({ registryType: registry.registry_type, eventType: registry.event_type }).honoreePlaceholder}
+              defaultValue={registry.honoree_names || registry.parent_names || ""}
               hint="The name shown to gift givers and in email notifications."
             />
 
             <Input
-              label="Due Date"
+              label={copyFor({ registryType: registry.registry_type, eventType: registry.event_type }).eventDateLabel}
               name="eventDate"
               type="date"
               defaultValue={registry.event_date || ""}
