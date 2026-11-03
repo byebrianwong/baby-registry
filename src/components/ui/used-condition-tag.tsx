@@ -17,18 +17,22 @@ export function UsedConditionTag({ condition, className }: UsedConditionTagProps
   const colors = conditionColors[key] || conditionColors["like-new"];
   const label = key.replace("-", " ");
 
+  const fullText = `Open to ${label} used condition`;
+
   return (
     <span
+      title={fullText}
       className={cn(
-        "inline-flex max-w-full items-center flex-wrap gap-x-1 gap-y-0.5 rounded-2xl border bg-[#fdfdfd] px-2.5 py-0.5 text-xs font-medium text-[#181d27]",
+        "inline-flex max-w-full items-center gap-1 overflow-hidden whitespace-nowrap rounded-full border bg-[#fdfdfd] px-2.5 py-0.5 text-xs font-medium text-[#181d27]",
         colors.border,
         className
       )}
     >
-      Open to used
-      <span className={cn("inline-flex items-center rounded px-1.5 whitespace-nowrap", colors.badge)}>
-        {label}+
+      <span className="shrink-0">Open to</span>
+      <span className={cn("inline-flex shrink-0 items-center rounded px-1.5", colors.badge)}>
+        {label}
       </span>
+      <span className="min-w-0 truncate">used condition</span>
     </span>
   );
 }
