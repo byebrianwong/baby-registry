@@ -21,18 +21,29 @@ export function UsedConditionTag({ condition, className }: UsedConditionTagProps
 
   return (
     <span
-      title={fullText}
       className={cn(
-        "inline-flex max-w-full items-center gap-1 overflow-hidden whitespace-nowrap rounded-full border bg-[#fdfdfd] px-2.5 py-0.5 text-xs font-medium text-[#181d27]",
-        colors.border,
+        "group relative inline-flex max-w-full",
         className
       )}
     >
-      <span className="shrink-0">Open to</span>
-      <span className={cn("inline-flex shrink-0 items-center rounded px-1.5", colors.badge)}>
-        {label}
+      <span
+        className={cn(
+          "inline-flex max-w-full items-center gap-1 overflow-hidden whitespace-nowrap rounded-full border bg-[#fdfdfd] px-2.5 py-0.5 text-xs font-medium text-[#181d27]",
+          colors.border
+        )}
+      >
+        <span className="shrink-0">Open to</span>
+        <span className={cn("inline-flex shrink-0 items-center rounded px-1.5", colors.badge)}>
+          {label}
+        </span>
+        <span className="min-w-0 truncate">used condition</span>
       </span>
-      <span className="min-w-0 truncate">used condition</span>
+      <span
+        role="tooltip"
+        className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-1.5 -translate-x-1/2 whitespace-nowrap rounded-md bg-[#181d27] px-2 py-1 text-xs font-medium text-white opacity-0 shadow-lg transition-opacity duration-150 group-hover:opacity-100"
+      >
+        {fullText}
+      </span>
     </span>
   );
 }
