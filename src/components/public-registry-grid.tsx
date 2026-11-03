@@ -406,7 +406,7 @@ function PublicItemCard({
           </div>
           <div className="flex-1 min-w-0 flex flex-col gap-2 items-start">
             <h3 className="font-medium text-sm leading-tight">{item.title}</h3>
-            <div className="flex flex-wrap gap-2.5">
+            <div className="flex w-full min-w-0 flex-wrap gap-2.5">
               {item.is_parent_purchased ? (
                 <Tag variant="parent-purchased">{selfPurchasedLabel}</Tag>
               ) : isFulfilled ? (
