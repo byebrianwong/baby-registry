@@ -237,8 +237,18 @@ export default async function PublicRegistryPage({
         </div>
       </header>
 
-      {/* Hero Banner */}
-      <section className="relative flex min-h-[400px] items-center justify-center bg-white py-12">
+      {/* Hero Banner — baby registries reserve 400px for the decorative
+          illustrations; personal registries size to content with a looser
+          minimum, and tighten further when there's no welcome message. */}
+      <section
+        className={`relative flex items-center justify-center bg-white py-12 ${
+          isBabyRegistry
+            ? "min-h-[400px]"
+            : registry.description
+              ? "min-h-[260px]"
+              : "min-h-[200px]"
+        }`}
+      >
         {/* Decorative illustrations — baby-specific; personal registries keep
             a clean hero. Pinned to a 1440px canvas. */}
         {isBabyRegistry && (

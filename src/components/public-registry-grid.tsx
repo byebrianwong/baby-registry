@@ -159,7 +159,7 @@ export function PublicRegistryGrid({
 
   return (
     <div className="flex gap-8 items-start">
-      {navItems.length > 1 && (
+      {navItems.length >= 1 && (
         <CategoryNav categories={navItems} suggestButton={suggestButton} />
       )}
       <div className="flex-1 min-w-0 space-y-10">
