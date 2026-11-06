@@ -189,7 +189,7 @@ export function managerInviteHtml(opts: {
 }): string {
   return `
     <p>Hi there,</p>
-    <p><strong>${opts.inviterName}</strong> has invited you to help manage the registry <strong>${opts.registryTitle}</strong>.</p>
+    <p><strong>${opts.inviterName}</strong> invited you to help manage the registry <strong>${opts.registryTitle}</strong>.</p>
     <p>As a manager, you'll be able to add and edit items, view gift activity, and help organize the registry.</p>
     <p style="margin: 24px 0;">
       <a href="${opts.inviteUrl}" style="background-color: #004659; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">

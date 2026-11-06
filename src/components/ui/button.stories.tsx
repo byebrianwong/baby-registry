@@ -103,7 +103,7 @@ export const SizeIcon: Story = {
   name: "Size: Icon",
   args: {
     size: "icon",
-    children: <Plus />,
+    children: <Plus className="h-4 w-4" />,
     "aria-label": "Add item",
   },
 };
@@ -114,10 +114,10 @@ export const WithIcon: Story = {
   name: "With Icon",
   args: {
     children: (
-      <>
-        <Plus />
+      <span className="inline-flex items-center gap-1.5">
+        <Plus className="h-4 w-4 shrink-0" />
         Add Item
-      </>
+      </span>
     ),
   },
 };
