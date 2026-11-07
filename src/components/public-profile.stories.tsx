@@ -57,6 +57,7 @@ export const WithRegistries: Story = {
   },
 };
 
+// A visitor who doesn't follow yet, and nothing they can see: the empty state.
 export const VisitorNotFollowing: Story = {
   args: {
     registries: [],
@@ -66,41 +67,9 @@ export const VisitorNotFollowing: Story = {
   },
 };
 
-export const VisitorSignedOut: Story = {
-  args: {
-    followAction: <FollowButton username="jane-doe" state="signed-out" />,
-  },
-};
-
-export const OwnProfile: Story = {
-  args: { isOwnProfile: true },
-};
-
-export const NothingListed: Story = {
-  args: { registries: [] },
-};
-
+// The owner's own page: "Edit profile" in place of the follow button, and a
+// link to choose registries in the empty state.
 export const OwnProfileNothingListed: Story = {
   args: { registries: [], isOwnProfile: true },
 };
 
-export const NoDisplayName: Story = {
-  args: { fullName: null },
-};
-
-export const LongNames: Story = {
-  args: {
-    fullName: "Bartholomew Maximilian Montgomery-Featherstonehaugh & Wilhelmina Fitzgerald",
-    username: "bartholomew-montgomery-feathers",
-    registries: [
-      {
-        slug: "long",
-        title: "Bartholomew and Wilhelmina's Extremely Long and Very Detailed Wedding Registry for the Big Day",
-        event_date: "2027-06-19",
-        registry_type: "personal",
-        event_type: "wedding",
-        is_public: true,
-      },
-    ],
-  },
-};

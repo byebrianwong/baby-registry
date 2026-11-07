@@ -30,19 +30,11 @@ const meta: Meta<typeof FollowingFeed> = {
 export default meta;
 type Story = StoryObj<typeof FollowingFeed>;
 
+// Search box, registries grouped by date, and the people you follow
+// (one still waiting for approval).
 export const WithRegistries: Story = {};
 
-export const WaitingForApproval: Story = {
-  args: {
-    people: [{ username: "priya-r", full_name: "Priya Raman", status: "pending" }],
-    registries: [],
-  },
-};
-
-export const NotFollowingAnyone: Story = {
-  args: { people: [], registries: [] },
-};
-
+// No username yet: no search box, and an empty state that links to set one up.
 export const NoUsername: Story = {
   args: { hasUsername: false, people: [], registries: [] },
 };
