@@ -168,7 +168,13 @@ export function FollowLists({
       <Card>
         <CardHeader>
           <CardTitle>Following</CardTitle>
-          <CardDescription>People whose registries you follow.</CardDescription>
+          <CardDescription>
+            People whose registries you follow. See them all on your{" "}
+            <Link href="/dashboard/following" className="font-medium text-[#004659] hover:underline">
+              Following page
+            </Link>
+            .
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           {following.length === 0 ? (

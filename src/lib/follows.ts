@@ -1,4 +1,5 @@
 import { supabaseAdmin } from "@/lib/supabase-admin";
+import { LISTED_REGISTRY_COLUMNS, type ListedRegistry } from "@/lib/registry-listing";
 
 // Server-side reads of `follows`, which the API roles can't reach (see
 // 012_follows.sql). These take raw user ids, so only call them from server
@@ -11,6 +12,10 @@ export interface FollowPerson {
   username: string;
   full_name: string | null;
   status: FollowStatus;
+}
+
+export interface FeedRegistry extends ListedRegistry {
+  owner: { username: string; full_name: string | null };
 }
 
 export async function getFollowStatus(
@@ -69,4 +74,50 @@ export async function listFollows(userId: string) {
     followers: people.filter((p) => p.status === "approved"),
     following: toPeople(outgoing as never),
   };
+}
+
+// Everyone the user follows, plus the registries listed by the people who've
+// approved them. Approved followers see private listed registries too, the same
+// as on each profile.
+export async function listFollowingFeed(userId: string) {
+  const { data: rows } = await supabaseAdmin
+    .from("follows")
+    .select("status, person:profiles!follows_followee_id_fkey(id, username, full_name)")
+    .eq("follower_id", userId)
+    .order("created_at", { ascending: false });
+
+  type Row = {
+    status: FollowStatus;
+    person: { id: string; username: string | null; full_name: string | null } | null;
+  };
+  const followed = ((rows || []) as unknown as Row[]).filter((row) => row.person?.username);
+
+  const people: FollowPerson[] = followed.map((row) => ({
+    username: row.person!.username!,
+    full_name: row.person!.full_name,
+    status: row.status,
+  }));
+
+  const approvedOwners = new Map(
+    followed
+      .filter((row) => row.status === "approved")
+      .map((row) => [
+        row.person!.id,
+        { username: row.person!.username!, full_name: row.person!.full_name },
+      ]),
+  );
+  if (approvedOwners.size === 0) return { people, registries: [] as FeedRegistry[] };
+
+  const { data: listed } = await supabaseAdmin
+    .from("registries")
+    .select(`${LISTED_REGISTRY_COLUMNS}, owner_id`)
+    .in("owner_id", [...approvedOwners.keys()])
+    .eq("listed_on_profile", true);
+
+  // owner_id is only used to match owners here; it isn't passed on.
+  const registries: FeedRegistry[] = ((listed || []) as (ListedRegistry & { owner_id: string })[]).map(
+    ({ owner_id, ...registry }) => ({ ...registry, owner: approvedOwners.get(owner_id)! }),
+  );
+
+  return { people, registries };
 }

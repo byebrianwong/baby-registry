@@ -8,9 +8,11 @@ import type { ListedRegistry } from "@/lib/registry-listing";
 export function ProfileRegistryCard({
   registry,
   isPast = false,
+  ownerName,
 }: {
   registry: ListedRegistry;
   isPast?: boolean;
+  ownerName?: string;
 }) {
   return (
     <Link
@@ -25,6 +27,9 @@ export function ProfileRegistryCard({
         />
       </span>
       <span className="min-w-0 flex-1">
+        {ownerName && (
+          <span className="block break-words text-xs font-medium text-tertiary">{ownerName}</span>
+        )}
         <span className="block break-words font-medium text-primary group-hover:underline">
           {registry.title}
         </span>
