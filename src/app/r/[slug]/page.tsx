@@ -13,7 +13,7 @@ import { PublicRegistryGrid } from "@/components/public-registry-grid";
 import { copyForRegistry, honoreeDisplayName } from "@/lib/registry-copy";
 import { RegistryIcon } from "@/components/registry-icon";
 import { FollowButton } from "@/components/follow-button";
-import { getViewerRelation } from "@/lib/viewer";
+import { getViewer, getViewerRelation } from "@/lib/viewer";
 import type { PersonalEventType, RegistryType } from "@/lib/types";
 
 const PURCHASE_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
@@ -83,11 +83,12 @@ export default async function PublicRegistryPage({
   // slug in the URL. Anonymous database clients have no read access to these
   // tables (see supabase/migrations/009_restrict_registry_reads.sql), so the
   // full list of registries can't be pulled with the public anon key.
-  const { data: registry } = await supabaseAdmin
-    .from("registries")
-    .select("*")
-    .eq("slug", slug)
-    .single();
+  const [{ data: registry }, viewer] = await Promise.all([
+    supabaseAdmin.from("registries").select("*").eq("slug", slug).single(),
+    // Only used for where the logo goes. Cached, so the follow check below
+    // reuses it.
+    getViewer(),
+  ]);
 
   if (!registry) {
     notFound();
@@ -268,10 +269,12 @@ export default async function PublicRegistryPage({
       {/* Header */}
       <header className="border-b">
         <div className="container mx-auto px-4 py-3">
-          <a href="/" className="flex items-center gap-2 font-semibold">
+          {/* Like the shared top bar: signed-in people go to their
+              registries, everyone else to the home page. */}
+          <Link href={viewer ? "/dashboard" : "/"} className="inline-flex items-center gap-2 font-semibold">
             <RegistryIcon registryType={registryType} eventType={eventType} className="h-5 w-5 text-brand-600" />
             <span>Regibee</span>
-          </a>
+          </Link>
         </div>
       </header>
 

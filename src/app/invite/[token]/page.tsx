@@ -139,7 +139,12 @@ export default async function InvitePage({
     <div className="flex min-h-screen items-center justify-center px-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <Link href="/" className="mx-auto flex items-center gap-2 font-semibold mb-4">
+          {/* Guests have anonymous sessions and no registries, so their logo
+              goes to the home page. */}
+          <Link
+            href={user.is_anonymous ? "/" : "/dashboard"}
+            className="mx-auto flex items-center gap-2 font-semibold mb-4"
+          >
             <Baby className="h-6 w-6 text-brand-600" />
             <span className="text-xl">Regibee</span>
           </Link>
