@@ -6,12 +6,10 @@ import { Input } from "@/components/base/input/input";
 import { TextArea } from "@/components/base/textarea/textarea";
 import { Checkbox } from "@/components/base/checkbox/checkbox";
 import { Card, CardContent } from "@/components/ui/card";
+import { OccasionPicker } from "@/components/occasion-picker";
 import { ProfileListingField } from "@/components/profile-listing-field";
 import { createRegistry } from "@/lib/actions/registry";
-import {
-  PERSONAL_EVENT_TYPE_OPTIONS,
-  copyFor,
-} from "@/lib/registry-copy";
+import { copyFor } from "@/lib/registry-copy";
 import type { PersonalEventType, RegistryType } from "@/lib/types";
 import { createClient } from "@/utils/supabase/client";
 import { useEffect, useMemo, useState } from "react";
@@ -97,7 +95,7 @@ export default function NewRegistryPage() {
                 <button
                   type="button"
                   onClick={() => chooseRegistryType("baby")}
-                  className={`rounded-lg border p-3 text-left transition ${
+                  className={`flex flex-col rounded-lg border p-3 text-left transition ${
                     registryType === "baby"
                       ? "border-[#004659] bg-[#004659]/5 ring-1 ring-[#004659]"
                       : "border-secondary hover:border-primary"
@@ -114,7 +112,7 @@ export default function NewRegistryPage() {
                 <button
                   type="button"
                   onClick={() => chooseRegistryType("personal")}
-                  className={`rounded-lg border p-3 text-left transition ${
+                  className={`flex flex-col rounded-lg border p-3 text-left transition ${
                     registryType === "personal"
                       ? "border-[#004659] bg-[#004659]/5 ring-1 ring-[#004659]"
                       : "border-secondary hover:border-primary"
@@ -131,32 +129,13 @@ export default function NewRegistryPage() {
               </div>
 
               {registryType === "personal" && (
-                <div className="space-y-1 pt-2">
-                  <label
-                    htmlFor="eventType"
-                    className="text-sm font-medium text-secondary"
-                  >
-                    Occasion (optional)
-                  </label>
-                  <select
-                    id="eventType"
-                    name="eventType"
+                <div className="pt-2">
+                  <input type="hidden" name="eventType" value={eventType} />
+                  <OccasionPicker
                     value={eventType}
-                    onChange={(e) =>
-                      setEventType(e.target.value as PersonalEventType | "")
-                    }
-                    className="w-full rounded-lg border border-secondary bg-primary px-3 py-2 text-sm"
-                  >
-                    <option value="">No specific occasion</option>
-                    {PERSONAL_EVENT_TYPE_OPTIONS.map((opt) => (
-                      <option key={opt.value} value={opt.value}>
-                        {opt.label}
-                      </option>
-                    ))}
-                  </select>
-                  <p className="text-xs text-tertiary">
-                    Tunes labels and placeholders. You can leave this blank.
-                  </p>
+                    onChange={setEventType}
+                    hint="Changes the wording on your registry to fit the occasion. You can skip this."
+                  />
                 </div>
               )}
             </div>
