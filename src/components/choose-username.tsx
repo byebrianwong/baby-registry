@@ -54,7 +54,7 @@ export function ChooseUsername({
         <CardHeader className="text-center">
           <Link href="/dashboard" className="mx-auto mb-4 flex items-center gap-2 font-semibold">
             <Baby className="h-6 w-6 text-brand-600" />
-            <span className="text-xl">Regibee</span>
+            <span className="font-display text-xl font-bold tracking-tight">Regibee</span>
           </Link>
           <CardTitle className="text-2xl">Choose a username</CardTitle>
           <CardDescription>

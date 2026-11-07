@@ -110,7 +110,7 @@ export function NavBar({ account }: { account: NavAccount | null }) {
           className="flex items-center gap-2 rounded-md font-semibold text-primary outline-focus-ring focus-visible:outline-2 focus-visible:outline-offset-4"
         >
           <Baby aria-hidden="true" className="h-5 w-5 text-brand-600" />
-          <span>Regibee</span>
+          <span className="font-display text-lg font-bold tracking-tight">Regibee</span>
         </Link>
 
         <div className="ml-auto flex items-center gap-2">

@@ -233,7 +233,7 @@ export function PublicRegistryGrid({
                     <CardContent className="flex h-full flex-col justify-between gap-4 p-4">
                       <div className="flex flex-col gap-2">
                         <div className="flex items-center gap-2">
-                          <h3 className="font-semibold text-lg text-primary">
+                          <h3 className="font-display font-semibold text-lg text-primary">
                             {fund.title}
                           </h3>
                           {fundPurchased && (

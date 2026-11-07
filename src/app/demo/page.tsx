@@ -386,7 +386,7 @@ export default function DemoPage() {
             className="flex items-center gap-2 font-semibold"
           >
             <Baby className="h-5 w-5 text-brand-600" />
-            <span>Regibee</span>
+            <span className="font-display text-lg font-bold tracking-tight">Regibee</span>
           </Link>
           <Button variant="outline" size="sm" asChild>
             <Link href="/">
@@ -500,7 +500,7 @@ export default function DemoPage() {
                 return (
                   <Card key={fund.id} className="py-0 gap-0 rounded-xl shadow-none">
                     <CardContent className="flex flex-col gap-4 p-4">
-                      <h3 className="font-semibold text-2xl leading-8">
+                      <h3 className="font-display font-semibold text-2xl leading-8">
                         {fund.title}
                       </h3>
                       <p className="text-sm text-tertiary whitespace-pre-line">

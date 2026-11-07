@@ -273,7 +273,7 @@ export default async function PublicRegistryPage({
               registries, everyone else to the home page. */}
           <Link href={viewer ? "/dashboard" : "/"} className="inline-flex items-center gap-2 font-semibold">
             <RegistryIcon registryType={registryType} eventType={eventType} className="h-5 w-5 text-brand-600" />
-            <span>Regibee</span>
+            <span className="font-display text-lg font-bold tracking-tight">Regibee</span>
           </Link>
         </div>
       </header>
