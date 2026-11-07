@@ -7,6 +7,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 // Placeholders shown while a page's data loads (each route's loading.tsx).
 // Each one copies the real page's heading and spacing, so nothing jumps when
 // the real page replaces it. If you change a page's heading, change it here too.
+// The dashboard and Following skeletons show under the dashboard tabs, which
+// stay on screen, so they have only a screen-reader heading.
 
 function LoadingMessage({ children }: { children: string }) {
   return (
@@ -46,14 +48,14 @@ function RegistryCardSkeleton() {
   );
 }
 
-/** Matches src/app/(protected)/dashboard/(overview)/page.tsx. */
+/** Matches src/app/(protected)/dashboard/(tabs)/(overview)/page.tsx. */
 export function DashboardSkeleton() {
   return (
-    <div className="container mx-auto px-4 py-8" aria-busy="true">
+    <div className="container mx-auto px-4 pt-6 pb-8" aria-busy="true">
       <LoadingMessage>Loading your registries</LoadingMessage>
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold">My Registries</h1>
+          <h1 className="sr-only">My Registries</h1>
           <p className="text-tertiary">Manage your registries and track gifts</p>
         </div>
         <Button asChild className="!bg-[#004659] hover:!bg-[#003847] !ring-[#004659] !text-white">
@@ -91,26 +93,28 @@ function ProfileRegistryCardSkeleton() {
 /** Matches FollowingFeed in src/components/following-feed.tsx. */
 export function FollowingSkeleton() {
   return (
-    <div className="container mx-auto max-w-2xl px-4 py-8" aria-busy="true">
-      <LoadingMessage>Loading the registries you follow</LoadingMessage>
-      <h1 className="text-3xl font-bold">Following</h1>
-      <p className="text-tertiary">Registries from people who&apos;ve approved your follow.</p>
+    <div className="container mx-auto px-4 pt-6 pb-8" aria-busy="true">
+      <div className="max-w-2xl">
+        <LoadingMessage>Loading the registries you follow</LoadingMessage>
+        <h1 className="sr-only">Following</h1>
+        <p className="text-tertiary">Registries from people who&apos;ve approved your follow.</p>
 
-      {/* The people search box */}
-      <div className="mt-6 space-y-1.5">
-        <Skeleton className="h-5 w-24" />
-        <Skeleton className="h-10 w-full rounded-lg" />
-        <Skeleton className="h-4 w-72 max-w-full" />
-      </div>
-
-      <section className="mt-8">
-        <Skeleton className="h-6 w-28" />
-        <div className="mt-3 flex flex-col gap-3">
-          <ProfileRegistryCardSkeleton />
-          <ProfileRegistryCardSkeleton />
-          <ProfileRegistryCardSkeleton />
+        {/* The people search box */}
+        <div className="mt-6 space-y-1.5">
+          <Skeleton className="h-5 w-24" />
+          <Skeleton className="h-10 w-full rounded-lg" />
+          <Skeleton className="h-4 w-72 max-w-full" />
         </div>
-      </section>
+
+        <section className="mt-8">
+          <Skeleton className="h-6 w-28" />
+          <div className="mt-3 flex flex-col gap-3">
+            <ProfileRegistryCardSkeleton />
+            <ProfileRegistryCardSkeleton />
+            <ProfileRegistryCardSkeleton />
+          </div>
+        </section>
+      </div>
     </div>
   );
 }

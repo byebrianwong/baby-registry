@@ -70,75 +70,79 @@ export function FollowingFeed({
   const waiting = people.filter((p) => p.status === "pending");
 
   return (
-    <div className="container mx-auto max-w-2xl px-4 py-8">
-      <h1 className="text-3xl font-bold">Following</h1>
-      <p className="text-tertiary">Registries from people who&apos;ve approved your follow.</p>
+    // Left-aligned in the page container, so it lines up under the dashboard
+    // tabs. The Following tab is the visible title.
+    <div className="container mx-auto px-4 pt-6 pb-8">
+      <div className="max-w-2xl">
+        <h1 className="sr-only">Following</h1>
+        <p className="text-tertiary">Registries from people who&apos;ve approved your follow.</p>
 
-      {hasUsername && (
-        <div className="mt-6">
-          <PeopleSearch searchAction={searchAction} />
-        </div>
-      )}
+        {hasUsername && (
+          <div className="mt-6">
+            <PeopleSearch searchAction={searchAction} />
+          </div>
+        )}
 
-      {!hasUsername ? (
-        <EmptyState
-          title="Claim a username to follow people"
-          body="People approve each follower, so they need to see who's asking."
-          action={
-            <Button variant="outline" asChild>
-              <Link href="/dashboard/account">Set up profile</Link>
-            </Button>
-          }
-        />
-      ) : people.length === 0 ? (
-        <EmptyState
-          title="You're not following anyone yet"
-          body="Search for friends above, or open their profile link and tap Follow. Once they approve, their registries show up here."
-        />
-      ) : (
-        <>
-          {registries.length === 0 ? (
-            <EmptyState
-              title="No registries yet"
-              body={
-                approved.length === 0
-                  ? "Their registries will show up here once they approve your follow."
-                  : "The people you follow haven't shared any registries on their profiles yet."
-              }
-            />
-          ) : (
-            <>
-              <RegistryGroup title="Coming up" registries={upcoming} today={today} />
-              <RegistryGroup title="Anytime" registries={anytime} today={today} />
-              <RegistryGroup title="Past events" registries={past} today={today} />
-            </>
-          )}
+        {!hasUsername ? (
+          <EmptyState
+            title="Claim a username to follow people"
+            body="People approve each follower, so they need to see who's asking."
+            action={
+              <Button variant="outline" asChild>
+                <Link href="/dashboard/account">Set up profile</Link>
+              </Button>
+            }
+          />
+        ) : people.length === 0 ? (
+          <EmptyState
+            title="You're not following anyone yet"
+            body="Search for friends above, or open their profile link and tap Follow. Once they approve, their registries show up here."
+          />
+        ) : (
+          <>
+            {registries.length === 0 ? (
+              <EmptyState
+                title="No registries yet"
+                body={
+                  approved.length === 0
+                    ? "Their registries will show up here once they approve your follow."
+                    : "The people you follow haven't shared any registries on their profiles yet."
+                }
+              />
+            ) : (
+              <>
+                <RegistryGroup title="Coming up" registries={upcoming} today={today} />
+                <RegistryGroup title="Anytime" registries={anytime} today={today} />
+                <RegistryGroup title="Past events" registries={past} today={today} />
+              </>
+            )}
 
-          <section className="mt-10">
-            <h2 className="text-lg font-semibold">People you follow</h2>
-            <ul className="mt-3 flex flex-col gap-2">
-              {[...approved, ...waiting].map((person) => (
-                <li key={person.username} className="flex flex-wrap items-baseline gap-x-2">
-                  <Link href={`/u/${person.username}`} className="font-medium text-primary hover:underline">
-                    {displayName(person)}
-                  </Link>
-                  <span className="text-sm text-tertiary">@{person.username}</span>
-                  {person.status === "pending" && (
-                    <span className="text-sm text-tertiary">· Waiting for approval</span>
-                  )}
-                </li>
-              ))}
-            </ul>
-            <p className="mt-3 text-sm text-tertiary">
-              Manage who you follow on your{" "}
-              <Link href="/dashboard/account#follows" className="font-medium text-[#004659] hover:underline">
-                account page
-              </Link>
-              .
-            </p>
-          </section>
-        </>
-      )}
+            <section className="mt-10">
+              <h2 className="text-lg font-semibold">People you follow</h2>
+              <ul className="mt-3 flex flex-col gap-2">
+                {[...approved, ...waiting].map((person) => (
+                  <li key={person.username} className="flex flex-wrap items-baseline gap-x-2">
+                    <Link href={`/u/${person.username}`} className="font-medium text-primary hover:underline">
+                      {displayName(person)}
+                    </Link>
+                    <span className="text-sm text-tertiary">@{person.username}</span>
+                    {person.status === "pending" && (
+                      <span className="text-sm text-tertiary">· Waiting for approval</span>
+                    )}
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-3 text-sm text-tertiary">
+                Manage who you follow on your{" "}
+                <Link href="/dashboard/account#follows" className="font-medium text-[#004659] hover:underline">
+                  account page
+                </Link>
+                .
+              </p>
+            </section>
+          </>
+        )}
+      </div>
     </div>
   );
 }
