@@ -2,11 +2,13 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { useState } from "react";
 import { Baby, ChevronDown, LogOut, Settings, UserPlus, UserRound } from "lucide-react";
 import { Button as AriaButton, RouterProvider } from "react-aria-components";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Dropdown } from "@/components/base/dropdown/dropdown";
+import { NavLink } from "@/components/nav-link";
 import { initialsFor } from "@/lib/initials";
 import { cx } from "@/lib/utils/cx";
 import { createClient } from "@/utils/supabase/client";
@@ -33,7 +35,13 @@ const SECTIONS = [
   },
 ];
 
-function AccountMenu({ account }: { account: NavAccount }) {
+function AccountMenu({
+  account,
+  onNavigate,
+}: {
+  account: NavAccount;
+  onNavigate: (href: string) => void;
+}) {
   const router = useRouter();
   const count = account.followRequestCount;
   const requestLabel = count === 1 ? "1 follow request" : `${count} follow requests`;
@@ -45,7 +53,12 @@ function AccountMenu({ account }: { account: NavAccount }) {
   };
 
   return (
-    <RouterProvider navigate={router.push}>
+    <RouterProvider
+      navigate={(href) => {
+        onNavigate(href);
+        router.push(href);
+      }}
+    >
       <Dropdown.Root>
         <AriaButton
           aria-label={count > 0 ? `Account menu, ${requestLabel}` : "Account menu"}
@@ -109,6 +122,17 @@ function AccountMenu({ account }: { account: NavAccount }) {
 export function NavBar({ account }: { account: NavAccount | null }) {
   const pathname = usePathname() ?? "";
 
+  // Where the user just clicked to go. The bar shows that section as current
+  // straight away, before the URL changes, and forgets it when the URL changes.
+  const [clickedHref, setClickedHref] = useState<string | null>(null);
+  const [lastPathname, setLastPathname] = useState(pathname);
+  if (pathname !== lastPathname) {
+    setLastPathname(pathname);
+    setClickedHref(null);
+  }
+  const isCurrent = (section: (typeof SECTIONS)[number]) =>
+    clickedHref ? clickedHref === section.href : section.isActive(pathname);
+
   return (
     <header className="sticky top-0 z-50 w-full border-b border-secondary bg-primary/95 backdrop-blur supports-[backdrop-filter]:bg-primary/80">
       <a
@@ -130,30 +154,24 @@ export function NavBar({ account }: { account: NavAccount | null }) {
         {account && (
           <nav aria-label="Main" className="hidden md:block">
             <ul className="flex items-center gap-1">
-              {SECTIONS.map((section) => {
-                const active = section.isActive(pathname);
-                return (
-                  <li key={section.href}>
-                    <Link
-                      href={section.href}
-                      aria-current={active ? "page" : undefined}
-                      className={cx(
-                        "rounded-md px-3 py-2 text-sm font-medium outline-focus-ring transition-colors focus-visible:outline-2",
-                        active ? "bg-secondary text-primary" : "text-tertiary hover:bg-secondary hover:text-primary",
-                      )}
-                    >
-                      {section.label}
-                    </Link>
-                  </li>
-                );
-              })}
+              {SECTIONS.map((section) => (
+                <li key={section.href}>
+                  <NavLink
+                    href={section.href}
+                    label={section.label}
+                    variant="bar"
+                    current={isCurrent(section)}
+                    onNavigate={() => setClickedHref(section.href)}
+                  />
+                </li>
+              ))}
             </ul>
           </nav>
         )}
 
         <div className="ml-auto flex items-center gap-2">
           {account ? (
-            <AccountMenu account={account} />
+            <AccountMenu account={account} onNavigate={setClickedHref} />
           ) : (
             <>
               <Button variant="ghost" size="sm" asChild>
@@ -176,23 +194,17 @@ export function NavBar({ account }: { account: NavAccount | null }) {
       {account && (
         <nav aria-label="Main" className="border-t border-secondary md:hidden">
           <ul className="container mx-auto flex px-4">
-            {SECTIONS.map((section) => {
-              const active = section.isActive(pathname);
-              return (
-                <li key={section.href} className="flex-1">
-                  <Link
-                    href={section.href}
-                    aria-current={active ? "page" : undefined}
-                    className={cx(
-                      "-mb-px flex min-h-11 items-center justify-center border-b-2 text-sm font-medium outline-focus-ring focus-visible:outline-2 focus-visible:-outline-offset-2",
-                      active ? "border-[#004659] text-primary" : "border-transparent text-tertiary",
-                    )}
-                  >
-                    {section.label}
-                  </Link>
-                </li>
-              );
-            })}
+            {SECTIONS.map((section) => (
+              <li key={section.href} className="flex-1">
+                <NavLink
+                  href={section.href}
+                  label={section.label}
+                  variant="tab"
+                  current={isCurrent(section)}
+                  onNavigate={() => setClickedHref(section.href)}
+                />
+              </li>
+            ))}
           </ul>
         </nav>
       )}

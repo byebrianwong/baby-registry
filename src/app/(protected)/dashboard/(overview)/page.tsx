@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import type { User } from "@supabase/supabase-js";
 import { Plus, Gift, Calendar, ExternalLink, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -109,6 +110,63 @@ function RegistryCard({ registry, badge }: { registry: any; badge?: string }) {
   );
 }
 
+type ServerClient = Awaited<ReturnType<typeof createClient>>;
+
+// What each registry card needs: the registry, its items, and their purchases.
+const REGISTRY_CARD_FIELDS = `
+  *,
+  registry_items(id, quantity_needed, quantity_fulfilled, price, purchases(id, status, created_at, buyer_name))
+`;
+
+// Registries the user helps manage but doesn't own. Pending email invites are
+// accepted first, so a registry from a new invite shows up on this visit.
+async function loadSharedRegistries(supabase: ServerClient, user: User) {
+  if (user.email) {
+    const { data: pendingInvites } = await supabaseAdmin
+      .from("registry_invites")
+      .select("token")
+      .eq("email", user.email)
+      .gt("expires_at", new Date().toISOString());
+
+    for (const invite of pendingInvites || []) {
+      await supabaseAdmin.rpc("accept_registry_invite", {
+        p_token: invite.token,
+        p_user_id: user.id,
+      });
+      // Errors (already a manager, fully used, etc.) are ignored
+    }
+  }
+
+  const { data: managedEntries } = await supabaseAdmin
+    .from("registry_managers")
+    .select("registry_id")
+    .eq("user_id", user.id)
+    .eq("role", "manager");
+
+  const managedRegistryIds = (managedEntries || []).map((e) => e.registry_id);
+  if (managedRegistryIds.length === 0) return [];
+
+  const { data } = await supabase
+    .from("registries")
+    .select(REGISTRY_CARD_FIELDS)
+    .in("id", managedRegistryIds)
+    .order("created_at", { ascending: false });
+  return data || [];
+}
+
+// The user's username, and how many people are waiting for them to approve a
+// follow. Only people with a username can be followed.
+async function loadProfile(supabase: ServerClient, userId: string) {
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("username")
+    .eq("id", userId)
+    .single();
+  const username: string | null = profile?.username ?? null;
+  const followRequestCount = username ? await countFollowRequests(userId) : 0;
+  return { username, followRequestCount };
+}
+
 export default async function DashboardPage() {
   const supabase = await createClient();
   const {
@@ -119,68 +177,22 @@ export default async function DashboardPage() {
     redirect("/login");
   }
 
-  // Auto-accept any pending email invites for this user
-  const userEmail = user.email;
-  if (userEmail) {
-    const { data: pendingInvites } = await supabaseAdmin
-      .from("registry_invites")
-      .select("token")
-      .eq("email", userEmail)
-      .gt("expires_at", new Date().toISOString());
-
-    if (pendingInvites && pendingInvites.length > 0) {
-      for (const invite of pendingInvites) {
-        await supabaseAdmin.rpc("accept_registry_invite", {
-          p_token: invite.token,
-          p_user_id: user.id,
-        });
-        // Errors (already a manager, fully used, etc.) are ignored
-      }
-    }
-  }
-
-  // Fetch owned registries
-  const { data: registries } = await supabase
-    .from("registries")
-    .select(`
-      *,
-      registry_items(id, quantity_needed, quantity_fulfilled, price, purchases(id, status, created_at, buyer_name))
-    `)
-    .eq("owner_id", user.id)
-    .order("created_at", { ascending: false });
-
-  // Fetch registries where user is a manager (but not owner)
-  const { data: managedEntries } = await supabaseAdmin
-    .from("registry_managers")
-    .select("registry_id")
-    .eq("user_id", user.id)
-    .eq("role", "manager");
-
-  const managedRegistryIds = (managedEntries || []).map((e) => e.registry_id);
-
-  let sharedRegistries: any[] = [];
-  if (managedRegistryIds.length > 0) {
-    const { data } = await supabase
-      .from("registries")
-      .select(`
-        *,
-        registry_items(id, quantity_needed, quantity_fulfilled, price, purchases(id, status, created_at, buyer_name))
-      `)
-      .in("id", managedRegistryIds)
-      .order("created_at", { ascending: false });
-    sharedRegistries = data || [];
-  }
+  // None of these three needs another's result, so they run at the same time.
+  // The page waits for the slowest one, not for all of them in a row.
+  const [{ data: registries }, sharedRegistries, { username, followRequestCount }] =
+    await Promise.all([
+      supabase
+        .from("registries")
+        .select(REGISTRY_CARD_FIELDS)
+        .eq("owner_id", user.id)
+        .order("created_at", { ascending: false }),
+      loadSharedRegistries(supabase, user),
+      loadProfile(supabase, user.id),
+    ]);
 
   const hasNoRegistries = (!registries || registries.length === 0) && sharedRegistries.length === 0;
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("username")
-    .eq("id", user.id)
-    .single();
   const showProfilePrompt =
-    !user.is_anonymous && !profile?.username && Boolean(registries && registries.length > 0);
-  const followRequestCount = profile?.username ? await countFollowRequests(user.id) : 0;
+    !user.is_anonymous && !username && Boolean(registries && registries.length > 0);
 
   return (
     <div className="container mx-auto px-4 py-8">
