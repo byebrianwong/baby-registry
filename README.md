@@ -30,8 +30,8 @@ A baby registry app built with Next.js, Supabase, and Tailwind CSS. Parents crea
 ### 1. Clone and install
 
 ```bash
-git clone git@github.com:byebrianwong/baby-registry.git
-cd baby-registry
+git clone git@github.com:dango-design/regibee.git
+cd regibee
 npm install
 ```
 
@@ -50,10 +50,10 @@ cp .env.local.example .env.local
    - `NEXT_PUBLIC_SUPABASE_ANON_KEY` = the **anon / public** key
    - `SUPABASE_SERVICE_ROLE_KEY` = the **service_role** key (keep this secret)
 
-4. Run the database migration:
+4. Run the database migrations:
    - Go to **SQL Editor** in your Supabase Dashboard
-   - Copy the entire contents of `supabase/migrations/001_initial_schema.sql`
-   - Paste it in and click **Run**
+   - Run every file in `supabase/migrations` in order, starting with `001_initial_schema.sql`. Two files start with `009`; run `009_registry_types.sql` first.
+   - For each file, paste its contents in and click **Run**
    - You should see "Success. No rows returned" — that means it worked
 
 5. Enable anonymous sign-ins (required for gift givers to reserve items without an account):
@@ -144,3 +144,8 @@ See `supabase/migrations/001_initial_schema.sql` for the full schema, RLS polici
 | `NEXT_PUBLIC_SUPABASE_URL` | Client + Server | Supabase project URL |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Client + Server | Supabase anon key (safe to expose - RLS protects data) |
 | `SUPABASE_SERVICE_ROLE_KEY` | Server only | Admin key - never expose to client |
+| `NEXT_PUBLIC_SITE_URL` | Client + Server | The site's address, used in links in emails. Defaults to `http://localhost:3000` |
+| `RESEND_API_KEY` | Server only | Resend key for notification emails |
+| `RESEND_TEST_RECIPIENT` | Server only | Optional. Sends every email to this address instead, for testing |
+
+For how the live site, database and visual tests are run, see [CLAUDE.md](CLAUDE.md).
