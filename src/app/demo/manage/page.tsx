@@ -1115,7 +1115,7 @@ export default function DemoManagePage() {
             className="flex items-center gap-2 font-semibold"
           >
             <Baby className="h-5 w-5 text-brand-600" />
-            <span>Regibee</span>
+            <span className="font-display text-lg font-bold tracking-tight">Regibee</span>
           </Link>
           <span className="ml-4 text-sm text-tertiary hidden md:inline">
             demo@example.com
@@ -1283,7 +1283,7 @@ export default function DemoManagePage() {
 
                     return (
                       <div key={category.id} id={getCategorySectionId(category.id)} className="scroll-mt-20">
-                        <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                        <h3 className="font-display text-lg font-semibold mb-3 flex items-center gap-2">
                           {category.name}
                           <Badge variant="secondary">
                             {categoryItems.length}

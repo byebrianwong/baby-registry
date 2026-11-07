@@ -87,4 +87,12 @@ input[type="search"]::-webkit-search-cancel-button {
   body {
     @apply bg-primary text-primary;
   }
+  /* Page, section and dialog titles use the display font. Larger h3 section
+     headings opt in with font-display; small h3s (item names) stay in the
+     body font. */
+  h1,
+  h2 {
+    font-family: var(--font-display);
+    letter-spacing: -0.015em;
+  }
 }

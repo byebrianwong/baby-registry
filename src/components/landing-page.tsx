@@ -55,7 +55,7 @@ export function LandingPage({ ctaHref, nav }: { ctaHref: string; nav: React.Reac
                 <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-brand-600/10">
                   <Gift className="h-8 w-8 text-brand-600" />
                 </div>
-                <h3 className="mt-6 text-xl font-semibold">1. Create Your Registry</h3>
+                <h3 className="mt-6 font-display text-xl font-semibold">1. Create Your Registry</h3>
                 <p className="mt-2 text-tertiary">
                   Pick an occasion — baby shower, birthday, Christmas, wedding,
                   anything — and set up your registry in under 5 minutes.
@@ -65,7 +65,7 @@ export function LandingPage({ ctaHref, nav }: { ctaHref: string; nav: React.Reac
                 <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-brand-600/10">
                   <Link2 className="h-8 w-8 text-brand-600" />
                 </div>
-                <h3 className="mt-6 text-xl font-semibold">2. Add Items From Anywhere</h3>
+                <h3 className="mt-6 font-display text-xl font-semibold">2. Add Items From Anywhere</h3>
                 <p className="mt-2 text-tertiary">
                   Add products from any online store by pasting a URL, or browse
                   our curated checklist of essentials.
@@ -75,7 +75,7 @@ export function LandingPage({ ctaHref, nav }: { ctaHref: string; nav: React.Reac
                 <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-brand-600/10">
                   <Gift className="h-8 w-8 text-brand-600" />
                 </div>
-                <h3 className="mt-6 text-xl font-semibold">3. Share & Receive Gifts</h3>
+                <h3 className="mt-6 font-display text-xl font-semibold">3. Share & Receive Gifts</h3>
                 <p className="mt-2 text-tertiary">
                   Share your unique registry link. Gift givers can reserve items
                   with no sign-up required.
@@ -119,7 +119,7 @@ export function LandingPage({ ctaHref, nav }: { ctaHref: string; nav: React.Reac
                   className="rounded-lg border p-6"
                 >
                   <feature.icon className="h-6 w-6 text-brand-600" />
-                  <h3 className="mt-4 font-semibold">{feature.title}</h3>
+                  <h3 className="mt-4 font-display font-semibold">{feature.title}</h3>
                   <p className="mt-2 text-sm text-tertiary">
                     {feature.desc}
                   </p>

@@ -53,7 +53,7 @@ function LoginForm() {
         <CardHeader className="text-center">
           <Link href="/" className="mx-auto flex items-center gap-2 font-semibold mb-4">
             <Baby className="h-6 w-6 text-brand-600" />
-            <span className="text-xl">Regibee</span>
+            <span className="font-display text-xl font-bold tracking-tight">Regibee</span>
           </Link>
           <CardTitle className="text-2xl">Welcome back</CardTitle>
           <CardDescription>Sign in to manage your registry</CardDescription>

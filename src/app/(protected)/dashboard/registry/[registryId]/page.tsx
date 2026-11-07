@@ -360,7 +360,7 @@ export default async function RegistryManagePage({
                   {/* Gift Funds */}
                   {allFunds.length > 0 && (
                     <div id="gift-funds" className="scroll-mt-20">
-                      <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                      <h3 className="font-display text-lg font-semibold mb-3 flex items-center gap-2">
                         Gift Funds
                         <Badge variant="secondary">{allFunds.length}</Badge>
                       </h3>
@@ -378,7 +378,7 @@ export default async function RegistryManagePage({
 
                     return (
                       <div key={category.id} id={getCategorySectionId(category.id)} className="scroll-mt-20">
-                        <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                        <h3 className="font-display text-lg font-semibold mb-3 flex items-center gap-2">
                           {category.name}
                           <Badge variant="secondary">{categoryItems.length}</Badge>
                         </h3>
@@ -406,7 +406,7 @@ export default async function RegistryManagePage({
                   {/* Uncategorized items */}
                   {(itemsByCategory.get(null) || []).length > 0 && (
                     <div id={getCategorySectionId(null)} className="scroll-mt-20">
-                      <h3 className="text-lg font-semibold mb-3">Other</h3>
+                      <h3 className="font-display text-lg font-semibold mb-3">Other</h3>
                       <div className="grid gap-3 md:grid-cols-2">
                         {itemsByCategory.get(null)!.map((item) => (
                           <ItemCard
