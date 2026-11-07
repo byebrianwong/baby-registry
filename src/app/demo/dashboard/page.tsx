@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Baby, Plus, Calendar, ExternalLink } from "lucide-react";
+import { Plus, Calendar, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { DEMO_REGISTRY, DEMO_ITEMS } from "@/lib/demo-data";
+import { Logo } from "@/components/logo";
 
 export default function DemoDashboardPage() {
   const totalItems = DEMO_ITEMS.length;
@@ -47,8 +48,7 @@ export default function DemoDashboardPage() {
             href="/"
             className="flex items-center gap-2 font-semibold"
           >
-            <Baby className="h-5 w-5 text-brand-600" />
-            <span className="font-display text-lg font-bold tracking-tight">Regibee</span>
+            <Logo />
           </Link>
           <nav className="ml-6 hidden items-center gap-4 md:flex">
             <Link

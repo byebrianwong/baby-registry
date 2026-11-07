@@ -69,8 +69,8 @@ export function ItemCard({ item, registryId, isOwner, categories = [], zipCode, 
     <>
     <Card
       ref={cardRef}
-      className={`py-0 gap-0 rounded-xl ${
-        isOwner ? "cursor-pointer transition-shadow hover:shadow-md" : ""
+      className={`py-0 gap-0 rounded-2xl ${
+        isOwner ? "cursor-pointer transition hover:shadow-md motion-safe:hover:-translate-y-0.5" : ""
       } ${
         isFulfilled && !item.is_parent_purchased
           ? "opacity-60"

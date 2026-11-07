@@ -11,10 +11,10 @@ import { ScrollToTop } from "@/components/scroll-to-top";
 import { SuggestItemDialog } from "@/components/suggest-item-dialog";
 import { PublicRegistryGrid } from "@/components/public-registry-grid";
 import { copyForRegistry, honoreeDisplayName } from "@/lib/registry-copy";
-import { RegistryIcon } from "@/components/registry-icon";
 import { FollowButton } from "@/components/follow-button";
 import { getViewer, getViewerRelation } from "@/lib/viewer";
-import type { PersonalEventType, RegistryType } from "@/lib/types";
+import type { RegistryType } from "@/lib/types";
+import { Logo } from "@/components/logo";
 
 const PURCHASE_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
@@ -139,7 +139,6 @@ export default async function PublicRegistryPage({
   const parentName = honoreeDisplayName(registry);
   const copy = copyForRegistry(registry);
   const registryType = (registry.registry_type as RegistryType | undefined) || "baby";
-  const eventType = registry.event_type as PersonalEventType | null;
   const isBabyRegistry = registryType === "baby";
 
   const paymentMethods = (registry.settings as any)?.payment_methods as
@@ -272,8 +271,7 @@ export default async function PublicRegistryPage({
           {/* Like the shared top bar: signed-in people go to their
               registries, everyone else to the home page. */}
           <Link href={viewer ? "/dashboard" : "/"} className="inline-flex items-center gap-2 font-semibold">
-            <RegistryIcon registryType={registryType} eventType={eventType} className="h-5 w-5 text-brand-600" />
-            <span className="font-display text-lg font-bold tracking-tight">Regibee</span>
+            <Logo />
           </Link>
         </div>
       </header>

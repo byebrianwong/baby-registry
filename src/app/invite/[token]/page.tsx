@@ -1,10 +1,11 @@
 import Link from "next/link";
-import { Baby, AlertCircle } from "lucide-react";
+import { AlertCircle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/utils/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { AcceptInviteButton } from "./accept-invite-button";
+import { Logo } from "@/components/logo";
 
 export default async function InvitePage({
   params,
@@ -103,8 +104,7 @@ export default async function InvitePage({
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
             <Link href="/" className="mx-auto flex items-center gap-2 font-semibold mb-4">
-              <Baby className="h-6 w-6 text-brand-600" />
-              <span className="font-display text-xl font-bold tracking-tight">Regibee</span>
+              <Logo size="lg" />
             </Link>
             <CardTitle className="text-2xl">You&apos;re Invited!</CardTitle>
           </CardHeader>
@@ -145,8 +145,7 @@ export default async function InvitePage({
             href={user.is_anonymous ? "/" : "/dashboard"}
             className="mx-auto flex items-center gap-2 font-semibold mb-4"
           >
-            <Baby className="h-6 w-6 text-brand-600" />
-            <span className="font-display text-xl font-bold tracking-tight">Regibee</span>
+            <Logo size="lg" />
           </Link>
           <CardTitle className="text-2xl">You&apos;re Invited!</CardTitle>
         </CardHeader>

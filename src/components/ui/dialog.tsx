@@ -157,7 +157,7 @@ function DialogContent({
       <AriaModal
         className={(state) =>
           cn(
-            "max-h-full w-full max-w-[calc(100%-2rem)] outline-hidden max-sm:overflow-y-auto max-sm:rounded-xl sm:max-w-lg",
+            "max-h-full w-full max-w-[calc(100%-2rem)] outline-hidden max-sm:overflow-y-auto max-sm:rounded-2xl sm:max-w-lg",
             state.isEntering &&
               "duration-300 ease-out animate-in zoom-in-95",
             state.isExiting &&
@@ -168,7 +168,7 @@ function DialogContent({
         <AriaDialog
           data-slot="dialog-content"
           className={cn(
-            "bg-primary relative grid gap-4 rounded-lg border border-secondary p-6 shadow-lg outline-none",
+            "bg-primary relative grid gap-4 rounded-2xl border border-secondary p-6 shadow-lg outline-none",
             className
           )}
         >

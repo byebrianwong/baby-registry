@@ -88,7 +88,7 @@ export function CashFundCard({ fund, registryId, highlightId, purchases }: CashF
     <>
       <Card
         ref={cardRef}
-        className="py-0 gap-0 rounded-xl cursor-pointer transition-shadow hover:shadow-md"
+        className="py-0 gap-0 rounded-2xl cursor-pointer transition hover:shadow-md motion-safe:hover:-translate-y-0.5"
         style={isHighlighted ? { animation: "highlight-pulse 1.5s ease-in-out 3" } : undefined}
         onClick={() => setEditOpen(true)}
       >

@@ -36,8 +36,8 @@ const sizeMap: Record<ButtonSize, UntitledProps["size"]> = {
 
 // Extra size overrides not covered by Untitled UI sizes
 const sizeOverrides: Partial<Record<ButtonSize, string>> = {
-  xs: "!h-6 !gap-1 !rounded-md !px-2 !text-xs !py-0 [&_svg:not([class*='size-'])]:!size-3",
-  "icon-xs": "!size-6 !rounded-md !p-0 [&_svg:not([class*='size-'])]:!size-3",
+  xs: "!h-6 !gap-1 !rounded-full !px-2 !text-xs !py-0 [&_svg:not([class*='size-'])]:!size-3",
+  "icon-xs": "!size-6 !rounded-full !p-0 [&_svg:not([class*='size-'])]:!size-3",
 }
 
 /**
