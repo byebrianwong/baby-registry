@@ -17,7 +17,9 @@ import {
 import { reserveItem } from "@/lib/actions/registry";
 import { CelebrationDialog } from "@/components/celebration-dialog";
 
-type DialogAction = (formData: FormData) => Promise<{ error: string } | undefined>;
+type DialogAction = (
+  formData: FormData
+) => Promise<{ error?: string; shippingAddress?: string } | undefined>;
 
 interface ReserveItemDialogProps {
   item: {
@@ -31,6 +33,8 @@ interface ReserveItemDialogProps {
   parentName?: string;
   action?: DialogAction;
   alreadyPurchased?: boolean;
+  /** Only set for visitors the server has matched to a purchase on this
+   *  registry; a fresh reservation gets it back from the action instead. */
   shippingAddress?: string;
 }
 
@@ -49,6 +53,7 @@ export function ReserveItemDialog({ item, parentName = "The Registry Owner", act
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(alreadyPurchased ?? false);
   const [showCelebration, setShowCelebration] = useState(false);
+  const [reservedShippingAddress, setReservedShippingAddress] = useState<string>();
 
   const remaining = item.quantity_needed - item.quantity_fulfilled;
 
@@ -61,6 +66,7 @@ export function ReserveItemDialog({ item, parentName = "The Registry Owner", act
     if (result?.error) {
       setError(result.error);
     } else {
+      setReservedShippingAddress(result?.shippingAddress);
       setSuccess(true);
       setShowCelebration(true);
     }
@@ -88,7 +94,7 @@ export function ReserveItemDialog({ item, parentName = "The Registry Owner", act
           itemTitle={item.title}
           parentName={parentName}
           variant="reserve"
-          shippingAddress={shippingAddress}
+          shippingAddress={reservedShippingAddress ?? shippingAddress}
           shopUrl={item.external_url || undefined}
         />
       </>
