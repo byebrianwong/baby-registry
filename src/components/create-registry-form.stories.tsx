@@ -35,8 +35,16 @@ type Story = StoryObj<typeof CreateRegistryForm>;
 
 export const FirstStep: Story = {};
 
+// Without a profile, the privacy section offers to set one up instead of the
+// "Show on my profile" checkbox.
 export const NoProfileYet: Story = {
   args: { username: null },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByRole("button", { name: /Who can see it/ }));
+    await expect(canvas.getByRole("link", { name: "Set up your public profile" })).toBeVisible();
+    await settle();
+  },
 };
 
 // Choosing Personal shows the occasions. Picking one moves on to the name.
