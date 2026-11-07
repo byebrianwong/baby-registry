@@ -19,11 +19,11 @@ export function isPastEvent(
 
 // Soonest events first, then registries with no date, then past events with the
 // most recent first. `today` is a YYYY-MM-DD string, like `event_date`.
-export function sortListedRegistries(
-  registries: ListedRegistry[],
+export function sortListedRegistries<T extends ListedRegistry>(
+  registries: T[],
   today: string,
-): ListedRegistry[] {
-  const group = (registry: ListedRegistry) => {
+): T[] {
+  const group = (registry: T) => {
     if (registry.event_date === null) return 1;
     return isPastEvent(registry, today) ? 2 : 0;
   };
