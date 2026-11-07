@@ -27,6 +27,8 @@ import {
 } from "@/lib/actions/registry";
 import { CategoryManager } from "@/components/category-manager";
 import { ProfileListingField } from "@/components/profile-listing-field";
+import { StoreRegistriesCard } from "@/components/store-registries-card";
+import { parseRetailerRegistries } from "@/lib/retailers";
 import type { PaymentMethods, PersonalEventType, RegistryType } from "@/lib/types";
 import { copyFor } from "@/lib/registry-copy";
 
@@ -580,6 +582,21 @@ export default function RegistrySettingsPage() {
       </Card>
 
       <Separator className="my-8" />
+
+      {registry.registry_type === "baby" && (
+        <>
+          {/* The add-item dialog links here when a pasted link is from a store
+              the owner hasn't linked yet. */}
+          <div id="store-registries" className="scroll-mt-20">
+            <StoreRegistriesCard
+              registryId={registryId}
+              initialRegistries={parseRetailerRegistries(registry.settings)}
+            />
+          </div>
+
+          <Separator className="my-8" />
+        </>
+      )}
 
       {/* Managers Section */}
       <Card>

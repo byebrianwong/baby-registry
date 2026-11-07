@@ -15,6 +15,7 @@ import { FollowButton } from "@/components/follow-button";
 import { getViewer, getViewerRelation } from "@/lib/viewer";
 import type { RegistryType } from "@/lib/types";
 import { Logo } from "@/components/logo";
+import { parseRetailerRegistries, type StoreId } from "@/lib/retailers";
 
 const PURCHASE_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
@@ -144,6 +145,12 @@ export default async function PublicRegistryPage({
   const paymentMethods = (registry.settings as any)?.payment_methods as
     | PaymentMethods
     | undefined;
+
+  // Only the store ids go to the browser. The owner's store registry links
+  // stay on the server.
+  const linkedStores: StoreId[] = isBabyRegistry
+    ? parseRetailerRegistries(registry.settings).map((r) => r.store)
+    : [];
 
   // Check which parent-purchased items have been covered and how many times
   const parentPurchasedIds = allItems.filter((i) => i.is_parent_purchased).map((i) => i.id);
@@ -379,6 +386,7 @@ export default async function PublicRegistryPage({
             coverCounts={coverCountsObj}
             selfPurchasedLabel={copy.selfPurchasedLabel}
             coverFlavor={copy.coverItemFlavor(parentName)}
+            linkedStores={linkedStores}
             suggestButton={
               <SuggestItemDialog
                 registryId={registry.id}

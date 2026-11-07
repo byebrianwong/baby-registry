@@ -1,3 +1,5 @@
+import type { RetailerRegistry } from "@/lib/retailers";
+
 export interface PaymentMethods {
   venmo?: string;
   paypal?: string;
@@ -7,6 +9,8 @@ export interface PaymentMethods {
 export interface RegistrySettings {
   payment_methods?: PaymentMethods;
   shipping_address?: string;
+  /** The owner's own registries at stores. Read with parseRetailerRegistries. */
+  retailer_registries?: RetailerRegistry[];
   [key: string]: unknown;
 }
 

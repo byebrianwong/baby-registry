@@ -17,6 +17,7 @@ import { createClient } from "@/utils/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { AddItemDialog } from "@/components/add-item-dialog";
 import { ItemCard } from "@/components/item-card";
+import { parseRetailerRegistries } from "@/lib/retailers";
 import { CopyLinkButton } from "@/components/copy-link-button";
 import { RegistryTabs } from "@/components/registry-tabs";
 import { CancelReservationButton } from "./cancel-reservation-button";
@@ -230,6 +231,9 @@ export default async function RegistryManagePage({
 
   const settings = registry.settings as Record<string, any> | null;
   const taxEnabled = settings?.tax_enabled !== false;
+  // Store registry notices in the item dialogs are for baby registries only.
+  const linkedRegistries =
+    registry.registry_type === "baby" ? parseRetailerRegistries(settings) : undefined;
   const zipCode = taxEnabled ? (settings?.zip_code as string | undefined) : undefined;
   const registryUrl = `/r/${registry.slug}`;
 
@@ -328,7 +332,7 @@ export default async function RegistryManagePage({
                   </Button>
                 )}
                 <AddCashFundDialog registryId={registryId} />
-                <AddItemDialog registryId={registryId} categories={allCategories} zipCode={zipCode} registryType={registry.registry_type} eventType={registry.event_type} />
+                <AddItemDialog registryId={registryId} categories={allCategories} zipCode={zipCode} registryType={registry.registry_type} eventType={registry.event_type} linkedRegistries={linkedRegistries} />
               </div>
             </div>
 
@@ -342,7 +346,7 @@ export default async function RegistryManagePage({
                       : "No items yet. Add items from any store to get started."}
                   </p>
                   <div className="mt-4 flex gap-2">
-                    <AddItemDialog registryId={registryId} categories={allCategories} zipCode={zipCode} registryType={registry.registry_type} eventType={registry.event_type} />
+                    <AddItemDialog registryId={registryId} categories={allCategories} zipCode={zipCode} registryType={registry.registry_type} eventType={registry.event_type} linkedRegistries={linkedRegistries} />
                     {showChecklist && (
                       <Button variant="outline" asChild>
                         <Link href={`/dashboard/registry/${registryId}/checklist`}>
@@ -398,6 +402,7 @@ export default async function RegistryManagePage({
                               selfPurchaseButtonLabel={copy.selfPurchaseButton}
                               registryType={registry.registry_type}
                               eventType={registry.event_type}
+                              linkedRegistries={linkedRegistries}
                             />
                           ))}
                         </div>
@@ -421,8 +426,9 @@ export default async function RegistryManagePage({
                             highlightId={highlight}
                             purchases={purchasesByItemId.get(item.id)}
                             selfPurchaseButtonLabel={copy.selfPurchaseButton}
-                              registryType={registry.registry_type}
-                              eventType={registry.event_type}
+                            registryType={registry.registry_type}
+                            eventType={registry.event_type}
+                            linkedRegistries={linkedRegistries}
                           />
                         ))}
                       </div>

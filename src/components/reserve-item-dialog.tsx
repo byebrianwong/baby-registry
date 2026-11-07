@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Gift, Check, ExternalLink } from "lucide-react";
+import { Gift, Check, ExternalLink, Store } from "lucide-react";
 import { Mail01 } from "@untitledui/icons";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/base/input/input";
@@ -36,6 +36,9 @@ interface ReserveItemDialogProps {
   /** Only set for visitors the server has matched to a purchase on this
    *  registry; a fresh reservation gets it back from the action instead. */
   shippingAddress?: string;
+  /** Set when the item's link is from a store where the owner has their own
+   *  registry. The dialog then explains how to buy so the gift counts there. */
+  registryStoreName?: string;
 }
 
 function getDomainName(url: string): string {
@@ -47,7 +50,7 @@ function getDomainName(url: string): string {
   }
 }
 
-export function ReserveItemDialog({ item, parentName = "The Registry Owner", action, alreadyPurchased, shippingAddress }: ReserveItemDialogProps) {
+export function ReserveItemDialog({ item, parentName = "The Registry Owner", action, alreadyPurchased, shippingAddress, registryStoreName }: ReserveItemDialogProps) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -117,7 +120,39 @@ export function ReserveItemDialog({ item, parentName = "The Registry Owner", act
           </DialogDescription>
         </DialogHeader>
         <form action={handleSubmit} className="space-y-4">
-          {item.external_url && (
+          {item.external_url && registryStoreName ? (
+            <div className="space-y-3 rounded-xl border border-brand-200 bg-brand-50 p-4">
+              <p className="flex items-center gap-2 text-sm font-semibold text-primary">
+                <Store className="h-4 w-4 shrink-0 text-brand-600" aria-hidden="true" />
+                This gift is on {parentName}&apos;s {registryStoreName} registry
+              </p>
+              <ol className="space-y-2.5">
+                {[
+                  `Buy it at ${registryStoreName} with the button below, so the gift counts toward their registry.`,
+                  "Shipping to them? At checkout, choose their registry address.",
+                  "Come back and mark it as purchased, so nobody else buys it.",
+                ].map((step, i) => (
+                  <li key={step} className="flex items-start gap-2.5">
+                    <span
+                      aria-hidden="true"
+                      className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-brand-600 text-[11px] font-semibold text-white"
+                    >
+                      {i + 1}
+                    </span>
+                    <span className="text-sm text-secondary">{step}</span>
+                  </li>
+                ))}
+              </ol>
+              <Button variant="outline" className="w-full" asChild>
+                <a href={item.external_url} target="_blank" rel="noopener noreferrer">
+                  <span className="inline-flex items-center gap-1.5">
+                    <ExternalLink className="h-4 w-4 shrink-0" />
+                    Shop at {registryStoreName}
+                  </span>
+                </a>
+              </Button>
+            </div>
+          ) : item.external_url ? (
             <Button variant="outline" className="w-full" asChild>
               <a href={item.external_url} target="_blank" rel="noopener noreferrer">
                 <span className="inline-flex items-center gap-1.5">
@@ -126,7 +161,7 @@ export function ReserveItemDialog({ item, parentName = "The Registry Owner", act
                 </span>
               </a>
             </Button>
-          )}
+          ) : null}
           <Input
             label="Your Name"
             name="buyerName"
