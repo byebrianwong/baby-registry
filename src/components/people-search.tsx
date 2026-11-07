@@ -60,7 +60,11 @@ export function PeopleSearch({ searchAction = searchPeople }: { searchAction?: t
                 </span>
                 <span className="block break-words text-sm text-tertiary">@{person.username}</span>
               </Link>
-              <FollowButton username={person.username} state={person.state} />
+              {person.state === "self" ? (
+                <span className="text-sm font-medium text-tertiary">That&apos;s you</span>
+              ) : (
+                <FollowButton username={person.username} state={person.state} />
+              )}
             </li>
           ))}
         </ul>
