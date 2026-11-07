@@ -8,8 +8,7 @@ These notes are for anyone changing or running the live app, people and Claude a
 | --- | --- | --- |
 | GitHub `dango-design/regibee` | Code, pull requests, CI | CI reads the `CHROMATIC_PROJECT_TOKEN` repo secret. |
 | Vercel | Builds and hosts the site | `main` deploys to regibee.com and www.regibee.com. Every other branch gets a preview URL. Every deployment URL except regibee.com needs a Vercel login. |
-| Supabase `baby-registry` (ref `ibfvmgpfwhhyrhnxaxig`) | Production database and sign-in | Database changes are run by hand. See below. |
-| Supabase `baby-registry-staging` | A separate database for testing | Put its keys in `.env.staging.local` and run `npm run dev:staging`. |
+| Supabase `regibee` (ref `ibfvmgpfwhhyrhnxaxig`) | Database and sign-in | This is the only database. Preview deploys and `vercel env pull` use it too, so anything you do on a preview or locally with those keys changes real data. Database changes are run by hand. See below. |
 | Resend | Sends notification emails from `notifications@regibee.com` | Needs `RESEND_API_KEY`, and DNS records for regibee.com. |
 | Porkbun | Registrar and DNS for regibee.com | The DNS records point the site at Vercel and verify the domain for Resend. |
 | Chromatic | Visual tests of the Storybook stories | The project id is in `chromatic.config.json`. |
@@ -21,7 +20,7 @@ Vercel holds these env vars for production, preview and development: `NEXT_PUBLI
 - Changes live in `supabase/migrations`. Nothing runs them on deploy. Someone runs each new file by hand.
 - Production has no migration history table, so the Supabase CLI can't tell which files have run. Look at the database before running a file.
 - Give a new file the next number after the highest one. Two files already share `009`.
-- Run a file on staging first, then on production. Use the SQL Editor in the Supabase dashboard, or the CLI:
+- There's no staging database, so read a new file closely before running it on production. Use the SQL Editor in the Supabase dashboard, or the CLI:
 
   ```bash
   supabase link --project-ref ibfvmgpfwhhyrhnxaxig
