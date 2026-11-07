@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { LandingPage } from "./landing-page";
+import { NavBar } from "./nav-bar";
 
 const meta: Meta<typeof LandingPage> = {
   title: "Pages/Landing Page",
@@ -12,6 +13,7 @@ const meta: Meta<typeof LandingPage> = {
   },
   args: {
     ctaHref: "/signup",
+    nav: <NavBar account={null} />,
   },
 };
 export default meta;

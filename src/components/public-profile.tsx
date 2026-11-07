@@ -3,20 +3,12 @@ import { Gift } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { ProfileRegistryCard } from "@/components/profile-registry-card";
+import { initialsFor } from "@/lib/initials";
 import {
   isPastEvent,
   sortListedRegistries,
   type ListedRegistry,
 } from "@/lib/registry-listing";
-
-// Skips words like "&" so "Jane & John Doe" becomes "JD", not "J&".
-function initialsFor(name: string): string {
-  const words = name.split(/\s+/).filter((word) => /^[\p{L}\p{N}]/u.test(word));
-  if (words.length === 0) return "?";
-  const first = words[0].charAt(0);
-  const last = words.length > 1 ? words[words.length - 1].charAt(0) : "";
-  return (first + last).toUpperCase();
-}
 
 export function PublicProfile({
   username,
