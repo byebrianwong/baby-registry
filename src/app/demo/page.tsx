@@ -48,6 +48,7 @@ import {
   DEMO_ITEMS,
   DEMO_CASH_FUNDS,
 } from "@/lib/demo-data";
+import { Logo } from "@/components/logo";
 
 interface DemoItem {
   id: string;
@@ -385,8 +386,7 @@ export default function DemoPage() {
             href="/"
             className="flex items-center gap-2 font-semibold"
           >
-            <Baby className="h-5 w-5 text-brand-600" />
-            <span className="font-display text-lg font-bold tracking-tight">Regibee</span>
+            <Logo />
           </Link>
           <Button variant="outline" size="sm" asChild>
             <Link href="/">
@@ -498,7 +498,7 @@ export default function DemoPage() {
                     ? (fund.current_amount / fund.goal_amount) * 100
                     : 0;
                 return (
-                  <Card key={fund.id} className="py-0 gap-0 rounded-xl shadow-none">
+                  <Card key={fund.id} className="py-0 gap-0 rounded-2xl shadow-none">
                     <CardContent className="flex flex-col gap-4 p-4">
                       <h3 className="font-display font-semibold text-2xl leading-8">
                         {fund.title}
@@ -560,7 +560,7 @@ export default function DemoPage() {
                     return (
                       <Card
                         key={item.id}
-                        className={`py-0 gap-0 rounded-xl shadow-none ${
+                        className={`py-0 gap-0 rounded-2xl shadow-none ${
                           isFulfilled && !item.is_parent_purchased
                             ? "opacity-60 border-tertiary"
                             : item.is_parent_purchased

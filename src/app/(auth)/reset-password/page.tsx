@@ -3,11 +3,11 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { Baby } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/base/input/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { createClient } from "@/utils/supabase/client";
+import { Logo } from "@/components/logo";
 
 export default function ResetPasswordPage() {
   const router = useRouter();
@@ -50,8 +50,7 @@ export default function ResetPasswordPage() {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <Link href="/" className="mx-auto flex items-center gap-2 font-semibold mb-4">
-            <Baby className="h-6 w-6 text-brand-600" />
-            <span className="font-display text-xl font-bold tracking-tight">Regibee</span>
+            <Logo size="lg" />
           </Link>
           <CardTitle className="text-2xl">Set new password</CardTitle>
           <CardDescription>

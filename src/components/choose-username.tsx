@@ -3,13 +3,13 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Baby } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/base/input/input";
 import { Checkbox } from "@/components/base/checkbox/checkbox";
 import { saveProfile } from "@/lib/actions/profile";
 import { normalizeUsername, suggestUsername } from "@/lib/username";
+import { Logo } from "@/components/logo";
 
 /**
  * The step right after sign-up. A username is what makes an account findable,
@@ -53,8 +53,7 @@ export function ChooseUsername({
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <Link href="/dashboard" className="mx-auto mb-4 flex items-center gap-2 font-semibold">
-            <Baby className="h-6 w-6 text-brand-600" />
-            <span className="font-display text-xl font-bold tracking-tight">Regibee</span>
+            <Logo size="lg" />
           </Link>
           <CardTitle className="text-2xl">Choose a username</CardTitle>
           <CardDescription>

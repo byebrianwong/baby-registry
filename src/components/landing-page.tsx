@@ -9,10 +9,29 @@ export function LandingPage({ ctaHref, nav }: { ctaHref: string; nav: React.Reac
       {nav}
       <main id="main-content" className="flex-1">
         {/* Hero */}
-        <section className="container mx-auto px-4 py-24 text-center">
+        <section className="relative overflow-hidden">
+          {/* Stickers from the illustration set (public/hero). Only the
+              occasion-neutral ones (panda, hearts, stars), since this page
+              covers every occasion. They need the room beside the headline,
+              so they show from xl up; smaller screens get one panda above it. */}
+          <div aria-hidden="true" className="pointer-events-none absolute inset-0 mx-auto hidden max-w-[1440px] xl:block">
+            <img src="/hero/star-teal-left.svg" alt="" className="absolute left-[6%] top-[16%] w-[52px] -rotate-6" />
+            <img src="/hero/heart-red.svg" alt="" className="absolute left-[12%] top-[46%] w-[64px] -rotate-12" />
+            <img src="/hero/heart-yellow.svg" alt="" className="absolute bottom-[14%] left-[5%] w-[44px] rotate-12" />
+            <img src="/hero/star-teal-right.svg" alt="" className="absolute right-[5%] top-[14%] w-[48px] rotate-6" />
+            <img src="/hero/panda.svg" alt="" className="absolute right-[8%] top-[40%] w-[150px] rotate-6" />
+          </div>
+          <div className="container relative mx-auto px-4 py-24 text-center">
+          <img src="/hero/panda.svg" alt="" aria-hidden="true" className="mx-auto mb-8 h-24 w-auto -rotate-3 xl:hidden" />
           <h1 className="text-4xl font-bold tracking-tight sm:text-6xl">
             One Registry,{" "}
-            <span className="text-brand-600">Every Occasion</span>
+            <span className="relative isolate inline-block text-brand-600">
+              <span
+                aria-hidden="true"
+                className="absolute inset-x-0 bottom-[0.06em] -z-10 h-[0.32em] rounded-full bg-sunshine-200"
+              />
+              Every Occasion
+            </span>
           </h1>
           <p className="mx-auto mt-6 max-w-2xl text-lg text-tertiary">
             Baby showers, birthdays, Christmas, weddings — build a wishlist with
@@ -30,19 +49,21 @@ export function LandingPage({ ctaHref, nav }: { ctaHref: string; nav: React.Reac
               <Link href="/demo">Demo: Gift Giver View</Link>
             </Button>
           </div>
-          <div className="mt-10 flex flex-wrap items-center justify-center gap-3 text-sm text-tertiary">
-            <span className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1">
+          {/* Each occasion gets its own tint from the palette. */}
+          <div className="mt-10 flex flex-wrap items-center justify-center gap-3 text-sm font-medium">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-blush-100 px-3 py-1 text-blush-700">
               <Baby className="h-4 w-4" /> Baby
             </span>
-            <span className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-sunshine-100 px-3 py-1 text-sunshine-900">
               <Cake className="h-4 w-4" /> Birthday
             </span>
-            <span className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-mint-100 px-3 py-1 text-mint-800">
               <PartyPopper className="h-4 w-4" /> Christmas
             </span>
-            <span className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-brand-100 px-3 py-1 text-brand-700">
               <Gift className="h-4 w-4" /> Any occasion
             </span>
+          </div>
           </div>
         </section>
 
@@ -52,7 +73,7 @@ export function LandingPage({ ctaHref, nav }: { ctaHref: string; nav: React.Reac
             <h2 className="text-center text-3xl font-bold">How It Works</h2>
             <div className="mt-16 grid gap-8 md:grid-cols-3">
               <div className="text-center">
-                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-brand-600/10">
+                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-blush-100">
                   <Gift className="h-8 w-8 text-brand-600" />
                 </div>
                 <h3 className="mt-6 font-display text-xl font-semibold">1. Create Your Registry</h3>
@@ -62,7 +83,7 @@ export function LandingPage({ ctaHref, nav }: { ctaHref: string; nav: React.Reac
                 </p>
               </div>
               <div className="text-center">
-                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-brand-600/10">
+                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-sunshine-100">
                   <Link2 className="h-8 w-8 text-brand-600" />
                 </div>
                 <h3 className="mt-6 font-display text-xl font-semibold">2. Add Items From Anywhere</h3>
@@ -72,7 +93,7 @@ export function LandingPage({ ctaHref, nav }: { ctaHref: string; nav: React.Reac
                 </p>
               </div>
               <div className="text-center">
-                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-brand-600/10">
+                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-mint-100">
                   <Gift className="h-8 w-8 text-brand-600" />
                 </div>
                 <h3 className="mt-6 font-display text-xl font-semibold">3. Share & Receive Gifts</h3>
@@ -116,7 +137,7 @@ export function LandingPage({ ctaHref, nav }: { ctaHref: string; nav: React.Reac
               ].map((feature) => (
                 <div
                   key={feature.title}
-                  className="rounded-lg border p-6"
+                  className="rounded-2xl border bg-primary p-6"
                 >
                   <feature.icon className="h-6 w-6 text-brand-600" />
                   <h3 className="mt-4 font-display font-semibold">{feature.title}</h3>

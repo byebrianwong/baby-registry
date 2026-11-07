@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Baby, ArrowLeft } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/base/input/input";
 import { TextArea } from "@/components/base/textarea/textarea";
@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { DEMO_REGISTRY } from "@/lib/demo-data";
+import { Logo } from "@/components/logo";
 
 export default function DemoSettingsPage() {
   const [saving, setSaving] = useState(false);
@@ -62,8 +63,7 @@ export default function DemoSettingsPage() {
             href="/"
             className="flex items-center gap-2 font-semibold"
           >
-            <Baby className="h-5 w-5 text-brand-600" />
-            <span className="font-display text-lg font-bold tracking-tight">Regibee</span>
+            <Logo />
           </Link>
           <span className="ml-4 text-sm text-tertiary hidden md:inline">
             demo@example.com

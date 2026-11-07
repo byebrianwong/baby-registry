@@ -1,11 +1,12 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import type { User } from "@supabase/supabase-js";
-import { Plus, Gift, Calendar, ExternalLink, Users } from "lucide-react";
+import { Plus, Calendar, ExternalLink, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { PandaMark } from "@/components/panda-mark";
 import { createClient } from "@/utils/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { countFollowRequests } from "@/lib/follows";
@@ -249,7 +250,7 @@ export default async function DashboardPage() {
       {hasNoRegistries ? (
         <Card className="mt-8">
           <CardContent className="flex flex-col items-center justify-center py-16">
-            <Gift className="h-12 w-12 text-tertiary" />
+            <PandaMark className="h-20 w-auto" />
             <h2 className="mt-4 text-xl font-semibold">No registries yet</h2>
             <p className="mt-2 text-tertiary">
               Create your first registry to start adding items.

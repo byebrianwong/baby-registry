@@ -229,7 +229,7 @@ export function PublicRegistryGrid({
                 const fundPurchased = !!(myGifts.funds && myGifts.funds[fund.id]);
                 const fundPrevAmount = myGifts.funds?.[fund.id];
                 return (
-                  <Card key={fund.id} className="py-0 gap-0 rounded-xl shadow-none border-primary">
+                  <Card key={fund.id} className="py-0 gap-0 rounded-2xl shadow-none border-primary">
                     <CardContent className="flex h-full flex-col justify-between gap-4 p-4">
                       <div className="flex flex-col gap-2">
                         <div className="flex items-center gap-2">
@@ -378,7 +378,7 @@ function PublicItemCard({
 
   return (
     <Card
-      className={`py-0 gap-0 rounded-xl shadow-none ${
+      className={`py-0 gap-0 rounded-2xl shadow-none ${
         (isFulfilled && !item.is_parent_purchased) || isFullyCovered
           ? "opacity-60 border-tertiary"
           : item.is_parent_purchased

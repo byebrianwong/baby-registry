@@ -12,7 +12,7 @@ export const styles = sortCx({
         root: [
             "group relative inline-flex h-max cursor-pointer items-center justify-center whitespace-nowrap outline-brand transition duration-100 ease-linear before:absolute focus-visible:outline-2 focus-visible:outline-offset-2",
             // When button is used within `InputGroup`
-            "in-data-input-wrapper:shadow-xs in-data-input-wrapper:focus:!z-50 in-data-input-wrapper:in-data-leading:-mr-px in-data-input-wrapper:in-data-leading:rounded-r-none in-data-input-wrapper:in-data-leading:before:rounded-r-none in-data-input-wrapper:in-data-trailing:-ml-px in-data-input-wrapper:in-data-trailing:rounded-l-none in-data-input-wrapper:in-data-trailing:before:rounded-l-none",
+            "in-data-input-wrapper:rounded-lg in-data-input-wrapper:before:rounded-[7px] in-data-input-wrapper:shadow-xs in-data-input-wrapper:focus:!z-50 in-data-input-wrapper:in-data-leading:-mr-px in-data-input-wrapper:in-data-leading:rounded-r-none in-data-input-wrapper:in-data-leading:before:rounded-r-none in-data-input-wrapper:in-data-trailing:-ml-px in-data-input-wrapper:in-data-trailing:rounded-l-none in-data-input-wrapper:in-data-trailing:before:rounded-l-none",
             // Disabled styles
             "disabled:cursor-not-allowed disabled:text-fg-disabled",
             // Icon styles
@@ -25,24 +25,24 @@ export const styles = sortCx({
     sizes: {
         sm: {
             root: [
-                "gap-1 rounded-lg px-3 py-2 text-sm font-semibold before:rounded-[7px] data-icon-only:p-2",
+                "gap-1 rounded-full px-3.5 py-2 text-sm font-semibold before:rounded-full data-icon-only:p-2",
                 "in-data-input-wrapper:px-3.5 in-data-input-wrapper:py-2.5 in-data-input-wrapper:data-icon-only:p-2.5",
             ].join(" "),
             linkRoot: "gap-1",
         },
         md: {
             root: [
-                "gap-1 rounded-lg px-3.5 py-2.5 text-sm font-semibold before:rounded-[7px] data-icon-only:p-2.5",
+                "gap-1 rounded-full px-4 py-2.5 text-sm font-semibold before:rounded-full data-icon-only:p-2.5",
                 "in-data-input-wrapper:gap-1.5 in-data-input-wrapper:px-4 in-data-input-wrapper:text-md in-data-input-wrapper:data-icon-only:p-3",
             ].join(" "),
             linkRoot: "gap-1",
         },
         lg: {
-            root: "gap-1.5 rounded-lg px-4 py-2.5 text-md font-semibold before:rounded-[7px] data-icon-only:p-3",
+            root: "gap-1.5 rounded-full px-5 py-2.5 text-md font-semibold before:rounded-full data-icon-only:p-3",
             linkRoot: "gap-1.5",
         },
         xl: {
-            root: "gap-1.5 rounded-lg px-4.5 py-3 text-md font-semibold before:rounded-[7px] data-icon-only:p-3.5",
+            root: "gap-1.5 rounded-full px-5.5 py-3 text-md font-semibold before:rounded-full data-icon-only:p-3.5",
             linkRoot: "gap-1.5",
         },
     },

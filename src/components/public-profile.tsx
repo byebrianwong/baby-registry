@@ -1,8 +1,8 @@
 import Link from "next/link";
-import { Gift } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { ProfileRegistryCard } from "@/components/profile-registry-card";
+import { PandaMark } from "@/components/panda-mark";
 import { initialsFor } from "@/lib/initials";
 import {
   isPastEvent,
@@ -49,8 +49,8 @@ export function PublicProfile({
       </div>
 
       {registries.length === 0 ? (
-        <div className="mt-10 flex flex-col items-center rounded-xl border border-secondary px-4 py-12 text-center">
-          <Gift className="h-10 w-10 text-tertiary" />
+        <div className="mt-10 flex flex-col items-center rounded-2xl border border-secondary px-4 py-12 text-center">
+          <PandaMark className="h-16 w-auto" />
           <p className="mt-3 text-tertiary">No registries to show yet.</p>
           {isOwnProfile && (
             <Link

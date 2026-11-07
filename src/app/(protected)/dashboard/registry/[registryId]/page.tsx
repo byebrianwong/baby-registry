@@ -28,6 +28,7 @@ import { ProgressCircle } from "@/components/ui/progress-circle";
 import { getChecklistProgress } from "@/lib/checklist-matching";
 import { AddCashFundDialog } from "@/components/add-cash-fund-dialog";
 import { CashFundCard } from "@/components/cash-fund-card";
+import { PandaMark } from "@/components/panda-mark";
 import { copyForRegistry } from "@/lib/registry-copy";
 
 interface RegistryItem {
@@ -334,6 +335,7 @@ export default async function RegistryManagePage({
             {totalItems === 0 ? (
               <Card>
                 <CardContent className="flex flex-col items-center justify-center py-12">
+                  <PandaMark className="mb-4 h-20 w-auto" />
                   <p className="text-tertiary">
                     {showChecklist
                       ? "No items yet. Add items manually or browse the checklist."

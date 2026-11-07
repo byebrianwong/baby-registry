@@ -1,8 +1,8 @@
 import Link from "next/link";
-import { Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PeopleSearch } from "@/components/people-search";
 import { ProfileRegistryCard } from "@/components/profile-registry-card";
+import { PandaMark } from "@/components/panda-mark";
 import type { searchPeople } from "@/lib/actions/follows";
 import type { FeedRegistry, FollowPerson } from "@/lib/follows";
 import { isPastEvent, sortListedRegistries } from "@/lib/registry-listing";
@@ -13,8 +13,8 @@ function displayName(person: { username: string; full_name: string | null }) {
 
 function EmptyState({ title, body, action }: { title: string; body: string; action?: React.ReactNode }) {
   return (
-    <div className="mt-8 flex flex-col items-center rounded-xl border border-secondary px-4 py-12 text-center">
-      <Users className="h-10 w-10 text-tertiary" />
+    <div className="mt-8 flex flex-col items-center rounded-2xl border border-secondary px-4 py-12 text-center">
+      <PandaMark className="h-16 w-auto" />
       <h2 className="mt-3 font-semibold">{title}</h2>
       <p className="mt-1 max-w-sm text-sm text-tertiary">{body}</p>
       {action && <div className="mt-4">{action}</div>}

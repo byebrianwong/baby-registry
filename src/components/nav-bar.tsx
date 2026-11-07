@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Baby, ChevronDown, LogOut, Settings, UserPlus, UserRound } from "lucide-react";
+import { ChevronDown, LogOut, Settings, UserPlus, UserRound } from "lucide-react";
 import { Button as AriaButton, RouterProvider } from "react-aria-components";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ import { Dropdown } from "@/components/base/dropdown/dropdown";
 import { initialsFor } from "@/lib/initials";
 import { cx } from "@/lib/utils/cx";
 import { createClient } from "@/utils/supabase/client";
+import { Logo } from "@/components/logo";
 
 export interface NavAccount {
   name: string;
@@ -109,8 +110,7 @@ export function NavBar({ account }: { account: NavAccount | null }) {
           href={account ? "/dashboard" : "/"}
           className="flex items-center gap-2 rounded-md font-semibold text-primary outline-focus-ring focus-visible:outline-2 focus-visible:outline-offset-4"
         >
-          <Baby aria-hidden="true" className="h-5 w-5 text-brand-600" />
-          <span className="font-display text-lg font-bold tracking-tight">Regibee</span>
+          <Logo />
         </Link>
 
         <div className="ml-auto flex items-center gap-2">

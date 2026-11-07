@@ -65,6 +65,7 @@ import { Tabs, TabList, Tab, TabPanel } from "@/components/base/tabs/tabs";
 import { CategoryNav, type CategoryNavItem } from "@/components/category-nav";
 import { getCategorySectionId } from "@/lib/category-section-id";
 import { ScrollToTop } from "@/components/scroll-to-top";
+import { Logo } from "@/components/logo";
 
 interface DemoItem {
   id: string;
@@ -703,7 +704,7 @@ function DemoItemCard({
 
   return (
     <Card
-      className={`py-0 gap-0 rounded-xl cursor-pointer transition-shadow hover:shadow-md ${
+      className={`py-0 gap-0 rounded-2xl cursor-pointer transition hover:shadow-md motion-safe:hover:-translate-y-0.5 ${
         isFulfilled && !item.is_parent_purchased
           ? "opacity-60"
           : item.is_parent_purchased
@@ -1114,8 +1115,7 @@ export default function DemoManagePage() {
             href="/"
             className="flex items-center gap-2 font-semibold"
           >
-            <Baby className="h-5 w-5 text-brand-600" />
-            <span className="font-display text-lg font-bold tracking-tight">Regibee</span>
+            <Logo />
           </Link>
           <span className="ml-4 text-sm text-tertiary hidden md:inline">
             demo@example.com
