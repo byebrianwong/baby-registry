@@ -1,6 +1,8 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { AccountSkeleton, DashboardSkeleton, FollowingSkeleton } from "./page-skeletons";
+import { AccountSkeleton } from "./page-skeletons";
 
+// The dashboard and Following skeletons show under the dashboard tabs, so
+// their stories are in dashboard-tabs.stories.tsx.
 const meta: Meta = {
   title: "Components/PageSkeletons",
   parameters: {
@@ -9,14 +11,6 @@ const meta: Meta = {
 };
 export default meta;
 type Story = StoryObj;
-
-export const Dashboard: Story = {
-  render: () => <DashboardSkeleton />,
-};
-
-export const Following: Story = {
-  render: () => <FollowingSkeleton />,
-};
 
 export const Account: Story = {
   render: () => <AccountSkeleton />,

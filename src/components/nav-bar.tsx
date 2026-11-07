@@ -1,14 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Baby, ChevronDown, LogOut, Settings, UserPlus, UserRound } from "lucide-react";
 import { Button as AriaButton, RouterProvider } from "react-aria-components";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Dropdown } from "@/components/base/dropdown/dropdown";
-import { NavLink } from "@/components/nav-link";
 import { initialsFor } from "@/lib/initials";
 import { cx } from "@/lib/utils/cx";
 import { createClient } from "@/utils/supabase/client";
@@ -20,28 +18,7 @@ export interface NavAccount {
   followRequestCount: number;
 }
 
-// Labels match the page titles, and each section stays highlighted on the
-// pages inside it.
-const SECTIONS = [
-  {
-    href: "/dashboard",
-    label: "My registries",
-    isActive: (path: string) => path === "/dashboard" || path.startsWith("/dashboard/registry"),
-  },
-  {
-    href: "/dashboard/following",
-    label: "Following",
-    isActive: (path: string) => path.startsWith("/dashboard/following"),
-  },
-];
-
-function AccountMenu({
-  account,
-  onNavigate,
-}: {
-  account: NavAccount;
-  onNavigate: (href: string) => void;
-}) {
+function AccountMenu({ account }: { account: NavAccount }) {
   const router = useRouter();
   const count = account.followRequestCount;
   const requestLabel = count === 1 ? "1 follow request" : `${count} follow requests`;
@@ -53,12 +30,7 @@ function AccountMenu({
   };
 
   return (
-    <RouterProvider
-      navigate={(href) => {
-        onNavigate(href);
-        router.push(href);
-      }}
-    >
+    <RouterProvider navigate={router.push}>
       <Dropdown.Root>
         <AriaButton
           aria-label={count > 0 ? `Account menu, ${requestLabel}` : "Account menu"}
@@ -119,20 +91,10 @@ function AccountMenu({
   );
 }
 
+// Signed-in people get just the logo and their account menu. The logo goes to
+// the dashboard, where My registries and Following are tabs
+// (src/components/dashboard-tabs.tsx).
 export function NavBar({ account }: { account: NavAccount | null }) {
-  const pathname = usePathname() ?? "";
-
-  // Where the user just clicked to go. The bar shows that section as current
-  // straight away, before the URL changes, and forgets it when the URL changes.
-  const [clickedHref, setClickedHref] = useState<string | null>(null);
-  const [lastPathname, setLastPathname] = useState(pathname);
-  if (pathname !== lastPathname) {
-    setLastPathname(pathname);
-    setClickedHref(null);
-  }
-  const isCurrent = (section: (typeof SECTIONS)[number]) =>
-    clickedHref ? clickedHref === section.href : section.isActive(pathname);
-
   return (
     <header className="sticky top-0 z-50 w-full border-b border-secondary bg-primary/95 backdrop-blur supports-[backdrop-filter]:bg-primary/80">
       <a
@@ -151,27 +113,9 @@ export function NavBar({ account }: { account: NavAccount | null }) {
           <span>Regibee</span>
         </Link>
 
-        {account && (
-          <nav aria-label="Main" className="hidden md:block">
-            <ul className="flex items-center gap-1">
-              {SECTIONS.map((section) => (
-                <li key={section.href}>
-                  <NavLink
-                    href={section.href}
-                    label={section.label}
-                    variant="bar"
-                    current={isCurrent(section)}
-                    onNavigate={() => setClickedHref(section.href)}
-                  />
-                </li>
-              ))}
-            </ul>
-          </nav>
-        )}
-
         <div className="ml-auto flex items-center gap-2">
           {account ? (
-            <AccountMenu account={account} onNavigate={setClickedHref} />
+            <AccountMenu account={account} />
           ) : (
             <>
               <Button variant="ghost" size="sm" asChild>
@@ -188,26 +132,6 @@ export function NavBar({ account }: { account: NavAccount | null }) {
           )}
         </div>
       </div>
-
-      {/* Phones get the same two sections as full-width tabs instead of a
-          hidden menu, so they stay one tap away. */}
-      {account && (
-        <nav aria-label="Main" className="border-t border-secondary md:hidden">
-          <ul className="container mx-auto flex px-4">
-            {SECTIONS.map((section) => (
-              <li key={section.href} className="flex-1">
-                <NavLink
-                  href={section.href}
-                  label={section.label}
-                  variant="tab"
-                  current={isCurrent(section)}
-                  onNavigate={() => setClickedHref(section.href)}
-                />
-              </li>
-            ))}
-          </ul>
-        </nav>
-      )}
     </header>
   );
 }

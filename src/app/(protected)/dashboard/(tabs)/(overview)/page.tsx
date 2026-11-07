@@ -195,10 +195,11 @@ export default async function DashboardPage() {
     !user.is_anonymous && !username && Boolean(registries && registries.length > 0);
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="flex items-center justify-between">
+    <div className="container mx-auto px-4 pt-6 pb-8">
+      <div className="flex items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold">My Registries</h1>
+          {/* The My registries tab is the visible title (see (tabs)/layout.tsx). */}
+          <h1 className="sr-only">My Registries</h1>
           <p className="text-tertiary">
             Manage your registries and track gifts
           </p>

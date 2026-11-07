@@ -13,7 +13,7 @@ const meta: Meta<typeof NavBar> = {
   component: NavBar,
   parameters: {
     layout: "fullscreen",
-    nextjs: { appDirectory: true, navigation: { pathname: "/dashboard" } },
+    nextjs: { appDirectory: true },
   },
   args: { account },
 };
@@ -21,14 +21,6 @@ export default meta;
 type Story = StoryObj<typeof NavBar>;
 
 export const SignedIn: Story = {};
-
-export const OnFollowingPage: Story = {
-  parameters: { nextjs: { appDirectory: true, navigation: { pathname: "/dashboard/following" } } },
-};
-
-export const InsideARegistry: Story = {
-  parameters: { nextjs: { appDirectory: true, navigation: { pathname: "/dashboard/registry/123/settings" } } },
-};
 
 export const WithFollowRequests: Story = {
   args: { account: { ...account, followRequestCount: 3 } },
@@ -40,7 +32,6 @@ export const NoUsernameYet: Story = {
 
 export const SignedOut: Story = {
   args: { account: null },
-  parameters: { nextjs: { appDirectory: true, navigation: { pathname: "/" } } },
 };
 
 export const Phone: Story = {
