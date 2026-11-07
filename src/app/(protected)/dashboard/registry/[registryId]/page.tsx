@@ -353,7 +353,9 @@ export default async function RegistryManagePage({
               </Card>
             ) : (
               <div className="flex gap-8 items-start">
-                {navItems.length > 1 && <CategoryNav categories={navItems} />}
+                {/* Shown from one section up, like the public page, so a
+                    registry with a single category still gets the sidebar. */}
+                {navItems.length >= 1 && <CategoryNav categories={navItems} />}
                 <div className="flex-1 min-w-0 space-y-8">
                   {/* Gift Funds */}
                   {allFunds.length > 0 && (
