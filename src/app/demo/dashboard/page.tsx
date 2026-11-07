@@ -1,16 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { Plus, Calendar, ExternalLink } from "lucide-react";
+import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
+import { DashboardRegistryCard } from "@/components/dashboard-registry-card";
 import { DEMO_REGISTRY, DEMO_ITEMS } from "@/lib/demo-data";
 import { Logo } from "@/components/logo";
 
@@ -19,8 +12,6 @@ export default function DemoDashboardPage() {
   const fulfilledItems = DEMO_ITEMS.filter(
     (i) => i.quantity_fulfilled >= i.quantity_needed
   ).length;
-  const progress =
-    totalItems > 0 ? (fulfilledItems / totalItems) * 100 : 0;
   const totalValue = DEMO_ITEMS.reduce(
     (sum, i) => sum + (i.price || 0),
     0
@@ -66,11 +57,12 @@ export default function DemoDashboardPage() {
 
       <main className="flex-1">
         <div className="container mx-auto px-4 py-8">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h1 className="text-3xl font-bold">My Registries</h1>
-              <p className="text-tertiary">
-                Manage your baby registries and track gifts
+              <p className="flex items-start gap-2 text-tertiary">
+                <span aria-hidden="true" className="mt-2 size-2 shrink-0 rounded-full bg-mint-500" />
+                {recentActivity.length} gifts reserved this week
               </p>
             </div>
             <Button disabled>
@@ -82,71 +74,19 @@ export default function DemoDashboardPage() {
           </div>
 
           <div className="mt-8 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center justify-between">
-                  <Link
-                    href="/demo/manage"
-                    className="hover:underline"
-                  >
-                    {DEMO_REGISTRY.title}
-                  </Link>
-                </CardTitle>
-                <CardDescription className="flex items-center gap-2">
-                  <Calendar className="h-3 w-3" />
-                  {new Date(
-                    DEMO_REGISTRY.event_date
-                  ).toLocaleDateString()}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div>
-                    <div className="flex justify-between text-sm mb-1">
-                      <span>
-                        {fulfilledItems} of {totalItems} items
-                        fulfilled
-                      </span>
-                      <span>{Math.round(progress)}%</span>
-                    </div>
-                    <Progress value={progress} />
-                  </div>
-
-                  <div className="flex justify-between text-sm text-tertiary">
-                    <span>{totalItems} items</span>
-                    <span>${totalValue.toFixed(0)} total value</span>
-                  </div>
-
-                  <div className="text-sm">
-                    <p className="font-medium mb-1">Recent activity:</p>
-                    {recentActivity.map((p) => (
-                      <p
-                        key={p.id}
-                        className="text-tertiary"
-                      >
-                        {p.name} reserved {p.item}
-                      </p>
-                    ))}
-                  </div>
-
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="flex-1"
-                      asChild
-                    >
-                      <Link href="/demo/manage">Manage</Link>
-                    </Button>
-                    <Button variant="outline" size="sm" className="h-auto" asChild>
-                      <Link href="/demo" target="_blank">
-                        <ExternalLink className="h-3 w-3" />
-                      </Link>
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            <DashboardRegistryCard
+              title={DEMO_REGISTRY.title}
+              registryType="baby"
+              eventType={null}
+              eventDate={DEMO_REGISTRY.event_date}
+              today={new Date().toISOString().slice(0, 10)}
+              totalItems={totalItems}
+              fulfilledItems={fulfilledItems}
+              totalValue={totalValue}
+              recentActivity={recentActivity.map((p) => ({ id: p.id, name: p.name, action: `reserved ${p.item}` }))}
+              manageHref="/demo/manage"
+              publicHref="/demo"
+            />
           </div>
         </div>
       </main>

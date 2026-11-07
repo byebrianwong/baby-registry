@@ -1,113 +1,51 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import type { User } from "@supabase/supabase-js";
-import { Plus, Calendar, ExternalLink, Users } from "lucide-react";
+import { Link2, Plus, UserPlus, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
+import { Card, CardContent } from "@/components/ui/card";
+import { DashboardRegistryCard } from "@/components/dashboard-registry-card";
 import { PandaMark } from "@/components/panda-mark";
 import { createClient } from "@/utils/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { countFollowRequests } from "@/lib/follows";
 
-function RegistryCard({ registry, badge }: { registry: any; badge?: string }) {
-  const totalItems = registry.registry_items?.length || 0;
-  const fulfilledItems =
-    registry.registry_items?.filter(
-      (item: { quantity_fulfilled: number; quantity_needed: number }) =>
-        item.quantity_fulfilled >= item.quantity_needed
-    ).length || 0;
-  const progress = totalItems > 0 ? (fulfilledItems / totalItems) * 100 : 0;
-  const totalValue =
-    registry.registry_items?.reduce(
-      (sum: number, item: { price: number | null }) => sum + (item.price || 0),
-      0
-    ) || 0;
-  const recentPurchases =
-    registry.registry_items
-      ?.flatMap(
-        (item: { purchases: { id: string; status: string; created_at: string; buyer_name: string }[] }) =>
-          item.purchases || []
-      )
-      .filter((p: { status: string }) => p.status !== "cancelled")
-      .sort((a: { created_at: string }, b: { created_at: string }) =>
-        b.created_at.localeCompare(a.created_at)
-      )
-      .slice(0, 3) || [];
+type CardPurchase = { id: string; status: string; created_at: string; buyer_name: string };
+type CardItem = {
+  quantity_needed: number;
+  quantity_fulfilled: number;
+  price: number | null;
+  purchases: CardPurchase[] | null;
+};
+
+// Purchases that still count: everything except cancelled reservations.
+function activePurchases(registry: any): CardPurchase[] {
+  return ((registry.registry_items as CardItem[] | null) || [])
+    .flatMap((item) => item.purchases || [])
+    .filter((p) => p.status !== "cancelled");
+}
+
+function RegistryCard({ registry, today, badge }: { registry: any; today: string; badge?: string }) {
+  const items: CardItem[] = registry.registry_items || [];
+  const recentPurchases = activePurchases(registry)
+    .sort((a, b) => b.created_at.localeCompare(a.created_at))
+    .slice(0, 3);
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center justify-between">
-          <Link
-            href={`/dashboard/registry/${registry.id}`}
-            className="hover:underline"
-          >
-            {registry.title}
-          </Link>
-          {badge && (
-            <Badge variant="secondary" className="ml-2 shrink-0">
-              <Users className="h-3 w-3 mr-1" />
-              {badge}
-            </Badge>
-          )}
-        </CardTitle>
-        <CardDescription className="flex items-center gap-2">
-          {registry.event_date && (
-            <>
-              <Calendar className="h-3 w-3" />
-              {new Date(registry.event_date + "T00:00:00").toLocaleDateString()}
-            </>
-          )}
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
-          <div>
-            <div className="flex justify-between text-sm mb-1">
-              <span>
-                {fulfilledItems} of {totalItems} items fulfilled
-              </span>
-              <span>{Math.round(progress)}%</span>
-            </div>
-            <Progress value={progress} />
-          </div>
-
-          <div className="flex justify-between text-sm text-tertiary">
-            <span>{totalItems} items</span>
-            <span>${totalValue.toFixed(0)} total value</span>
-          </div>
-
-          {recentPurchases.length > 0 && (
-            <div className="text-sm">
-              <p className="font-medium mb-1">Recent activity:</p>
-              {recentPurchases.map((p: { id: string; buyer_name: string }) => (
-                <p key={p.id} className="text-tertiary">
-                  {p.buyer_name} reserved an item
-                </p>
-              ))}
-            </div>
-          )}
-
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" className="flex-1" asChild>
-              <Link href={`/dashboard/registry/${registry.id}`}>
-                Manage
-              </Link>
-            </Button>
-            <Button variant="outline" size="sm" className="h-auto" asChild>
-              <Link
-                href={`/r/${registry.slug}`}
-                target="_blank"
-              >
-                <ExternalLink className="h-3 w-3" />
-              </Link>
-            </Button>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+    <DashboardRegistryCard
+      title={registry.title}
+      registryType={registry.registry_type || "baby"}
+      eventType={registry.event_type ?? null}
+      eventDate={registry.event_date ?? null}
+      today={today}
+      totalItems={items.length}
+      fulfilledItems={items.filter((item) => item.quantity_fulfilled >= item.quantity_needed).length}
+      totalValue={items.reduce((sum, item) => sum + (item.price || 0), 0)}
+      recentActivity={recentPurchases.map((p) => ({ id: p.id, name: p.buyer_name, action: "reserved an item" }))}
+      manageHref={`/dashboard/registry/${registry.id}`}
+      publicHref={`/r/${registry.slug}`}
+      badge={badge}
+    />
   );
 }
 
@@ -195,15 +133,28 @@ export default async function DashboardPage() {
   const showProfilePrompt =
     !user.is_anonymous && !username && Boolean(registries && registries.length > 0);
 
+  // Dates are YYYY-MM-DD in UTC, like the Following tab's (following/page.tsx).
+  const now = new Date();
+  const today = now.toISOString().slice(0, 10);
+  const weekAgo = now.getTime() - 7 * 24 * 60 * 60 * 1000;
+  const giftsThisWeek = [...(registries || []), ...sharedRegistries]
+    .flatMap((registry) => activePurchases(registry))
+    .filter((p) => Date.parse(p.created_at) >= weekAgo).length;
+
   return (
     <div className="container mx-auto px-4 pt-6 pb-8">
       <div className="flex items-center justify-between gap-4">
         <div>
           {/* The My registries tab is the visible title (see (tabs)/layout.tsx). */}
           <h1 className="sr-only">My Registries</h1>
-          <p className="text-tertiary">
-            Manage your registries and track gifts
-          </p>
+          {giftsThisWeek > 0 ? (
+            <p className="flex items-start gap-2 text-tertiary">
+              <span aria-hidden="true" className="mt-2 size-2 shrink-0 rounded-full bg-mint-500" />
+              {giftsThisWeek === 1 ? "1 gift reserved this week" : `${giftsThisWeek} gifts reserved this week`}
+            </p>
+          ) : (
+            <p className="text-tertiary">Manage your registries and track gifts</p>
+          )}
         </div>
         <Button asChild>
           <Link href="/dashboard/registry/new">
@@ -216,16 +167,21 @@ export default async function DashboardPage() {
       </div>
 
       {followRequestCount > 0 && (
-        <div className="mt-6 flex flex-col gap-3 rounded-xl border border-secondary p-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <p className="font-medium">
-              {followRequestCount === 1
-                ? "1 person wants to follow you"
-                : `${followRequestCount} people want to follow you`}
-            </p>
-            <p className="text-sm text-tertiary">
-              People you approve can see the private registries on your profile.
-            </p>
+        <div className="mt-6 flex flex-col gap-3 rounded-2xl bg-blush-50 p-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-start gap-3">
+            <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary">
+              <UserPlus aria-hidden="true" className="h-4.5 w-4.5 text-blush-700" />
+            </span>
+            <div>
+              <p className="font-medium">
+                {followRequestCount === 1
+                  ? "1 person wants to follow you"
+                  : `${followRequestCount} people want to follow you`}
+              </p>
+              <p className="text-sm text-tertiary">
+                People you approve can see the private registries on your profile.
+              </p>
+            </div>
           </div>
           <Button variant="outline" size="sm" className="shrink-0" asChild>
             <Link href="/dashboard/account#follows">Review requests</Link>
@@ -234,12 +190,17 @@ export default async function DashboardPage() {
       )}
 
       {showProfilePrompt && (
-        <div className="mt-6 flex flex-col gap-3 rounded-xl border border-secondary p-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <p className="font-medium">Give friends one link to all your registries</p>
-            <p className="text-sm text-tertiary">
-              Claim a username to get a public profile. You choose what appears on it.
-            </p>
+        <div className="mt-6 flex flex-col gap-3 rounded-2xl bg-brand-50 p-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-start gap-3">
+            <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary">
+              <Link2 aria-hidden="true" className="h-4.5 w-4.5 text-brand-600" />
+            </span>
+            <div>
+              <p className="font-medium">Give friends one link to all your registries</p>
+              <p className="text-sm text-tertiary">
+                Claim a username to get a public profile. You choose what appears on it.
+              </p>
+            </div>
           </div>
           <Button variant="outline" size="sm" className="shrink-0" asChild>
             <Link href="/dashboard/account">Set up profile</Link>
@@ -270,7 +231,7 @@ export default async function DashboardPage() {
           {registries && registries.length > 0 && (
             <div className="mt-8 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
               {registries.map((registry) => (
-                <RegistryCard key={registry.id} registry={registry} />
+                <RegistryCard key={registry.id} registry={registry} today={today} />
               ))}
             </div>
           )}
@@ -288,7 +249,7 @@ export default async function DashboardPage() {
               </div>
               <div className="mt-4 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                 {sharedRegistries.map((registry) => (
-                  <RegistryCard key={registry.id} registry={registry} badge="Manager" />
+                  <RegistryCard key={registry.id} registry={registry} today={today} badge="Manager" />
                 ))}
               </div>
             </>

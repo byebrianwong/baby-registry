@@ -18,32 +18,35 @@ function LoadingMessage({ children }: { children: string }) {
   );
 }
 
+/** Matches src/components/dashboard-registry-card.tsx. */
 function RegistryCardSkeleton() {
   return (
-    <Card>
-      <CardHeader>
-        <Skeleton className="h-5 w-2/3" />
-        <Skeleton className="h-4 w-24" />
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
-          <div>
-            <div className="mb-2 flex justify-between">
-              <Skeleton className="h-4 w-36" />
-              <Skeleton className="h-4 w-8" />
-            </div>
-            <Skeleton className="h-2 w-full rounded-full" />
-          </div>
-          <div className="flex justify-between">
-            <Skeleton className="h-4 w-16" />
-            <Skeleton className="h-4 w-24" />
-          </div>
-          <div className="flex gap-2">
-            <Skeleton className="h-9 flex-1 rounded-lg" />
-            <Skeleton className="h-9 w-10 rounded-lg" />
-          </div>
+    <Card className="gap-0 overflow-hidden py-0">
+      <div className="flex h-16 items-center justify-between bg-secondary px-5">
+        <Skeleton className="size-9 rounded-full" />
+        <Skeleton className="h-5 w-24 rounded-full" />
+      </div>
+      <div className="space-y-4 p-5">
+        <div className="space-y-2">
+          <Skeleton className="h-5 w-2/3" />
+          <Skeleton className="h-4 w-28" />
         </div>
-      </CardContent>
+        <div>
+          <div className="mb-2 flex justify-between">
+            <Skeleton className="h-4 w-36" />
+            <Skeleton className="h-4 w-8" />
+          </div>
+          <Skeleton className="h-2 w-full rounded-full" />
+        </div>
+        <div className="flex justify-between">
+          <Skeleton className="h-4 w-16" />
+          <Skeleton className="h-4 w-24" />
+        </div>
+        <div className="flex gap-2">
+          <Skeleton className="h-9 flex-1 rounded-full" />
+          <Skeleton className="h-9 w-10 rounded-full" />
+        </div>
+      </div>
     </Card>
   );
 }
