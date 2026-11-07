@@ -16,32 +16,9 @@ const meta: Meta<typeof Progress> = {
 export default meta;
 type Story = StoryObj<typeof Progress>;
 
-export const Empty: Story = {
+// One story is enough: other values only move the fill. Drag the control to try them.
+export const Default: Story = {
   args: {
-    value: 0,
-  },
-};
-
-export const Quarter: Story = {
-  args: {
-    value: 25,
-  },
-};
-
-export const Half: Story = {
-  args: {
-    value: 50,
-  },
-};
-
-export const ThreeQuarter: Story = {
-  args: {
-    value: 75,
-  },
-};
-
-export const Full: Story = {
-  args: {
-    value: 100,
+    value: 60,
   },
 };

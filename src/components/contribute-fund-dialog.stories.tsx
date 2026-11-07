@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
+import { screen } from "storybook/test";
 import { ContributeFundDialog } from "./contribute-fund-dialog";
 
 const mockAction = async () => {
@@ -14,10 +15,16 @@ const meta: Meta<typeof ContributeFundDialog> = {
     action: mockAction,
     parentName: "Remi & Max",
   },
+  // The dialog starts closed. Open it so the snapshot shows what's inside.
+  play: async ({ canvas, userEvent }) => {
+    await userEvent.click(canvas.getByRole("button", { name: /contribute/i }));
+    await screen.findByRole("dialog");
+  },
 };
 export default meta;
 type Story = StoryObj<typeof ContributeFundDialog>;
 
+// Has a goal, so the dialog shows a progress bar and the amount remaining.
 export const Default: Story = {
   args: {
     fund: {
@@ -34,19 +41,8 @@ export const Default: Story = {
   },
 };
 
-export const AlmostFunded: Story = {
-  args: {
-    fund: {
-      id: "2",
-      title: "College Savings Fund",
-      description: "Starting early!",
-      goal_amount: 1000,
-      current_amount: 950,
-    },
-    paymentMethods: { venmo: "@remi-and-max" },
-  },
-};
-
+// No goal and no payment methods: no progress bar, and the dialog says to
+// contact the registry owner instead of listing payment methods.
 export const NoGoal: Story = {
   args: {
     fund: {
@@ -56,23 +52,5 @@ export const NoGoal: Story = {
       goal_amount: null,
       current_amount: 125,
     },
-  },
-};
-
-export const SuccessState: Story = {
-  args: {
-    fund: {
-      id: "1",
-      title: "Nursery Furniture Fund",
-      description: "Help us furnish the nursery!",
-      goal_amount: 2000,
-      current_amount: 450,
-    },
-    paymentMethods: {
-      venmo: "@remi-and-max",
-      paypal: "max@example.com",
-    },
-    alreadyPurchased: true,
-    previousAmount: 75,
   },
 };

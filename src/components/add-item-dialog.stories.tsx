@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
+import { screen } from "storybook/test";
 import { AddItemDialog } from "./add-item-dialog";
 
 const DEMO_CATEGORIES = [
@@ -24,24 +25,14 @@ const meta: Meta<typeof AddItemDialog> = {
 export default meta;
 type Story = StoryObj<typeof AddItemDialog>;
 
+// The dialog starts closed. Open it so the snapshot shows the form.
 export const Default: Story = {
   args: {
     registryId: "demo",
     categories: DEMO_CATEGORIES,
   },
-};
-
-export const WithDefaults: Story = {
-  name: "Pre-filled from Checklist",
-  args: {
-    registryId: "demo",
-    categories: DEMO_CATEGORIES,
-    defaultValues: {
-      title: "Convertible Crib",
-      price: "350",
-      categoryId: "cat-1",
-      quantityNeeded: "1",
-      isEssential: true,
-    },
+  play: async ({ canvas, userEvent }) => {
+    await userEvent.click(canvas.getByRole("button", { name: /add item/i }));
+    await screen.findByRole("dialog");
   },
 };

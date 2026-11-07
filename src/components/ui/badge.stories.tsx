@@ -6,43 +6,22 @@ const meta: Meta<typeof Badge> = {
   title: "UI/Badge",
   component: Badge,
   tags: ["autodocs"],
-  argTypes: {
-    variant: {
-      control: "select",
-      options: ["default", "secondary", "destructive", "outline"],
-    },
-  },
 };
 
 export default meta;
 type Story = StoryObj<typeof Badge>;
 
-// --- Variants ---
+const variants = ["default", "secondary", "destructive", "outline", "ghost", "link"] as const;
 
-export const Default: Story = {
-  args: {
-    children: "Essential",
-    variant: "default",
-  },
-};
-
-export const Secondary: Story = {
-  args: {
-    children: "Fulfilled",
-    variant: "secondary",
-  },
-};
-
-export const Destructive: Story = {
-  args: {
-    children: "Reserved",
-    variant: "destructive",
-  },
-};
-
-export const Outline: Story = {
-  args: {
-    children: "Optional",
-    variant: "outline",
-  },
+// Every variant on one page, so one snapshot catches a change to any of them.
+export const AllVariants: Story = {
+  render: () => (
+    <div className="flex flex-wrap items-center gap-3">
+      {variants.map((variant) => (
+        <Badge key={variant} variant={variant}>
+          {variant}
+        </Badge>
+      ))}
+    </div>
+  ),
 };
