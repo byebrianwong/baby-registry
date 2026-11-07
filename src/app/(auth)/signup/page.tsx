@@ -21,6 +21,8 @@ function SignupForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get("redirect") || "/dashboard";
+  // New accounts choose a username first (or skip), then go on to redirectTo.
+  const afterSignup = `/welcome?next=${encodeURIComponent(redirectTo)}`;
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -42,7 +44,7 @@ function SignupForm() {
         data: {
           full_name: fullName,
         },
-        emailRedirectTo: `${siteUrl}/auth/callback?next=${encodeURIComponent(redirectTo)}`,
+        emailRedirectTo: `${siteUrl}/auth/callback?next=${encodeURIComponent(afterSignup)}`,
       },
     });
 
@@ -59,7 +61,7 @@ function SignupForm() {
       return;
     }
 
-    router.push(redirectTo);
+    router.push(afterSignup);
     router.refresh();
   };
 
