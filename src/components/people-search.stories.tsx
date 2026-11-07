@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
+import { fireEvent } from "storybook/test";
 import { PeopleSearch } from "./people-search";
 
 const people = [
@@ -23,5 +24,15 @@ const meta: Meta<typeof PeopleSearch> = {
 export default meta;
 type Story = StoryObj<typeof PeopleSearch>;
 
-// Type "jan" to see results, or anything else for the empty state.
-export const Default: Story = {};
+// Types "jan" so the snapshot shows results: one follow button per state, and
+// "That's you" for your own profile. Type anything else for the empty state.
+export const WithResults: Story = {
+  play: async ({ canvas }) => {
+    // fireEvent, not userEvent: userEvent.type fills in this input, but React
+    // never sees the change, so the search doesn't run.
+    fireEvent.change(canvas.getByRole("textbox", { name: /find people/i }), {
+      target: { value: "jan" },
+    });
+    await canvas.findByText("That's you");
+  },
+};

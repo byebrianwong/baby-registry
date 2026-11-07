@@ -11,17 +11,7 @@ const meta: Meta<typeof Card> = {
 export default meta;
 type Story = StoryObj<typeof Card>;
 
-export const Basic: Story = {
-  args: {
-    children: (
-      <CardContent>
-        <p>A simple card with some content inside.</p>
-      </CardContent>
-    ),
-  },
-};
-
-export const WithHeader: Story = {
+export const Default: Story = {
   args: {
     children: (
       <>
@@ -36,28 +26,6 @@ export const WithHeader: Story = {
             Your registry has been created. Start adding items to share with
             friends and family.
           </p>
-        </CardContent>
-      </>
-    ),
-  },
-};
-
-export const StatCard: Story = {
-  name: "Stat Card",
-  args: {
-    children: (
-      <>
-        <CardHeader>
-          <CardTitle>Registry Progress</CardTitle>
-          <CardDescription>Items fulfilled so far</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-            <span style={{ fontSize: "2rem", fontWeight: 700 }}>12 / 24</span>
-            <span style={{ fontSize: "0.875rem", color: "var(--muted-foreground)" }}>
-              50% complete
-            </span>
-          </div>
         </CardContent>
       </>
     ),

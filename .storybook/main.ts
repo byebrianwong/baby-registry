@@ -3,6 +3,9 @@ import type { StorybookConfig } from "@storybook/nextjs";
 
 const config: StorybookConfig = {
   stories: ["../src/**/*.stories.@(ts|tsx)"],
+  // Chromatic's accessibility tests run axe through this addon. Without it,
+  // Chromatic skips every accessibility test.
+  addons: ["@storybook/addon-a11y"],
   framework: "@storybook/nextjs",
   staticDirs: ["../public"],
   env: (config) => ({

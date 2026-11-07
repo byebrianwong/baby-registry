@@ -7,117 +7,50 @@ const meta: Meta<typeof Button> = {
   title: "UI/Button",
   component: Button,
   tags: ["autodocs"],
-  argTypes: {
-    variant: {
-      control: "select",
-      options: [
-        "default",
-        "secondary",
-        "destructive",
-        "outline",
-        "ghost",
-        "link",
-      ],
-    },
-    size: {
-      control: "select",
-      options: ["default", "sm", "lg", "icon"],
-    },
-  },
 };
 
 export default meta;
 type Story = StoryObj<typeof Button>;
 
-// --- Variants ---
+const variants = [
+  "default",
+  "secondary",
+  "outline",
+  "destructive",
+  "destructive-outline",
+  "ghost",
+  "link",
+] as const;
+const sizes = ["xs", "sm", "default", "lg"] as const;
+const iconSizes = ["icon-xs", "icon-sm", "icon", "icon-lg"] as const;
 
-export const Default: Story = {
-  args: {
-    children: "Default",
-    variant: "default",
-  },
-};
-
-export const Secondary: Story = {
-  args: {
-    children: "Secondary",
-    variant: "secondary",
-  },
-};
-
-export const Destructive: Story = {
-  args: {
-    children: "Destructive",
-    variant: "destructive",
-  },
-};
-
-export const Outline: Story = {
-  args: {
-    children: "Outline",
-    variant: "outline",
-  },
-};
-
-export const Ghost: Story = {
-  args: {
-    children: "Ghost",
-    variant: "ghost",
-  },
-};
-
-export const Link: Story = {
-  args: {
-    children: "Link",
-    variant: "link",
-  },
-};
-
-// --- Sizes ---
-
-export const SizeDefault: Story = {
-  name: "Size: Default",
-  args: {
-    children: "Default Size",
-    size: "default",
-  },
-};
-
-export const SizeSmall: Story = {
-  name: "Size: Small",
-  args: {
-    children: "Small",
-    size: "sm",
-  },
-};
-
-export const SizeLarge: Story = {
-  name: "Size: Large",
-  args: {
-    children: "Large",
-    size: "lg",
-  },
-};
-
-export const SizeIcon: Story = {
-  name: "Size: Icon",
-  args: {
-    size: "icon",
-    children: <Plus className="h-4 w-4" />,
-    "aria-label": "Add item",
-  },
-};
-
-// --- With Icon ---
-
-export const WithIcon: Story = {
-  name: "With Icon",
-  args: {
-    children: (
-      <span className="inline-flex items-center gap-1.5">
-        <Plus className="h-4 w-4 shrink-0" />
-        Add Item
-      </span>
-    ),
-  },
+// Every variant and size on one page, so one snapshot catches a change to any of them.
+export const AllVariants: Story = {
+  render: () => (
+    <div className="flex flex-col gap-6">
+      <div className="flex flex-wrap items-center gap-3">
+        {variants.map((variant) => (
+          <Button key={variant} variant={variant}>
+            {variant}
+          </Button>
+        ))}
+        <Button disabled>disabled</Button>
+      </div>
+      <div className="flex flex-wrap items-center gap-3">
+        {sizes.map((size) => (
+          <Button key={size} size={size}>
+            <span className="inline-flex items-center gap-1.5">
+              <Plus className="h-4 w-4 shrink-0" />
+              {size}
+            </span>
+          </Button>
+        ))}
+        {iconSizes.map((size) => (
+          <Button key={size} size={size} aria-label={`Add item (${size})`}>
+            <Plus className="h-4 w-4" />
+          </Button>
+        ))}
+      </div>
+    </div>
+  ),
 };

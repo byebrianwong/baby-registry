@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
+import { screen } from "storybook/test";
 import { CoverItemDialog } from "./cover-item-dialog";
 
 const mockAction = async () => {
@@ -18,33 +19,26 @@ const meta: Meta<typeof CoverItemDialog> = {
 export default meta;
 type Story = StoryObj<typeof CoverItemDialog>;
 
-export const Default: Story = {
-  args: {
-    item: { id: "1", title: "UPPAbaby Vista V2 Stroller", price: 979.99, quantity_needed: 1 },
-    paymentMethods: {
-      venmo: "@remi-and-max",
-      paypal: "max@example.com",
-    },
-  },
+// The dialog starts closed. Open it so the snapshot shows what's inside.
+const openDialog: Story["play"] = async ({ canvas, userEvent }) => {
+  await userEvent.click(canvas.getByRole("button", { name: /gift this/i }));
+  await screen.findByRole("dialog");
 };
 
-export const WithAllPaymentMethods: Story = {
+// Lists all three payment methods.
+export const SingleQuantity: Story = {
   args: {
-    item: { id: "2", title: "Ergobaby Carrier", price: 189.0, quantity_needed: 1 },
+    item: { id: "1", title: "UPPAbaby Vista V2 Stroller", price: 979.99, quantity_needed: 1 },
     paymentMethods: {
       venmo: "@remi-and-max",
       paypal: "max@example.com",
       zelle: "max@example.com",
     },
   },
+  play: openDialog,
 };
 
-export const NoPaymentMethods: Story = {
-  args: {
-    item: { id: "3", title: "Baby Bouncer", price: 49.99, quantity_needed: 1 },
-  },
-};
-
+// Needs more than one, so the dialog adds a quantity field.
 export const MultiQuantity: Story = {
   args: {
     item: { id: "4", title: "Muslin Swaddle Blankets", price: 12.99, quantity_needed: 5 },
@@ -53,15 +47,5 @@ export const MultiQuantity: Story = {
       venmo: "@remi-and-max",
     },
   },
-};
-
-export const SuccessState: Story = {
-  args: {
-    item: { id: "1", title: "UPPAbaby Vista V2 Stroller", price: 979.99, quantity_needed: 1 },
-    paymentMethods: {
-      venmo: "@remi-and-max",
-      paypal: "max@example.com",
-    },
-    alreadyPurchased: true,
-  },
+  play: openDialog,
 };

@@ -51,10 +51,13 @@ const meta: Meta<typeof AccountSettings> = {
 export default meta;
 type Story = StoryObj<typeof AccountSettings>;
 
+// Before claiming a username, only the profile form shows.
 export const NoProfileYet: Story = {
   args: { profile: { username: null, full_name: "Jane & John Doe" } },
 };
 
+// With a username: share buttons, follow lists, registries to list, and the
+// turn-off card.
 export const WithProfile: Story = {
   args: {
     profile: { username: "jane-doe", full_name: "Jane & John Doe" },
@@ -66,9 +69,3 @@ export const WithProfile: Story = {
   },
 };
 
-export const WithProfileNoRegistries: Story = {
-  args: {
-    profile: { username: "jane-doe", full_name: "Jane & John Doe" },
-    registries: [],
-  },
-};

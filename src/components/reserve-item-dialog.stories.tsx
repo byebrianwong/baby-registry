@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
+import { screen } from "storybook/test";
 import { ReserveItemDialog } from "./reserve-item-dialog";
 
 const mockAction = async () => {
@@ -18,6 +19,13 @@ const meta: Meta<typeof ReserveItemDialog> = {
 export default meta;
 type Story = StoryObj<typeof ReserveItemDialog>;
 
+// The dialog starts closed. Open it so the snapshot shows what's inside.
+const openDialog: Story["play"] = async ({ canvas, userEvent }) => {
+  await userEvent.click(canvas.getByRole("button", { name: /gift this/i }));
+  await screen.findByRole("dialog");
+};
+
+// Has a store link, so the dialog shows a "Purchase from" button.
 export const SingleQuantity: Story = {
   args: {
     item: {
@@ -29,20 +37,10 @@ export const SingleQuantity: Story = {
       external_url: "https://www.amazon.com/dp/B07WFXGNGB",
     },
   },
+  play: openDialog,
 };
 
-export const WithoutUrl: Story = {
-  args: {
-    item: {
-      id: "1",
-      title: "Hatch Rest+ Sound Machine",
-      price: 69.99,
-      quantity_needed: 1,
-      quantity_fulfilled: 0,
-    },
-  },
-};
-
+// Needs more than one, so the dialog adds a quantity field. No store link.
 export const MultiQuantity: Story = {
   args: {
     item: {
@@ -51,39 +49,12 @@ export const MultiQuantity: Story = {
       price: 24.99,
       quantity_needed: 4,
       quantity_fulfilled: 1,
-      external_url: "https://www.target.com/p/fitted-crib-sheets",
     },
   },
+  play: openDialog,
 };
 
-export const Expensive: Story = {
-  args: {
-    item: {
-      id: "3",
-      title: "UPPAbaby Vista V2 Stroller",
-      price: 979.99,
-      quantity_needed: 1,
-      quantity_fulfilled: 0,
-      external_url: "https://uppababy.com/vista/",
-    },
-  },
-};
-
-export const NoParentName: Story = {
-  name: "No Parent Name (fallback)",
-  args: {
-    parentName: undefined,
-    item: {
-      id: "1",
-      title: "Hatch Rest+ Sound Machine",
-      price: 69.99,
-      quantity_needed: 1,
-      quantity_fulfilled: 0,
-      external_url: "https://www.amazon.com/dp/B07WFXGNGB",
-    },
-  },
-};
-
+// What the giver sees after reserving: the button turns into "Reserved".
 export const SuccessState: Story = {
   args: {
     item: {

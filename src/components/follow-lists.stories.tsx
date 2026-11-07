@@ -36,6 +36,3 @@ export const WithEverything: Story = {
   },
 };
 
-export const Empty: Story = {
-  args: { requests: [], followers: [], following: [] },
-};

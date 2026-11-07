@@ -20,9 +20,10 @@ const meta: Meta<typeof Dialog> = {
 export default meta;
 type Story = StoryObj<typeof Dialog>;
 
+// Opens on load, so the snapshot shows the dialog and not just the button.
 export const Default: Story = {
   render: () => (
-    <Dialog>
+    <Dialog defaultOpen>
       <DialogTrigger asChild>
         <Button>Add Registry Item</Button>
       </DialogTrigger>
