@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { FollowButton } from "./follow-button";
+import { FollowButton, type FollowButtonState } from "./follow-button";
 
 const mockAction = async () => {
   await new Promise((r) => setTimeout(r, 500));
@@ -10,18 +10,34 @@ const meta: Meta<typeof FollowButton> = {
   title: "Components/FollowButton",
   component: FollowButton,
   parameters: { layout: "centered" },
-  args: {
-    username: "jane-doe",
-    requestAction: mockAction,
-    cancelAction: mockAction,
-  },
 };
 export default meta;
 type Story = StoryObj<typeof FollowButton>;
 
-export const NotFollowing: Story = { args: { state: "none" } };
-export const Requested: Story = { args: { state: "pending" } };
-export const Following: Story = { args: { state: "approved" } };
-export const SignedOut: Story = { args: { state: "signed-out" } };
-export const NeedsUsername: Story = { args: { state: "needs-profile" } };
-export const Blocked: Story = { args: { state: "blocked" } };
+const states: FollowButtonState[] = [
+  "none",
+  "pending",
+  "approved",
+  "signed-out",
+  "needs-profile",
+  "blocked",
+];
+
+// Every state on one page, so one snapshot catches a change to any of them.
+export const AllStates: Story = {
+  render: () => (
+    <div className="grid grid-cols-3 gap-x-8 gap-y-10">
+      {states.map((state) => (
+        <div key={state} className="flex flex-col items-center gap-2">
+          <span className="text-xs font-mono text-tertiary">{state}</span>
+          <FollowButton
+            username="jane-doe"
+            state={state}
+            requestAction={mockAction}
+            cancelAction={mockAction}
+          />
+        </div>
+      ))}
+    </div>
+  ),
+};

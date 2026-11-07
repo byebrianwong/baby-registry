@@ -235,19 +235,9 @@ export function followRequestHtml(opts: {
 }
 
 // ── Supabase Auth Templates ──────────────────────────────────
-// These are proposed branded templates to replace the Supabase defaults.
+// Branded templates to replace Supabase's default auth emails.
 // In the Supabase dashboard, use {{ .ConfirmationURL }} for confirmUrl
 // and {{ .SiteURL }} for siteUrl.
-
-export function supabaseDefaultConfirmSignupHtml(opts: {
-  confirmUrl: string;
-}): string {
-  return `
-    <h2>Confirm your signup</h2>
-    <p>Follow this link to confirm your user:</p>
-    <p><a href="${opts.confirmUrl}">Confirm your mail</a></p>
-  `;
-}
 
 export function confirmSignupHtml(opts: {
   confirmUrl: string;
@@ -266,16 +256,6 @@ export function confirmSignupHtml(opts: {
       </p>
       <p style="color:#888;font-size:13px;text-align:center;">If you didn't create an account on Regibee, you can safely ignore this email.</p>
     </div>
-  `;
-}
-
-export function supabaseDefaultResetPasswordHtml(opts: {
-  resetUrl: string;
-}): string {
-  return `
-    <h2>Reset Password</h2>
-    <p>Follow this link to reset the password for your user:</p>
-    <p><a href="${opts.resetUrl}">Reset Password</a></p>
   `;
 }
 

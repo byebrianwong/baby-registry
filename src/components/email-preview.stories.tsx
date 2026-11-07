@@ -10,9 +10,7 @@ import {
   newSuggestionOwnerHtml,
   managerInviteHtml,
   followRequestHtml,
-  supabaseDefaultConfirmSignupHtml,
   confirmSignupHtml,
-  supabaseDefaultResetPasswordHtml,
   resetPasswordHtml,
 } from "@/lib/email-templates";
 
@@ -27,6 +25,9 @@ const meta: Meta<typeof EmailPreview> = {
 };
 export default meta;
 type Story = StoryObj<typeof EmailPreview>;
+
+// One story per template. Add a second story for a template only when an
+// option changes its layout, not just its wording.
 
 const sampleAddress = "123 Main St\nApt 4B\nSan Francisco, CA 94102";
 
@@ -44,20 +45,6 @@ export const BuyerItemReserved: Story = {
       shippingAddress: sampleAddress,
       registryUrl: "https://regibee.com/r/remi-and-max?email=jane%40example.com&sig=a1b2c3d4e5f6a7b8",
       shopUrl: "https://amazon.com/dp/B07WFXGNGB",
-    }),
-  },
-};
-
-export const BuyerItemReservedMultiQty: Story = {
-  args: {
-    subject: 'Your gift is confirmed — "Fitted Crib Sheets"',
-    html: itemReservedBuyerHtml({
-      buyerName: "Jane",
-      itemTitle: "Fitted Crib Sheets",
-      quantity: 3,
-      parentName: "Remi & Max",
-      registryTitle: "Remi & Max's Baby Registry",
-      registryUrl: "https://regibee.com/r/remi-and-max?email=jane%40example.com&sig=a1b2c3d4e5f6a7b8",
     }),
   },
 };
@@ -156,80 +143,6 @@ export const OwnerNewSuggestion: Story = {
   },
 };
 
-// ── Multi-Manager Notifications ─────────────────────────────
-// When a gift is reserved, ALL managers receive a notification
-// addressed to them individually.
-
-export const ManagerNotifRemi: Story = {
-  name: "Multi-Manager: Notification to Remi",
-  args: {
-    subject: '🎁 Jane Doe reserved "Hatch Rest+ Sound Machine"',
-    to: "remi@example.com",
-    html: itemReservedOwnerHtml({
-      ownerName: "Remi",
-      registryTitle: "Remi & Max's Baby Registry",
-      buyerName: "Jane Doe",
-      itemTitle: "Hatch Rest+ Sound Machine",
-      quantity: 1,
-      message: "Can't wait to meet the little one!",
-      dashboardLink: "https://regibee.com/dashboard/registry/abc?highlight=123",
-    }),
-  },
-};
-
-export const ManagerNotifMax: Story = {
-  name: "Multi-Manager: Notification to Max",
-  args: {
-    subject: '🎁 Jane Doe reserved "Hatch Rest+ Sound Machine"',
-    to: "max@example.com",
-    html: itemReservedOwnerHtml({
-      ownerName: "Max",
-      registryTitle: "Remi & Max's Baby Registry",
-      buyerName: "Jane Doe",
-      itemTitle: "Hatch Rest+ Sound Machine",
-      quantity: 1,
-      message: "Can't wait to meet the little one!",
-      dashboardLink: "https://regibee.com/dashboard/registry/abc?highlight=123",
-    }),
-  },
-};
-
-// ── Missing Name Fallbacks ───────────────────────────────────
-
-export const BuyerItemReservedNoName: Story = {
-  name: "Buyer: Item Reserved (No Parent Names Set)",
-  args: {
-    subject: 'Your gift is confirmed — "Hatch Rest+ Sound Machine"',
-    html: itemReservedBuyerHtml({
-      buyerName: "Jane",
-      itemTitle: "Hatch Rest+ Sound Machine",
-      quantity: 1,
-      parentName: "The Registry Owner",
-      registryTitle: "Remi & Max's Baby Registry",
-      shippingAddress: sampleAddress,
-      registryUrl: "https://regibee.com/r/remi-and-max?email=jane%40example.com&sig=a1b2c3d4e5f6a7b8",
-      shopUrl: "https://amazon.com/dp/B07WFXGNGB",
-    }),
-  },
-};
-
-export const OwnerItemReservedNoName: Story = {
-  name: "Owner: Item Reserved (No Parent Names Set)",
-  args: {
-    subject: 'Jane Doe reserved "Hatch Rest+ Sound Machine"',
-    to: "max@example.com",
-    html: itemReservedOwnerHtml({
-      ownerName: "there",
-      registryTitle: "Remi & Max's Baby Registry",
-      buyerName: "Jane Doe",
-      itemTitle: "Hatch Rest+ Sound Machine",
-      quantity: 1,
-      message: "Can't wait to meet the little one!",
-      dashboardLink: "https://regibee.com/dashboard/registry/abc?highlight=123",
-    }),
-  },
-};
-
 // ── Invitations ──────────────────────────────────────────────
 
 export const ManagerInvite: Story = {
@@ -244,18 +157,7 @@ export const ManagerInvite: Story = {
   },
 };
 
-// ── Supabase Auth: Current vs Proposed ───────────────────────
-
-export const AuthSignupCurrent: Story = {
-  name: "Auth Signup (Current Supabase Default)",
-  args: {
-    subject: "Confirm Your Signup",
-    from: "Supabase Auth <noreply@mail.app.supabase.io>",
-    html: supabaseDefaultConfirmSignupHtml({
-      confirmUrl: "https://placeholder.supabase.co/auth/v1/verify?token=abc",
-    }),
-  },
-};
+// ── Supabase Auth ────────────────────────────────────────────
 
 export const AuthSignupProposed: Story = {
   name: "Auth Signup (Proposed Branded)",
@@ -263,17 +165,6 @@ export const AuthSignupProposed: Story = {
     subject: "Confirm your Regibee account",
     html: confirmSignupHtml({
       confirmUrl: "https://placeholder.supabase.co/auth/v1/verify?token=abc",
-    }),
-  },
-};
-
-export const AuthResetPasswordCurrent: Story = {
-  name: "Auth Reset Password (Current Supabase Default)",
-  args: {
-    subject: "Reset Password",
-    from: "Supabase Auth <noreply@mail.app.supabase.io>",
-    html: supabaseDefaultResetPasswordHtml({
-      resetUrl: "https://placeholder.supabase.co/auth/v1/verify?token=abc",
     }),
   },
 };
