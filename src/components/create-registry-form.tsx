@@ -34,8 +34,6 @@ const SECTION_ORDER: SectionId[] = ["type", "details", "privacy", "welcome", "pa
 // sees what they picked.
 const ADVANCE_DELAY_MS = 350;
 
-const PRIMARY_BUTTON = "!bg-[#004659] hover:!bg-[#003847] !ring-[#004659] !text-white";
-
 type NavState = { open: SectionId | null; visited: ReadonlySet<SectionId> };
 type NavAction =
   | { type: "finish"; id: SectionId }
@@ -89,7 +87,7 @@ type SectionStatus = "open" | "done" | "skipped" | "incomplete" | "upcoming";
 function StepMarker({ step, status }: { step: number; status: SectionStatus }) {
   if (status === "done") {
     return (
-      <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-[#09c69a] text-white">
+      <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-mint-500 text-brand-900">
         <Check className="size-3.5" strokeWidth={3} />
       </span>
     );
@@ -98,7 +96,7 @@ function StepMarker({ step, status }: { step: number; status: SectionStatus }) {
     <span
       className={cx(
         "flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold",
-        status === "open" && "bg-[#004659] text-white",
+        status === "open" && "bg-brand-600 text-white",
         status === "incomplete" && "bg-error-secondary text-error-primary ring-1 ring-error ring-inset",
         (status === "upcoming" || status === "skipped") && "text-tertiary ring-1 ring-secondary ring-inset",
       )}
@@ -140,7 +138,7 @@ function Section({
       data-state={isOpen ? "open" : "closed"}
       className={cx(
         "rounded-xl border bg-primary transition-shadow duration-200",
-        isOpen ? "border-[#004659] shadow-md ring-1 ring-[#004659]" : "border-secondary",
+        isOpen ? "border-brand-600 shadow-md ring-1 ring-brand-600" : "border-secondary",
       )}
     >
       <h2>
@@ -150,7 +148,7 @@ function Section({
           aria-expanded={isOpen}
           aria-controls={panelId}
           onClick={onToggle}
-          className="flex w-full cursor-pointer items-center gap-3 rounded-xl px-4 py-3.5 text-left outline-none focus-visible:ring-2 focus-visible:ring-[#004659]"
+          className="flex w-full cursor-pointer items-center gap-3 rounded-xl px-4 py-3.5 text-left outline-none focus-visible:ring-2 focus-visible:ring-brand-600"
         >
           <StepMarker step={step} status={status} />
           <span className="min-w-0 flex-1">
@@ -174,7 +172,7 @@ function Section({
             )}
           </span>
           {!isOpen && status !== "upcoming" && (
-            <span className="shrink-0 text-sm font-medium text-[#004659]">
+            <span className="shrink-0 text-sm font-medium text-brand-600">
               {status === "skipped" ? "Add" : "Edit"}
             </span>
           )}
@@ -218,7 +216,6 @@ function SectionFooter({
         type="button"
         variant={primary ? "default" : "outline"}
         onClick={onClick}
-        className={primary ? PRIMARY_BUTTON : undefined}
       >
         {label}
       </Button>
@@ -247,9 +244,9 @@ function ChoiceCard({
       data-autofocus={selected || undefined}
       onClick={onClick}
       className={cx(
-        "flex cursor-pointer flex-col items-start rounded-lg border p-3 text-left transition outline-none focus-visible:ring-2 focus-visible:ring-[#004659]",
+        "flex cursor-pointer flex-col items-start rounded-lg border p-3 text-left transition outline-none focus-visible:ring-2 focus-visible:ring-brand-600",
         selected
-          ? "border-[#004659] bg-[#004659]/5 ring-1 ring-[#004659]"
+          ? "border-brand-600 bg-brand-600/5 ring-1 ring-brand-600"
           : "border-secondary hover:border-primary",
       )}
     >
@@ -531,8 +528,8 @@ export function CreateRegistryForm({
         <input type="hidden" name="taxEnabled" value={hasZip ? "true" : "false"} />
 
         <div className="mb-6 flex flex-col items-center gap-2 text-center">
-          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#4f7e60]/10">
-            <Icon className="h-6 w-6 text-[#4f7e60]" />
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-brand-600/10">
+            <Icon className="h-6 w-6 text-brand-600" />
           </div>
           <h1 className="text-2xl font-medium text-primary">Create Your Registry</h1>
           <p className="text-xs text-tertiary">{copy.tagline}</p>
@@ -571,9 +568,9 @@ export function CreateRegistryForm({
                           aria-pressed={selected}
                           onClick={() => chooseOccasion(option.value)}
                           className={cx(
-                            "cursor-pointer rounded-full border px-3 py-1.5 text-sm transition outline-none focus-visible:ring-2 focus-visible:ring-[#004659] focus-visible:ring-offset-1",
+                            "cursor-pointer rounded-full border px-3 py-1.5 text-sm transition outline-none focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-1",
                             selected
-                              ? "border-[#004659] bg-[#004659] text-white"
+                              ? "border-brand-600 bg-brand-600 text-white"
                               : "border-secondary text-secondary hover:border-primary",
                           )}
                         >
@@ -704,7 +701,7 @@ export function CreateRegistryForm({
 
         <div ref={createRef} className="mt-6 space-y-3">
           {error && <p className="text-sm text-error-primary">{error}</p>}
-          <Button type="submit" className={cx("w-full", PRIMARY_BUTTON)} disabled={loading}>
+          <Button type="submit" className="w-full" disabled={loading}>
             {loading ? "Creating..." : "Create Registry"}
           </Button>
           <p className="text-center text-xs text-tertiary">

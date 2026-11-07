@@ -117,7 +117,7 @@ export default async function InvitePage({
               Sign in or create an account to accept this invitation.
             </p>
             <div className="flex gap-3 justify-center mt-6">
-              <Button asChild className="!bg-[#004659] hover:!bg-[#003847] !ring-[#004659] !text-white">
+              <Button asChild>
                 <Link href={`/login?redirect=${encodeURIComponent(redirectUrl)}`}>
                   Sign In
                 </Link>

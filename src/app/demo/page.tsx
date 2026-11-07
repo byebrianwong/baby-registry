@@ -241,7 +241,7 @@ function DemoSuggestItemDialog() {
                 >
                   Cancel
                 </Button>
-                <Button type="submit" className="!bg-[#004659] hover:!bg-[#003847] !ring-[#004659] !text-white">Suggest item</Button>
+                <Button type="submit">Suggest item</Button>
               </div>
             </form>
           </>
@@ -449,7 +449,7 @@ export default function DemoPage() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search items"
-                className="w-full rounded-md border border-[#d5d7da] bg-primary py-2 pl-9 pr-3 text-sm placeholder:text-tertiary focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+                className="w-full rounded-md border border-primary bg-primary py-2 pl-9 pr-3 text-sm placeholder:text-tertiary focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
               />
             </div>
             <div className="flex items-center gap-2">
@@ -473,7 +473,7 @@ export default function DemoPage() {
             </div>
           </div>
           {filtersActive && filteredItems.length === 0 && (
-            <div className="rounded-lg border border-dashed border-[#d5d7da] bg-secondary p-8 text-center text-sm text-tertiary">
+            <div className="rounded-lg border border-dashed border-primary bg-secondary p-8 text-center text-sm text-tertiary">
               No items match your filters.{" "}
               <button
                 type="button"
@@ -562,10 +562,10 @@ export default function DemoPage() {
                         key={item.id}
                         className={`py-0 gap-0 rounded-xl shadow-none ${
                           isFulfilled && !item.is_parent_purchased
-                            ? "opacity-60 border-[#f5f5f5]"
+                            ? "opacity-60 border-tertiary"
                             : item.is_parent_purchased
-                              ? "bg-[rgba(160,228,212,0.2)] border-[#d5d7da]"
-                              : "border-[#d5d7da]"
+                              ? "bg-mint-200/20 border-primary"
+                              : "border-primary"
                         }`}
                       >
                         <CardContent className="flex h-full flex-col justify-between gap-4 p-4">
@@ -586,14 +586,14 @@ export default function DemoPage() {
                                       ${item.price.toFixed(2)}
                                     </span>
                                   )}
-                                  <span className="text-xs text-[#414651]">
+                                  <span className="text-xs text-secondary">
                                     {item.is_parent_purchased
                                       ? `${availableToGift} of ${item.quantity_needed} available to gift`
                                       : `${remaining} of ${item.quantity_needed} still needed`}
                                   </span>
                                 </div>
                                 {item.notes && (
-                                  <p className="text-sm text-[#414651] whitespace-pre-line">
+                                  <p className="text-sm text-secondary whitespace-pre-line">
                                     {item.notes}
                                   </p>
                                 )}

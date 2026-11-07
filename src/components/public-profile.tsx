@@ -55,7 +55,7 @@ export function PublicProfile({
           {isOwnProfile && (
             <Link
               href="/dashboard/account"
-              className="mt-2 text-sm font-medium text-[#004659] hover:underline"
+              className="mt-2 text-sm font-medium text-brand-600 hover:underline"
             >
               Choose which registries to show
             </Link>

@@ -58,7 +58,7 @@ export function DashboardSkeleton() {
           <h1 className="sr-only">My Registries</h1>
           <p className="text-tertiary">Manage your registries and track gifts</p>
         </div>
-        <Button asChild className="!bg-[#004659] hover:!bg-[#003847] !ring-[#004659] !text-white">
+        <Button asChild>
           <Link href="/dashboard/registry/new">
             <span className="inline-flex items-center gap-1.5">
               <Plus className="h-4 w-4 shrink-0" />

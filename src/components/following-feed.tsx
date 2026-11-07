@@ -134,7 +134,7 @@ export function FollowingFeed({
               </ul>
               <p className="mt-3 text-sm text-tertiary">
                 Manage who you follow on your{" "}
-                <Link href="/dashboard/account#follows" className="font-medium text-[#004659] hover:underline">
+                <Link href="/dashboard/account#follows" className="font-medium text-brand-600 hover:underline">
                   account page
                 </Link>
                 .

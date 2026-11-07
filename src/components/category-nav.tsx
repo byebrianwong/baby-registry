@@ -58,7 +58,7 @@ export function CategoryNav({ categories, suggestButton }: CategoryNavProps) {
                 className={cn(
                   "flex w-full h-10 items-center justify-between rounded-md px-3 text-sm transition-colors text-left",
                   isActive
-                    ? "bg-[#9DB5BB]/10 text-[#004659] font-medium"
+                    ? "bg-brand-50 text-brand-600 font-medium"
                     : "text-tertiary hover:text-primary hover:bg-secondary"
                 )}
               >

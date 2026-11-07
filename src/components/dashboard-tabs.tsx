@@ -28,7 +28,7 @@ function TabLabel({ label, current, pending }: { label: string; current: boolean
         <span
           aria-hidden="true"
           className={cx(
-            "absolute inset-x-0 -bottom-px h-0.5 rounded-full bg-[#004659]",
+            "absolute inset-x-0 -bottom-px h-0.5 rounded-full bg-brand-600",
             pending && "animate-pulse",
           )}
         />

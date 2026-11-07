@@ -221,7 +221,7 @@ export function SuggestItemDialog({ registryId, categories = [], action }: Sugge
                 >
                   Cancel
                 </Button>
-                <Button type="submit" disabled={loading} className="!bg-[#004659] hover:!bg-[#003847] !ring-[#004659] !text-white">
+                <Button type="submit" disabled={loading}>
                   {loading ? "Submitting..." : "Suggest item"}
                 </Button>
               </div>

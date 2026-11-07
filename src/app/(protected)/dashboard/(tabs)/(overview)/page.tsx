@@ -204,7 +204,7 @@ export default async function DashboardPage() {
             Manage your registries and track gifts
           </p>
         </div>
-        <Button asChild className="!bg-[#004659] hover:!bg-[#003847] !ring-[#004659] !text-white">
+        <Button asChild>
           <Link href="/dashboard/registry/new">
             <span className="inline-flex items-center gap-1.5">
               <Plus className="h-4 w-4 shrink-0" />
@@ -254,7 +254,7 @@ export default async function DashboardPage() {
             <p className="mt-2 text-tertiary">
               Create your first registry to start adding items.
             </p>
-            <Button className="mt-6 !bg-[#004659] hover:!bg-[#003847] !ring-[#004659] !text-white" asChild>
+            <Button className="mt-6" asChild>
               <Link href="/dashboard/registry/new">
                 <span className="inline-flex items-center gap-1.5">
                   <Plus className="h-4 w-4 shrink-0" />

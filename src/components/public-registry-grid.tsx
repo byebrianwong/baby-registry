@@ -180,7 +180,7 @@ export function PublicRegistryGrid({
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search items"
-              className="w-full rounded-md border border-[#d5d7da] bg-primary py-2 pl-9 pr-3 text-sm placeholder:text-tertiary focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+              className="w-full rounded-md border border-primary bg-primary py-2 pl-9 pr-3 text-sm placeholder:text-tertiary focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
             />
           </div>
           <div className="flex items-center gap-2">
@@ -200,7 +200,7 @@ export function PublicRegistryGrid({
         </div>
 
         {noMatches && (
-          <div className="rounded-lg border border-dashed border-[#d5d7da] bg-secondary p-8 text-center text-sm text-tertiary">
+          <div className="rounded-lg border border-dashed border-primary bg-secondary p-8 text-center text-sm text-tertiary">
             No items match your filters.{" "}
             <button
               type="button"
@@ -229,11 +229,11 @@ export function PublicRegistryGrid({
                 const fundPurchased = !!(myGifts.funds && myGifts.funds[fund.id]);
                 const fundPrevAmount = myGifts.funds?.[fund.id];
                 return (
-                  <Card key={fund.id} className="py-0 gap-0 rounded-xl shadow-none border-[#d5d7da]">
+                  <Card key={fund.id} className="py-0 gap-0 rounded-xl shadow-none border-primary">
                     <CardContent className="flex h-full flex-col justify-between gap-4 p-4">
                       <div className="flex flex-col gap-2">
                         <div className="flex items-center gap-2">
-                          <h3 className="font-semibold text-lg text-[#181d27]">
+                          <h3 className="font-semibold text-lg text-primary">
                             {fund.title}
                           </h3>
                           {fundPurchased && (
@@ -246,7 +246,7 @@ export function PublicRegistryGrid({
                           )}
                         </div>
                         {fund.description && (
-                          <p className="text-sm text-[#535862] whitespace-pre-line">
+                          <p className="text-sm text-tertiary whitespace-pre-line">
                             {fund.description}
                           </p>
                         )}
@@ -261,7 +261,7 @@ export function PublicRegistryGrid({
                               </span>
                             </div>
                             <Progress value={fundProgress} />
-                            <span className="text-xs text-[#535862]">
+                            <span className="text-xs text-tertiary">
                               ${Math.max(0, fund.goal_amount - fund.current_amount).toFixed(0)} remaining
                             </span>
                           </div>
@@ -380,10 +380,10 @@ function PublicItemCard({
     <Card
       className={`py-0 gap-0 rounded-xl shadow-none ${
         (isFulfilled && !item.is_parent_purchased) || isFullyCovered
-          ? "opacity-60 border-[#f5f5f5]"
+          ? "opacity-60 border-tertiary"
           : item.is_parent_purchased
-            ? "bg-[rgba(160,228,212,0.2)] border-[#d5d7da]"
-            : "border-[#d5d7da]"
+            ? "bg-mint-200/20 border-primary"
+            : "border-primary"
       }`}
     >
       <CardContent className="flex h-full flex-col justify-between gap-4 p-4">
@@ -412,14 +412,14 @@ function PublicItemCard({
                     ${item.price.toFixed(2)}
                   </span>
                 )}
-                <span className="text-xs text-[#414651]">
+                <span className="text-xs text-secondary">
                   {item.is_parent_purchased
                     ? `${availableToGift} of ${item.quantity_needed} available to gift`
                     : `${remaining} of ${item.quantity_needed} still needed`}
                 </span>
               </div>
               {item.notes && (
-                <p className="text-sm text-[#414651] whitespace-pre-line">
+                <p className="text-sm text-secondary whitespace-pre-line">
                   {item.notes}
                 </p>
               )}

@@ -94,7 +94,7 @@ export function CashFundCard({ fund, registryId, highlightId, purchases }: CashF
       >
         <CardContent className="flex flex-col gap-3 p-4">
           <div className="flex items-start justify-between gap-2 min-w-0">
-            <h3 className="font-semibold text-lg text-[#181d27] min-w-0 flex-1 break-words">
+            <h3 className="font-semibold text-lg text-primary min-w-0 flex-1 break-words">
               {fund.title}
             </h3>
             {purchases && purchases.length > 0 && (
@@ -110,7 +110,7 @@ export function CashFundCard({ fund, registryId, highlightId, purchases }: CashF
             )}
           </div>
           {fund.description && (
-            <p className="text-sm text-[#535862] whitespace-pre-line">
+            <p className="text-sm text-tertiary whitespace-pre-line">
               {fund.description}
             </p>
           )}
@@ -214,7 +214,6 @@ export function CashFundCard({ fund, registryId, highlightId, purchases }: CashF
               <Button
                 type="submit"
                 disabled={loading}
-                className="!bg-[#004659] hover:!bg-[#003847] !ring-[#004659] !text-white"
               >
                 {loading ? "Saving..." : "Save changes"}
               </Button>

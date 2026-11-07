@@ -23,7 +23,7 @@ export function TightSelect<T extends string>({
 }) {
   const current = options.find((o) => o.value === value)?.label ?? "";
   return (
-    <span className="relative inline-flex items-center rounded-md border border-[#d5d7da] bg-primary py-1.5 pl-3 pr-8 text-sm focus-within:ring-2 focus-within:ring-brand-500 focus-within:border-brand-500">
+    <span className="relative inline-flex items-center rounded-md border border-primary bg-primary py-1.5 pl-3 pr-8 text-sm focus-within:ring-2 focus-within:ring-brand-500 focus-within:border-brand-500">
       <span className="pointer-events-none whitespace-nowrap">{current}</span>
       <ChevronDown className="pointer-events-none absolute right-2.5 h-4 w-4 text-tertiary" />
       <select

@@ -1,10 +1,10 @@
 import { cn } from "@/lib/utils";
 
 const conditionColors: Record<string, { border: string; badge: string }> = {
-  "like-new": { border: "border-[#f9b8b9]", badge: "bg-[#f9b8b9]" },
-  "very-good": { border: "border-[#f7efa9]", badge: "bg-[#f7efa9]" },
-  "good": { border: "border-[#a0e4d4]", badge: "bg-[#a0e4d4]" },
-  "acceptable": { border: "border-[#9db6bd]", badge: "bg-[#9db6bd]" },
+  "like-new": { border: "border-blush-200", badge: "bg-blush-200" },
+  "very-good": { border: "border-sunshine-100", badge: "bg-sunshine-100" },
+  "good": { border: "border-mint-200", badge: "bg-mint-200" },
+  "acceptable": { border: "border-brand-300", badge: "bg-brand-300" },
 };
 
 interface UsedConditionTagProps {
@@ -28,7 +28,7 @@ export function UsedConditionTag({ condition, className }: UsedConditionTagProps
     >
       <span
         className={cn(
-          "inline-flex max-w-full items-center gap-1 overflow-hidden whitespace-nowrap rounded-full border bg-[#fdfdfd] px-2.5 py-0.5 text-xs font-medium text-[#181d27]",
+          "inline-flex max-w-full items-center gap-1 overflow-hidden whitespace-nowrap rounded-full border bg-primary px-2.5 py-0.5 text-xs font-medium text-primary",
           colors.border
         )}
       >
@@ -40,7 +40,7 @@ export function UsedConditionTag({ condition, className }: UsedConditionTagProps
       </span>
       <span
         role="tooltip"
-        className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-1.5 -translate-x-1/2 whitespace-nowrap rounded-md bg-[#181d27] px-2 py-1 text-xs font-medium text-white opacity-0 shadow-lg transition-opacity duration-150 group-hover:opacity-100"
+        className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-1.5 -translate-x-1/2 whitespace-nowrap rounded-md bg-gray-900 px-2 py-1 text-xs font-medium text-white opacity-0 shadow-lg transition-opacity duration-150 group-hover:opacity-100"
       >
         {fullText}
       </span>

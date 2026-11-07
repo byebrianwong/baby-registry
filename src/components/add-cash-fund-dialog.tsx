@@ -124,7 +124,6 @@ export function AddCashFundDialog({ registryId }: AddCashFundDialogProps) {
             <Button
               type="submit"
               disabled={loading}
-              className="!bg-[#004659] hover:!bg-[#003847] !ring-[#004659] !text-white"
             >
               {loading ? "Creating..." : "Create fund"}
             </Button>

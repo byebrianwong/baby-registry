@@ -209,7 +209,6 @@ export function AccountSettings({
               <div className="flex flex-wrap items-center gap-2">
                 <Button
                   type="submit"
-                  className="!bg-[#004659] hover:!bg-[#003847] !ring-[#004659] !text-white"
                   disabled={saving}
                 >
                   {saving ? "Saving..." : hasProfile ? "Save" : "Claim username"}

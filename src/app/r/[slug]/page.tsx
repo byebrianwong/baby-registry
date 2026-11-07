@@ -309,11 +309,11 @@ export default async function PublicRegistryPage({
         )}
         {/* Center content */}
         <div className="relative z-10 flex max-w-[575px] flex-col items-center gap-4 px-4 text-center">
-          <h1 className="text-4xl font-bold leading-[44px] tracking-tight text-[#181d27]">
+          <h1 className="text-4xl font-bold leading-[44px] tracking-tight text-primary">
             {registry.title}
           </h1>
           {registry.event_date && (
-            <p className="flex items-center gap-2 text-[#414651]">
+            <p className="flex items-center gap-2 text-secondary">
               <Calendar className="h-4 w-4" />
               {new Date(registry.event_date + "T00:00:00").toLocaleDateString("en-US", {
                 month: "long",
@@ -323,12 +323,12 @@ export default async function PublicRegistryPage({
             </p>
           )}
           {registry.description && (
-            <p className="text-[#414651] whitespace-pre-line">
+            <p className="text-secondary whitespace-pre-line">
               {registry.description}
             </p>
           )}
           <div className="w-full max-w-[566px]">
-            <div className="flex justify-between text-sm text-[#414651] mb-1">
+            <div className="flex justify-between text-sm text-secondary mb-1">
               <span>
                 {fulfilledItems} of {totalItems} gifts fulfilled
               </span>
@@ -336,17 +336,17 @@ export default async function PublicRegistryPage({
             </div>
             <Progress value={progress} />
           </div>
-          <p className="inline-flex items-center gap-1.5 text-xs text-[#535862]">
+          <p className="inline-flex items-center gap-1.5 text-xs text-tertiary">
             <LockOpen className="h-3.5 w-3.5" />
             Reserve a gift in 10 seconds — no sign-up required.
           </p>
           {owner && ownerRelation && (
-            <div className="flex flex-col items-center gap-2 border-t border-[#e9eaeb] pt-4">
-              <p className="text-sm text-[#414651]">
+            <div className="flex flex-col items-center gap-2 border-t border-secondary pt-4">
+              <p className="text-sm text-secondary">
                 Shared by{" "}
                 <Link
                   href={`/u/${owner.username}`}
-                  className="font-medium text-[#181d27] underline-offset-2 hover:underline"
+                  className="font-medium text-primary underline-offset-2 hover:underline"
                 >
                   {owner.name}
                 </Link>
