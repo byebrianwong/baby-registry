@@ -88,11 +88,14 @@ function Button({
       const childChildren = childProps.children as React.ReactNode
       const target = childProps.target as string | undefined
       const rel = childProps.rel as string | undefined
+      // Icon-only links name themselves with aria-label, so keep it.
+      const ariaLabel = (childProps["aria-label"] ?? props["aria-label"]) as string | undefined
       return (
         <UntitledButton
           href={href}
           target={target}
           rel={rel}
+          aria-label={ariaLabel}
           color={utColor}
           size={utSize}
           isDisabled={disabled}
