@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Calendar } from "lucide-react";
+import { Calendar, Lock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { occasionLabel } from "@/lib/registry-copy";
 import { RegistryIcon } from "@/components/registry-icon";
@@ -42,11 +42,15 @@ export function ProfileRegistryCard({
           )}
         </span>
       </span>
-      {isPast && (
-        <Badge variant="secondary" className="shrink-0">
-          Past
-        </Badge>
-      )}
+      <span className="flex shrink-0 flex-col items-end gap-1">
+        {!registry.is_public && (
+          <Badge variant="secondary">
+            <Lock className="h-3 w-3" />
+            Followers only
+          </Badge>
+        )}
+        {isPast && <Badge variant="secondary">Past</Badge>}
+      </span>
     </Link>
   );
 }

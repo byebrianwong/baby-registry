@@ -3,7 +3,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { Nav } from "@/components/nav";
+import { FollowButton, type FollowButtonState } from "@/components/follow-button";
 import { PublicProfile } from "@/components/public-profile";
+import { getFollowStatus } from "@/lib/follows";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import {
   LISTED_REGISTRY_COLUMNS,
@@ -61,15 +63,32 @@ export default async function ProfilePage({
   }
 
   const supabase = await createClient();
-  const [{ data: registries }, { data: { user } }] = await Promise.all([
-    supabaseAdmin
-      .from("registries")
-      .select(LISTED_REGISTRY_COLUMNS)
-      .eq("owner_id", profile.id)
-      .eq("listed_on_profile", true)
-      .eq("is_public", true),
-    supabase.auth.getUser(),
-  ]);
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  // Guests have anonymous sessions; they count as signed out here.
+  const viewer = user && !user.is_anonymous ? user : null;
+  const isOwnProfile = viewer?.id === profile.id;
+
+  let followState: FollowButtonState = "signed-out";
+  if (viewer && !isOwnProfile) {
+    const [{ data: viewerProfile }, status] = await Promise.all([
+      supabaseAdmin.from("profiles").select("username").eq("id", viewer.id).single(),
+      getFollowStatus(viewer.id, profile.id),
+    ]);
+    followState = status ?? (viewerProfile?.username ? "none" : "needs-profile");
+  }
+
+  // Private registries are only for the owner and approved followers.
+  let registriesQuery = supabaseAdmin
+    .from("registries")
+    .select(LISTED_REGISTRY_COLUMNS)
+    .eq("owner_id", profile.id)
+    .eq("listed_on_profile", true);
+  if (!isOwnProfile && followState !== "approved") {
+    registriesQuery = registriesQuery.eq("is_public", true);
+  }
+  const { data: registries } = await registriesQuery;
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -80,7 +99,8 @@ export default async function ProfilePage({
           fullName={profile.full_name}
           registries={(registries || []) as ListedRegistry[]}
           today={new Date().toISOString().slice(0, 10)}
-          isOwnProfile={user?.id === profile.id}
+          isOwnProfile={isOwnProfile}
+          followAction={<FollowButton username={profile.username} state={followState} />}
         />
       </main>
       <footer className="border-t py-6 mt-8">

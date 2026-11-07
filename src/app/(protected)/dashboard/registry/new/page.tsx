@@ -190,7 +190,7 @@ export default function NewRegistryPage() {
               <div className="space-y-2">
                 <span className="text-sm font-medium text-secondary">Visibility</span>
                 <p className="text-sm text-tertiary">
-                  All registries are accessible via their share link. This setting controls whether search engines can find your registry.
+                  Anyone with the share link can open your registry either way. This controls search engines, and who sees it on your profile.
                 </p>
                 <input type="hidden" name="isPublic" value={isPublic ? "true" : "false"} />
                 <div className="flex flex-col gap-2">
@@ -202,7 +202,7 @@ export default function NewRegistryPage() {
                   <Checkbox
                     isSelected={!isPublic}
                     onChange={(checked) => { if (checked) setIsPublic(false); }}
-                    label={<span className="font-normal">Private — only accessible with link</span>}
+                    label={<span className="font-normal">Private — hidden from search engines, and only followers you approve see it on your profile</span>}
                   />
                 </div>
               </div>

@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { createClient } from "@/utils/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase-admin";
+import { countFollowRequests } from "@/lib/follows";
 
 function RegistryCard({ registry, badge }: { registry: any; badge?: string }) {
   const totalItems = registry.registry_items?.length || 0;
@@ -179,6 +180,7 @@ export default async function DashboardPage() {
     .single();
   const showProfilePrompt =
     !user.is_anonymous && !profile?.username && Boolean(registries && registries.length > 0);
+  const followRequestCount = profile?.username ? await countFollowRequests(user.id) : 0;
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -198,6 +200,24 @@ export default async function DashboardPage() {
           </Link>
         </Button>
       </div>
+
+      {followRequestCount > 0 && (
+        <div className="mt-6 flex flex-col gap-3 rounded-xl border border-secondary p-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="font-medium">
+              {followRequestCount === 1
+                ? "1 person wants to follow you"
+                : `${followRequestCount} people want to follow you`}
+            </p>
+            <p className="text-sm text-tertiary">
+              People you approve can see the private registries on your profile.
+            </p>
+          </div>
+          <Button variant="outline" size="sm" className="shrink-0" asChild>
+            <Link href="/dashboard/account#follows">Review requests</Link>
+          </Button>
+        </div>
+      )}
 
       {showProfilePrompt && (
         <div className="mt-6 flex flex-col gap-3 rounded-xl border border-secondary p-4 sm:flex-row sm:items-center sm:justify-between">

@@ -31,21 +31,18 @@ export function ProfileListingField({
     );
   }
 
-  const isListed = isPublic && isSelected;
-
-  let hint = `Anyone with your profile link (/u/${username}) can see this registry.`;
-  if (!isPublic) {
-    hint = "Private registries can't be shown on your profile.";
-  } else if (isListed && hasShippingAddress) {
+  let hint = isPublic
+    ? `Anyone with your profile link (/u/${username}) can see this registry.`
+    : "It's private, so only followers you approve can see it on your profile.";
+  if (isSelected && hasShippingAddress) {
     hint += " Anyone who reserves a gift can see your shipping address.";
   }
 
   return (
     <div>
-      <input type="hidden" name="listedOnProfile" value={isListed ? "true" : "false"} />
+      <input type="hidden" name="listedOnProfile" value={isSelected ? "true" : "false"} />
       <Checkbox
-        isSelected={isListed}
-        isDisabled={!isPublic}
+        isSelected={isSelected}
         onChange={onChange}
         label={<span className="font-normal">Show on my profile</span>}
         hint={hint}

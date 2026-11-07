@@ -8,9 +8,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/base/input/input";
 import { Checkbox } from "@/components/base/checkbox/checkbox";
 import { CopyLinkButton } from "@/components/copy-link-button";
+import { FollowLists } from "@/components/follow-lists";
 import { removeProfile, saveProfile, setRegistryListed } from "@/lib/actions/profile";
 import { occasionLabel } from "@/lib/registry-copy";
 import { normalizeUsername } from "@/lib/username";
+import type { FollowPerson } from "@/lib/follows";
 import type { PersonalEventType, RegistryType } from "@/lib/types";
 
 export interface AccountRegistry {
@@ -46,28 +48,18 @@ function RegistryListingRow({
     setSaving(false);
   };
 
-  let hint: React.ReactNode = occasionLabel(registry.registry_type, registry.event_type);
-  if (!registry.is_public) {
-    hint = (
-      <>
-        Private registries can&apos;t be shown.{" "}
-        <Link
-          href={`/dashboard/registry/${registry.id}/settings`}
-          className="font-medium text-[#004659] hover:underline"
-        >
-          Change visibility
-        </Link>
-      </>
-    );
-  } else if (listed && registry.has_shipping_address) {
-    hint = "Anyone who reserves a gift can see your shipping address.";
+  let hint = registry.is_public
+    ? `${occasionLabel(registry.registry_type, registry.event_type)} · Public`
+    : "Private: only followers you approve see it";
+  if (listed && registry.has_shipping_address) {
+    hint += ". Anyone who reserves a gift can see your shipping address.";
   }
 
   return (
     <div>
       <Checkbox
-        isSelected={registry.is_public && listed}
-        isDisabled={!registry.is_public || saving}
+        isSelected={listed}
+        isDisabled={saving}
         onChange={handleChange}
         label={registry.title}
         hint={hint}
@@ -83,9 +75,11 @@ export function AccountSettings({
   saveAction = saveProfile,
   removeAction = removeProfile,
   listAction = setRegistryListed,
+  follows,
 }: {
   profile: { username: string | null; full_name: string | null };
   registries: AccountRegistry[];
+  follows?: { requests: FollowPerson[]; followers: FollowPerson[]; following: FollowPerson[] };
   saveAction?: typeof saveProfile;
   removeAction?: typeof removeProfile;
   listAction?: typeof setRegistryListed;
@@ -117,7 +111,7 @@ export function AccountSettings({
   const handleRemove = async () => {
     if (
       !confirm(
-        "Turn off your public profile? Your profile link will stop working and your registries will be hidden from it. Registry share links keep working.",
+        "Turn off your public profile? Your profile link will stop working, and your followers and the people you follow will be removed. Registry share links keep working.",
       )
     ) {
       return;
@@ -213,12 +207,24 @@ export function AccountSettings({
           </CardContent>
         </Card>
 
+        {/* Requests come first: the dashboard notice links straight here. */}
+        {hasProfile && follows && (
+          <div id="follows" className="scroll-mt-20 space-y-6">
+            <FollowLists
+              requests={follows.requests}
+              followers={follows.followers}
+              following={follows.following}
+            />
+          </div>
+        )}
+
         {hasProfile && (
           <Card>
             <CardHeader>
               <CardTitle>Registries on your profile</CardTitle>
               <CardDescription>
-                Only the ones you check appear on your profile. Registries you help manage for
+                Only the ones you check appear. Anyone with your link sees the public ones;
+                private ones only show to followers you approve. Registries you help manage for
                 someone else aren&apos;t included.
               </CardDescription>
             </CardHeader>
@@ -241,8 +247,8 @@ export function AccountSettings({
             <CardHeader>
               <CardTitle>Turn off public profile</CardTitle>
               <CardDescription>
-                Removes your profile page and frees up your username. Registry share links keep
-                working.
+                Removes your profile page, frees up your username, and removes your followers and
+                the people you follow. Registry share links keep working.
               </CardDescription>
             </CardHeader>
             <CardContent>
