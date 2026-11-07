@@ -480,10 +480,10 @@ export default async function RegistryManagePage({
                                   tagType === "cancelled"
                                     ? "bg-error-primary/10 border-error-primary/20 text-error-primary"
                                     : tagType === "contribution"
-                                      ? "bg-[#09c69a] border-[#09c69a] text-[#181d27]"
+                                      ? "bg-mint-500 border-mint-500 text-primary"
                                       : tagType === "covered"
-                                        ? "bg-[#a0e4d4] border-[#a0e4d4] text-[#181d27]"
-                                        : "bg-[#f7efa9] border-[#f7efa9] text-[#181d27]"
+                                        ? "bg-mint-200 border-mint-200 text-primary"
+                                        : "bg-sunshine-100 border-sunshine-100 text-primary"
                                 }`}
                               >
                                 {tagType === "cancelled"

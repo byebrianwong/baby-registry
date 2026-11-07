@@ -123,7 +123,6 @@ export function NavBar({ account }: { account: NavAccount | null }) {
               </Button>
               <Button
                 size="sm"
-                className="!bg-[#004659] hover:!bg-[#003847] !ring-[#004659] !text-white"
                 asChild
               >
                 <Link href="/signup">Sign up</Link>

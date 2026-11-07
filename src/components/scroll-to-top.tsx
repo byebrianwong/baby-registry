@@ -39,7 +39,7 @@ export function ScrollToTop() {
       }}
     >
       <Button
-        className="!rounded-full !size-14 shadow-lg !bg-[#9DB5BB] hover:!bg-[#8da5ab] !ring-[#9DB5BB] !text-[#181d27]"
+        className="!rounded-full !size-14 shadow-lg !bg-brand-200 hover:!bg-brand-300 !ring-brand-200 !text-brand-700"
         onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
         aria-label="Scroll to top"
       >

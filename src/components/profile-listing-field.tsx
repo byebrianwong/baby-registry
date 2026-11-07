@@ -23,7 +23,7 @@ export function ProfileListingField({
         <Link
           href="/dashboard/account"
           target="_blank"
-          className="font-medium text-[#004659] hover:underline"
+          className="font-medium text-brand-600 hover:underline"
         >
           Set up your public profile
         </Link>

@@ -83,7 +83,7 @@ export function ReserveItemDialog({ item, parentName = "The Registry Owner", act
           <button
             type="button"
             onClick={() => setShowCelebration(true)}
-            className="text-xs font-medium text-[#004659] hover:underline"
+            className="text-xs font-medium text-brand-600 hover:underline"
           >
             View details
           </button>
@@ -104,7 +104,7 @@ export function ReserveItemDialog({ item, parentName = "The Registry Owner", act
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="!bg-[#004659] hover:!bg-[#003847] !ring-[#004659] !text-white">
+        <Button>
           <span className="inline-flex items-center gap-1.5"><Gift className="h-4 w-4 shrink-0" />Gift this</span>
         </Button>
       </DialogTrigger>
@@ -169,7 +169,7 @@ export function ReserveItemDialog({ item, parentName = "The Registry Owner", act
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={loading} className="!bg-[#004659] hover:!bg-[#003847] !ring-[#004659] !text-white">
+            <Button type="submit" disabled={loading}>
               {loading ? "Reserving..." : "Mark as purchased"}
             </Button>
           </div>

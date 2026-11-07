@@ -31,11 +31,11 @@ const FILTERS: { value: FilterMode; label: string }[] = [
 ];
 
 const TAG_STYLES: Record<SuggestionStatus, string> = {
-  pending: "border-[#717680] text-[#181d27]",
-  offering: "border-[#a0e4d4] text-[#181d27]",
-  added: "bg-[#004659] border-[#004659] text-[#fdfdfd]",
-  accepted: "bg-[#a0e4d4] border-[#a0e4d4] text-[#181d27]",
-  declined: "bg-[#f9b8b9] border-[#f9b8b9] text-[#181d27]",
+  pending: "border-gray-500 text-primary",
+  offering: "border-mint-200 text-primary",
+  added: "bg-brand-600 border-brand-600 text-white",
+  accepted: "bg-mint-200 border-mint-200 text-primary",
+  declined: "bg-blush-200 border-blush-200 text-primary",
 };
 
 const TAG_LABELS: Record<SuggestionStatus, string> = {

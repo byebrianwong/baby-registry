@@ -123,7 +123,6 @@ export function FollowLists({
                   <>
                     <Button
                       size="sm"
-                      className="!bg-[#004659] hover:!bg-[#003847] !ring-[#004659] !text-white"
                       disabled={busy !== null}
                       onClick={() =>
                         act(`approve-${person.username}`, () => approveAction(person.username), () => {
@@ -205,7 +204,7 @@ export function FollowLists({
           <CardTitle>Following</CardTitle>
           <CardDescription>
             People whose registries you follow. See them all on your{" "}
-            <Link href="/dashboard/following" className="font-medium text-[#004659] hover:underline">
+            <Link href="/dashboard/following" className="font-medium text-brand-600 hover:underline">
               Following page
             </Link>
             .
@@ -215,7 +214,7 @@ export function FollowLists({
           {following.length === 0 ? (
             <p className="text-sm text-tertiary">
               You&apos;re not following anyone yet. Find people on your{" "}
-              <Link href="/dashboard/following" className="font-medium text-[#004659] hover:underline">
+              <Link href="/dashboard/following" className="font-medium text-brand-600 hover:underline">
                 Following page
               </Link>
               , or open someone&apos;s profile link and tap Follow.

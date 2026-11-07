@@ -359,7 +359,7 @@ export function EditItemDialog({
                 <button
                   type="button"
                   onClick={() => setAddingCategory(true)}
-                  className="text-xs font-medium text-[#004659] hover:underline"
+                  className="text-xs font-medium text-brand-600 hover:underline"
                 >
                   + Create category
                 </button>
@@ -493,7 +493,7 @@ export function EditItemDialog({
             >
               {deleting ? "Removing..." : "Remove item"}
             </Button>
-            <Button type="submit" disabled={loading} className="!bg-[#004659] hover:!bg-[#003847] !ring-[#004659] !text-white">
+            <Button type="submit" disabled={loading}>
               {loading ? "Saving..." : "Save changes"}
             </Button>
           </div>

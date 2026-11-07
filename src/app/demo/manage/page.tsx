@@ -203,7 +203,7 @@ function DemoAddItemDialog({
   return (
     <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setScrapeStatus(""); setOpenToUsed(false); setCurrency("USD"); } }}>
       <DialogTrigger asChild>
-        <Button className="!bg-[#004659] hover:!bg-[#003847] !ring-[#004659] !text-white">
+        <Button>
           <span className="inline-flex items-center gap-1.5">
             <Plus className="h-4 w-4 shrink-0" />
             Add Item
@@ -219,9 +219,9 @@ function DemoAddItemDialog({
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-5">
           {/* Step 1 — URL hero */}
-          <div className="rounded-xl border border-[#c3e3e8] bg-[#f0fafc] p-4 space-y-2">
+          <div className="rounded-xl border border-brand-200 bg-brand-50 p-4 space-y-2">
             <div className="flex items-center gap-2">
-              <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-[#004659] text-xs font-semibold text-white">
+              <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-brand-600 text-xs font-semibold text-white">
                 1
               </span>
               <Label className="!text-sm !font-semibold !text-primary">
@@ -250,7 +250,6 @@ function DemoAddItemDialog({
                 onClick={() => {
                   if (urlRef.current?.value) handleDemoScrape(urlRef.current.value);
                 }}
-                className="!bg-[#004659] hover:!bg-[#003847] !ring-[#004659] !text-white"
               >
                 <span className="inline-flex items-center gap-1.5">
                   {scraping ? (
@@ -263,7 +262,7 @@ function DemoAddItemDialog({
               </Button>
             </div>
             {scrapeStatus && (
-              <p className={`text-xs pl-8 text-[#004659]`}>{scrapeStatus}</p>
+              <p className={`text-xs pl-8 text-brand-600`}>{scrapeStatus}</p>
             )}
           </div>
 
@@ -398,7 +397,7 @@ function DemoAddItemDialog({
             >
               Cancel
             </Button>
-            <Button type="submit" className="!bg-[#004659] hover:!bg-[#003847] !ring-[#004659] !text-white">Add item</Button>
+            <Button type="submit">Add item</Button>
           </div>
         </form>
       </DialogContent>
@@ -675,7 +674,7 @@ function DemoEditItemDialog({
             >
               Remove item
             </Button>
-            <Button type="submit" className="!bg-[#004659] hover:!bg-[#003847] !ring-[#004659] !text-white">Save changes</Button>
+            <Button type="submit">Save changes</Button>
           </div>
         </form>
       </DialogContent>
@@ -1368,10 +1367,10 @@ export default function DemoManagePage() {
                                     tagType === "cancelled"
                                       ? "bg-error-primary/10 border-error-primary/20 text-error-primary"
                                       : tagType === "contribution"
-                                        ? "bg-[#09c69a] border-[#09c69a] text-[#181d27]"
+                                        ? "bg-mint-500 border-mint-500 text-primary"
                                         : tagType === "covered"
-                                          ? "bg-[#a0e4d4] border-[#a0e4d4] text-[#181d27]"
-                                          : "bg-[#f7efa9] border-[#f7efa9] text-[#181d27]"
+                                          ? "bg-mint-200 border-mint-200 text-primary"
+                                          : "bg-sunshine-100 border-sunshine-100 text-primary"
                                   }`}
                                 >
                                   {tagType === "cancelled"
@@ -1463,10 +1462,10 @@ export default function DemoManagePage() {
                               <span
                                 className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium shrink-0 ${
                                   suggestion.status === "pending"
-                                    ? "border-[#717680] text-[#181d27]"
+                                    ? "border-gray-500 text-primary"
                                     : suggestion.status === "accepted"
-                                      ? "bg-[#004659] border-[#004659] text-white"
-                                      : "bg-[#f9b8b9] border-[#f9b8b9] text-[#181d27]"
+                                      ? "bg-brand-600 border-brand-600 text-white"
+                                      : "bg-blush-200 border-blush-200 text-primary"
                                 }`}
                               >
                                 {suggestion.status === "pending"
@@ -1534,7 +1533,6 @@ export default function DemoManagePage() {
                                     onClick={() =>
                                       handleAcceptSuggestion(suggestion)
                                     }
-                                    className="!bg-[#004659] hover:!bg-[#003847] !ring-[#004659] !text-white"
                                   >
                                     <span className="inline-flex items-center gap-1.5">
                                       <Plus className="h-4 w-4 shrink-0" />

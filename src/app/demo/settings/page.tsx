@@ -146,7 +146,7 @@ export default function DemoSettingsPage() {
                   </p>
                 </div>
 
-                <Button type="submit" disabled={saving} className="!bg-[#004659] hover:!bg-[#003847] !ring-[#004659] !text-white">
+                <Button type="submit" disabled={saving}>
                   {saving ? "Saving..." : saved ? "Saved!" : "Save changes"}
                 </Button>
               </form>
@@ -186,7 +186,7 @@ export default function DemoSettingsPage() {
                   defaultValue={pm?.zelle || ""}
                 />
 
-                <Button type="submit" disabled={savingPayment} className="!bg-[#004659] hover:!bg-[#003847] !ring-[#004659] !text-white">
+                <Button type="submit" disabled={savingPayment}>
                   {savingPayment
                     ? "Saving..."
                     : paymentSaved

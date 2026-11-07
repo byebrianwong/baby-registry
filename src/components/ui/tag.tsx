@@ -3,11 +3,11 @@ import { cn } from "@/lib/utils";
 type TagVariant = "most-wanted" | "guest-purchased" | "parent-purchased" | "gifted" | "purchased-by-you";
 
 const variantStyles: Record<TagVariant, string> = {
-  "most-wanted": "bg-[#fae421] border-[#fae421] text-[#181d27]",
-  "guest-purchased": "bg-[#f7efa9] border-[#f7efa9] text-[#181d27]",
-  "parent-purchased": "bg-[#fdfdfd] border-[#fae421] text-[#181d27]",
-  "gifted": "bg-[#09c69a] border-[#09c69a] text-[#181d27]",
-  "purchased-by-you": "bg-transparent border-[#09c69a] text-[#181d27]",
+  "most-wanted": "bg-sunshine-400 border-sunshine-400 text-primary",
+  "guest-purchased": "bg-sunshine-100 border-sunshine-100 text-primary",
+  "parent-purchased": "bg-primary border-sunshine-400 text-primary",
+  "gifted": "bg-mint-500 border-mint-500 text-primary",
+  "purchased-by-you": "bg-transparent border-mint-500 text-primary",
 };
 
 interface TagProps {

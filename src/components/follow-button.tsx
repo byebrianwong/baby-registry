@@ -34,7 +34,7 @@ export function FollowButton({
   if (state === "signed-out") {
     return (
       <div className="flex flex-col items-center gap-1">
-        <Button size="sm" className="!bg-[#004659] hover:!bg-[#003847] !ring-[#004659] !text-white" asChild>
+        <Button size="sm" asChild>
           <Link href={`/login?redirect=${encodeURIComponent(returnTo ?? `/u/${username}`)}`}>Follow</Link>
         </Button>
         <p className="text-xs text-tertiary">Log in to ask to follow @{username}.</p>
@@ -61,7 +61,7 @@ export function FollowButton({
         </Button>
         <p className="text-xs text-tertiary">
           You blocked @{username}.{" "}
-          <Link href="/dashboard/account#follows" className="font-medium text-[#004659] hover:underline">
+          <Link href="/dashboard/account#follows" className="font-medium text-brand-600 hover:underline">
             Unblock
           </Link>
         </p>
@@ -106,11 +106,6 @@ export function FollowButton({
       <Button
         size="sm"
         variant={state === "none" ? "default" : "outline"}
-        className={
-          state === "none"
-            ? "!bg-[#004659] hover:!bg-[#003847] !ring-[#004659] !text-white"
-            : undefined
-        }
         onClick={handleClick}
         disabled={busy}
       >

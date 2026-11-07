@@ -61,7 +61,9 @@ export function CelebrationDialog({
       gravity: 0.8,
       decay: 0.94,
       startVelocity: 30,
-      colors: ["#09c69a", "#004659", "#fbbf24", "#f472b6", "#60a5fa"],
+      // Mint, teal, sunshine, coral and blush from the brand palette
+      // (src/styles/theme.css). canvas-confetti needs literal hex values.
+      colors: ["#09c69a", "#004659", "#fae421", "#fe4c4d", "#f9b8b9"],
     };
 
     // Fire from left
@@ -88,13 +90,13 @@ export function CelebrationDialog({
             style={{ animation: "celebration-bounce 1.2s ease-in-out infinite" }}
           />
           <h2
-            className="text-xl font-bold text-[#181d27]"
+            className="text-xl font-bold text-primary"
             style={{ animation: "celebration-fade-in 0.5s ease-out 0.2s both" }}
           >
             Thank you!
           </h2>
           <p
-            className="text-[#414651]"
+            className="text-secondary"
             style={{ animation: "celebration-fade-in 0.5s ease-out 0.4s both" }}
           >
             {getMessage(variant, itemTitle, parentName, amount)}
@@ -118,22 +120,22 @@ export function CelebrationDialog({
 
           {paymentMethods && (paymentMethods.venmo || paymentMethods.paypal || paymentMethods.zelle) ? (
             <div
-              className="w-full rounded-lg border border-[#d5d7da] bg-[#f9fafb] p-4 text-left"
+              className="w-full rounded-lg border border-primary bg-secondary p-4 text-left"
               style={{ animation: "celebration-fade-in 0.5s ease-out 0.5s both" }}
             >
               <PaymentMethodsDisplay paymentMethods={paymentMethods} />
             </div>
           ) : shippingAddress ? (
             <div
-              className="w-full rounded-lg border border-[#d5d7da] bg-[#f9fafb] p-4 text-left"
+              className="w-full rounded-lg border border-primary bg-secondary p-4 text-left"
               style={{ animation: "celebration-fade-in 0.5s ease-out 0.5s both" }}
             >
-              <p className="text-xs font-medium text-[#535862] mb-1">Ship to:</p>
-              <p className="text-sm text-[#181d27] whitespace-pre-line">{shippingAddress}</p>
+              <p className="text-xs font-medium text-tertiary mb-1">Ship to:</p>
+              <p className="text-sm text-primary whitespace-pre-line">{shippingAddress}</p>
               <button
                 type="button"
                 onClick={handleCopy}
-                className="mt-2 inline-flex items-center gap-1.5 text-xs font-medium text-[#004659] hover:text-[#003847] transition-colors"
+                className="mt-2 inline-flex items-center gap-1.5 text-xs font-medium text-brand-600 hover:text-brand-700 transition-colors"
               >
                 {copied ? (
                   <>
@@ -152,7 +154,7 @@ export function CelebrationDialog({
 
           <Button
             onClick={onClose}
-            className="!bg-[#004659] hover:!bg-[#003847] !ring-[#004659] !text-white mt-2"
+            className="mt-2"
             style={{ animation: "celebration-fade-in 0.5s ease-out 0.6s both" }}
           >
             Done

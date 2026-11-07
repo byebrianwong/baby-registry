@@ -30,18 +30,18 @@ function getTagStyle(purchase: Purchase) {
   }
   if (purchase.cash_fund_id) {
     return {
-      className: "bg-[#09c69a] border-[#09c69a] text-[#181d27]",
+      className: "bg-mint-500 border-mint-500 text-primary",
       label: "Contribution",
     };
   }
   if (purchase.registry_items?.is_parent_purchased) {
     return {
-      className: "bg-[#a0e4d4] border-[#a0e4d4] text-[#181d27]",
+      className: "bg-mint-200 border-mint-200 text-primary",
       label: "Covered by guest",
     };
   }
   return {
-    className: "bg-[#f7efa9] border-[#f7efa9] text-[#181d27]",
+    className: "bg-sunshine-100 border-sunshine-100 text-primary",
     label: "Purchased by guest",
   };
 }

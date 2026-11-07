@@ -438,7 +438,7 @@ export default function RegistrySettingsPage() {
 
             {error && <p className="text-sm text-error-primary">{error}</p>}
 
-            <Button type="submit" disabled={saving} className="!bg-[#004659] hover:!bg-[#003847] !ring-[#004659] !text-white">
+            <Button type="submit" disabled={saving}>
               {saving ? "Saving..." : success ? "Saved!" : "Save changes"}
             </Button>
           </form>
@@ -486,7 +486,7 @@ export default function RegistrySettingsPage() {
               <p className="text-sm text-error-primary">{zipError}</p>
             )}
 
-            <Button type="submit" disabled={savingZip} className="!bg-[#004659] hover:!bg-[#003847] !ring-[#004659] !text-white">
+            <Button type="submit" disabled={savingZip}>
               {savingZip
                 ? "Saving..."
                 : zipSuccess
@@ -534,7 +534,7 @@ export default function RegistrySettingsPage() {
               <p className="text-sm text-error-primary">{paymentError}</p>
             )}
 
-            <Button type="submit" disabled={savingPayment} className="!bg-[#004659] hover:!bg-[#003847] !ring-[#004659] !text-white">
+            <Button type="submit" disabled={savingPayment}>
               {savingPayment
                 ? "Saving..."
                 : paymentSuccess
@@ -568,7 +568,7 @@ export default function RegistrySettingsPage() {
               <p className="text-sm text-error-primary">{addressError}</p>
             )}
 
-            <Button type="submit" disabled={savingAddress} className="!bg-[#004659] hover:!bg-[#003847] !ring-[#004659] !text-white">
+            <Button type="submit" disabled={savingAddress}>
               {savingAddress
                 ? "Saving..."
                 : addressSuccess
@@ -643,7 +643,7 @@ export default function RegistrySettingsPage() {
               <Button
                 type="submit"
                 disabled={invitingEmail || !inviteEmail.trim()}
-                className="!bg-[#004659] hover:!bg-[#003847] !ring-[#004659] !text-white shrink-0"
+                className="shrink-0"
               >
                 {invitingEmail ? "Sending..." : inviteEmailSuccess ? "Sent!" : "Send Invite"}
               </Button>

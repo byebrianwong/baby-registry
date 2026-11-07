@@ -251,7 +251,7 @@ export function AddItemDialog({
     <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setScrapeStatus(""); setScrapeIsError(false); setParentPurchased(false); setOpenToUsed(false); setTaxInfo(null); setCurrency("USD"); setTitle(defaultValues?.title || ""); setPrice(defaultValues?.price ? parseFloat(defaultValues.price).toFixed(2) : ""); setImageUrl(""); setImageError(false); setImageCandidates([]); setBrokenCandidates(new Set()); setCategoryId(defaultValues?.categoryId); setError(""); } }}>
       <DialogTrigger asChild>
         {trigger || (
-          <Button className="!bg-[#004659] hover:!bg-[#003847] !ring-[#004659] !text-white">
+          <Button>
             <span className="inline-flex items-center gap-1.5">
               <Plus className="h-4 w-4 shrink-0" />
               Add Item
@@ -268,9 +268,9 @@ export function AddItemDialog({
         </DialogHeader>
         <form action={handleSubmit} className="min-w-0 space-y-5">
           {/* Step 1 — URL hero */}
-          <div className="rounded-xl border border-[#c3e3e8] bg-[#f0fafc] p-4 space-y-2">
+          <div className="rounded-xl border border-brand-200 bg-brand-50 p-4 space-y-2">
             <div className="flex items-center gap-2">
-              <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-[#004659] text-xs font-semibold text-white">
+              <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-brand-600 text-xs font-semibold text-white">
                 1
               </span>
               <Label className="!text-sm !font-semibold !text-primary">
@@ -294,7 +294,6 @@ export function AddItemDialog({
                 onClick={() => {
                   if (urlRef.current?.value) handleScrape(urlRef.current.value);
                 }}
-                className="!bg-[#004659] hover:!bg-[#003847] !ring-[#004659] !text-white"
               >
                 <span className="inline-flex items-center gap-1.5">
                   {scraping ? (
@@ -307,7 +306,7 @@ export function AddItemDialog({
               </Button>
             </div>
             {scrapeStatus && (
-              <p className={`text-xs pl-8 ${scrapeIsError ? "text-error-primary" : "text-[#004659]"}`}>{scrapeStatus}</p>
+              <p className={`text-xs pl-8 ${scrapeIsError ? "text-error-primary" : "text-brand-600"}`}>{scrapeStatus}</p>
             )}
           </div>
 
@@ -414,7 +413,7 @@ export function AddItemDialog({
                 <button
                   type="button"
                   onClick={() => setAddingCategory(true)}
-                  className="text-xs font-medium text-[#004659] hover:underline"
+                  className="text-xs font-medium text-brand-600 hover:underline"
                 >
                   + Create category
                 </button>
@@ -462,7 +461,7 @@ export function AddItemDialog({
                           aria-pressed={selected}
                           className={`relative size-14 shrink-0 overflow-hidden rounded-md border-2 bg-tertiary transition ${
                             selected
-                              ? "border-[#004659] ring-2 ring-[#004659]/30"
+                              ? "border-brand-600 ring-2 ring-brand-600/30"
                               : "border-transparent hover:border-secondary"
                           }`}
                         >
@@ -585,7 +584,7 @@ export function AddItemDialog({
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={loading} className="!bg-[#004659] hover:!bg-[#003847] !ring-[#004659] !text-white">
+            <Button type="submit" disabled={loading}>
               {loading ? "Adding..." : "Add item"}
             </Button>
           </div>

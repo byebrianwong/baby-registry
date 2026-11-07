@@ -117,18 +117,49 @@
     --color-white: rgb(255 255 255);
     --color-black: rgb(0 0 0);
 
-    --color-brand-25: oklch(0.985 0.005 155);
-    --color-brand-50: oklch(0.97 0.01 155);
-    --color-brand-100: oklch(0.93 0.02 155);
-    --color-brand-200: oklch(0.87 0.035 155);
-    --color-brand-300: oklch(0.78 0.05 155);
-    --color-brand-400: oklch(0.70 0.06 155);
-    --color-brand-500: oklch(0.62 0.065 155);
-    --color-brand-600: oklch(0.55 0.07 155);
-    --color-brand-700: oklch(0.47 0.065 155);
-    --color-brand-800: oklch(0.40 0.055 155);
-    --color-brand-900: oklch(0.33 0.045 155);
-    --color-brand-950: oklch(0.25 0.035 155);
+    /* Brand: the deep teal from the illustrations (#004659 is 600). */
+    --color-brand-25: rgb(247 253 254);
+    --color-brand-50: rgb(240 250 252);
+    --color-brand-100: rgb(222 241 244);
+    --color-brand-200: rgb(195 227 232);
+    --color-brand-300: rgb(157 198 208);
+    --color-brand-400: rgb(99 156 173);
+    --color-brand-500: rgb(46 115 135);
+    --color-brand-600: rgb(0 70 89);
+    --color-brand-700: rgb(0 56 71);
+    --color-brand-800: rgb(2 43 55);
+    --color-brand-900: rgb(1 32 41);
+    --color-brand-950: rgb(0 16 22);
+
+    /* Accents from the illustrations. Mint is progress and funded, sunshine
+       is highlights, blush is soft tints, coral is hearts (use sparingly). */
+    --color-mint-50: rgb(234 251 245);
+    --color-mint-100: rgb(205 246 233);
+    --color-mint-200: rgb(160 228 212);
+    --color-mint-300: rgb(112 219 188);
+    --color-mint-400: rgb(76 210 171);
+    --color-mint-500: rgb(9 198 154);
+    --color-mint-600: rgb(8 179 139);
+    --color-mint-700: rgb(0 134 104);
+    --color-mint-800: rgb(1 97 77);
+    --color-mint-900: rgb(7 72 58);
+
+    --color-sunshine-50: rgb(254 251 228);
+    --color-sunshine-100: rgb(247 239 169);
+    --color-sunshine-200: rgb(249 235 128);
+    --color-sunshine-400: rgb(250 228 33);
+    --color-sunshine-500: rgb(238 204 44);
+    --color-sunshine-700: rgb(138 110 8);
+    --color-sunshine-900: rgb(78 58 6);
+
+    --color-blush-50: rgb(255 244 244);
+    --color-blush-100: rgb(255 223 223);
+    --color-blush-200: rgb(249 184 185);
+    --color-blush-300: rgb(239 148 148);
+
+    --color-coral-400: rgb(253 115 109);
+    --color-coral-500: rgb(254 76 77);
+    --color-coral-600: rgb(215 52 52);
 
     --color-error-25: rgb(255 251 250);
     --color-error-50: rgb(254 243 242);
@@ -169,18 +200,20 @@
     --color-success-900: rgb(7 77 49);
     --color-success-950: rgb(5 51 33);
 
-    --color-gray-25: rgb(253 253 253);
-    --color-gray-50: rgb(250 250 250);
-    --color-gray-100: rgb(245 245 245);
-    --color-gray-200: rgb(233 234 235);
-    --color-gray-300: rgb(213 215 218);
-    --color-gray-400: rgb(164 167 174);
-    --color-gray-500: rgb(113 118 128);
-    --color-gray-600: rgb(83 88 98);
-    --color-gray-700: rgb(65 70 81);
-    --color-gray-800: rgb(37 43 55);
-    --color-gray-900: rgb(24 29 39);
-    --color-gray-950: rgb(10 13 18);
+    /* Warm gray: same lightness steps as Untitled UI gray, so text contrast
+       is unchanged, with a slight cream tint. */
+    --color-gray-25: rgb(254 253 251);
+    --color-gray-50: rgb(253 250 246);
+    --color-gray-100: rgb(248 244 239);
+    --color-gray-200: rgb(238 233 228);
+    --color-gray-300: rgb(220 213 207);
+    --color-gray-400: rgb(173 165 160);
+    --color-gray-500: rgb(124 116 111);
+    --color-gray-600: rgb(94 86 82);
+    --color-gray-700: rgb(77 68 64);
+    --color-gray-800: rgb(50 41 38);
+    --color-gray-900: rgb(35 27 24);
+    --color-gray-950: rgb(17 11 10);
 
     --color-gray-blue-25: rgb(252 252 253);
     --color-gray-blue-50: rgb(248 249 252);

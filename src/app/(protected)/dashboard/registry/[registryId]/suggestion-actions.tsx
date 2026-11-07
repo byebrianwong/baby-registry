@@ -62,7 +62,6 @@ export function SuggestionActions({
           size="sm"
           onClick={handleAddToRegistry}
           disabled={loading}
-          className="!bg-[#004659] hover:!bg-[#003847] !ring-[#004659] !text-white"
         >
           <span className="inline-flex items-center gap-1.5">
             <Plus className="h-4 w-4 shrink-0" />
@@ -88,7 +87,6 @@ export function SuggestionActions({
           size="sm"
           onClick={handleAcceptOffering}
           disabled={loading}
-          className="!bg-[#004659] hover:!bg-[#003847] !ring-[#004659] !text-white"
         >
           <span className="inline-flex items-center gap-1.5">
             <Check className="h-4 w-4 shrink-0" />

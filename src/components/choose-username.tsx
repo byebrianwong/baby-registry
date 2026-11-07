@@ -103,7 +103,7 @@ export function ChooseUsername({
             {error && <p className="text-sm text-error-primary">{error}</p>}
             <Button
               type="submit"
-              className="w-full !bg-[#004659] hover:!bg-[#003847] !ring-[#004659] !text-white"
+              className="w-full"
               disabled={saving}
             >
               {saving ? "Saving..." : "Claim username"}

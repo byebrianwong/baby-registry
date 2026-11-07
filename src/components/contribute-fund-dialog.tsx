@@ -101,7 +101,7 @@ export function ContributeFundDialog({
           <button
             type="button"
             onClick={() => setShowCelebration(true)}
-            className="text-xs font-medium text-[#004659] hover:underline"
+            className="text-xs font-medium text-brand-600 hover:underline"
           >
             View details
           </button>
@@ -122,7 +122,7 @@ export function ContributeFundDialog({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="!bg-[#09c69a] hover:!bg-[#08b38b] !ring-[#09c69a] !text-white">
+        <Button className="!bg-mint-500 hover:!bg-mint-600 !ring-mint-500 !text-brand-900">
           <span className="inline-flex items-center gap-1.5"><DollarSign className="h-4 w-4 shrink-0" />Contribute</span>
         </Button>
       </DialogTrigger>
@@ -222,7 +222,7 @@ export function ContributeFundDialog({
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={loading} className="!bg-[#004659] hover:!bg-[#003847] !ring-[#004659] !text-white">
+            <Button type="submit" disabled={loading}>
               {loading ? "Contributing..." : "Contribute"}
             </Button>
           </div>

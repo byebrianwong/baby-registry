@@ -28,7 +28,6 @@ export function AcceptInviteButton({ token }: { token: string }) {
       <Button
         onClick={handleAccept}
         disabled={loading}
-        className="!bg-[#004659] hover:!bg-[#003847] !ring-[#004659] !text-white"
       >
         {loading ? "Accepting..." : "Accept Invitation"}
       </Button>
