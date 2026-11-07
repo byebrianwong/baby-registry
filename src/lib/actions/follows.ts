@@ -191,7 +191,7 @@ export async function unblockUser(username: string) {
 export type SearchResult = {
   username: string;
   full_name: string | null;
-  state: "needs-profile" | "none" | "pending" | "approved";
+  state: "self" | "needs-profile" | "none" | "pending" | "approved";
 };
 
 const MIN_SEARCH_LENGTH = 3;
@@ -213,13 +213,14 @@ export async function searchPeople(
     .slice(0, 60);
   if (query.length < MIN_SEARCH_LENGTH) return { results: [] };
 
+  // Searchers see themselves too, under the same rules as everyone else, so
+  // finding yourself shows that other people can find you.
   const searchable = () =>
     supabaseAdmin
       .from("profiles")
       .select("id, username, full_name")
       .eq("discoverable", true)
       .not("username", "is", null)
-      .neq("id", user.id)
       .limit(MAX_SEARCH_RESULTS);
 
   const [{ data: byUsername }, { data: byName }, { data: blocks }, { data: me }] = await Promise.all([
@@ -255,9 +256,12 @@ export async function searchPeople(
     results: people.map((p) => ({
       username: p.username,
       full_name: p.full_name,
-      state: !me?.username
-        ? "needs-profile"
-        : ((statusById.get(p.id) as "pending" | "approved" | undefined) ?? "none"),
+      state:
+        p.id === user.id
+          ? "self"
+          : !me?.username
+            ? "needs-profile"
+            : ((statusById.get(p.id) as "pending" | "approved" | undefined) ?? "none"),
     })),
   };
 }

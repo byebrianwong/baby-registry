@@ -5,6 +5,7 @@ const people = [
   { username: "jane-doe", full_name: "Jane & John Doe", state: "none" as const },
   { username: "jane-smith", full_name: "Jane Smith", state: "pending" as const },
   { username: "janet-k", full_name: "Janet Kim", state: "approved" as const },
+  { username: "jane-wong", full_name: "Jane Wong", state: "self" as const },
 ];
 
 const meta: Meta<typeof PeopleSearch> = {
