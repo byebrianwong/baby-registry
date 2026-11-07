@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Baby, LogOut, User, Users } from "lucide-react";
+import { NavLink } from "@/components/nav-link";
 import { createClient } from "@/utils/supabase/client";
 import { useRouter } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
@@ -14,6 +15,16 @@ export function Nav() {
   const [loading, setLoading] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+
+  // The link the user just clicked. The top bar marks it as the current page
+  // straight away, before the URL changes. It resets when the URL changes.
+  const [clickedHref, setClickedHref] = useState<string | null>(null);
+  const [lastPathname, setLastPathname] = useState(pathname);
+  if (pathname !== lastPathname) {
+    setLastPathname(pathname);
+    setClickedHref(null);
+  }
+  const currentHref = clickedHref ?? pathname;
 
   useEffect(() => {
     const supabase = createClient();
@@ -65,17 +76,13 @@ export function Nav() {
           <>
             <nav className="ml-6 hidden items-center gap-4 md:flex">
               {navLinks.map((link) => (
-                <Link
+                <NavLink
                   key={link.href}
                   href={link.href}
-                  className={`text-sm transition-colors hover:text-primary ${
-                    pathname === link.href
-                      ? "text-primary font-medium"
-                      : "text-tertiary"
-                  }`}
-                >
-                  {link.label}
-                </Link>
+                  label={link.label}
+                  current={currentHref === link.href}
+                  onNavigate={() => setClickedHref(link.href)}
+                />
               ))}
             </nav>
 
@@ -93,6 +100,7 @@ export function Nav() {
                       <Link
                         href="/dashboard/following"
                         onClick={() => setMenuOpen(false)}
+                        onNavigate={() => setClickedHref("/dashboard/following")}
                         className="flex w-full items-center gap-2 px-3 py-2 text-sm text-tertiary hover:bg-secondary hover:text-primary transition-colors"
                       >
                         <Users className="h-4 w-4" />
@@ -101,6 +109,7 @@ export function Nav() {
                       <Link
                         href="/dashboard/account"
                         onClick={() => setMenuOpen(false)}
+                        onNavigate={() => setClickedHref("/dashboard/account")}
                         className="flex w-full items-center gap-2 px-3 py-2 text-sm text-tertiary hover:bg-secondary hover:text-primary transition-colors"
                       >
                         <User className="h-4 w-4" />
