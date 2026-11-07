@@ -75,7 +75,7 @@ export function DashboardTabs({ showFollowing }: { showFollowing: boolean }) {
                   onNavigate={() => setClickedHref(tab.href)}
                   aria-current={current ? "page" : undefined}
                   className={cx(
-                    "relative flex min-h-12 w-full items-center justify-center text-lg font-semibold outline-focus-ring transition-colors focus-visible:outline-2 focus-visible:-outline-offset-2 sm:justify-start",
+                    "relative flex min-h-12 w-full items-center justify-center font-display text-lg font-semibold outline-focus-ring transition-colors focus-visible:outline-2 focus-visible:-outline-offset-2 sm:justify-start",
                     current ? "text-primary" : "text-tertiary hover:text-primary",
                   )}
                 >
