@@ -33,17 +33,12 @@ const meta: Meta<typeof Controlled> = {
       </div>
     ),
   ],
-  args: { initial: "" },
 };
 export default meta;
 type Story = StoryObj<typeof Controlled>;
 
-export const NoOccasion: Story = {};
-
-export const Birthday: Story = {
-  args: { initial: "birthday" },
-};
-
+// One story: the snapshot shows the closed field with a choice in it, and the
+// open list below it with that choice checked.
 export const Open: Story = {
   args: { initial: "wedding", defaultOpen: true },
 };
