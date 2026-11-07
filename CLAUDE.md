@@ -38,7 +38,7 @@ Vercel holds these env vars for production, preview and development: `NEXT_PUBLI
 
 ## Visual tests (Chromatic)
 
-- `.github/workflows/chromatic.yml` runs Chromatic on every push. It snapshots only the stories the commit affects.
+- `.github/workflows/chromatic.yml` runs Chromatic on every push. It asks Chromatic to snapshot only the stories the commit affects (TurboSnap, `onlyChanged`). Chromatic turns TurboSnap on only after the account has 10 builds from CI. The project moved accounts on 2026-11-06, so until that count is reached every build snapshots every story.
 - A green `chromatic` job does not mean the review is done. The "UI Tests" check on a pull request stays pending until someone reviews the changed snapshots in Chromatic.
 - On a branch build, accept only the changes that branch made. A branch build also shows changes still waiting for review on `main`.
 - The free plan includes 5,000 snapshots a month. When they run out, Chromatic pauses testing and review until the next month.
