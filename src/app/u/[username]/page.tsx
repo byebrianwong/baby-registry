@@ -3,16 +3,15 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { Nav } from "@/components/nav";
-import { FollowButton, type FollowButtonState } from "@/components/follow-button";
+import { FollowButton } from "@/components/follow-button";
 import { PublicProfile } from "@/components/public-profile";
-import { getFollowStatus } from "@/lib/follows";
 import { supabaseAdmin } from "@/lib/supabase-admin";
+import { getViewerRelation } from "@/lib/viewer";
 import {
   LISTED_REGISTRY_COLUMNS,
   type ListedRegistry,
 } from "@/lib/registry-listing";
 import { isValidUsernameFormat } from "@/lib/username";
-import { createClient } from "@/utils/supabase/server";
 
 // `profiles` is only readable by its owner, so this reads with the service-role
 // client, always filtered by the username in the URL. Rows with no username
@@ -39,6 +38,7 @@ export async function generateMetadata({
   const profile = await getProfile(username);
 
   if (!profile) return { title: "Profile Not Found" };
+  if ((await getViewerRelation(profile.id)).hidden) return { title: "Profile Not Found" };
 
   const name = profile.full_name?.trim() || `@${profile.username}`;
   return {
@@ -62,21 +62,10 @@ export default async function ProfilePage({
     notFound();
   }
 
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  // Guests have anonymous sessions; they count as signed out here.
-  const viewer = user && !user.is_anonymous ? user : null;
-  const isOwnProfile = viewer?.id === profile.id;
-
-  let followState: FollowButtonState = "signed-out";
-  if (viewer && !isOwnProfile) {
-    const [{ data: viewerProfile }, status] = await Promise.all([
-      supabaseAdmin.from("profiles").select("username").eq("id", viewer.id).single(),
-      getFollowStatus(viewer.id, profile.id),
-    ]);
-    followState = status ?? (viewerProfile?.username ? "none" : "needs-profile");
+  // Someone this person blocked doesn't see their profile while signed in.
+  const { state: followState, isOwner: isOwnProfile, hidden } = await getViewerRelation(profile.id);
+  if (hidden) {
+    notFound();
   }
 
   // Private registries are only for the owner and approved followers.

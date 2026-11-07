@@ -24,3 +24,4 @@ export const Requested: Story = { args: { state: "pending" } };
 export const Following: Story = { args: { state: "approved" } };
 export const SignedOut: Story = { args: { state: "signed-out" } };
 export const NeedsUsername: Story = { args: { state: "needs-profile" } };
+export const Blocked: Story = { args: { state: "blocked" } };

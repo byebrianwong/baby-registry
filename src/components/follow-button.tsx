@@ -5,16 +5,25 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { cancelFollow, requestFollow } from "@/lib/actions/follows";
 
-export type FollowButtonState = "signed-out" | "needs-profile" | "none" | "pending" | "approved";
+export type FollowButtonState =
+  | "signed-out"
+  | "needs-profile"
+  | "none"
+  | "pending"
+  | "approved"
+  | "blocked";
 
 export function FollowButton({
   username,
   state: initialState,
+  returnTo,
   requestAction = requestFollow,
   cancelAction = cancelFollow,
 }: {
   username: string;
   state: FollowButtonState;
+  /** Where to come back to after logging in. Defaults to the profile. */
+  returnTo?: string;
   requestAction?: typeof requestFollow;
   cancelAction?: typeof cancelFollow;
 }) {
@@ -26,7 +35,7 @@ export function FollowButton({
     return (
       <div className="flex flex-col items-center gap-1">
         <Button size="sm" className="!bg-[#004659] hover:!bg-[#003847] !ring-[#004659] !text-white" asChild>
-          <Link href={`/login?redirect=${encodeURIComponent(`/u/${username}`)}`}>Follow</Link>
+          <Link href={`/login?redirect=${encodeURIComponent(returnTo ?? `/u/${username}`)}`}>Follow</Link>
         </Button>
         <p className="text-xs text-tertiary">Log in to ask to follow @{username}.</p>
       </div>
@@ -40,6 +49,22 @@ export function FollowButton({
           <Link href="/dashboard/account">Claim a username to follow</Link>
         </Button>
         <p className="text-xs text-tertiary">So @{username} can see who&apos;s asking.</p>
+      </div>
+    );
+  }
+
+  if (state === "blocked") {
+    return (
+      <div className="flex flex-col items-center gap-1">
+        <Button size="sm" variant="outline" disabled>
+          Blocked
+        </Button>
+        <p className="text-xs text-tertiary">
+          You blocked @{username}.{" "}
+          <Link href="/dashboard/account#follows" className="font-medium text-[#004659] hover:underline">
+            Unblock
+          </Link>
+        </p>
       </div>
     );
   }

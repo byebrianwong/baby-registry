@@ -2,6 +2,9 @@ import type { Meta, StoryObj } from "@storybook/react";
 import { FollowingFeed } from "./following-feed";
 
 const jane = { username: "jane-doe", full_name: "Jane & John Doe" };
+const mockSearch = async () => ({
+  results: [{ username: "sam-lee", full_name: "Sam Lee", state: "none" as const }],
+});
 const alex = { username: "alex-kim", full_name: "Alex Kim" };
 
 const meta: Meta<typeof FollowingFeed> = {
@@ -10,6 +13,7 @@ const meta: Meta<typeof FollowingFeed> = {
   args: {
     hasUsername: true,
     today: "2026-11-07",
+    searchAction: mockSearch,
     people: [
       { ...jane, status: "approved" },
       { ...alex, status: "approved" },

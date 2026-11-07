@@ -14,6 +14,8 @@ const meta: Meta<typeof FollowLists> = {
     approveAction: mockAction,
     removeAction: mockAction,
     cancelAction: mockAction,
+    blockAction: mockAction,
+    unblockAction: mockAction,
   },
 };
 export default meta;
@@ -30,6 +32,7 @@ export const WithEverything: Story = {
       { username: "jordan-lee", full_name: "Jordan Lee", status: "approved" },
       { username: "priya-r", full_name: "Priya Raman", status: "pending" },
     ],
+    blocked: [{ username: "spam-account", full_name: "Not A Real Aunt" }],
   },
 };
 

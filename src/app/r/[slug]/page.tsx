@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { cookies } from "next/headers";
 import { Calendar, LockOpen } from "lucide-react";
@@ -11,6 +12,8 @@ import { SuggestItemDialog } from "@/components/suggest-item-dialog";
 import { PublicRegistryGrid } from "@/components/public-registry-grid";
 import { copyForRegistry, honoreeDisplayName } from "@/lib/registry-copy";
 import { RegistryIcon } from "@/components/registry-icon";
+import { FollowButton } from "@/components/follow-button";
+import { getViewerRelation } from "@/lib/viewer";
 import type { PersonalEventType, RegistryType } from "@/lib/types";
 
 const PURCHASE_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
@@ -88,6 +91,27 @@ export default async function PublicRegistryPage({
 
   if (!registry) {
     notFound();
+  }
+
+  // Only registries the owner chose to show on their profile say who owns them,
+  // so unlisted ones never point to a profile.
+  let owner: { username: string; name: string } | null = null;
+  let ownerRelation: Awaited<ReturnType<typeof getViewerRelation>> | null = null;
+  if (registry.listed_on_profile) {
+    const { data: ownerProfile } = await supabaseAdmin
+      .from("profiles")
+      .select("id, username, full_name")
+      .eq("id", registry.owner_id)
+      .single();
+    if (ownerProfile?.username) {
+      ownerRelation = await getViewerRelation(ownerProfile.id);
+      if (!ownerRelation.hidden) {
+        owner = {
+          username: ownerProfile.username,
+          name: ownerProfile.full_name?.trim() || `@${ownerProfile.username}`,
+        };
+      }
+    }
   }
 
   const [{ data: categories }, { data: items }, { data: cashFunds }] =
@@ -313,6 +337,26 @@ export default async function PublicRegistryPage({
             <LockOpen className="h-3.5 w-3.5" />
             Reserve a gift in 10 seconds — no sign-up required.
           </p>
+          {owner && ownerRelation && (
+            <div className="flex flex-col items-center gap-2 border-t border-[#e9eaeb] pt-4">
+              <p className="text-sm text-[#414651]">
+                Shared by{" "}
+                <Link
+                  href={`/u/${owner.username}`}
+                  className="font-medium text-[#181d27] underline-offset-2 hover:underline"
+                >
+                  {owner.name}
+                </Link>
+              </p>
+              {!ownerRelation.isOwner && (
+                <FollowButton
+                  username={owner.username}
+                  state={ownerRelation.state}
+                  returnTo={`/r/${slug}`}
+                />
+              )}
+            </div>
+          )}
         </div>
       </section>
 

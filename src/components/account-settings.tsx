@@ -12,7 +12,7 @@ import { FollowLists } from "@/components/follow-lists";
 import { removeProfile, saveProfile, setRegistryListed } from "@/lib/actions/profile";
 import { occasionLabel } from "@/lib/registry-copy";
 import { normalizeUsername } from "@/lib/username";
-import type { FollowPerson } from "@/lib/follows";
+import type { FollowPerson, PersonSummary } from "@/lib/follows";
 import type { PersonalEventType, RegistryType } from "@/lib/types";
 
 export interface AccountRegistry {
@@ -77,9 +77,19 @@ export function AccountSettings({
   listAction = setRegistryListed,
   follows,
 }: {
-  profile: { username: string | null; full_name: string | null };
+  profile: {
+    username: string | null;
+    full_name: string | null;
+    discoverable?: boolean;
+    email_follow_requests?: boolean;
+  };
   registries: AccountRegistry[];
-  follows?: { requests: FollowPerson[]; followers: FollowPerson[]; following: FollowPerson[] };
+  follows?: {
+    requests: FollowPerson[];
+    followers: FollowPerson[];
+    following: FollowPerson[];
+    blocked?: PersonSummary[];
+  };
   saveAction?: typeof saveProfile;
   removeAction?: typeof removeProfile;
   listAction?: typeof setRegistryListed;
@@ -91,6 +101,9 @@ export function AccountSettings({
   const [error, setError] = useState("");
 
   const hasProfile = Boolean(profile.username);
+  // New profiles start out findable; existing ones keep what they chose.
+  const [discoverable, setDiscoverable] = useState(hasProfile ? Boolean(profile.discoverable) : true);
+  const [emailRequests, setEmailRequests] = useState(profile.email_follow_requests ?? true);
   const previewUsername = normalizeUsername(username) || "your-username";
 
   const handleSave = async (formData: FormData) => {
@@ -178,6 +191,20 @@ export function AccountSettings({
                 }
                 isRequired
               />
+              <input type="hidden" name="discoverable" value={discoverable ? "true" : "false"} />
+              <Checkbox
+                isSelected={discoverable}
+                onChange={setDiscoverable}
+                label="Show me in people search"
+                hint="People signed in to Regibee can find you by name or username."
+              />
+              <input type="hidden" name="emailFollowRequests" value={emailRequests ? "true" : "false"} />
+              <Checkbox
+                isSelected={emailRequests}
+                onChange={setEmailRequests}
+                label="Email me when someone asks to follow me"
+                hint="At most one email per person per day."
+              />
               {error && <p className="text-sm text-error-primary">{error}</p>}
               <div className="flex flex-wrap items-center gap-2">
                 <Button
@@ -214,6 +241,7 @@ export function AccountSettings({
               requests={follows.requests}
               followers={follows.followers}
               following={follows.following}
+              blocked={follows.blocked}
             />
           </div>
         )}

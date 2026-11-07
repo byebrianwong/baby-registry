@@ -201,6 +201,39 @@ export function managerInviteHtml(opts: {
   `;
 }
 
+// ── Follows ──────────────────────────────────────────────────
+
+// Names here are typed by other people, so they're escaped before going into
+// the email.
+function escapeHtml(value: string): string {
+  return value.replace(/[&<>"']/g, (c) =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!,
+  );
+}
+
+export function followRequestHtml(opts: {
+  followerName: string;
+  followerUsername: string;
+  profileUrl: string;
+  reviewUrl: string;
+  settingsUrl: string;
+}): string {
+  const name = escapeHtml(opts.followerName);
+  const username = escapeHtml(opts.followerUsername);
+  return `
+    <p>Hi there,</p>
+    <p><strong>${name}</strong> (@${username}) asked to follow you on Regibee.</p>
+    <p>If you approve, they'll see the private registries on your profile as well as your public ones. If you don't know them, you can decline the request or block them.</p>
+    <p style="margin: 24px 0;">
+      <a href="${opts.reviewUrl}" style="background-color: #004659; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
+        Review request
+      </a>
+    </p>
+    <p style="color:#888;font-size:13px;">See their profile: ${escapeHtml(opts.profileUrl)}</p>
+    <p style="color:#888;font-size:13px;">You're getting this because someone asked to follow you on Regibee. To stop these emails, turn them off on your account page: ${opts.settingsUrl}</p>
+  `;
+}
+
 // ── Supabase Auth Templates ──────────────────────────────────
 // These are proposed branded templates to replace the Supabase defaults.
 // In the Supabase dashboard, use {{ .ConfirmationURL }} for confirmUrl

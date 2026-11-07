@@ -9,6 +9,7 @@ import {
   cashFundContributionOwnerHtml,
   newSuggestionOwnerHtml,
   managerInviteHtml,
+  followRequestHtml,
   supabaseDefaultConfirmSignupHtml,
   confirmSignupHtml,
   supabaseDefaultResetPasswordHtml,
@@ -283,6 +284,21 @@ export const AuthResetPasswordProposed: Story = {
     subject: "Reset your Regibee password",
     html: resetPasswordHtml({
       resetUrl: "https://placeholder.supabase.co/auth/v1/verify?token=abc",
+    }),
+  },
+};
+
+// ── Follows ──────────────────────────────────────────────────
+
+export const FollowRequest: Story = {
+  args: {
+    subject: "Rose Doe wants to follow you on Regibee",
+    html: followRequestHtml({
+      followerName: "Rose Doe",
+      followerUsername: "grandma-rose",
+      profileUrl: "https://regibee.com/u/grandma-rose",
+      reviewUrl: "https://regibee.com/dashboard/account#follows",
+      settingsUrl: "https://regibee.com/dashboard/account",
     }),
   },
 };
