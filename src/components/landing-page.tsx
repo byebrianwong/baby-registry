@@ -1,13 +1,13 @@
 import Link from "next/link";
 import { Baby, Cake, Gift, Link2, PartyPopper, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Nav } from "@/components/nav";
-
-export function LandingPage({ ctaHref }: { ctaHref: string }) {
+// The nav is passed in because the real one is a server component, which
+// Storybook can't render; stories pass the presentational NavBar instead.
+export function LandingPage({ ctaHref, nav }: { ctaHref: string; nav: React.ReactNode }) {
   return (
     <div className="min-h-screen flex flex-col">
-      <Nav />
-      <main className="flex-1">
+      {nav}
+      <main id="main-content" className="flex-1">
         {/* Hero */}
         <section className="container mx-auto px-4 py-24 text-center">
           <h1 className="text-4xl font-bold tracking-tight sm:text-6xl">
