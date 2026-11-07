@@ -168,7 +168,7 @@ export default function RegistrySettingsPage() {
         event_date: (formData.get("eventDate") as string) || null,
         description: (formData.get("description") as string) || null,
         is_public: savedIsPublic,
-        listed_on_profile: savedIsPublic && (isOwner ? listedChoice : registry.listed_on_profile),
+        listed_on_profile: isOwner ? listedChoice : registry.listed_on_profile,
       });
     }
     setSaving(false);
@@ -374,7 +374,7 @@ export default function RegistrySettingsPage() {
 
             <div className="space-y-2">
               <span className="text-sm font-medium text-secondary">Visibility</span>
-              <p className="text-xs text-tertiary">All registries are accessible via their share link. This setting controls whether search engines can find your registry.</p>
+              <p className="text-xs text-tertiary">Anyone with the share link can open your registry either way. This controls search engines, and who sees it on your profile.</p>
               <div className="flex items-center gap-4">
                 <label className="flex items-center gap-2">
                   <input
@@ -394,7 +394,7 @@ export default function RegistrySettingsPage() {
                     defaultChecked={!registry.is_public}
                     onChange={() => setIsPublicChoice(false)}
                   />
-                  <span className="text-sm">Private — only accessible with link</span>
+                  <span className="text-sm">Private — hidden from search engines, and only followers you approve see it on your profile</span>
                 </label>
               </div>
             </div>

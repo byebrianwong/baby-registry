@@ -24,12 +24,14 @@ export function PublicProfile({
   registries,
   today,
   isOwnProfile = false,
+  followAction,
 }: {
   username: string;
   fullName: string | null;
   registries: ListedRegistry[];
   today: string;
   isOwnProfile?: boolean;
+  followAction?: React.ReactNode;
 }) {
   const displayName = fullName?.trim() || `@${username}`;
 
@@ -45,10 +47,12 @@ export function PublicProfile({
           <h1 className="break-words text-2xl font-bold">{displayName}</h1>
           <p className="break-words text-tertiary">@{username}</p>
         </div>
-        {isOwnProfile && (
+        {isOwnProfile ? (
           <Button variant="outline" size="sm" asChild>
             <Link href="/dashboard/account">Edit profile</Link>
           </Button>
+        ) : (
+          followAction
         )}
       </div>
 

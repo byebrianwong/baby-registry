@@ -3,11 +3,11 @@ import type { Registry } from "./types";
 // The only registry columns that public profiles read. Don't add `settings`
 // here: it holds the owner's shipping address and payment handles.
 export const LISTED_REGISTRY_COLUMNS =
-  "slug, title, event_date, registry_type, event_type";
+  "slug, title, event_date, registry_type, event_type, is_public";
 
 export type ListedRegistry = Pick<
   Registry,
-  "slug" | "title" | "event_date" | "registry_type" | "event_type"
+  "slug" | "title" | "event_date" | "registry_type" | "event_type" | "is_public"
 >;
 
 export function isPastEvent(

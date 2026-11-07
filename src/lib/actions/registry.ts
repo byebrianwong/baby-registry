@@ -128,7 +128,7 @@ export async function createRegistry(formData: FormData) {
   const eventDate = formData.get("eventDate") as string;
   const description = formData.get("description") as string;
   const isPublic = formData.get("isPublic") !== "false";
-  const listedOnProfile = isPublic && formData.get("listedOnProfile") === "true";
+  const listedOnProfile = formData.get("listedOnProfile") === "true";
   const zipCode = formData.get("zipCode") as string;
   const taxEnabled = formData.get("taxEnabled") === "true";
   const venmo = formData.get("venmo") as string;
@@ -214,12 +214,10 @@ export async function updateRegistry(registryId: string, formData: FormData) {
   const isPublic = formData.get("isPublic") === "true";
 
   // A listed registry appears under its owner's name, so only the owner can
-  // change this. Going private always unlists it, whoever makes the change.
+  // change this. Private ones stay listed, but only approved followers see them.
   const listedField = formData.get("listedOnProfile");
   const listing: { listed_on_profile?: boolean } = {};
-  if (!isPublic) {
-    listing.listed_on_profile = false;
-  } else if (role === "owner" && listedField !== null) {
+  if (role === "owner" && listedField !== null) {
     listing.listed_on_profile = listedField === "true";
   }
 

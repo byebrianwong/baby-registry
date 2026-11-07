@@ -56,7 +56,14 @@ export const NoProfileYet: Story = {
 };
 
 export const WithProfile: Story = {
-  args: { profile: { username: "jane-doe", full_name: "Jane & John Doe" } },
+  args: {
+    profile: { username: "jane-doe", full_name: "Jane & John Doe" },
+    follows: {
+      requests: [{ username: "grandma-rose", full_name: "Rose Doe", status: "pending" }],
+      followers: [{ username: "alex-friend", full_name: "Alex Kim", status: "approved" }],
+      following: [],
+    },
+  },
 };
 
 export const WithProfileNoRegistries: Story = {
