@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { PeopleSearch } from "@/components/people-search";
 import { ProfileRegistryCard } from "@/components/profile-registry-card";
+import type { searchPeople } from "@/lib/actions/follows";
 import type { FeedRegistry, FollowPerson } from "@/lib/follows";
 import { isPastEvent, sortListedRegistries } from "@/lib/registry-listing";
 
@@ -52,11 +54,13 @@ export function FollowingFeed({
   people,
   registries,
   today,
+  searchAction,
 }: {
   hasUsername: boolean;
   people: FollowPerson[];
   registries: FeedRegistry[];
   today: string;
+  searchAction?: typeof searchPeople;
 }) {
   const sorted = sortListedRegistries(registries, today);
   const upcoming = sorted.filter((r) => r.event_date !== null && !isPastEvent(r, today));
@@ -69,6 +73,12 @@ export function FollowingFeed({
     <div className="container mx-auto max-w-2xl px-4 py-8">
       <h1 className="text-3xl font-bold">Following</h1>
       <p className="text-tertiary">Registries from people who&apos;ve approved your follow.</p>
+
+      {hasUsername && (
+        <div className="mt-6">
+          <PeopleSearch searchAction={searchAction} />
+        </div>
+      )}
 
       {!hasUsername ? (
         <EmptyState
@@ -83,7 +93,7 @@ export function FollowingFeed({
       ) : people.length === 0 ? (
         <EmptyState
           title="You're not following anyone yet"
-          body="Open a friend's profile link and tap Follow. Once they approve, their registries show up here."
+          body="Search for friends above, or open their profile link and tap Follow. Once they approve, their registries show up here."
         />
       ) : (
         <>

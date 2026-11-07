@@ -30,12 +30,17 @@ export async function saveProfile(formData: FormData) {
   const problem = usernameProblem(username);
   if (problem) return { error: problem };
 
-  // Signed-in sessions can't write usernames directly (see
+  const update: Record<string, string | boolean> = { full_name: fullName, username };
+  if (formData.has("discoverable")) {
+    update.discoverable = formData.get("discoverable") === "true";
+  }
+  if (formData.has("emailFollowRequests")) {
+    update.email_follow_requests = formData.get("emailFollowRequests") === "true";
+  }
+
+  // Signed-in sessions can't write these columns directly (see
   // 011_public_profiles.sql), so this goes through the service role.
-  const { error } = await supabaseAdmin
-    .from("profiles")
-    .update({ full_name: fullName, username })
-    .eq("id", user.id);
+  const { error } = await supabaseAdmin.from("profiles").update(update).eq("id", user.id);
 
   if (error) {
     if (error.code === POSTGRES_UNIQUE_VIOLATION) {

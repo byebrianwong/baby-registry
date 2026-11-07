@@ -20,7 +20,11 @@ export default async function AccountPage() {
   }
 
   const [{ data: profile }, { data: registries }, follows] = await Promise.all([
-    supabase.from("profiles").select("username, full_name").eq("id", user.id).single(),
+    supabase
+      .from("profiles")
+      .select("username, full_name, discoverable, email_follow_requests")
+      .eq("id", user.id)
+      .single(),
     supabase
       .from("registries")
       .select("id, title, is_public, listed_on_profile, registry_type, event_type, settings")
@@ -41,6 +45,8 @@ export default async function AccountPage() {
       profile={{
         username: profile?.username ?? null,
         full_name: profile?.full_name ?? null,
+        discoverable: profile?.discoverable ?? false,
+        email_follow_requests: profile?.email_follow_requests ?? true,
       }}
       registries={accountRegistries}
       follows={follows}

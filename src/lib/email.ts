@@ -9,6 +9,7 @@ import {
   cashFundContributionOwnerHtml,
   newSuggestionOwnerHtml,
   managerInviteHtml,
+  followRequestHtml,
 } from "./email-templates";
 
 let _resend: Resend | null = null;
@@ -393,5 +394,64 @@ export async function notifyNewSuggestion(opts: {
     );
   } catch (err) {
     console.error("[email] Failed to send suggestion notification:", err);
+  }
+}
+
+const FOLLOW_REQUEST_EMAIL_GAP_MS = 24 * 60 * 60 * 1000;
+
+// Tells someone a person asked to follow them. Sends at most one email per
+// follower per day, so withdrawing and asking again can't flood anyone.
+export async function notifyFollowRequest(opts: { followerId: string; followeeId: string }) {
+  try {
+    const [{ data: followee }, { data: follower }, { data: lastEmail }] = await Promise.all([
+      supabaseAdmin
+        .from("profiles")
+        .select("username, email_follow_requests")
+        .eq("id", opts.followeeId)
+        .single(),
+      supabaseAdmin.from("profiles").select("username, full_name").eq("id", opts.followerId).single(),
+      supabaseAdmin
+        .from("follow_request_emails")
+        .select("sent_at")
+        .eq("follower_id", opts.followerId)
+        .eq("followee_id", opts.followeeId)
+        .maybeSingle(),
+    ]);
+
+    if (!followee?.username || !followee.email_follow_requests || !follower?.username) return;
+    if (lastEmail && Date.now() - new Date(lastEmail.sent_at).getTime() < FOLLOW_REQUEST_EMAIL_GAP_MS) {
+      return;
+    }
+
+    const {
+      data: { user },
+    } = await supabaseAdmin.auth.admin.getUserById(opts.followeeId);
+    if (!user?.email) return;
+
+    // Record it before sending, so two requests at once can't both send.
+    await supabaseAdmin
+      .from("follow_request_emails")
+      .upsert(
+        { follower_id: opts.followerId, followee_id: opts.followeeId, sent_at: new Date().toISOString() },
+        { onConflict: "follower_id,followee_id" },
+      );
+
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+    const followerName = (follower.full_name?.trim() || `@${follower.username}`).slice(0, 60);
+
+    await getResend().emails.send({
+      from: FROM,
+      to: TEST_RECIPIENT_OVERRIDE || user.email,
+      subject: `${followerName} wants to follow you on Regibee`,
+      html: followRequestHtml({
+        followerName,
+        followerUsername: follower.username,
+        profileUrl: `${siteUrl}/u/${follower.username}`,
+        reviewUrl: `${siteUrl}/dashboard/account#follows`,
+        settingsUrl: `${siteUrl}/dashboard/account`,
+      }),
+    });
+  } catch (err) {
+    console.error("[email] Failed to send follow request email:", err);
   }
 }

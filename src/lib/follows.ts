@@ -14,6 +14,11 @@ export interface FollowPerson {
   status: FollowStatus;
 }
 
+export interface PersonSummary {
+  username: string;
+  full_name: string | null;
+}
+
 export interface FeedRegistry extends ListedRegistry {
   owner: { username: string; full_name: string | null };
 }
@@ -29,6 +34,21 @@ export async function getFollowStatus(
     .eq("followee_id", followeeId)
     .maybeSingle();
   return (data?.status as FollowStatus | undefined) ?? null;
+}
+
+// Whether either person has blocked the other.
+export async function getBlockState(userId: string, otherId: string) {
+  const { data } = await supabaseAdmin
+    .from("user_blocks")
+    .select("blocker_id")
+    .or(
+      `and(blocker_id.eq.${userId},blocked_id.eq.${otherId}),and(blocker_id.eq.${otherId},blocked_id.eq.${userId})`,
+    );
+  const rows = data || [];
+  return {
+    blockedOther: rows.some((row) => row.blocker_id === userId),
+    blockedByOther: rows.some((row) => row.blocker_id === otherId),
+  };
 }
 
 export async function countFollowRequests(userId: string): Promise<number> {
@@ -55,7 +75,7 @@ function toPeople(
 }
 
 export async function listFollows(userId: string) {
-  const [{ data: incoming }, { data: outgoing }] = await Promise.all([
+  const [{ data: incoming }, { data: outgoing }, { data: blockedRows }] = await Promise.all([
     supabaseAdmin
       .from("follows")
       .select("status, person:profiles!follows_follower_id_fkey(username, full_name)")
@@ -66,13 +86,22 @@ export async function listFollows(userId: string) {
       .select("status, person:profiles!follows_followee_id_fkey(username, full_name)")
       .eq("follower_id", userId)
       .order("created_at", { ascending: false }),
+    supabaseAdmin
+      .from("user_blocks")
+      .select("person:profiles!user_blocks_blocked_id_fkey(username, full_name)")
+      .eq("blocker_id", userId)
+      .order("created_at", { ascending: false }),
   ]);
 
   const people = toPeople(incoming as never);
+  const blocked: PersonSummary[] = ((blockedRows || []) as unknown as { person: JoinedProfile }[])
+    .filter((row) => row.person?.username)
+    .map((row) => ({ username: row.person!.username!, full_name: row.person!.full_name }));
   return {
     requests: people.filter((p) => p.status === "pending"),
     followers: people.filter((p) => p.status === "approved"),
     following: toPeople(outgoing as never),
+    blocked,
   };
 }
 
