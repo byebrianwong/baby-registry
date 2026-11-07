@@ -4,7 +4,7 @@ import { Calendar, LockOpen } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { verifyBuyerLink } from "@/lib/buyer-link";
-import type { PaymentMethods } from "@/lib/types";
+import type { PaymentMethods, RegistrySettings } from "@/lib/types";
 import type { Metadata } from "next";
 import { ScrollToTop } from "@/components/scroll-to-top";
 import { SuggestItemDialog } from "@/components/suggest-item-dialog";
@@ -12,6 +12,8 @@ import { PublicRegistryGrid } from "@/components/public-registry-grid";
 import { copyForRegistry, honoreeDisplayName } from "@/lib/registry-copy";
 import { RegistryIcon } from "@/components/registry-icon";
 import type { PersonalEventType, RegistryType } from "@/lib/types";
+
+const PURCHASE_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
 interface RegistryItem {
   id: string;
@@ -119,8 +121,6 @@ export default async function PublicRegistryPage({
     | PaymentMethods
     | undefined;
 
-  const shippingAddress = (registry.settings as any)?.shipping_address as string | undefined;
-
   // Check which parent-purchased items have been covered and how many times
   const parentPurchasedIds = allItems.filter((i) => i.is_parent_purchased).map((i) => i.id);
   const coverCounts = new Map<string, number>();
@@ -144,6 +144,37 @@ export default async function PublicRegistryPage({
   try {
     if (rawCookie) myGifts = JSON.parse(rawCookie);
   } catch {}
+
+  // The shipping address is only shown by the reserve dialog, after a guest
+  // reserves a regular item, so it's only sent to visitors we can tie to a live
+  // reservation here. The gifts cookie is readable and editable in the browser,
+  // so it counts only when it holds the purchase id of that reservation; item
+  // ids are public, purchase ids aren't. A verified buyer link also counts.
+  const reservableItemIds = new Set(
+    allItems.filter((i) => !i.is_parent_purchased).map((i) => i.id)
+  );
+  let hasReservation = false;
+
+  const claimedItemByPurchase = new Map<string, string>();
+  for (const [itemId, purchaseId] of Object.entries(myGifts.items ?? {})) {
+    if (
+      reservableItemIds.has(itemId) &&
+      typeof purchaseId === "string" &&
+      PURCHASE_ID_PATTERN.test(purchaseId)
+    ) {
+      claimedItemByPurchase.set(purchaseId, itemId);
+    }
+  }
+  if (claimedItemByPurchase.size > 0) {
+    const { data: claimedPurchases } = await supabaseAdmin
+      .from("purchases")
+      .select("id, registry_item_id")
+      .in("id", [...claimedItemByPurchase.keys()])
+      .neq("status", "cancelled");
+    hasReservation = (claimedPurchases || []).some(
+      (p) => claimedItemByPurchase.get(p.id) === p.registry_item_id
+    );
+  }
 
   // If the visitor arrived via a signed buyer link, look up their purchases
   // for this specific registry and merge with cookie-based highlights.
@@ -182,6 +213,7 @@ export default async function PublicRegistryPage({
           if (p.registry_item_id) {
             if (!myGifts.items) myGifts.items = {};
             myGifts.items[p.registry_item_id] = "reserved";
+            if (reservableItemIds.has(p.registry_item_id)) hasReservation = true;
           }
           if (p.cash_fund_id && p.amount) {
             if (!myGifts.funds) myGifts.funds = {};
@@ -193,6 +225,10 @@ export default async function PublicRegistryPage({
       // Invalid signature — ignore silently
     }
   }
+
+  const shippingAddress = hasReservation
+    ? (registry.settings as RegistrySettings | null)?.shipping_address
+    : undefined;
 
   const totalItems = allItems.length;
   const fulfilledItems = allItems.filter(

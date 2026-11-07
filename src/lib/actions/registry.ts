@@ -503,20 +503,24 @@ export async function reserveItem(formData: FormData) {
     return { error: error.message };
   }
 
-  await addToMyGiftsCookie("items", itemId, "reserve");
+  // Store the purchase id rather than a flag: the public registry page only
+  // reveals the shipping address on return visits when this id matches a live
+  // purchase of the item, and purchase ids never appear in public page data.
+  await addToMyGiftsCookie("items", itemId, data);
+
+  // The address isn't in the public page data, so hand it back to the
+  // celebration dialog now that this visitor has reserved a gift.
+  const registryInfo = await getRegistryInfoForBuyer({ itemId }).catch(() => null);
 
   // Send email notifications after the response (keeps the function alive)
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
   after(async () => {
     try {
-      const [{ data: item }, registryInfo] = await Promise.all([
-        supabaseAdmin
-          .from("registry_items")
-          .select("title, external_url")
-          .eq("id", itemId)
-          .single(),
-        getRegistryInfoForBuyer({ itemId }),
-      ]);
+      const { data: item } = await supabaseAdmin
+        .from("registry_items")
+        .select("title, external_url")
+        .eq("id", itemId)
+        .single();
       if (item) {
         await notifyItemReserved({
           itemId,
@@ -546,7 +550,11 @@ export async function reserveItem(formData: FormData) {
     }
   });
 
-  return { success: true, purchaseId: data };
+  return {
+    success: true,
+    purchaseId: data,
+    shippingAddress: registryInfo?.shippingAddress,
+  };
 }
 
 // ============================================================================
