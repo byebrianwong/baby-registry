@@ -11,7 +11,7 @@ These notes are for anyone changing or running the live app, people and Claude a
 | Supabase `regibee` (ref `ibfvmgpfwhhyrhnxaxig`) | Database and sign-in | This is the only database. Preview deploys and `vercel env pull` use it too, so anything you do on a preview or locally with those keys changes real data. Database changes are run by hand. See below. |
 | Resend | Sends notification emails from `notifications@regibee.com` | Needs `RESEND_API_KEY`, and DNS records for regibee.com. |
 | Porkbun | Registrar and DNS for regibee.com | The DNS records point the site at Vercel and verify the domain for Resend. |
-| Chromatic | Visual tests of the Storybook stories | The project id is in `chromatic.config.json`. |
+| Chromatic | Visual tests of the Storybook stories | The project is in the `dango-design` Chromatic account, on the free plan. Its id is in `chromatic.config.json`. |
 
 Vercel holds these env vars for production, preview and development: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `RESEND_API_KEY` and `NEXT_PUBLIC_SITE_URL`. Run `vercel env pull .env.local` to copy them to your machine.
 
@@ -40,6 +40,7 @@ Vercel holds these env vars for production, preview and development: `NEXT_PUBLI
 - `.github/workflows/chromatic.yml` runs Chromatic on every push. It snapshots only the stories the commit affects.
 - A green `chromatic` job does not mean the review is done. The "UI Tests" check on a pull request stays pending until someone reviews the changed snapshots in Chromatic.
 - On a branch build, accept only the changes that branch made. A branch build also shows changes still waiting for review on `main`.
+- The free plan includes 5,000 snapshots a month. When they run out, Chromatic pauses testing and review until the next month.
 - Storybook can't render async server components. Put a page's markup in a plain component and write the story for that. The landing page works this way.
 
 ## Before opening a pull request
