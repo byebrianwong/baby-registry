@@ -6,13 +6,15 @@ import { Input } from "@/components/base/input/input";
 import { TextArea } from "@/components/base/textarea/textarea";
 import { Checkbox } from "@/components/base/checkbox/checkbox";
 import { Card, CardContent } from "@/components/ui/card";
+import { ProfileListingField } from "@/components/profile-listing-field";
 import { createRegistry } from "@/lib/actions/registry";
 import {
   PERSONAL_EVENT_TYPE_OPTIONS,
   copyFor,
 } from "@/lib/registry-copy";
 import type { PersonalEventType, RegistryType } from "@/lib/types";
-import { useMemo, useState } from "react";
+import { createClient } from "@/utils/supabase/client";
+import { useEffect, useMemo, useState } from "react";
 
 export default function NewRegistryPage() {
   const [error, setError] = useState("");
@@ -20,6 +22,33 @@ export default function NewRegistryPage() {
   const [isPublic, setIsPublic] = useState(true);
   const [registryType, setRegistryType] = useState<RegistryType>("baby");
   const [eventType, setEventType] = useState<PersonalEventType | "">("");
+  const [username, setUsername] = useState<string | null | undefined>(undefined);
+  const [listedChoice, setListedChoice] = useState<boolean | null>(null);
+
+  // Personal registries are shown by default. Baby registries aren't, because
+  // showing one on a profile could announce a pregnancy.
+  const isListed = listedChoice ?? registryType === "personal";
+
+  const chooseRegistryType = (type: RegistryType) => {
+    setRegistryType(type);
+    setListedChoice(null);
+  };
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
+      if (!user) {
+        setUsername(null);
+        return;
+      }
+      const { data } = await supabase
+        .from("profiles")
+        .select("username")
+        .eq("id", user.id)
+        .single();
+      setUsername(data?.username ?? null);
+    });
+  }, []);
 
   const copy = useMemo(
     () =>
@@ -67,7 +96,7 @@ export default function NewRegistryPage() {
               <div className="grid grid-cols-2 gap-2">
                 <button
                   type="button"
-                  onClick={() => setRegistryType("baby")}
+                  onClick={() => chooseRegistryType("baby")}
                   className={`rounded-lg border p-3 text-left transition ${
                     registryType === "baby"
                       ? "border-[#004659] bg-[#004659]/5 ring-1 ring-[#004659]"
@@ -84,7 +113,7 @@ export default function NewRegistryPage() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setRegistryType("personal")}
+                  onClick={() => chooseRegistryType("personal")}
                   className={`rounded-lg border p-3 text-left transition ${
                     registryType === "personal"
                       ? "border-[#004659] bg-[#004659]/5 ring-1 ring-[#004659]"
@@ -177,6 +206,15 @@ export default function NewRegistryPage() {
                   />
                 </div>
               </div>
+
+              {username !== undefined && (
+                <ProfileListingField
+                  username={username}
+                  isPublic={isPublic}
+                  isSelected={isListed}
+                  onChange={setListedChoice}
+                />
+              )}
             </div>
 
             {/* Location */}

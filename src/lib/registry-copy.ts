@@ -127,6 +127,18 @@ export function honoreeDisplayName(
   );
 }
 
+export function occasionLabel(
+  registryType: RegistryType,
+  eventType: PersonalEventType | null,
+): string {
+  if (registryType === "baby") return "Baby registry";
+  if (!eventType || eventType === "other") return "Wishlist";
+  return (
+    PERSONAL_EVENT_TYPE_OPTIONS.find((option) => option.value === eventType)
+      ?.label ?? "Wishlist"
+  );
+}
+
 export const PERSONAL_EVENT_TYPE_OPTIONS: Array<{
   value: PersonalEventType;
   label: string;

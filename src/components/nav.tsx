@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Baby, LogOut } from "lucide-react";
+import { Baby, LogOut, User } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 import { useRouter } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
@@ -89,6 +89,14 @@ export function Nav() {
                   </button>
                   {menuOpen && (
                     <div className="absolute right-0 top-full mt-1 w-40 rounded-md border bg-primary shadow-lg py-1 z-50">
+                      <Link
+                        href="/dashboard/account"
+                        onClick={() => setMenuOpen(false)}
+                        className="flex w-full items-center gap-2 px-3 py-2 text-sm text-tertiary hover:bg-secondary hover:text-primary transition-colors"
+                      >
+                        <User className="h-4 w-4" />
+                        Account
+                      </Link>
                       <button
                         onClick={handleSignOut}
                         className="flex w-full items-center gap-2 px-3 py-2 text-sm text-tertiary hover:bg-secondary hover:text-primary transition-colors"

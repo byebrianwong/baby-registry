@@ -250,7 +250,7 @@ export default async function RegistryManagePage({
           )}
         </div>
         <div className="flex gap-2 flex-wrap">
-          <CopyLinkButton slug={registry.slug} />
+          <CopyLinkButton path={`/r/${registry.slug}`} />
           <Button variant="outline" asChild>
             <a href={registryUrl} target="_blank" rel="noopener noreferrer">
               <span className="inline-flex items-center gap-1.5">
