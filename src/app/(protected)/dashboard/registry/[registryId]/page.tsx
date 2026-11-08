@@ -17,7 +17,13 @@ import { createClient } from "@/utils/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { AddItemDialog } from "@/components/add-item-dialog";
 import { ItemCard } from "@/components/item-card";
-import { parseRetailerRegistries, storesWithRegistryLinks } from "@/lib/retailers";
+import {
+  parseHiddenPlainLinkItems,
+  parseRetailerRegistries,
+  plainLinksByStore,
+  storesWithRegistryLinks,
+} from "@/lib/retailers";
+import { PlainLinksNotice, type PlainLinkGroup } from "@/components/plain-links-notice";
 import { CopyLinkButton } from "@/components/copy-link-button";
 import { RegistryTabs } from "@/components/registry-tabs";
 import { StorePerksCard } from "@/components/store-perks-card";
@@ -241,6 +247,19 @@ export default async function RegistryManagePage({
   const registryLinkStores = linkedRegistries
     ? storesWithRegistryLinks(allItems.map((i) => i.external_url))
     : undefined;
+  // Items with a plain link at a store where the owner has a registry, minus
+  // the ones the owner asked not to be reminded about.
+  const hiddenPlainLinkItems = new Set(parseHiddenPlainLinkItems(settings));
+  const plainLinkGroups: PlainLinkGroup[] = linkedRegistries
+    ? [...plainLinksByStore(allItems, linkedRegistries.map((r) => r.store))]
+        .map(([storeId, items]) => ({
+          storeId,
+          items: items
+            .filter((i) => !hiddenPlainLinkItems.has(i.id))
+            .map((i) => ({ id: i.id, title: i.title })),
+        }))
+        .filter((group) => group.items.length > 0)
+    : [];
   // Store perks: one row per store registry the owner linked or has item links from.
   const perkRows = linkedRegistries
     ? buildStorePerks({
@@ -353,6 +372,12 @@ export default async function RegistryManagePage({
                 <AddItemDialog registryId={registryId} categories={allCategories} zipCode={zipCode} registryType={registry.registry_type} eventType={registry.event_type} linkedRegistries={linkedRegistries} storesWithRegistryLinks={registryLinkStores} />
               </div>
             </div>
+
+            {plainLinkGroups.length > 0 && (
+              <div className="mb-6">
+                <PlainLinksNotice registryId={registryId} groups={plainLinkGroups} />
+              </div>
+            )}
 
             {totalItems === 0 ? (
               <Card>

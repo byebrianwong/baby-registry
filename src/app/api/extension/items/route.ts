@@ -5,7 +5,9 @@ import {
   isUuid,
   MAX_ITEMS_PER_REQUEST,
   parseStoreItem,
+  planLinkSwaps,
   type AddResponse,
+  type LinkResponse,
   type UndoResponse,
 } from "@/lib/extension";
 import { storeItemKey } from "@/lib/retailers";
@@ -85,6 +87,63 @@ export async function POST(request: Request) {
       key: storeItemKey(row.external_url as string) ?? "",
     })),
     skipped,
+  };
+  return NextResponse.json(response);
+}
+
+// PATCH { registryId, items } → gives items already on the registry with a
+// plain store link the registry link for the same product, so gifts bought
+// through them count toward the owner's store registry. Each item must carry
+// a registry link, the same as an import.
+export async function PATCH(request: Request) {
+  const auth = await authenticateExtension(request);
+  if (auth.response) return auth.response;
+  const { user, supabase } = auth;
+
+  const body = await readJson(request);
+  const registryId = body?.registryId;
+  const rawItems = body?.items;
+  if (!isUuid(registryId) || !Array.isArray(rawItems) || rawItems.length > MAX_ITEMS_PER_REQUEST) {
+    return jsonError("Invalid request", 400);
+  }
+  if (!(await isRegistryManager(user.id, registryId))) {
+    return jsonError("You don't manage that registry.", 403);
+  }
+
+  const items = rawItems.map(parseStoreItem).filter((item) => item !== null);
+  const { data: existingItems, error: readError } = await supabase
+    .from("registry_items")
+    .select("id, title, external_url")
+    .eq("registry_id", registryId);
+  if (readError) return jsonError("Couldn't read the registry.", 500);
+
+  const swaps = planLinkSwaps(
+    (existingItems ?? []).map((row) => ({
+      id: row.id as string,
+      title: row.title as string,
+      external_url: row.external_url as string | null,
+    })),
+    items
+  );
+
+  const results = await Promise.all(
+    swaps.map(async (swap) => {
+      const { data, error } = await supabase
+        .from("registry_items")
+        .update({ external_url: swap.to })
+        .eq("registry_id", registryId)
+        .eq("id", swap.id)
+        // Leave it if the owner changed the link since it was read.
+        .eq("external_url", swap.from)
+        .select("id");
+      return !error && data && data.length > 0 ? swap : null;
+    })
+  );
+  const linked = results.filter((swap) => swap !== null);
+
+  if (linked.length > 0) revalidatePath(`/dashboard/registry/${registryId}`);
+  const response: LinkResponse = {
+    linked: linked.map((swap) => ({ id: swap.id, title: swap.title, key: swap.key })),
   };
   return NextResponse.json(response);
 }
