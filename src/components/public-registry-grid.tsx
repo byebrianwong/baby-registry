@@ -17,7 +17,7 @@ import { CategoryNav, type CategoryNavItem } from "@/components/category-nav";
 import { ItemImage } from "@/components/item-image";
 import { getCategorySectionId } from "@/lib/category-section-id";
 import type { PaymentMethods } from "@/lib/types";
-import { classifyStoreLink, detectStore, STORES, type StoreId } from "@/lib/retailers";
+import { classifyStoreLink, detectStore, registryStoreFor, STORES, type StoreId } from "@/lib/retailers";
 
 interface RegistryItem {
   id: string;
@@ -295,7 +295,7 @@ export function PublicRegistryGrid({
                                 ${fund.goal_amount.toFixed(0)} goal
                               </span>
                             </div>
-                            <Progress value={fundProgress} />
+                            <Progress value={fundProgress} aria-label={`Amount raised for ${fund.title}`} />
                             <span className="text-xs text-tertiary">
                               ${Math.max(0, fund.goal_amount - fund.current_amount).toFixed(0)} remaining
                             </span>
@@ -412,15 +412,9 @@ function PublicItemCard({
 }) {
   const storeLink = classifyStoreLink(item.external_url);
   const store = storeLink?.store;
-  // A registry link names the owner's store registry, so the gift counts
-  // there. A link we can't classify counts only if the owner linked that store.
-  const registryStoreName =
-    showStoreRegistries &&
-    storeLink &&
-    (storeLink.kind === "registry" ||
-      (storeLink.kind === "unknown" && linkedStores.includes(storeLink.store.id)))
-      ? storeLink.store.name
-      : undefined;
+  const registryStoreName = showStoreRegistries
+    ? registryStoreFor(item.external_url, linkedStores)?.name
+    : undefined;
   const isFulfilled = item.quantity_fulfilled >= item.quantity_needed;
   const remaining = item.quantity_needed - item.quantity_fulfilled;
   const itemPurchased = !!(myGifts.items && myGifts.items[item.id]);
@@ -434,7 +428,7 @@ function PublicItemCard({
     <Card
       className={`py-0 gap-0 rounded-2xl shadow-none ${
         (isFulfilled && !item.is_parent_purchased) || isFullyCovered
-          ? "opacity-60 border-tertiary"
+          ? "border-tertiary"
           : item.is_parent_purchased
             ? "bg-mint-200/20 border-primary"
             : "border-primary"
@@ -444,10 +438,12 @@ function PublicItemCard({
         <div className="flex flex-col gap-3">
           <div className="flex gap-3">
             <div className="relative shrink-0">
+              {/* A fulfilled item fades its image, not the whole card, so its text keeps 4.5:1 contrast. */}
               <ItemImage
                 imageUrl={item.image_url}
                 title={item.title}
                 categoryName={categoryName}
+                className={(isFulfilled && !item.is_parent_purchased) || isFullyCovered ? "opacity-60" : ""}
               />
               {itemPurchased && (
                 <img

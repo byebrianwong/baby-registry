@@ -20,6 +20,8 @@ import { ItemCard } from "@/components/item-card";
 import { parseRetailerRegistries, storesWithRegistryLinks } from "@/lib/retailers";
 import { CopyLinkButton } from "@/components/copy-link-button";
 import { RegistryTabs } from "@/components/registry-tabs";
+import { StorePerksCard } from "@/components/store-perks-card";
+import { buildStorePerks, parseStorePerksState, readyPerkCount } from "@/lib/store-perks";
 import { CancelReservationButton } from "./cancel-reservation-button";
 import { SuggestionInbox } from "./suggestion-inbox";
 import { CategoryNav, type CategoryNavItem } from "@/components/category-nav";
@@ -60,10 +62,10 @@ export default async function RegistryManagePage({
   searchParams,
 }: {
   params: Promise<{ registryId: string }>;
-  searchParams: Promise<{ highlight?: string }>;
+  searchParams: Promise<{ highlight?: string; tab?: string }>;
 }) {
   const { registryId } = await params;
-  const { highlight } = await searchParams;
+  const { highlight, tab } = await searchParams;
   const supabase = await createClient();
   const {
     data: { user },
@@ -239,6 +241,17 @@ export default async function RegistryManagePage({
   const registryLinkStores = linkedRegistries
     ? storesWithRegistryLinks(allItems.map((i) => i.external_url))
     : undefined;
+  // Store perks: one row per store registry the owner linked or has item links from.
+  const perkRows = linkedRegistries
+    ? buildStorePerks({
+        items: allItems,
+        purchases: allPurchases,
+        linkedRegistries,
+        dueDate: registry.event_date,
+        today: new Date().toISOString().slice(0, 10),
+        state: parseStorePerksState(settings),
+      })
+    : [];
   const zipCode = taxEnabled ? (settings?.zip_code as string | undefined) : undefined;
   const registryUrl = `/r/${registry.slug}`;
 
@@ -299,7 +312,7 @@ export default async function RegistryManagePage({
             <p className="text-sm text-tertiary">Completion</p>
             <div className="flex items-center gap-2">
               <p className="text-2xl font-bold">{Math.round(progress)}%</p>
-              <Progress value={progress} className="flex-1" />
+              <Progress value={progress} aria-label="Registry completion" className="flex-1" />
             </div>
           </CardContent>
         </Card>
@@ -556,6 +569,18 @@ export default async function RegistryManagePage({
         suggestionsContent={
           <SuggestionInbox suggestions={allSuggestions} registryId={registryId} />
         }
+        perksContent={
+          perkRows.length > 0 ? (
+            <StorePerksCard
+              registryId={registryId}
+              rows={perkRows}
+              emails={parseStorePerksState(settings).emails}
+              hasDueDate={!!registry.event_date}
+            />
+          ) : undefined
+        }
+        perksCount={readyPerkCount(perkRows)}
+        defaultTab={tab}
       />
 
       <ScrollToTop />

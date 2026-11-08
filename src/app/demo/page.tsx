@@ -48,6 +48,7 @@ import {
   DEMO_ITEMS,
   DEMO_CASH_FUNDS,
 } from "@/lib/demo-data";
+import { toWebUrl } from "@/lib/web-url";
 import { Logo } from "@/components/logo";
 
 interface DemoItem {
@@ -88,6 +89,8 @@ function DemoSuggestItemDialog() {
   const [open, setOpen] = useState(false);
   const [success, setSuccess] = useState(false);
   const [currency, setCurrency] = useState("USD");
+  const [externalUrl, setExternalUrl] = useState("");
+  const openableUrl = toWebUrl(externalUrl);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -99,6 +102,7 @@ function DemoSuggestItemDialog() {
     if (!open) {
       setSuccess(false);
       setCurrency("USD");
+      setExternalUrl("");
     }
   };
 
@@ -149,7 +153,9 @@ function DemoSuggestItemDialog() {
                 <Label>Product URL (optional)</Label>
                 <div className="flex items-center gap-4">
                   <InputGroup
+                    aria-label="Product URL (optional)"
                     leadingAddon={<InputPrefix>http://</InputPrefix>}
+                    onChange={setExternalUrl}
                     className="flex-1"
                   >
                     <InputBase
@@ -161,7 +167,11 @@ function DemoSuggestItemDialog() {
                     type="button"
                     variant="ghost"
                     size="icon-lg"
-                    title="Open link"
+                    aria-label="Open link in a new tab"
+                    disabled={!openableUrl}
+                    onClick={() => {
+                      if (openableUrl) window.open(openableUrl, "_blank", "noopener,noreferrer");
+                    }}
                   >
                     <Link01 className="h-6 w-6" />
                   </Button>
@@ -184,6 +194,7 @@ function DemoSuggestItemDialog() {
                     <InputPrefix position="trailing">
                       <span className="relative inline-flex items-center">
                         <select
+                          aria-label="Currency"
                           className="appearance-none bg-transparent pr-5 text-primary outline-none cursor-pointer"
                           value={currency}
                           onChange={(e) => setCurrency(e.target.value)}
@@ -426,7 +437,7 @@ export default function DemoPage() {
               </span>
               <span>{Math.round(progress)}%</span>
             </div>
-            <Progress value={progress} />
+            <Progress value={progress} aria-label="Gifts fulfilled" />
           </div>
           <p className="mt-4 inline-flex items-center gap-1.5 text-xs text-tertiary">
             <LockOpen className="h-3.5 w-3.5" />
@@ -511,7 +522,7 @@ export default function DemoPage() {
                           <span>${fund.current_amount} raised</span>
                           <span>${fund.goal_amount} goal</span>
                         </div>
-                        <Progress value={fundProgress} />
+                        <Progress value={fundProgress} aria-label={`Amount raised for ${fund.title}`} />
                         <span className="text-xs">
                           ${Math.max(0, fund.goal_amount - fund.current_amount)} remaining
                         </span>
@@ -562,7 +573,7 @@ export default function DemoPage() {
                         key={item.id}
                         className={`py-0 gap-0 rounded-2xl shadow-none ${
                           isFulfilled && !item.is_parent_purchased
-                            ? "opacity-60 border-tertiary"
+                            ? "border-tertiary"
                             : item.is_parent_purchased
                               ? "bg-mint-200/20 border-primary"
                               : "border-primary"
@@ -571,10 +582,12 @@ export default function DemoPage() {
                         <CardContent className="flex h-full flex-col justify-between gap-4 p-4">
                           <div className="flex flex-col gap-3">
                             <div className="flex gap-3">
+                              {/* A fulfilled item fades its image, not the whole card, so its text keeps 4.5:1 contrast. */}
                               <ItemImage
                                 imageUrl={item.image_url}
                                 title={item.title}
                                 categoryName={category.name}
+                                className={isFulfilled && !item.is_parent_purchased ? "opacity-60" : ""}
                               />
                               <div className="flex-1 min-w-0 flex flex-col gap-2 items-start">
                                 <h3 className="font-medium text-sm leading-tight">

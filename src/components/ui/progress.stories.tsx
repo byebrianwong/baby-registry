@@ -20,5 +20,7 @@ type Story = StoryObj<typeof Progress>;
 export const Default: Story = {
   args: {
     value: 60,
+    // Progress requires a label (aria-label or aria-labelledby).
+    "aria-label": "Gifts fulfilled",
   },
 };

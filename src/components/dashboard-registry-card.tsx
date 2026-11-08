@@ -33,6 +33,11 @@ export interface DashboardRegistryCardProps {
   publicHref: string;
   /** Shown next to the title, like "Manager" for shared registries. */
   badge?: string;
+  /**
+   * The title's heading level. Cards right under the page's h1 use 2. Cards
+   * under a section h2, like "Shared with you", use 3.
+   */
+  headingLevel?: 2 | 3;
 }
 
 // Initials circles take a tint picked from the name, so one person gets the
@@ -68,7 +73,9 @@ export function DashboardRegistryCard({
   manageHref,
   publicHref,
   badge,
+  headingLevel = 2,
 }: DashboardRegistryCardProps) {
+  const Heading = headingLevel === 3 ? "h3" : "h2";
   const theme = occasionTheme(registryType, eventType);
   const progress = totalItems > 0 ? (fulfilledItems / totalItems) * 100 : 0;
   const allDone = totalItems > 0 && fulfilledItems >= totalItems;
@@ -93,11 +100,12 @@ export function DashboardRegistryCard({
       <div className="flex flex-1 flex-col gap-4 p-5">
         <div>
           <div className="flex items-start justify-between gap-2">
-            <h3 className="font-display text-lg font-bold leading-snug">
+            {/* tracking-normal: the base h2 style tightens letter spacing, but card titles keep the h3 look. */}
+            <Heading className="font-display text-lg font-bold leading-snug tracking-normal">
               <Link href={manageHref} className="hover:underline">
                 {title}
               </Link>
-            </h3>
+            </Heading>
             {badge && (
               <Badge variant="secondary" className="shrink-0">
                 <Users className="mr-1 h-3 w-3" />
@@ -130,7 +138,7 @@ export function DashboardRegistryCard({
               <span className="text-tertiary">{Math.round(progress)}%</span>
             )}
           </div>
-          <Progress value={progress} />
+          <Progress value={progress} aria-label={`Items fulfilled for ${title}`} />
         </div>
 
         <div className="flex justify-between text-sm text-tertiary">

@@ -19,6 +19,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { suggestItem } from "@/lib/actions/registry";
+import { toWebUrl } from "@/lib/web-url";
 
 type DialogAction = (formData: FormData) => Promise<{ error: string } | undefined>;
 
@@ -43,6 +44,8 @@ export function SuggestItemDialog({ registryId, categories = [], action }: Sugge
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
   const [currency, setCurrency] = useState("USD");
+  const [externalUrl, setExternalUrl] = useState("");
+  const openableUrl = toWebUrl(externalUrl);
 
   const handleSubmit = async (formData: FormData) => {
     setLoading(true);
@@ -69,6 +72,7 @@ export function SuggestItemDialog({ registryId, categories = [], action }: Sugge
       setSuccess(false);
       setError("");
       setCurrency("USD");
+      setExternalUrl("");
     }
   };
 
@@ -122,14 +126,21 @@ export function SuggestItemDialog({ registryId, categories = [], action }: Sugge
                 <div className="flex items-center gap-4">
                   <Input
                     name="externalUrl"
+                    aria-label="Product URL (optional)"
                     placeholder="https://www.example.com"
+                    onChange={setExternalUrl}
                     className="flex-1"
                   />
+                  {/* Lets the guest check the link before sending it. Disabled until the field holds a web address. */}
                   <Button
                     type="button"
                     variant="ghost"
                     size="icon-lg"
-                    title="Open link"
+                    aria-label="Open link in a new tab"
+                    disabled={!openableUrl}
+                    onClick={() => {
+                      if (openableUrl) window.open(openableUrl, "_blank", "noopener,noreferrer");
+                    }}
                   >
                     <Link01 className="h-6 w-6" />
                   </Button>
@@ -155,6 +166,7 @@ export function SuggestItemDialog({ registryId, categories = [], action }: Sugge
                     <InputPrefix position="trailing">
                       <span className="relative inline-flex items-center">
                         <select
+                          aria-label="Currency"
                           className="appearance-none bg-transparent pr-5 text-primary outline-none cursor-pointer"
                           name="currency"
                           value={currency}

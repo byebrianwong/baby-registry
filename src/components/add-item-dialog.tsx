@@ -518,6 +518,7 @@ export function AddItemDialog({
                 <InputPrefix position="trailing">
                   <span className="relative inline-flex items-center">
                     <select
+                      aria-label="Currency"
                       className="appearance-none bg-transparent pr-5 text-primary outline-none cursor-pointer"
                       value={currency}
                       onChange={(e) => setCurrency(e.target.value)}

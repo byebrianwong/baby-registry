@@ -140,7 +140,7 @@ export function ContributeFundDialog({
               <span>${fund.current_amount.toFixed(0)} raised</span>
               <span>${fund.goal_amount.toFixed(0)} goal</span>
             </div>
-            <Progress value={fundProgress} />
+            <Progress value={fundProgress} aria-label={`Amount raised for ${fund.title}`} />
             {remaining != null && remaining > 0 && (
               <span className="text-xs">
                 ${remaining.toFixed(0)} remaining
@@ -165,6 +165,7 @@ export function ContributeFundDialog({
               <InputPrefix position="trailing">
                 <span className="relative inline-flex items-center">
                   <select
+                    aria-label="Currency"
                     className="appearance-none bg-transparent pr-5 text-primary outline-none cursor-pointer"
                     name="currency"
                     value={currency}
