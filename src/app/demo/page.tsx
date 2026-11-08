@@ -234,13 +234,13 @@ function DemoSuggestItemDialog() {
 
               <Input
                 label="Your Name"
-                placeholder="Jane Doe"
+                placeholder="Alex Kim"
                 isRequired
               />
               <Input
                 label="Your Email"
                 type="email"
-                placeholder="jane@example.com"
+                placeholder="alex@example.com"
                 icon={Mail01}
                 isRequired
               />
@@ -263,7 +263,7 @@ function DemoSuggestItemDialog() {
   );
 }
 
-const DEMO_PARENT_NAME = "Sarah & Mike";
+const DEMO_PARENT_NAME = "Remi & Max";
 const DEMO_SHIPPING_ADDRESS = DEMO_REGISTRY.settings.shipping_address;
 
 type SortMode = "default" | "most-wanted" | "price-asc" | "price-desc";

@@ -11,7 +11,7 @@ const mockList = async () => ({ success: true });
 const registries: AccountRegistry[] = [
   {
     id: "1",
-    title: "The Doe Family Baby Registry",
+    title: "Remi & Max's Baby Registry",
     is_public: true,
     listed_on_profile: true,
     has_shipping_address: true,
@@ -20,7 +20,7 @@ const registries: AccountRegistry[] = [
   },
   {
     id: "2",
-    title: "Jane's 30th Birthday",
+    title: "Max's 30th Birthday",
     is_public: true,
     listed_on_profile: false,
     has_shipping_address: false,
@@ -53,16 +53,16 @@ type Story = StoryObj<typeof AccountSettings>;
 
 // Before claiming a username, only the profile form shows.
 export const NoProfileYet: Story = {
-  args: { profile: { username: null, full_name: "Jane & John Doe" } },
+  args: { profile: { username: null, full_name: "Remi & Max" } },
 };
 
 // With a username: share buttons, follow lists, registries to list, and the
 // turn-off card.
 export const WithProfile: Story = {
   args: {
-    profile: { username: "jane-doe", full_name: "Jane & John Doe" },
+    profile: { username: "remi-and-max", full_name: "Remi & Max" },
     follows: {
-      requests: [{ username: "grandma-rose", full_name: "Rose Doe", status: "pending" }],
+      requests: [{ username: "grandma-dorothy", full_name: "Grandma Dorothy", status: "pending" }],
       followers: [{ username: "alex-friend", full_name: "Alex Kim", status: "approved" }],
       following: [],
     },
