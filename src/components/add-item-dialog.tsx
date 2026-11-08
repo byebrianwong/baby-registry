@@ -23,7 +23,7 @@ import { scrapeProductUrl } from "@/lib/actions/scrape";
 import { estimateTax } from "@/lib/actions/tax";
 import type { PersonalEventType, RegistryType } from "@/lib/types";
 import { copyFor } from "@/lib/registry-copy";
-import type { RetailerRegistry } from "@/lib/retailers";
+import type { RetailerRegistry, StoreId } from "@/lib/retailers";
 import { StoreLinkNotice } from "@/components/store-link-notice";
 
 interface Category {
@@ -48,6 +48,8 @@ interface AddItemDialogProps {
   /** The owner's linked store registries. Leave unset to hide store notices
    *  (personal registries don't use them). */
   linkedRegistries?: RetailerRegistry[];
+  /** Stores that other items on this registry have registry links from. */
+  storesWithRegistryLinks?: StoreId[];
 }
 
 const currencySymbols: Record<string, string> = {
@@ -68,6 +70,7 @@ export function AddItemDialog({
   defaultValues,
   trigger,
   linkedRegistries,
+  storesWithRegistryLinks,
 }: AddItemDialogProps) {
   const copy = copyFor({ registryType, eventType });
   const isBaby = registryType === "baby";
@@ -320,6 +323,7 @@ export function AddItemDialog({
                 url={externalUrl}
                 registryId={registryId}
                 linkedRegistries={linkedRegistries}
+                storesWithRegistryLinks={storesWithRegistryLinks}
                 className="ml-8"
               />
             )}

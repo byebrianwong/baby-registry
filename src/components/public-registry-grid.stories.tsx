@@ -22,10 +22,11 @@ export default meta;
 type Story = StoryObj<typeof PublicRegistryGrid>;
 
 // Items from several stores, using each store's real link shapes with
-// made-up ids. The owner linked their Amazon and Target registries, so those
-// items' gift dialogs explain how to buy there. Walmart isn't linked, so its
-// dialog stays as before. The store filter appears because items come from
-// more than one store.
+// made-up ids. The Amazon, Target and Walmart links are registry links, so
+// their gift dialogs explain how to buy there, whether or not the owner has
+// linked that store in settings (only Amazon and Target are linked here). The
+// Etsy item's dialog stays as before. The store filter appears because items
+// come from more than one store.
 export const ItemsFromStores: Story = {
   args: {
     parentName: "Sarah & Mike",
@@ -35,6 +36,7 @@ export const ItemsFromStores: Story = {
     coverCounts: {},
     suggestButton: null,
     linkedStores: ["amazon", "target"],
+    showStoreRegistries: true,
     items: [
       {
         ...base,

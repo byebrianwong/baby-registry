@@ -7,6 +7,7 @@ import {
   classifyStoreLink,
   copyLinkSteps,
   type RetailerRegistry,
+  type StoreId,
   type StoreInfo,
 } from "@/lib/retailers";
 
@@ -16,6 +17,10 @@ interface StoreLinkNoticeProps {
   registryId: string;
   /** The registry owner's linked store registries, from settings. */
   linkedRegistries: RetailerRegistry[];
+  /** Stores that other items on this registry already have registry links
+   *  from. That shows the owner has a registry there even if they haven't
+   *  linked it in settings yet. */
+  storesWithRegistryLinks?: StoreId[];
   className?: string;
 }
 
@@ -25,7 +30,13 @@ interface StoreLinkNoticeProps {
  * link will count toward the owner's store registry, and how to get the
  * registry link when it won't.
  */
-export function StoreLinkNotice({ url, registryId, linkedRegistries, className }: StoreLinkNoticeProps) {
+export function StoreLinkNotice({
+  url,
+  registryId,
+  linkedRegistries,
+  storesWithRegistryLinks = [],
+  className,
+}: StoreLinkNoticeProps) {
   // Remember which link the owner dismissed, so pasting a new one shows the
   // notice again.
   const [dismissedFor, setDismissedFor] = useState<string | null>(null);
@@ -35,7 +46,25 @@ export function StoreLinkNotice({ url, registryId, linkedRegistries, className }
   const { store, kind } = result;
   const linked = linkedRegistries.find((r) => r.store === store.id);
 
-  if (!linked) {
+  // A registry link names the owner's store registry, so it speaks for itself
+  // whether or not they've linked that store in settings.
+  if (kind === "registry") {
+    return (
+      <div className={cn("flex items-start gap-2.5 rounded-lg border border-success-200 bg-success-50 px-3 py-2.5", className)}>
+        <CheckCircle2 className="mt-px h-4 w-4 shrink-0 text-success-700" aria-hidden="true" />
+        <p className="text-sm text-success-800">
+          <span className="font-semibold">{store.name} registry link.</span> Gifts bought
+          through this link count toward your {store.name} registry.
+        </p>
+      </div>
+    );
+  }
+
+  // Only warn about a plain link when we know the owner has a registry at this
+  // store. Otherwise they may not have one, and the warning would be noise.
+  const hasStoreRegistry = !!linked || storesWithRegistryLinks.includes(store.id);
+
+  if (!hasStoreRegistry) {
     return (
       <div className={cn("space-y-2.5 rounded-lg border border-brand-200 bg-primary p-3", className)}>
         <div className="flex items-start gap-2.5">
@@ -66,18 +95,6 @@ export function StoreLinkNotice({ url, registryId, linkedRegistries, className }
     );
   }
 
-  if (kind === "registry") {
-    return (
-      <div className={cn("flex items-start gap-2.5 rounded-lg border border-success-200 bg-success-50 px-3 py-2.5", className)}>
-        <CheckCircle2 className="mt-px h-4 w-4 shrink-0 text-success-700" aria-hidden="true" />
-        <p className="text-sm text-success-800">
-          <span className="font-semibold">{store.name} registry link.</span> Gifts bought
-          through this link count toward your {store.name} registry.
-        </p>
-      </div>
-    );
-  }
-
   if (kind === "plain") {
     return (
       <div className={cn("space-y-2.5 rounded-lg border border-warning-200 bg-warning-50 p-3", className)}>
@@ -92,7 +109,7 @@ export function StoreLinkNotice({ url, registryId, linkedRegistries, className }
           <p className="text-xs font-semibold text-warning-800">To use your registry link instead</p>
           <CopySteps store={store} className="text-warning-800" />
           <div className="flex flex-wrap items-center gap-3 pt-1">
-            <OpenRegistryLink store={store} url={linked.url} />
+            {linked && <OpenRegistryLink store={store} url={linked.url} />}
             <button
               type="button"
               onClick={() => setDismissedFor(url)}
@@ -121,7 +138,7 @@ export function StoreLinkNotice({ url, registryId, linkedRegistries, className }
         </summary>
         <div className="space-y-2.5 pt-1">
           <CopySteps store={store} className="text-secondary" />
-          <OpenRegistryLink store={store} url={linked.url} />
+          {linked && <OpenRegistryLink store={store} url={linked.url} />}
         </div>
       </details>
     </div>

@@ -64,6 +64,9 @@ interface Props {
   /** Stores where the owner has their own registry. Ids only: guests never
    *  get the owner's store registry links. */
   linkedStores?: StoreId[];
+  /** Tell guests when a gift is on the owner's store registry. Baby
+   *  registries only. */
+  showStoreRegistries?: boolean;
 }
 
 type SortMode = "default" | "most-wanted" | "price-asc" | "price-desc";
@@ -96,6 +99,7 @@ export function PublicRegistryGrid({
   selfPurchasedLabel = "Purchased by parent",
   coverFlavor,
   linkedStores = [],
+  showStoreRegistries = false,
 }: Props) {
   const [search, setSearch] = useState("");
   const [priceBucket, setPriceBucket] = useState("any");
@@ -344,6 +348,7 @@ export function PublicRegistryGrid({
                     selfPurchasedLabel={selfPurchasedLabel}
                     coverFlavor={coverFlavor}
                     linkedStores={linkedStores}
+                    showStoreRegistries={showStoreRegistries}
                   />
                 ))}
               </div>
@@ -369,6 +374,7 @@ export function PublicRegistryGrid({
                   selfPurchasedLabel={selfPurchasedLabel}
                   coverFlavor={coverFlavor}
                   linkedStores={linkedStores}
+                  showStoreRegistries={showStoreRegistries}
                 />
               ))}
             </div>
@@ -390,6 +396,7 @@ function PublicItemCard({
   selfPurchasedLabel = "Purchased by parent",
   coverFlavor,
   linkedStores,
+  showStoreRegistries,
 }: {
   item: RegistryItem;
   categoryName: string | null;
@@ -401,13 +408,17 @@ function PublicItemCard({
   selfPurchasedLabel?: string;
   coverFlavor?: string;
   linkedStores: StoreId[];
+  showStoreRegistries: boolean;
 }) {
   const storeLink = classifyStoreLink(item.external_url);
   const store = storeLink?.store;
-  // Tell the guest the gift counts toward the owner's store registry only when
-  // the owner linked that store and the link isn't a plain product link.
+  // A registry link names the owner's store registry, so the gift counts
+  // there. A link we can't classify counts only if the owner linked that store.
   const registryStoreName =
-    storeLink && storeLink.kind !== "plain" && linkedStores.includes(storeLink.store.id)
+    showStoreRegistries &&
+    storeLink &&
+    (storeLink.kind === "registry" ||
+      (storeLink.kind === "unknown" && linkedStores.includes(storeLink.store.id)))
       ? storeLink.store.name
       : undefined;
   const isFulfilled = item.quantity_fulfilled >= item.quantity_needed;

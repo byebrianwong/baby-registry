@@ -387,6 +387,7 @@ export default async function PublicRegistryPage({
             selfPurchasedLabel={copy.selfPurchasedLabel}
             coverFlavor={copy.coverItemFlavor(parentName)}
             linkedStores={linkedStores}
+            showStoreRegistries={isBabyRegistry}
             suggestButton={
               <SuggestItemDialog
                 registryId={registry.id}
