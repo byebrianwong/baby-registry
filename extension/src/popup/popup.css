@@ -29,7 +29,9 @@ body {
   background: #ffffff;
 }
 
-#app { display: flex; flex-direction: column; min-height: 200px; }
+/* Chrome caps popups at 600px tall. Keep every view inside that, so the
+   popup itself never scrolls; long item lists scroll on their own instead. */
+#app { display: flex; flex-direction: column; min-height: 200px; max-height: 600px; }
 
 a { color: var(--brand); }
 a:hover { color: var(--brand-hover); }
@@ -47,7 +49,8 @@ a:hover { color: var(--brand-hover); }
   display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600;
 }
 
-.body { padding: 14px 16px 16px; display: flex; flex-direction: column; gap: 12px; flex: 1; }
+.body { padding: 14px 16px 16px; display: flex; flex-direction: column; gap: 12px; flex: 1 1 auto; min-height: 0; }
+.body > * { flex: none; }
 .lead { margin: 0; color: var(--text-secondary); }
 .muted { color: var(--text-tertiary); font-size: 12px; }
 .center { text-align: center; }
@@ -66,13 +69,23 @@ a:hover { color: var(--brand-hover); }
 
 .field { display: flex; flex-direction: column; gap: 4px; }
 .field label, .label { font-size: 12px; font-weight: 500; color: var(--text-secondary); }
+/* Our own arrow, so it sits 12px in from the edge like the text does. */
 select {
-  font: inherit; color: var(--text); background: #ffffff; border: 1px solid var(--border-strong);
-  border-radius: 8px; padding: 8px 10px; width: 100%;
+  appearance: none; -webkit-appearance: none;
+  font: inherit; color: var(--text); border: 1px solid var(--border-strong);
+  border-radius: 8px; padding: 8px 36px 8px 12px; width: 100%; cursor: pointer;
+  background: #ffffff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%235e5652' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 12px center;
+  text-overflow: ellipsis;
 }
 
-.list { list-style: none; margin: 0; padding: 0; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
-.list > li + li { border-top: 1px solid var(--border); }
+/* The items list takes whatever height is left and scrolls inside its border. */
+.picker {
+  flex: 0 1 auto; min-height: 0; display: flex; flex-direction: column;
+  border: 1px solid var(--border); border-radius: 12px; overflow: hidden;
+}
+.items { list-style: none; margin: 0; padding: 0; flex: 0 1 auto; min-height: 120px; overflow-y: auto; }
+.items > li + li { border-top: 1px solid var(--border); }
+.already { flex: none; border-top: 1px solid var(--border); }
 .item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; cursor: pointer; }
 .item input { flex: none; width: 18px; height: 18px; margin: 0; accent-color: var(--brand); }
 .thumb { flex: none; width: 40px; height: 40px; border-radius: 8px; background: var(--surface-muted); object-fit: contain; }
@@ -81,7 +94,6 @@ select {
 .meta { display: flex; align-items: center; gap: 8px; font-size: 12px; }
 .price { font-weight: 600; }
 .ok { display: inline-flex; align-items: center; gap: 3px; color: var(--success); }
-.scroll { max-height: 220px; overflow-y: auto; }
 
 .toggle {
   width: 100%; display: flex; align-items: center; justify-content: space-between; font: inherit; font-size: 13px;
@@ -89,7 +101,7 @@ select {
 }
 .toggle svg { transition: transform 120ms; }
 .toggle[aria-expanded="true"] svg { transform: rotate(180deg); }
-.existing { padding: 0 12px 10px; margin: 0; list-style: none; font-size: 12px; color: var(--text-tertiary); }
+.existing { padding: 0 12px 10px; margin: 0; list-style: none; font-size: 12px; color: var(--text-tertiary); max-height: 120px; overflow-y: auto; }
 .existing li { padding: 2px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 .check { display: flex; align-items: center; gap: 8px; font-size: 13px; min-height: 32px; cursor: pointer; }

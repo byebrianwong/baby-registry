@@ -302,7 +302,7 @@ async function showImport(ctx: ImportContext) {
       `${already.length} already on Regibee`,
       icon(CHEVRON)
     );
-    alreadyRow = h("li", {}, toggle, list);
+    alreadyRow = h("div", { className: "already" }, toggle, list);
   }
 
   const autoBox = h("input", {
@@ -356,7 +356,7 @@ async function showImport(ctx: ImportContext) {
       !store.registryPage?.verified &&
         h("p", { className: "note" }, `Reading ${store.name} registries is new. Check the items look right before you add them.`),
       registrySelect(registries, registryId, "Add to", onRegistryChange),
-      h("ul", { className: "list" }, h("li", {}, h("ul", { className: "list scroll", style: "border: none; border-radius: 0" }, ...itemRows)), alreadyRow),
+      h("div", { className: "picker" }, h("ul", { className: "items" }, ...itemRows), alreadyRow),
       h("label", { className: "check" }, autoBox, "Add new items automatically next time"),
       h(
         "div",
