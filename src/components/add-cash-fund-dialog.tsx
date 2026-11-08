@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { DollarSign, ChevronDown } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input, InputBase } from "@/components/base/input/input";
 import { InputGroup, InputPrefix } from "@/components/base/input/input-group";
@@ -43,6 +44,10 @@ export function AddCashFundDialog({ registryId }: AddCashFundDialogProps) {
       setError(result.error);
     } else {
       setOpen(false);
+      const title = String(formData.get("title") ?? "").trim();
+      toast.success(title ? `"${title}" created` : "Gift fund created", {
+        description: "It's listed under Gift Funds. Click it to edit.",
+      });
     }
     setLoading(false);
   };
