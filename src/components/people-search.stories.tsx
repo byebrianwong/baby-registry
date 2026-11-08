@@ -3,10 +3,10 @@ import { fireEvent } from "storybook/test";
 import { PeopleSearch } from "./people-search";
 
 const people = [
-  { username: "remi-and-max", full_name: "Remi & Max", state: "none" as const },
+  { username: "remi-wong", full_name: "Remi Wong", state: "none" as const },
   { username: "remi-smith", full_name: "Remi Smith", state: "pending" as const },
   { username: "remy-k", full_name: "Remy Kim", state: "approved" as const },
-  { username: "remi-wong", full_name: "Remi Wong", state: "self" as const },
+  { username: "remi-and-max", full_name: "Remi & Max", state: "self" as const },
 ];
 
 const meta: Meta<typeof PeopleSearch> = {
