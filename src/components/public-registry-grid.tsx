@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import { ExternalLink, Search } from "lucide-react";
+import { ExternalLink, Search, Store } from "lucide-react";
 import { TightSelect } from "@/components/ui/tight-select";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -17,6 +17,7 @@ import { CategoryNav, type CategoryNavItem } from "@/components/category-nav";
 import { ItemImage } from "@/components/item-image";
 import { getCategorySectionId } from "@/lib/category-section-id";
 import type { PaymentMethods } from "@/lib/types";
+import { classifyStoreLink, detectStore, STORES, type StoreId } from "@/lib/retailers";
 
 interface RegistryItem {
   id: string;
@@ -60,6 +61,9 @@ interface Props {
   suggestButton: ReactNode;
   selfPurchasedLabel?: string;
   coverFlavor?: string;
+  /** Stores where the owner has their own registry. Ids only: guests never
+   *  get the owner's store registry links. */
+  linkedStores?: StoreId[];
 }
 
 type SortMode = "default" | "most-wanted" | "price-asc" | "price-desc";
@@ -91,10 +95,18 @@ export function PublicRegistryGrid({
   suggestButton,
   selfPurchasedLabel = "Purchased by parent",
   coverFlavor,
+  linkedStores = [],
 }: Props) {
   const [search, setSearch] = useState("");
   const [priceBucket, setPriceBucket] = useState("any");
   const [sort, setSort] = useState<SortMode>("default");
+  const [storeFilter, setStoreFilter] = useState<StoreId | "any">("any");
+
+  // Offer a store filter only when items come from more than one known store.
+  const storesInItems = STORES.filter((s) =>
+    items.some((item) => detectStore(item.external_url)?.id === s.id)
+  );
+  const showStoreFilter = storesInItems.length >= 2;
 
   const normalizedQuery = search.trim().toLowerCase();
   const priceMax =
@@ -106,6 +118,7 @@ export function PublicRegistryGrid({
       if (!haystack.includes(normalizedQuery)) return false;
     }
     if (priceMax !== Infinity && (item.price ?? Infinity) > priceMax) return false;
+    if (storeFilter !== "any" && detectStore(item.external_url)?.id !== storeFilter) return false;
     return true;
   });
   const sortedItems = [...filteredItems].sort((a, b) => {
@@ -122,7 +135,10 @@ export function PublicRegistryGrid({
   });
 
   const filtersActive =
-    normalizedQuery !== "" || priceBucket !== "any" || sort !== "default";
+    normalizedQuery !== "" ||
+    priceBucket !== "any" ||
+    sort !== "default" ||
+    storeFilter !== "any";
 
   // Group items by category (after filter/sort)
   const itemsByCategory = new Map<string | null, RegistryItem[]>();
@@ -163,7 +179,10 @@ export function PublicRegistryGrid({
   const noMatches =
     filtersActive &&
     sortedItems.length === 0 &&
-    (sort !== "default" || priceBucket !== "any" || normalizedQuery !== "");
+    (sort !== "default" ||
+      priceBucket !== "any" ||
+      normalizedQuery !== "" ||
+      storeFilter !== "any");
 
   return (
     <div className="flex gap-8 items-start">
@@ -183,7 +202,18 @@ export function PublicRegistryGrid({
               className="w-full rounded-md border border-primary bg-primary py-2 pl-9 pr-3 text-sm placeholder:text-tertiary focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
             />
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            {showStoreFilter && (
+              <TightSelect<StoreId | "any">
+                ariaLabel="Store filter"
+                value={storeFilter}
+                onChange={setStoreFilter}
+                options={[
+                  { value: "any", label: "Any store" },
+                  ...storesInItems.map((s) => ({ value: s.id, label: s.name })),
+                ]}
+              />
+            )}
             <TightSelect
               ariaLabel="Price filter"
               value={priceBucket}
@@ -208,6 +238,7 @@ export function PublicRegistryGrid({
                 setSearch("");
                 setPriceBucket("any");
                 setSort("default");
+                setStoreFilter("any");
               }}
               className="font-medium text-brand-600 hover:underline"
             >
@@ -312,6 +343,7 @@ export function PublicRegistryGrid({
                     shippingAddress={shippingAddress}
                     selfPurchasedLabel={selfPurchasedLabel}
                     coverFlavor={coverFlavor}
+                    linkedStores={linkedStores}
                   />
                 ))}
               </div>
@@ -336,6 +368,7 @@ export function PublicRegistryGrid({
                   shippingAddress={shippingAddress}
                   selfPurchasedLabel={selfPurchasedLabel}
                   coverFlavor={coverFlavor}
+                  linkedStores={linkedStores}
                 />
               ))}
             </div>
@@ -356,6 +389,7 @@ function PublicItemCard({
   shippingAddress,
   selfPurchasedLabel = "Purchased by parent",
   coverFlavor,
+  linkedStores,
 }: {
   item: RegistryItem;
   categoryName: string | null;
@@ -366,7 +400,16 @@ function PublicItemCard({
   shippingAddress?: string;
   selfPurchasedLabel?: string;
   coverFlavor?: string;
+  linkedStores: StoreId[];
 }) {
+  const storeLink = classifyStoreLink(item.external_url);
+  const store = storeLink?.store;
+  // Tell the guest the gift counts toward the owner's store registry only when
+  // the owner linked that store and the link isn't a plain product link.
+  const registryStoreName =
+    storeLink && storeLink.kind !== "plain" && linkedStores.includes(storeLink.store.id)
+      ? storeLink.store.name
+      : undefined;
   const isFulfilled = item.quantity_fulfilled >= item.quantity_needed;
   const remaining = item.quantity_needed - item.quantity_fulfilled;
   const itemPurchased = !!(myGifts.items && myGifts.items[item.id]);
@@ -418,6 +461,12 @@ function PublicItemCard({
                     : `${remaining} of ${item.quantity_needed} still needed`}
                 </span>
               </div>
+              {store && (
+                <span className="inline-flex items-center gap-1 text-xs text-tertiary">
+                  <Store className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                  From {store.name}
+                </span>
+              )}
               {item.notes && (
                 <p className="text-sm text-secondary whitespace-pre-line">
                   {item.notes}
@@ -443,7 +492,7 @@ function PublicItemCard({
         {(item.is_parent_purchased
           ? availableToGift > 0 || itemPurchased
           : !isFulfilled || itemPurchased) && (
-          <div className="flex items-center justify-end gap-2">
+          <div className="flex flex-wrap items-center justify-end gap-2">
             {item.is_parent_purchased ? (
               <CoverItemDialog
                 item={item}
@@ -466,7 +515,7 @@ function PublicItemCard({
                     >
                       <span className="inline-flex items-center gap-1.5">
                         <ExternalLink className="h-4 w-4 shrink-0" />
-                        Shop
+                        {store ? `Shop at ${store.name}` : "Shop"}
                       </span>
                     </a>
                   </Button>
@@ -474,6 +523,7 @@ function PublicItemCard({
                 <ReserveItemDialog
                   item={item}
                   parentName={parentName}
+                  registryStoreName={registryStoreName}
                   alreadyPurchased={itemPurchased}
                   shippingAddress={shippingAddress}
                 />

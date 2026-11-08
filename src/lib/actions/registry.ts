@@ -18,6 +18,13 @@ import {
 } from "@/lib/email";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { buildBuyerRegistryUrl } from "@/lib/buyer-link";
+import {
+  getStore,
+  isLinkForStore,
+  isStoreId,
+  MAX_RETAILER_REGISTRIES,
+  type RetailerRegistry,
+} from "@/lib/retailers";
 import crypto from "crypto";
 
 const COOKIE_NAME = "regibee_my_gifts";
@@ -718,6 +725,61 @@ export async function updateShippingAddress(
   revalidatePath(`/dashboard/registry/${registryId}`);
   revalidatePath(`/dashboard/registry/${registryId}/settings`);
   return { success: true };
+}
+
+export async function updateRetailerRegistries(
+  registryId: string,
+  registries: { store: string; url: string }[]
+) {
+  const { user, error: authError } = await requireManager(registryId);
+  if (authError || !user) return { error: authError || "Not authenticated" };
+
+  if (!Array.isArray(registries) || registries.length > MAX_RETAILER_REGISTRIES) {
+    return { error: "Invalid store registries" };
+  }
+
+  // Server actions can be called directly, so check every entry here too.
+  const cleaned: RetailerRegistry[] = [];
+  for (const entry of registries) {
+    const store = entry?.store;
+    const rawUrl = typeof entry?.url === "string" ? entry.url.trim() : "";
+    if (!isStoreId(store)) return { error: "Unknown store" };
+    if (cleaned.some((r) => r.store === store)) {
+      return { error: `You've already linked a ${getStore(store).name} registry.` };
+    }
+    const url = /^https?:\/\//i.test(rawUrl) ? rawUrl : `https://${rawUrl}`;
+    if (!rawUrl || url.length > 2000 || !isLinkForStore(url, store)) {
+      return { error: `That doesn't look like a ${getStore(store).name} link.` };
+    }
+    cleaned.push({ store, url });
+  }
+
+  const supabase = await createClient();
+  const { data: registry } = await supabase
+    .from("registries")
+    .select("settings")
+    .eq("id", registryId)
+    .single();
+
+  if (!registry) {
+    return { error: "Registry not found" };
+  }
+
+  const settings = (registry.settings as Record<string, unknown>) || {};
+  settings.retailer_registries = cleaned;
+
+  const { error } = await supabase
+    .from("registries")
+    .update({ settings })
+    .eq("id", registryId);
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidatePath(`/dashboard/registry/${registryId}`);
+  revalidatePath(`/dashboard/registry/${registryId}/settings`);
+  return { success: true, registries: cleaned };
 }
 
 export async function updateZipCode(

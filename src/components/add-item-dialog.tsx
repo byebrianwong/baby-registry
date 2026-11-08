@@ -23,6 +23,8 @@ import { scrapeProductUrl } from "@/lib/actions/scrape";
 import { estimateTax } from "@/lib/actions/tax";
 import type { PersonalEventType, RegistryType } from "@/lib/types";
 import { copyFor } from "@/lib/registry-copy";
+import type { RetailerRegistry } from "@/lib/retailers";
+import { StoreLinkNotice } from "@/components/store-link-notice";
 
 interface Category {
   id: string;
@@ -43,6 +45,9 @@ interface AddItemDialogProps {
     isEssential?: boolean;
   };
   trigger?: React.ReactNode;
+  /** The owner's linked store registries. Leave unset to hide store notices
+   *  (personal registries don't use them). */
+  linkedRegistries?: RetailerRegistry[];
 }
 
 const currencySymbols: Record<string, string> = {
@@ -62,6 +67,7 @@ export function AddItemDialog({
   eventType = null,
   defaultValues,
   trigger,
+  linkedRegistries,
 }: AddItemDialogProps) {
   const copy = copyFor({ registryType, eventType });
   const isBaby = registryType === "baby";
@@ -87,6 +93,8 @@ export function AddItemDialog({
   const [newCategoryName, setNewCategoryName] = useState("");
   const [creatingCategory, setCreatingCategory] = useState(false);
   const [categoryError, setCategoryError] = useState("");
+
+  const [externalUrl, setExternalUrl] = useState("");
 
   const urlRef = useRef<HTMLInputElement>(null);
 
@@ -241,6 +249,7 @@ export function AddItemDialog({
       setImageCandidates([]);
       setBrokenCandidates(new Set());
       setCategoryId(defaultValues?.categoryId);
+      setExternalUrl("");
       setError("");
       setOpen(false);
     }
@@ -248,7 +257,7 @@ export function AddItemDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setScrapeStatus(""); setScrapeIsError(false); setParentPurchased(false); setOpenToUsed(false); setTaxInfo(null); setCurrency("USD"); setTitle(defaultValues?.title || ""); setPrice(defaultValues?.price ? parseFloat(defaultValues.price).toFixed(2) : ""); setImageUrl(""); setImageError(false); setImageCandidates([]); setBrokenCandidates(new Set()); setCategoryId(defaultValues?.categoryId); setError(""); } }}>
+    <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setScrapeStatus(""); setScrapeIsError(false); setParentPurchased(false); setOpenToUsed(false); setTaxInfo(null); setCurrency("USD"); setTitle(defaultValues?.title || ""); setPrice(defaultValues?.price ? parseFloat(defaultValues.price).toFixed(2) : ""); setImageUrl(""); setImageError(false); setImageCandidates([]); setBrokenCandidates(new Set()); setCategoryId(defaultValues?.categoryId); setExternalUrl(""); setError(""); } }}>
       <DialogTrigger asChild>
         {trigger || (
           <Button>
@@ -285,6 +294,7 @@ export function AddItemDialog({
                 ref={urlRef}
                 name="externalUrl"
                 placeholder="https://www.target.com/..."
+                onChange={setExternalUrl}
                 onBlur={(e) => handleScrape((e.target as HTMLInputElement).value)}
                 className="flex-1"
               />
@@ -305,6 +315,14 @@ export function AddItemDialog({
                 </span>
               </Button>
             </div>
+            {linkedRegistries && (
+              <StoreLinkNotice
+                url={externalUrl}
+                registryId={registryId}
+                linkedRegistries={linkedRegistries}
+                className="ml-8"
+              />
+            )}
             {scrapeStatus && (
               <p className={`text-xs pl-8 ${scrapeIsError ? "text-error-primary" : "text-brand-600"}`}>{scrapeStatus}</p>
             )}

@@ -10,6 +10,7 @@ import { UsedConditionTag } from "@/components/ui/used-condition-tag";
 import { toggleParentPurchased } from "@/lib/actions/registry";
 import { EditItemDialog } from "@/components/edit-item-dialog";
 import { GiftDetailModal, type Purchase } from "@/components/gift-detail-modal";
+import type { RetailerRegistry } from "@/lib/retailers";
 
 interface ItemCardProps {
   item: {
@@ -36,9 +37,11 @@ interface ItemCardProps {
   selfPurchaseButtonLabel?: string;
   registryType?: "baby" | "personal";
   eventType?: string | null;
+  /** Passed to the edit dialog's store link notice. */
+  linkedRegistries?: RetailerRegistry[];
 }
 
-export function ItemCard({ item, registryId, isOwner, categories = [], zipCode, highlightId, purchases, selfPurchaseButtonLabel = "Mark as bought by parent", registryType = "baby", eventType = null }: ItemCardProps) {
+export function ItemCard({ item, registryId, isOwner, categories = [], zipCode, highlightId, purchases, selfPurchaseButtonLabel = "Mark as bought by parent", registryType = "baby", eventType = null, linkedRegistries }: ItemCardProps) {
   const [toggling, setToggling] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [giftDetailOpen, setGiftDetailOpen] = useState(false);
@@ -209,6 +212,7 @@ export function ItemCard({ item, registryId, isOwner, categories = [], zipCode, 
         eventType={eventType as never}
         open={editOpen}
         onOpenChange={setEditOpen}
+        linkedRegistries={linkedRegistries}
       />
     )}
     {purchases && purchases.length > 0 && (

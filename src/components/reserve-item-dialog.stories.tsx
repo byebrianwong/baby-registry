@@ -40,6 +40,23 @@ export const SingleQuantity: Story = {
   play: openDialog,
 };
 
+// The owner linked their Amazon registry, so the dialog explains how to buy
+// there so the gift counts toward it.
+export const OnStoreRegistry: Story = {
+  args: {
+    item: {
+      id: "3",
+      title: "Solly Baby Wrap",
+      price: 74,
+      quantity_needed: 1,
+      quantity_fulfilled: 0,
+      external_url: "https://www.amazon.com/dp/B0EXAMPLE?colid=EXAMPLE&coliid=EXAMPLE&psc=1",
+    },
+    registryStoreName: "Amazon",
+  },
+  play: openDialog,
+};
+
 // Needs more than one, so the dialog adds a quantity field. No store link.
 export const MultiQuantity: Story = {
   args: {
