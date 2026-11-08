@@ -75,7 +75,7 @@ export default function DemoSettingsPage() {
         <div className="container mx-auto max-w-2xl px-4 py-8">
           <div className="flex items-center gap-2 mb-6">
             <Button variant="ghost" size="sm" asChild>
-              <Link href="/demo/manage">
+              <Link href="/demo/manage" aria-label="Back to registry">
                 <ArrowLeft className="h-4 w-4" />
               </Link>
             </Button>

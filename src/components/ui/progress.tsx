@@ -2,15 +2,22 @@ import * as React from "react"
 
 import { cn } from "@/lib/utils"
 
+// A progressbar needs an accessible name, or screen readers announce only the
+// percentage. Pass aria-label, or aria-labelledby pointing at a visible label.
+type ProgressLabel =
+  | { "aria-label": string; "aria-labelledby"?: never }
+  | { "aria-labelledby": string; "aria-label"?: never }
+
 function Progress({
   className,
   value,
   max = 100,
   ...props
-}: React.ComponentProps<"div"> & {
-  value?: number
-  max?: number
-}) {
+}: Omit<React.ComponentProps<"div">, "aria-label" | "aria-labelledby"> &
+  ProgressLabel & {
+    value?: number
+    max?: number
+  }) {
   return (
     <div
       data-slot="progress"

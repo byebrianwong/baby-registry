@@ -225,7 +225,7 @@ export default function ChecklistPage() {
       {/* Header */}
       <div className="flex items-center gap-4 mb-6">
         <Button variant="ghost" size="sm" asChild>
-          <Link href={`/dashboard/registry/${registryId}`}>
+          <Link href={`/dashboard/registry/${registryId}`} aria-label="Back to registry">
             <ArrowLeft className="h-4 w-4" />
           </Link>
         </Button>
@@ -245,6 +245,7 @@ export default function ChecklistPage() {
             <span className="text-tertiary"> of {totalItems} items added</span>
           </div>
           <Progress
+            aria-label="Checklist items added"
             value={(addedCount / totalItems) * 100}
             className="w-32"
           />
@@ -323,6 +324,7 @@ export default function ChecklistPage() {
                   </div>
                 </div>
                 <Progress
+                  aria-label={`${category.name} items added`}
                   value={
                     category.items.length > 0
                       ? (catAddedCount / category.items.length) * 100

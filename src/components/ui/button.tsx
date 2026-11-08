@@ -118,8 +118,12 @@ function Button({
     } as Record<string, unknown>)
   }
 
-  // Regular button rendering via Untitled UI Button
-  const { type = "button", onClick, ...rest } = props
+  // Regular button rendering via Untitled UI Button.
+  // React Aria's Button drops the title attribute, so an icon-only button
+  // named only by title would have no accessible name. Use title as its
+  // aria-label instead.
+  const { type = "button", onClick, title, ...rest } = props
+  const ariaLabel = rest["aria-label"] ?? (isIconSize ? title : undefined)
   return (
     <UntitledButton
       color={utColor}
@@ -133,6 +137,7 @@ function Button({
       )}
       onClick={onClick as UntitledButtonProps["onClick"]}
       {...(rest as Omit<UntitledButtonProps, "color" | "size" | "isDisabled" | "type" | "onClick" | "className">)}
+      aria-label={ariaLabel}
     >
       {children}
     </UntitledButton>
