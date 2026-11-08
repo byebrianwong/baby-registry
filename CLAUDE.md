@@ -43,8 +43,16 @@ Vercel holds these env vars for production, preview and development: `NEXT_PUBLI
 - The free plan includes 5,000 snapshots a month. When they run out, Chromatic pauses testing and review until the next month.
 - Storybook can't render async server components. Put a page's markup in a plain component and write the story for that. The landing page works this way.
 
+## Browser extension
+
+- The Chrome extension lives in `extension/`. [extension/README.md](extension/README.md) covers building, loading and what it reads.
+- It signs in with its own Supabase session, which `/extension/connect` creates. Its API is `src/app/api/extension/*`, and it runs as the signed-in user under the same access rules as the website.
+- Store link rules and the pages it reads are in `src/lib/retailers.ts`, which the site and the extension share. Change a store there, not in the extension.
+- The extension only works against a site that has its API routes deployed.
+
 ## Before opening a pull request
 
 - Run `npx tsc --noEmit` and `npm run build`.
 - If you changed components or stories, also run `npm run build-storybook`.
+- If you changed `extension/`, `src/lib/retailers.ts` or `src/lib/extension.ts`, also run `npm run extension:build`.
 - `npm run lint` fails right now. `eslint.config.mjs` imports `eslint-plugin-storybook`, which isn't in `package.json`.

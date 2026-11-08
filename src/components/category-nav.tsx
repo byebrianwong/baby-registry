@@ -95,9 +95,12 @@ export function CategoryNav({ categories, suggestButton }: CategoryNavProps) {
         ) : (
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-tertiary">
+              {/* An h2: on registry pages this comes right after the h1. font-sans
+                  and tracking-normal keep the small label look instead of the
+                  display font that h2s get by default. */}
+              <h2 className="font-sans text-sm font-semibold tracking-normal text-tertiary">
                 Categories
-              </h3>
+              </h2>
               <button
                 type="button"
                 onClick={() => setIsCollapsed(true)}

@@ -339,7 +339,7 @@ export default async function PublicRegistryPage({
               </span>
               <span>{Math.round(progress)}%</span>
             </div>
-            <Progress value={progress} />
+            <Progress value={progress} aria-label="Gifts fulfilled" />
           </div>
           <p className="inline-flex items-center gap-1.5 text-xs text-tertiary">
             <LockOpen className="h-3.5 w-3.5" />

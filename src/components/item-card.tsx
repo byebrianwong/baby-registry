@@ -76,18 +76,15 @@ export function ItemCard({ item, registryId, isOwner, categories = [], zipCode, 
       className={`py-0 gap-0 rounded-2xl ${
         isOwner ? "cursor-pointer transition hover:shadow-md motion-safe:hover:-translate-y-0.5" : ""
       } ${
-        isFulfilled && !item.is_parent_purchased
-          ? "opacity-60"
-          : item.is_parent_purchased
-            ? "bg-secondary"
-            : ""
+        item.is_parent_purchased ? "bg-secondary" : ""
       }`}
       style={isHighlighted ? { animation: "highlight-pulse 1.5s ease-in-out 3" } : undefined}
       onClick={isOwner ? () => setEditOpen(true) : undefined}
     >
       <CardContent className="flex h-full flex-col justify-between gap-4 p-4">
         <div className="flex gap-3">
-          <div className="relative size-[106px] shrink-0">
+          {/* A fulfilled item fades its image, not the whole card, so its text keeps 4.5:1 contrast. */}
+          <div className={`relative size-[106px] shrink-0 ${isFulfilled && !item.is_parent_purchased ? "opacity-60" : ""}`}>
             {item.image_url ? (
               <div className="flex size-[106px] items-center justify-center rounded-[10px] bg-tertiary">
                 <img

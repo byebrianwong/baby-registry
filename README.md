@@ -8,6 +8,7 @@ A gift registry app built with Next.js, Supabase, and Tailwind CSS. It started a
 
 - **Baby or personal registries** - Choose a type when you create a registry. A personal registry can name an occasion (birthday, Christmas, wedding, housewarming, graduation or other), which changes its labels and placeholders. Baby registries start with 10 categories. Personal registries start with none.
 - **Items from any store** - Paste a product link and Regibee fills in the title, price and picture from that page where it can. You can also type the details yourself.
+- **Browser extension** - The Chrome extension brings the items on your Amazon, Target, Walmart and Pottery Barn Kids registries into Regibee, with their registry links. On any shop's product page, it can also add that one item. See [extension/README.md](extension/README.md).
 - **Baby checklist** - Baby registries get a checklist of 100 suggested items in 10 categories (Nursery & Sleep, Feeding, Diapering, Gear & Travel, Bath, Clothing, Health & Safety, Toys & Books, Maternity & Postpartum, Gifts & Extras). Add the ones you want and dismiss the rest.
 - **Cash funds** - Set up money goals, such as a diaper fund or a college fund. Guests pledge an amount and pay you directly by Venmo, PayPal or Zelle. Regibee doesn't handle money.
 - **Items you already bought** - Mark an item as bought by you. Guests can still give it by sending you the money for it. With a US ZIP code and the sales tax option on, Regibee adds estimated sales tax to the price of these items.
@@ -134,8 +135,10 @@ src/
 │   │               ├── page.tsx       # Items, gift activity, suggestions
 │   │               ├── checklist/     # Baby checklist
 │   │               └── settings/      # Registry settings and managers
+│   ├── api/extension/    # The browser extension's API
 │   ├── auth/callback/    # Where email confirmation and password reset links land
 │   ├── demo/             # Demo pages with sample data
+│   ├── extension/connect/ # Connects the browser extension to an account
 │   ├── invite/[token]/   # Accept an invite to co-manage a registry
 │   ├── r/[slug]/         # Public registry page (gift givers)
 │   ├── u/[username]/     # Public profile
@@ -151,6 +154,9 @@ src/
 │   │   ├── scrape.ts     # Reads the title, price and pictures from a product link
 │   │   └── tax.ts        # Sales tax estimate
 │   ├── email.ts          # Notification emails (Resend)
+│   ├── retailers.ts      # Store registry link rules, shared with the extension
+│   ├── extension.ts      # Types and checks shared with the extension
+│   ├── extension-server.ts # The extension's sessions and access checks
 │   ├── email-templates.ts
 │   ├── buyer-link.ts     # Signed links in guest confirmation emails
 │   ├── checklist-data.ts # Baby checklist (100 items)
@@ -163,6 +169,7 @@ src/
     ├── client.ts          # Browser client
     ├── server.ts          # Server client
     └── middleware.ts       # Session refresh
+extension/                # Chrome extension (see extension/README.md)
 ```
 
 ## Database Schema

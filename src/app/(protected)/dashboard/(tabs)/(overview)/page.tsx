@@ -25,7 +25,17 @@ function activePurchases(registry: any): CardPurchase[] {
     .filter((p) => p.status !== "cancelled");
 }
 
-function RegistryCard({ registry, today, badge }: { registry: any; today: string; badge?: string }) {
+function RegistryCard({
+  registry,
+  today,
+  badge,
+  headingLevel,
+}: {
+  registry: any;
+  today: string;
+  badge?: string;
+  headingLevel?: 2 | 3;
+}) {
   const items: CardItem[] = registry.registry_items || [];
   const recentPurchases = activePurchases(registry)
     .sort((a, b) => b.created_at.localeCompare(a.created_at))
@@ -45,6 +55,7 @@ function RegistryCard({ registry, today, badge }: { registry: any; today: string
       manageHref={`/dashboard/registry/${registry.id}`}
       publicHref={`/r/${registry.slug}`}
       badge={badge}
+      headingLevel={headingLevel}
     />
   );
 }
@@ -249,7 +260,7 @@ export default async function DashboardPage() {
               </div>
               <div className="mt-4 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                 {sharedRegistries.map((registry) => (
-                  <RegistryCard key={registry.id} registry={registry} today={today} badge="Manager" />
+                  <RegistryCard key={registry.id} registry={registry} today={today} badge="Manager" headingLevel={3} />
                 ))}
               </div>
             </>

@@ -312,7 +312,7 @@ export default async function RegistryManagePage({
             <p className="text-sm text-tertiary">Completion</p>
             <div className="flex items-center gap-2">
               <p className="text-2xl font-bold">{Math.round(progress)}%</p>
-              <Progress value={progress} className="flex-1" />
+              <Progress value={progress} aria-label="Registry completion" className="flex-1" />
             </div>
           </CardContent>
         </Card>

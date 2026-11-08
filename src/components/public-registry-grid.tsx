@@ -295,7 +295,7 @@ export function PublicRegistryGrid({
                                 ${fund.goal_amount.toFixed(0)} goal
                               </span>
                             </div>
-                            <Progress value={fundProgress} />
+                            <Progress value={fundProgress} aria-label={`Amount raised for ${fund.title}`} />
                             <span className="text-xs text-tertiary">
                               ${Math.max(0, fund.goal_amount - fund.current_amount).toFixed(0)} remaining
                             </span>
@@ -428,7 +428,7 @@ function PublicItemCard({
     <Card
       className={`py-0 gap-0 rounded-2xl shadow-none ${
         (isFulfilled && !item.is_parent_purchased) || isFullyCovered
-          ? "opacity-60 border-tertiary"
+          ? "border-tertiary"
           : item.is_parent_purchased
             ? "bg-mint-200/20 border-primary"
             : "border-primary"
@@ -438,10 +438,12 @@ function PublicItemCard({
         <div className="flex flex-col gap-3">
           <div className="flex gap-3">
             <div className="relative shrink-0">
+              {/* A fulfilled item fades its image, not the whole card, so its text keeps 4.5:1 contrast. */}
               <ItemImage
                 imageUrl={item.image_url}
                 title={item.title}
                 categoryName={categoryName}
+                className={(isFulfilled && !item.is_parent_purchased) || isFullyCovered ? "opacity-60" : ""}
               />
               {itemPurchased && (
                 <img

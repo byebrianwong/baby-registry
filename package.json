@@ -9,7 +9,9 @@
     "lint": "eslint",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
-    "chromatic": "npx chromatic"
+    "chromatic": "npx chromatic",
+    "extension:build": "node extension/build.mjs",
+    "extension:dev": "node extension/build.mjs --dev --watch"
   },
   "dependencies": {
     "@react-stately/utils": "^3.11.0",
@@ -41,11 +43,13 @@
     "@storybook/react": "^10.2.10",
     "@tailwindcss/postcss": "^4",
     "@types/canvas-confetti": "^1.9.0",
+    "@types/chrome": "^0.1.24",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@types/zipcodes": "^8.0.5",
     "chromatic": "^15.1.1",
+    "esbuild": "^0.25.12",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
     "postcss": "^8.5.6",

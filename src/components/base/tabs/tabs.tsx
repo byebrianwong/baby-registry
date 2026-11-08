@@ -180,7 +180,9 @@ export const Tab = (props: TabComponentProps) => {
             {...otherProps}
             className={(prop) =>
                 cx(
-                    "z-10 flex h-max cursor-pointer items-center justify-center gap-2 rounded-md whitespace-nowrap text-quaternary transition duration-100 ease-linear",
+                    // Unselected tabs use tertiary text. Quaternary (gray-500) is 4.4:1 on the
+                    // gray-50 tab list background, under the 4.5:1 that WCAG AA asks for.
+                    "z-10 flex h-max cursor-pointer items-center justify-center gap-2 rounded-md whitespace-nowrap text-tertiary transition duration-100 ease-linear",
                     "group-orientation-vertical:justify-start",
                     fullWidth && "w-full flex-1",
                     sizes[size][type],

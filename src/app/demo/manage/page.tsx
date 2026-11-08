@@ -324,6 +324,7 @@ function DemoAddItemDialog({
                 <InputPrefix position="trailing">
                   <span className="relative inline-flex items-center">
                     <select
+                      aria-label="Currency"
                       className="appearance-none bg-transparent pr-5 text-primary outline-none cursor-pointer"
                       value={currency}
                       onChange={(e) => setCurrency(e.target.value)}
@@ -592,6 +593,7 @@ function DemoEditItemDialog({
                 <InputPrefix position="trailing">
                   <span className="relative inline-flex items-center">
                     <select
+                      aria-label="Currency"
                       className="appearance-none bg-transparent pr-5 text-primary outline-none cursor-pointer"
                       value={currency}
                       onChange={(e) => setCurrency(e.target.value)}
@@ -705,17 +707,14 @@ function DemoItemCard({
   return (
     <Card
       className={`py-0 gap-0 rounded-2xl cursor-pointer transition hover:shadow-md motion-safe:hover:-translate-y-0.5 ${
-        isFulfilled && !item.is_parent_purchased
-          ? "opacity-60"
-          : item.is_parent_purchased
-            ? "bg-secondary"
-            : ""
+        item.is_parent_purchased ? "bg-secondary" : ""
       }`}
       onClick={onClick}
     >
       <CardContent className="flex h-full flex-col justify-between gap-4 p-4">
         <div className="flex gap-3">
-          <div className="relative size-[106px] shrink-0">
+          {/* A fulfilled item fades its image, not the whole card, so its text keeps 4.5:1 contrast. */}
+          <div className={`relative size-[106px] shrink-0 ${isFulfilled && !item.is_parent_purchased ? "opacity-60" : ""}`}>
             {item.image_url ? (
               <div className="flex size-[106px] items-center justify-center rounded-[10px] bg-tertiary">
                 <img
@@ -1130,7 +1129,7 @@ export default function DemoManagePage() {
             <div>
               <div className="flex items-center gap-2 mb-1">
                 <Button variant="ghost" size="sm" asChild>
-                  <Link href="/demo/dashboard">
+                  <Link href="/demo/dashboard" aria-label="Back to dashboard">
                     <ArrowLeft className="h-4 w-4" />
                   </Link>
                 </Button>
@@ -1211,7 +1210,7 @@ export default function DemoManagePage() {
                   <p className="text-2xl font-bold">
                     {Math.round(progress)}%
                   </p>
-                  <Progress value={progress} className="flex-1" />
+                  <Progress value={progress} aria-label="Registry completion" className="flex-1" />
                 </div>
               </CardContent>
             </Card>

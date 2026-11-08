@@ -155,6 +155,7 @@ export function SuggestItemDialog({ registryId, categories = [], action }: Sugge
                     <InputPrefix position="trailing">
                       <span className="relative inline-flex items-center">
                         <select
+                          aria-label="Currency"
                           className="appearance-none bg-transparent pr-5 text-primary outline-none cursor-pointer"
                           name="currency"
                           value={currency}
