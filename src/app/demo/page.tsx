@@ -48,6 +48,7 @@ import {
   DEMO_ITEMS,
   DEMO_CASH_FUNDS,
 } from "@/lib/demo-data";
+import { toWebUrl } from "@/lib/web-url";
 import { Logo } from "@/components/logo";
 
 interface DemoItem {
@@ -88,6 +89,8 @@ function DemoSuggestItemDialog() {
   const [open, setOpen] = useState(false);
   const [success, setSuccess] = useState(false);
   const [currency, setCurrency] = useState("USD");
+  const [externalUrl, setExternalUrl] = useState("");
+  const openableUrl = toWebUrl(externalUrl);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -99,6 +102,7 @@ function DemoSuggestItemDialog() {
     if (!open) {
       setSuccess(false);
       setCurrency("USD");
+      setExternalUrl("");
     }
   };
 
@@ -149,7 +153,9 @@ function DemoSuggestItemDialog() {
                 <Label>Product URL (optional)</Label>
                 <div className="flex items-center gap-4">
                   <InputGroup
+                    aria-label="Product URL (optional)"
                     leadingAddon={<InputPrefix>http://</InputPrefix>}
+                    onChange={setExternalUrl}
                     className="flex-1"
                   >
                     <InputBase
@@ -161,7 +167,11 @@ function DemoSuggestItemDialog() {
                     type="button"
                     variant="ghost"
                     size="icon-lg"
-                    title="Open link"
+                    aria-label="Open link in a new tab"
+                    disabled={!openableUrl}
+                    onClick={() => {
+                      if (openableUrl) window.open(openableUrl, "_blank", "noopener,noreferrer");
+                    }}
                   >
                     <Link01 className="h-6 w-6" />
                   </Button>
