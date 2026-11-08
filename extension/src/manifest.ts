@@ -1,7 +1,6 @@
 // Builds manifest.json. extension/build.mjs runs this at build time, so the
 // stores the extension may read always match src/lib/retailers.ts.
 
-import { CONNECT_PATH } from "@/lib/extension";
 import { EXTENSION_STORES } from "@/lib/retailers";
 
 export const EXTENSION_VERSION = "0.1.0";
@@ -41,7 +40,11 @@ export function buildManifest(siteUrl: string) {
     host_permissions: [...stores, ...sites.map((origin) => `${origin}/*`)],
     content_scripts: [
       { matches: stores, js: ["store.js"], run_at: "document_idle" },
-      { matches: sites.map((origin) => `${origin}${CONNECT_PATH}*`), js: ["connect.js"], run_at: "document_idle" },
+      // Every Regibee page, not just the Connect page: after signing in, the
+      // site moves to the Connect page without a full page load, and Chrome
+      // only adds content scripts on full loads. The background worker still
+      // accepts a session only from the Connect page.
+      { matches: sites.map((origin) => `${origin}/*`), js: ["connect.js"], run_at: "document_idle" },
     ],
     // The notice on store pages shows the Regibee logo.
     web_accessible_resources: [{ resources: ["logo.svg"], matches: stores }],

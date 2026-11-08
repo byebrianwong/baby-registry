@@ -1,7 +1,9 @@
-// Runs on the Connect page on regibee.com. It passes the session the page
-// created to the background worker, and tells the page how that went.
+// Runs on regibee.com. On the Connect page it passes the session the page
+// created to the background worker, and tells the page how that went. It
+// loads on every Regibee page so it's already there when the site moves to
+// the Connect page without a full load, as it does after signing in.
 
-import { EXTENSION_SOURCE, isPageMessage, type ExtensionMessage } from "@/lib/extension";
+import { CONNECT_PATH, EXTENSION_SOURCE, isPageMessage, type ExtensionMessage } from "@/lib/extension";
 import { VERSION } from "../config";
 import { ask } from "../messages";
 
@@ -19,7 +21,11 @@ window.addEventListener("message", async (event) => {
 
   if (message.type === "hello") {
     tell({ type: "ready", version: VERSION });
-  } else if (message.type === "connect") {
+    return;
+  }
+  // Sessions and cancels come only from the Connect page.
+  if (location.pathname !== CONNECT_PATH) return;
+  if (message.type === "connect") {
     const result = await ask({ type: "connect-session", session: message.session });
     if (result.ok) tell({ type: "connected" });
     else tell({ type: "connect-failed", error: "The extension couldn't save the connection. Try again." });
@@ -28,4 +34,5 @@ window.addEventListener("message", async (event) => {
   }
 });
 
-tell({ type: "ready", version: VERSION });
+// The Connect page also says hello when it opens, which covers arriving there later.
+if (location.pathname === CONNECT_PATH) tell({ type: "ready", version: VERSION });

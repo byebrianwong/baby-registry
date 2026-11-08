@@ -150,17 +150,24 @@ async function popupState(): Promise<PopupState> {
   return { connected: Boolean(session), user: user ?? null, mode, registryId: registryId ?? null, lastChecked };
 }
 
-function isConnectPage(url: string | undefined): boolean {
-  if (!url) return false;
+/**
+ * True for a content script on the Regibee site. Only the origin can be
+ * checked: when the site moves to the Connect page without a full load,
+ * Chrome still reports the page it loaded on. The content script checks the
+ * current path itself.
+ */
+function isRegibeeSite(sender: chrome.runtime.MessageSender): boolean {
+  const from = sender.origin ?? sender.url;
+  if (!from) return false;
   try {
-    const parsed = new URL(url);
+    const parsed = new URL(from);
     const site = new URL(REGIBEE_URL);
     // regibee.com redirects to www.regibee.com, so accept both.
-    const sameSite =
+    return (
       parsed.protocol === site.protocol &&
       parsed.port === site.port &&
-      parsed.hostname.replace(/^www\./, "") === site.hostname.replace(/^www\./, "");
-    return sameSite && parsed.pathname === CONNECT_PATH;
+      parsed.hostname.replace(/^www\./, "") === site.hostname.replace(/^www\./, "")
+    );
   } catch {
     return false;
   }
@@ -206,11 +213,11 @@ async function handle(request: BackgroundRequest, sender: chrome.runtime.Message
       return onPageItems(store.id, request.items, sender.tab?.id);
     }
     case "connect-session":
-      if (!isConnectPage(sender.url)) throw new Error("Not the Regibee connect page");
+      if (!isRegibeeSite(sender)) throw new Error("Not the Regibee site");
       await onConnectSession(request.session);
       return null;
     case "connect-cancel":
-      if (isConnectPage(sender.url) && sender.tab?.id !== undefined) {
+      if (isRegibeeSite(sender) && sender.tab?.id !== undefined) {
         await chrome.tabs.remove(sender.tab.id);
       }
       return null;
