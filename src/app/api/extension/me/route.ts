@@ -10,7 +10,8 @@ export async function GET(request: Request) {
   const { user, supabase } = auth;
 
   const ids = await managedRegistryIds(user.id);
-  const [{ data: profile }, { data: registries }] = await Promise.all([
+  type CategoryRow = { id: string; registry_id: string; name: string };
+  const [{ data: profile }, { data: registries }, { data: categories }] = await Promise.all([
     supabase.from("profiles").select("full_name").eq("id", user.id).single(),
     ids.length > 0
       ? supabase
@@ -19,7 +20,21 @@ export async function GET(request: Request) {
           .in("id", ids)
           .order("created_at", { ascending: false })
       : Promise.resolve({ data: [] as { id: string; title: string; settings: unknown }[] }),
+    ids.length > 0
+      ? supabase
+          .from("categories")
+          .select("id, registry_id, name")
+          .in("registry_id", ids)
+          .order("sort_order", { ascending: true })
+      : Promise.resolve({ data: [] as CategoryRow[] }),
   ]);
+
+  const categoriesByRegistry = new Map<string, { id: string; name: string }[]>();
+  for (const c of (categories ?? []) as CategoryRow[]) {
+    const list = categoriesByRegistry.get(c.registry_id) ?? [];
+    list.push({ id: c.id, name: c.name });
+    categoriesByRegistry.set(c.registry_id, list);
+  }
 
   const body: MeResponse = {
     user: {
@@ -32,6 +47,7 @@ export async function GET(request: Request) {
       id: r.id as string,
       title: r.title as string,
       storeRegistries: parseRetailerRegistries(r.settings),
+      categories: categoriesByRegistry.get(r.id as string) ?? [],
     })),
   };
   return NextResponse.json(body);

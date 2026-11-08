@@ -1,6 +1,6 @@
 // Messages between the popup, the content scripts and the background worker.
 
-import type { AddResponse, ExtensionRegistry, ExtensionSession, StoreItem } from "@/lib/extension";
+import type { AddResponse, ExtensionRegistry, ExtensionSession, ProductItem, StoreItem } from "@/lib/extension";
 import type { StoreId } from "@/lib/retailers";
 
 export type Mode = "ask" | "auto";
@@ -39,6 +39,9 @@ export type BackgroundRequest =
   | { type: "check"; registryId: string; store: StoreId; items: StoreItem[] }
   | { type: "add"; registryId: string; items: StoreItem[]; listed: string[] }
   | { type: "undo"; registryId: string; itemIds: string[] }
+  // From the popup's "Add to Regibee" form on a product page.
+  | { type: "check-url"; registryId: string; url: string }
+  | { type: "add-product"; registryId: string; item: ProductItem }
   // From the store content script, once a registry page has loaded.
   | { type: "page-items"; store: StoreId; items: StoreItem[] }
   // From the connect content script on regibee.com.

@@ -1,9 +1,18 @@
 // The toolbar popup. On a store registry page it lists the items that aren't
-// on Regibee yet; anywhere else it shows the stores and settings.
+// on Regibee yet; on a product page it offers to add that item; anywhere else
+// it shows the stores and settings.
 
-import type { AddResponse, ExtensionRegistry, StoreItem } from "@/lib/extension";
-import { EXTENSION_STORES, getStore, storeItemKey, type StoreId, type StoreInfo } from "@/lib/retailers";
+import {
+  USED_CONDITIONS,
+  type AddProductResponse,
+  type AddResponse,
+  type ExtensionRegistry,
+  type ProductItem,
+  type StoreItem,
+} from "@/lib/extension";
+import { classifyStoreLink, EXTENSION_STORES, getStore, storeItemKey, type StoreId, type StoreInfo } from "@/lib/retailers";
 import { REGIBEE_URL } from "../config";
+import { readProductPage, type ProductPage } from "../product-reader";
 import {
   ask,
   type CheckResult,
@@ -404,7 +413,7 @@ function showAdded(user: { name: string }, store: StoreInfo, registryId: string,
   );
 }
 
-function showHome(state: PopupState, user: { name: string }, data: RegistriesResult) {
+function showHome(state: PopupState, user: { name: string }, data: RegistriesResult, page: ProductPage | null = null) {
   const registryId = data.registryId!;
   const storeItems = EXTENSION_STORES.map((store) => {
     const last = state.lastChecked[store.id as StoreId];
@@ -451,7 +460,25 @@ function showHome(state: PopupState, user: { name: string }, data: RegistriesRes
       "main",
       { className: "body" },
       h("h1", { className: "sr-only" }, "Your store registries"),
-      h("p", { className: "lead" }, "Open one of your store registries and we'll find items to add to Regibee."),
+      // Nothing on the page says it's a product, but the owner may still want it.
+      page &&
+        h(
+          "button",
+          {
+            type: "button",
+            className: "button secondary",
+            onclick: () =>
+              showProduct({
+                user,
+                product: page,
+                registries: data.registries,
+                registryId,
+                storesWithRegistries: storesWithRegistries(state, data.registries.find((r) => r.id === registryId)),
+              }),
+          },
+          "Add this page to Regibee"
+        ),
+      h("p", { className: "lead" }, "Open one of your store registries and we'll find items to add to Regibee. On a product page, click the Regibee button to add that item."),
       h("ul", { className: "stores" }, ...storeItems),
       data.registries.length > 1 &&
         registrySelect(data.registries, registryId, "New items go to", (id) => void ask({ type: "set-registry", registryId: id })),
@@ -487,6 +514,277 @@ function showHome(state: PopupState, user: { name: string }, data: RegistriesRes
   );
 }
 
+interface ProductContext {
+  user: { name: string };
+  product: ProductPage;
+  registries: ExtensionRegistry[];
+  registryId: string;
+  /** Stores the owner has a registry at: linked in Settings or read by the extension. */
+  storesWithRegistries: Set<StoreId>;
+}
+
+const PREV = '<path d="m15 18-6-6 6-6"/>';
+const NEXT = '<path d="m9 18 6-6-6-6"/>';
+const MINUS = '<path d="M5 12h14"/>';
+const PLUS = '<path d="M5 12h14"/><path d="M12 5v14"/>';
+
+/** The "Add to Regibee" form for the product on the page, like the site's add-item dialog. */
+function showProduct(ctx: ProductContext) {
+  const { user, product, registries } = ctx;
+  let registryId = ctx.registryId;
+  let imageIndex = 0;
+  let quantity = 1;
+  const registry = () => registries.find((r) => r.id === registryId)!;
+  const link = classifyStoreLink(product.url);
+
+  // ── Picture ──
+  const picture = h("img", { className: "product-image", alt: "", referrerpolicy: "no-referrer" }) as HTMLImageElement;
+  const counter = h("span", { className: "muted", "aria-live": "polite" });
+  const showImage = () => {
+    if (product.images.length === 0) {
+      picture.removeAttribute("src");
+      return;
+    }
+    picture.src = product.images[imageIndex];
+    counter.textContent = `${imageIndex + 1} of ${product.images.length}`;
+  };
+  const step = (by: number) => () => {
+    imageIndex = (imageIndex + by + product.images.length) % product.images.length;
+    showImage();
+  };
+  const gallery = h(
+    "div",
+    { className: "gallery" },
+    product.images.length > 0 ? picture : h("span", { className: "product-image", "aria-hidden": "true" }),
+    product.images.length > 1 &&
+      h(
+        "div",
+        { className: "gallery-controls" },
+        h("button", { type: "button", className: "icon-button", "aria-label": "Previous picture", onclick: step(-1) }, icon(PREV)),
+        counter,
+        h("button", { type: "button", className: "icon-button", "aria-label": "Next picture", onclick: step(1) }, icon(NEXT))
+      )
+  );
+  showImage();
+
+  // ── Fields ──
+  const title = h("textarea", { id: "title", rows: 3, maxlength: 300, required: true }) as HTMLTextAreaElement;
+  title.value = product.title;
+  const price = h("input", { id: "price", type: "text", inputmode: "decimal", placeholder: "0.00", autocomplete: "off" }) as HTMLInputElement;
+  if (product.price !== null) price.value = product.price.toFixed(2);
+  const qty = h("input", { id: "quantity", type: "number", min: 1, max: 99, value: 1, className: "stepper-value" }) as HTMLInputElement;
+  const setQuantity = (value: number) => {
+    quantity = Math.min(Math.max(Math.round(value) || 1, 1), 99);
+    qty.value = String(quantity);
+  };
+  qty.addEventListener("change", () => setQuantity(Number(qty.value)));
+
+  const category = h("select", { id: "category" }) as HTMLSelectElement;
+  const fillCategories = () => {
+    category.replaceChildren(
+      h("option", { value: "" }, "No category"),
+      ...registry().categories.map((c) => h("option", { value: c.id }, c.name))
+    );
+  };
+  fillCategories();
+
+  const essential = h("input", { type: "checkbox", id: "essential" }) as HTMLInputElement;
+  const openToUsed = h("input", { type: "checkbox", id: "used" }) as HTMLInputElement;
+  const condition = h(
+    "select",
+    { id: "condition" },
+    ...USED_CONDITIONS.map((c) => h("option", { value: c.id }, c.label))
+  ) as HTMLSelectElement;
+  const conditionField = h("div", { className: "field", hidden: true }, h("label", { for: "condition" }, "Minimum condition"), condition);
+  openToUsed.addEventListener("change", () => {
+    conditionField.hidden = !openToUsed.checked;
+  });
+  const notes = h("textarea", {
+    id: "notes",
+    rows: 2,
+    maxlength: 1000,
+    placeholder: "For example, which size or color you'd like.",
+  }) as HTMLTextAreaElement;
+
+  // ── Notices: the registry link, and whether it's already on Regibee ──
+  let linkNote: HTMLElement | null = null;
+  if (link?.kind === "registry") {
+    linkNote = h(
+      "p",
+      { className: "ok-note" },
+      icon(CHECK, 14),
+      h("span", {}, `${link.store.name} registry link. Gifts bought through it count toward your ${link.store.name} registry.`)
+    );
+  } else if (link?.kind === "plain" && ctx.storesWithRegistries.has(link.store.id)) {
+    linkNote = h(
+      "p",
+      { className: "note" },
+      `This is a plain ${link.store.name} link, so gifts bought through it won't count toward your ${link.store.name} registry. Add it to your ${link.store.name} registry first, then open it from there and add it to Regibee.`
+    );
+  }
+  const duplicateNote = h("p", { className: "note", hidden: true });
+  const error = h("p", { className: "error", role: "alert", hidden: true });
+  const button = h("button", { type: "button", className: "button primary" }, "Add to Regibee") as HTMLButtonElement;
+
+  const checkDuplicate = async () => {
+    duplicateNote.hidden = true;
+    button.disabled = false;
+    button.textContent = "Add to Regibee";
+    const result = await ask<{ exists: boolean }>({ type: "check-url", registryId, url: product.url });
+    if (result.ok && result.data.exists) {
+      duplicateNote.replaceChildren(
+        `This item is already on ${registry().title}. `,
+        h(
+          "a",
+          {
+            href: `${REGIBEE_URL}/dashboard/registry/${registryId}`,
+            onclick: (e: Event) => {
+              e.preventDefault();
+              openTab(`${REGIBEE_URL}/dashboard/registry/${registryId}`);
+            },
+          },
+          "View it on Regibee"
+        )
+      );
+      duplicateNote.hidden = false;
+      button.disabled = true;
+      button.textContent = "Already on this registry";
+    }
+  };
+
+  const registryField = registrySelect(registries, registryId, "Registry", async (id) => {
+    registryId = id;
+    fillCategories();
+    await ask({ type: "set-registry", registryId: id });
+    await checkDuplicate();
+  });
+
+  button.addEventListener("click", async () => {
+    error.hidden = true;
+    const name = title.value.replace(/\s+/g, " ").trim();
+    if (!name) {
+      error.textContent = "Give the item a name.";
+      error.hidden = false;
+      title.focus();
+      return;
+    }
+    const priceText = price.value.replace(/[$,\s]/g, "");
+    const priceValue = priceText ? Number(priceText) : null;
+    if (priceValue !== null && (!Number.isFinite(priceValue) || priceValue < 0)) {
+      error.textContent = "Enter the price as a number, like 24.99.";
+      error.hidden = false;
+      price.focus();
+      return;
+    }
+    const item: ProductItem = {
+      url: product.url,
+      title: name,
+      price: priceValue,
+      imageUrl: product.images[imageIndex] ?? null,
+      quantity,
+      categoryId: category.value || null,
+      isEssential: essential.checked,
+      isOpenToUsed: openToUsed.checked,
+      minimumCondition: openToUsed.checked ? (condition.value as ProductItem["minimumCondition"]) : null,
+      notes: notes.value.trim() || null,
+    };
+    button.disabled = true;
+    button.textContent = "Adding…";
+    const result = await ask<AddProductResponse>({ type: "add-product", registryId, item });
+    if (!result.ok) {
+      if (result.notConnected) return showConnect(true);
+      error.textContent = result.error;
+      error.hidden = false;
+      button.disabled = false;
+      button.textContent = "Add to Regibee";
+      return;
+    }
+    if ("duplicate" in result.data) {
+      await checkDuplicate();
+      return;
+    }
+    showProductAdded(user, registryId, registry().title, link?.kind === "registry" ? link.store.name : null);
+  });
+
+  const field = (id: string, label: string, control: Node, extra?: string) =>
+    h("div", { className: `field${extra ? ` ${extra}` : ""}` }, h("label", { for: id }, label), control);
+
+  render(
+    header(user),
+    h(
+      "main",
+      { className: "body product" },
+      h("h1", { className: "sr-only" }, "Add this item to Regibee"),
+      h(
+        "div",
+        { className: "form-scroll" },
+        h("div", { className: "product-top" }, gallery, field("title", "Name", title, "grow")),
+        linkNote,
+        duplicateNote,
+        h(
+          "div",
+          { className: "row" },
+          field("price", "Price", h("div", { className: "money" }, h("span", { "aria-hidden": "true" }, "$"), price)),
+          field(
+            "quantity",
+            "Quantity",
+            h(
+              "div",
+              { className: "stepper" },
+              h("button", { type: "button", className: "icon-button", "aria-label": "Fewer", onclick: () => setQuantity(quantity - 1) }, icon(MINUS)),
+              qty,
+              h("button", { type: "button", className: "icon-button", "aria-label": "More", onclick: () => setQuantity(quantity + 1) }, icon(PLUS))
+            )
+          )
+        ),
+        h("div", { className: "row" }, registryField, field("category", "Category", category)),
+        h(
+          "div",
+          { className: "checks" },
+          h("label", { className: "check" }, essential, "Most wanted"),
+          h("label", { className: "check" }, openToUsed, "Open to used")
+        ),
+        conditionField,
+        field("notes", "Note for friends and family (optional)", notes)
+      ),
+      h("div", { className: "footer-actions" }, error, button)
+    )
+  );
+  void checkDuplicate();
+}
+
+function showProductAdded(user: { name: string }, registryId: string, registryTitle: string, registryStore: string | null) {
+  render(
+    header(user),
+    h(
+      "main",
+      { className: "body" },
+      h(
+        "div",
+        { className: "done", role: "status" },
+        icon(CIRCLE_CHECK, 36),
+        h("h1", {}, "Added to Regibee"),
+        h(
+          "p",
+          { className: "lead" },
+          registryStore
+            ? `It's on ${registryTitle}, with its ${registryStore} registry link.`
+            : `It's on ${registryTitle}.`
+        )
+      ),
+      h(
+        "div",
+        { className: "footer-actions" },
+        h(
+          "button",
+          { type: "button", className: "button primary", onclick: () => openTab(`${REGIBEE_URL}/dashboard/registry/${registryId}`) },
+          "Review on Regibee"
+        )
+      )
+    )
+  );
+}
+
 function handleFailure(result: Extract<Result<unknown>, { ok: false }>, user: { name: string } | null, retry: () => void) {
   if (result.notConnected) showConnect(true);
   else showError(user, result.error || "Something went wrong.", retry);
@@ -513,6 +811,26 @@ async function readTab(tab: chrome.tabs.Tab | null): Promise<ReadResult | null> 
   }
 }
 
+/** The product on the tab, read in the page. Works on any site because the owner clicked the button. */
+async function readProduct(tab: chrome.tabs.Tab | null): Promise<ProductPage | null> {
+  if (tab?.id === undefined) return null;
+  try {
+    const [injection] = await chrome.scripting.executeScript({ target: { tabId: tab.id }, func: readProductPage });
+    const page = injection?.result as ProductPage | undefined;
+    return page?.title && /^https?:/i.test(page.url) ? page : null;
+  } catch {
+    // Pages the extension can't run on: chrome:// pages, the Web Store, PDFs.
+    return null;
+  }
+}
+
+function storesWithRegistries(state: PopupState, registry: ExtensionRegistry | undefined): Set<StoreId> {
+  return new Set<StoreId>([
+    ...(registry?.storeRegistries ?? []).map((r) => r.store),
+    ...(Object.keys(state.lastChecked) as StoreId[]),
+  ]);
+}
+
 async function start() {
   render(header(null), h("main", { className: "body" }, h("p", { className: "muted" }, "Loading…")));
 
@@ -521,7 +839,8 @@ async function start() {
   const state = stateResult.data;
   if (!state.connected) return showConnect();
 
-  const [registriesResult, read] = await Promise.all([ask<RegistriesResult>({ type: "registries" }), targetTab().then(readTab)]);
+  const tab = await targetTab();
+  const [registriesResult, read] = await Promise.all([ask<RegistriesResult>({ type: "registries" }), readTab(tab)]);
   if (!registriesResult.ok) return handleFailure(registriesResult, state.user, start);
   const data = registriesResult.data;
   const user = data.user;
@@ -540,7 +859,18 @@ async function start() {
       reload: start,
     });
   }
-  showHome(state, user, data);
+
+  const page = await readProduct(tab);
+  if (page?.isProduct) {
+    return showProduct({
+      user,
+      product: page,
+      registries: data.registries,
+      registryId: data.registryId,
+      storesWithRegistries: storesWithRegistries(state, data.registries.find((r) => r.id === data.registryId)),
+    });
+  }
+  showHome(state, user, data, page);
 }
 
 void start();

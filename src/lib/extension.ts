@@ -31,6 +31,8 @@ export interface ExtensionRegistry {
   title: string;
   /** The owner's linked store registries, from Settings. */
   storeRegistries: RetailerRegistry[];
+  /** In the registry's own order. */
+  categories: { id: string; name: string }[];
 }
 
 export interface MeResponse {
@@ -44,8 +46,55 @@ export interface CheckRequest {
 }
 
 export interface CheckResponse {
-  /** storeItemKey values that are already on the registry. */
+  /** itemMatchKey values that are already on the registry. */
   existing: string[];
+}
+
+/** An item added from a product page, with the add-item dialog's fields. */
+export interface ProductItem extends StoreItem {
+  categoryId: string | null;
+  /** "Most wanted" on the site. */
+  isEssential: boolean;
+  isOpenToUsed: boolean;
+  minimumCondition: UsedCondition | null;
+  notes: string | null;
+}
+
+export interface AddProductRequest {
+  registryId: string;
+  item: ProductItem;
+}
+
+export type AddProductResponse =
+  | { added: { id: string; title: string } }
+  | { duplicate: { id: string; title: string } };
+
+/** The lowest used condition an owner will accept, as the add-item dialog offers them. */
+export const USED_CONDITIONS = [
+  { id: "like-new", label: "Like new" },
+  { id: "very-good", label: "Very good" },
+  { id: "good", label: "Good" },
+  { id: "acceptable", label: "Acceptable" },
+] as const;
+
+export type UsedCondition = (typeof USED_CONDITIONS)[number]["id"];
+
+/**
+ * How the extension decides two links are the same item. At a store we know,
+ * it's the product ID, so a registry link and a plain link match. Anywhere
+ * else it's the address without its #fragment.
+ */
+export function itemMatchKey(raw: string | null | undefined): string | null {
+  const key = storeItemKey(raw);
+  if (key) return key;
+  if (!raw) return null;
+  try {
+    const url = new URL(raw.trim());
+    if (url.protocol !== "https:" && url.protocol !== "http:") return null;
+    return `url:${url.hostname.toLowerCase().replace(/^www\./, "")}${url.pathname.replace(/\/+$/, "")}${url.search}`;
+  } catch {
+    return null;
+  }
 }
 
 export interface AddRequest {
@@ -129,6 +178,62 @@ export function parseStoreItem(
     imageUrl: httpsUrl(value.imageUrl),
     quantity,
     store: link.store.id,
+    key,
+  };
+}
+
+const MAX_NOTES_LENGTH = 1000;
+
+/**
+ * Checks an item added from a product page. Unlike a registry import, any
+ * shop's product page is fine; the link is kept exactly as the page had it,
+ * so a registry link stays a registry link. Returns null when it's unusable.
+ */
+export function parseProductItem(raw: unknown): (ProductItem & { key: string }) | null {
+  if (!raw || typeof raw !== "object") return null;
+  const value = raw as Record<string, unknown>;
+
+  if (typeof value.url !== "string" || value.url.length > MAX_URL_LENGTH) return null;
+  let url: string;
+  try {
+    const parsed = new URL(value.url.trim());
+    if (parsed.protocol !== "https:" && parsed.protocol !== "http:") return null;
+    url = value.url.trim();
+  } catch {
+    return null;
+  }
+  const key = itemMatchKey(url);
+  if (!key) return null;
+
+  const title =
+    typeof value.title === "string" ? value.title.replace(/\s+/g, " ").trim().slice(0, MAX_TITLE_LENGTH) : "";
+  if (!title) return null;
+
+  const price =
+    typeof value.price === "number" && Number.isFinite(value.price) && value.price >= 0 && value.price <= MAX_PRICE
+      ? Math.round(value.price * 100) / 100
+      : null;
+  const quantity =
+    typeof value.quantity === "number" && Number.isInteger(value.quantity)
+      ? Math.min(Math.max(value.quantity, 1), MAX_QUANTITY)
+      : 1;
+  const isOpenToUsed = value.isOpenToUsed === true;
+  const condition = USED_CONDITIONS.find((c) => c.id === value.minimumCondition)?.id ?? null;
+  const notes =
+    typeof value.notes === "string" && value.notes.trim() ? value.notes.trim().slice(0, MAX_NOTES_LENGTH) : null;
+
+  return {
+    url,
+    title,
+    price,
+    imageUrl: httpsUrl(value.imageUrl),
+    quantity,
+    categoryId: isUuid(value.categoryId) ? value.categoryId : null,
+    isEssential: value.isEssential === true,
+    isOpenToUsed,
+    // Like the add-item dialog: "like new" unless the owner picked another.
+    minimumCondition: isOpenToUsed ? (condition ?? "like-new") : null,
+    notes,
     key,
   };
 }

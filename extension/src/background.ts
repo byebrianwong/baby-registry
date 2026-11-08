@@ -3,6 +3,8 @@
 
 import {
   CONNECT_PATH,
+  itemMatchKey,
+  type AddProductResponse,
   type AddResponse,
   type CheckResponse,
   type ExtensionRegistry,
@@ -36,7 +38,11 @@ async function registries(refresh = false): Promise<RegistriesResult> {
   const stored = await load("registries", "registriesFetchedAt", "user", "registryId");
   let list = stored.registries;
   let user = stored.user;
-  const fresh = stored.registriesFetchedAt && Date.now() - stored.registriesFetchedAt < REGISTRIES_MAX_AGE_MS;
+  const fresh =
+    stored.registriesFetchedAt &&
+    Date.now() - stored.registriesFetchedAt < REGISTRIES_MAX_AGE_MS &&
+    // Lists saved by an older version have no categories.
+    stored.registries?.every((r) => Array.isArray(r.categories));
   if (refresh || !list || !user || !fresh) {
     const me = await api<MeResponse>("/api/extension/me");
     list = me.registries;
@@ -205,6 +211,25 @@ async function handle(request: BackgroundRequest, sender: chrome.runtime.Message
         method: "DELETE",
         body: { registryId: request.registryId, itemIds: request.itemIds },
       });
+      return result;
+    }
+    case "check-url": {
+      const key = itemMatchKey(request.url);
+      if (!key) return { exists: false };
+      const { existing } = await api<CheckResponse>("/api/extension/items/check", {
+        method: "POST",
+        body: { registryId: request.registryId, urls: [request.url] },
+      });
+      return { exists: existing.includes(key) };
+    }
+    case "add-product": {
+      const result = await api<AddProductResponse>("/api/extension/product", {
+        method: "POST",
+        body: { registryId: request.registryId, item: request.item },
+      });
+      // Automatic mode shouldn't add it again from the store's registry page.
+      const key = storeItemKey(request.item.url);
+      if (key) await markSeen(request.registryId, [key]);
       return result;
     }
     case "page-items": {

@@ -17,6 +17,8 @@
 }
 
 * { box-sizing: border-box; }
+/* Classes that set display would otherwise show hidden elements. */
+[hidden] { display: none !important; }
 
 /* Set on body, not :root: Chrome's default style for extension pages sets body to 75%. */
 body {
@@ -143,6 +145,49 @@ legend { padding: 0; margin-bottom: 6px; font-size: 13px; font-weight: 600; }
   font: inherit; font-size: 12px; font-weight: 600; color: var(--text-tertiary); background: transparent;
   border: none; padding: 6px 0; cursor: pointer;
 }
+
+/* ── Add item form (product pages) ── */
+input[type="text"], input[type="number"], textarea {
+  font: inherit; color: var(--text); background: #ffffff; border: 1px solid var(--border-strong);
+  border-radius: 8px; padding: 8px 10px; width: 100%;
+}
+textarea { resize: none; line-height: 1.4; }
+input::placeholder, textarea::placeholder { color: var(--text-tertiary); }
+
+/* The fields scroll if they ever outgrow the popup; the Add button stays put. */
+.form-scroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; margin: -2px; padding: 2px; }
+.product { gap: 10px; }
+.form-scroll > * { flex: none; }
+.product-top { display: flex; gap: 12px; align-items: flex-start; }
+.grow { flex: 1; min-width: 0; }
+.gallery { flex: none; width: 88px; display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.product-image {
+  display: block; width: 88px; height: 88px; border-radius: 10px; object-fit: contain;
+  background: var(--surface-muted); border: 1px solid var(--border);
+}
+.gallery-controls { display: flex; align-items: center; justify-content: space-between; width: 100%; }
+.gallery-controls .muted { font-size: 11px; }
+.icon-button {
+  flex: none; width: 28px; height: 28px; padding: 0; display: inline-flex; align-items: center; justify-content: center;
+  color: var(--text-secondary); background: transparent; border: none; border-radius: 9999px; cursor: pointer;
+}
+.icon-button:hover { background: var(--surface-muted); }
+.row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.money { position: relative; }
+.money span { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--text-tertiary); }
+.money input { padding-left: 22px; }
+.stepper { display: flex; align-items: center; border: 1px solid var(--border-strong); border-radius: 8px; padding: 2px; }
+.stepper .stepper-value {
+  border: none; padding: 6px 0; text-align: center; min-width: 0; flex: 1; -moz-appearance: textfield;
+}
+.stepper .stepper-value::-webkit-inner-spin-button, .stepper .stepper-value::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+.checks { display: flex; gap: 20px; flex-wrap: wrap; }
+.checks .check { min-height: 28px; }
+.ok-note {
+  margin: 0; display: flex; gap: 6px; align-items: flex-start; font-size: 12px; line-height: 1.45;
+  color: var(--success); background: #ecfdf3; border: 1px solid #abefc6; border-radius: 8px; padding: 8px 10px;
+}
+.ok-note svg { flex: none; margin-top: 2px; }
 
 .done { display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; padding: 12px 0; }
 .done svg { color: var(--success); }

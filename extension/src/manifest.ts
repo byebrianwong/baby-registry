@@ -35,7 +35,10 @@ export function buildManifest(siteUrl: string) {
     icons,
     action: { default_popup: "popup.html", default_title: "Regibee", default_icon: icons },
     background: { service_worker: "background.js", type: "module" },
-    permissions: ["storage"],
+    // activeTab and scripting let the popup read the product on the page
+    // you're on, only when you click the toolbar button. Neither adds an
+    // install warning, and neither lets it see other pages.
+    permissions: ["storage", "activeTab", "scripting"],
     // Only the stores' sites and Regibee. Nothing else.
     host_permissions: [...stores, ...sites.map((origin) => `${origin}/*`)],
     content_scripts: [
