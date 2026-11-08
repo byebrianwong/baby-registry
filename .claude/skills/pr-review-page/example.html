@@ -1,0 +1,348 @@
+<title>PR 55 Review</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one reading column; verdict first, then evidence, then the snapshots, then the fine print. Colors and faces are Regibee's own. */
+:root {
+  --bg: rgb(254 253 251);
+  --surface: rgb(248 244 239);
+  --line: rgb(238 233 228);
+  --fg: rgb(35 27 24);
+  --muted: rgb(94 86 82);
+  --accent: rgb(0 70 89);
+  --accent-soft: rgb(222 241 244);
+  --good: rgb(7 120 70);
+  --good-soft: rgb(220 245 230);
+  --wait: rgb(146 96 0);
+  --wait-soft: rgb(254 243 199);
+  --mark: rgb(230 40 90);
+  --shot: #fff;
+  --font-display: "Bricolage Grotesque", "Avenir Next", system-ui, sans-serif;
+  --font-body: "Geist", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: rgb(22 19 17); --surface: rgb(34 30 27); --line: rgb(58 52 48);
+    --fg: rgb(246 241 236); --muted: rgb(178 168 160);
+    --accent: rgb(128 200 218); --accent-soft: rgb(16 52 62);
+    --good: rgb(98 214 150); --good-soft: rgb(18 56 36);
+    --wait: rgb(250 204 90); --wait-soft: rgb(66 50 12);
+    --mark: rgb(255 92 130); --shot: #fff;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: rgb(22 19 17); --surface: rgb(34 30 27); --line: rgb(58 52 48);
+  --fg: rgb(246 241 236); --muted: rgb(178 168 160);
+  --accent: rgb(128 200 218); --accent-soft: rgb(16 52 62);
+  --good: rgb(98 214 150); --good-soft: rgb(18 56 36);
+  --wait: rgb(250 204 90); --wait-soft: rgb(66 50 12);
+  --mark: rgb(255 92 130); --shot: #fff;
+  color-scheme: dark;
+}
+
+body { background: var(--bg); color: var(--fg); font: 400 15px/1.6 var(--font-body); }
+.page {
+  max-width: 1040px; margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 40px 64px;
+  display: flex; flex-direction: column; gap: 48px;
+}
+h1, h2, h3 { font-family: var(--font-display); font-weight: 700; text-wrap: balance; margin: 0; letter-spacing: -0.01em; }
+h1 { font-size: clamp(1.7rem, 1.2rem + 2vw, 2.4rem); line-height: 1.15; }
+h2 { font-size: 1.35rem; line-height: 1.25; }
+h3 { font-size: 1.05rem; line-height: 1.3; font-weight: 500; }
+p { margin: 0; max-width: 68ch; }
+a { color: var(--accent); text-underline-offset: 3px; }
+a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+code, .mono { font-family: var(--font-mono); font-size: 0.86em; }
+.eyebrow { font: 500 12px/1 var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+section { display: flex; flex-direction: column; gap: 16px; }
+.lede { color: var(--muted); }
+
+/* Header */
+header { display: flex; flex-direction: column; gap: 14px; }
+.meta { display: flex; flex-wrap: wrap; gap: 6px 18px; color: var(--muted); font-size: 13.5px; }
+.meta span { white-space: nowrap; }
+.links { display: flex; flex-wrap: wrap; gap: 8px 16px; font-size: 14px; }
+
+.verdict {
+  display: grid; grid-template-columns: auto 1fr; gap: 6px 16px; align-items: start;
+  background: var(--good-soft); border-radius: 14px; padding: 18px 20px;
+}
+.verdict .stamp {
+  grid-row: span 2; font: 700 13px/1 var(--font-mono); letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--good); border: 2px solid var(--good); border-radius: 999px; padding: 8px 12px; white-space: nowrap;
+}
+.verdict strong { font-family: var(--font-display); font-size: 1.15rem; font-weight: 700; }
+.verdict p { color: var(--fg); }
+.sample { font-size: 13px; color: var(--muted); }
+
+/* Evidence */
+.facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); gap: 12px; }
+.fact { border: 1px solid var(--line); border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 6px; }
+.fact .num { font: 700 1.9rem/1 var(--font-display); font-variant-numeric: tabular-nums; color: var(--accent); }
+.fact .num small { font-size: 0.55em; color: var(--muted); font-weight: 500; }
+.fact p { font-size: 14px; color: var(--muted); }
+ul.plain { margin: 0; padding-left: 1.1em; display: flex; flex-direction: column; gap: 6px; max-width: 72ch; }
+
+/* Snapshot comparisons */
+.change { border-top: 1px solid var(--line); padding-top: 22px; display: flex; flex-direction: column; gap: 12px; }
+.change-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 12px; }
+.change-head h3 { margin-right: auto; }
+.chip { font: 500 12px/1 var(--font-mono); padding: 5px 9px; border-radius: 999px; white-space: nowrap; }
+.chip.good { background: var(--good-soft); color: var(--good); }
+.chip.wait { background: var(--wait-soft); color: var(--wait); }
+.change p { color: var(--muted); font-size: 14.5px; }
+.pair { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 400px), 1fr)); gap: 12px; }
+.pair.single { grid-template-columns: 1fr; }
+figure { margin: 0; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+figcaption { display: flex; align-items: center; justify-content: space-between; gap: 8px; font: 500 12px/1 var(--font-mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); min-height: 28px; }
+.shot { background: var(--shot); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; line-height: 0; }
+.shot img { display: block; width: 100%; height: auto; }
+.toggle {
+  font: 500 12px/1 var(--font-body); letter-spacing: 0; text-transform: none;
+  color: var(--fg); background: transparent; border: 1px solid var(--line); border-radius: 999px;
+  padding: 6px 10px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
+}
+.toggle::before { content: ""; width: 8px; height: 8px; border-radius: 50%; border: 1.5px solid var(--mark); }
+.toggle[aria-pressed="true"] { border-color: var(--mark); color: var(--mark); }
+.toggle[aria-pressed="true"]::before { background: var(--mark); }
+.hash { font: 400 12px/1.4 var(--font-mono); color: var(--muted); }
+
+/* Tables */
+.table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; }
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+tr:last-child td { border-bottom: 0; }
+th { font: 500 12px/1.2 var(--font-mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); background: var(--surface); white-space: nowrap; }
+td.n { font-variant-numeric: tabular-nums; white-space: nowrap; }
+td .zero { color: var(--good); font-weight: 600; }
+.status { font: 500 12px/1 var(--font-mono); padding: 4px 8px; border-radius: 999px; white-space: nowrap; display: inline-block; }
+.status.pass { background: var(--good-soft); color: var(--good); }
+.status.pending { background: var(--wait-soft); color: var(--wait); }
+.src { color: var(--muted); font-size: 13px; }
+
+.callout { background: var(--surface); border-radius: 12px; padding: 16px 18px; display: flex; flex-direction: column; gap: 10px; }
+.backlog { display: flex; flex-wrap: wrap; gap: 6px; }
+.backlog span { font: 400 12.5px/1 var(--font-mono); background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 5px 7px; color: var(--muted); }
+.ask { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.ask code { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; font-size: 13px; overflow-wrap: anywhere; }
+.copy { font: 500 13px/1 var(--font-body); background: var(--accent); color: var(--bg); border: 0; border-radius: 999px; padding: 9px 14px; cursor: pointer; }
+
+footer { border-top: 1px solid var(--line); padding-top: 18px; color: var(--muted); font-size: 13px; display: flex; flex-direction: column; gap: 6px; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .shot img { transition: opacity 120ms ease; }
+}
+</style>
+
+<div class="page">
+
+  <header>
+    <span class="eyebrow">Regibee · Pull request #55</span>
+    <h1>Fix the accessibility violations axe reports on the stories</h1>
+    <div class="meta">
+      <span><code>claude/happy-jones-4f4d94</code> → <code>main</code></span>
+      <span>Head <code>d7572b2</code></span>
+      <span>24 files · +96 −44</span>
+      <span>Merged 8 Nov 2026, 03:15 UTC</span>
+    </div>
+    <div class="verdict" role="status">
+      <span class="stamp">Good to merge</span>
+      <strong>The PR changes exactly what it says it changes, and nothing else.</strong>
+      <p>Four snapshots look different, and they are the four the PR said would. Every accessibility problem Chromatic flagged on <code>main</code> is gone, and none are new.</p>
+    </div>
+    <p class="sample">Sample review: this PR is already merged. It shows what you'd get on each new PR once its checks finish.</p>
+    <div class="links">
+      <a href="https://github.com/dango-design/regibee/pull/55">Pull request on GitHub</a>
+      <a href="https://www.chromatic.com/build?appId=699985adca9a5d19b5523928&amp;number=88">Chromatic build 88</a>
+      <a href="https://699985adca9a5d19b5523928-quzykhgymo.chromatic.com/">Storybook for this PR</a>
+    </div>
+  </header>
+
+  <section aria-labelledby="what">
+    <h2 id="what">What changed</h2>
+    <ul class="plain">
+      <li><strong>Gifted items stay readable.</strong> A fulfilled item card used to fade to 60% opacity as a whole, which made its text too faint. Now only the item photo fades.</li>
+      <li><strong>Unselected tabs are a shade darker,</strong> so their labels meet the contrast minimum on the tab bar.</li>
+      <li><strong>Things screen readers couldn't name now have names:</strong> progress bars, currency dropdowns, the thank-you dialog, icon-only buttons and back arrows. These don't change how anything looks.</li>
+    </ul>
+  </section>
+
+  <section aria-labelledby="why">
+    <h2 id="why">Why it's good</h2>
+    <div class="facts">
+      <div class="fact">
+        <span class="num">4 <small>of 76</small></span>
+        <p>stories look different from <code>main</code> before this PR. All four are ones the PR description said would change.</p>
+      </div>
+      <div class="fact">
+        <span class="num">17 → 0</span>
+        <p>stories with accessibility problems Chromatic had flagged on <code>main</code>. No story got a new one.</p>
+      </div>
+      <div class="fact">
+        <span class="num">0</span>
+        <p>accessibility rules switched off. The fixes are in the shared components, so the real app pages get them too.</p>
+      </div>
+    </div>
+    <ul class="plain">
+      <li><code>Button</code>, <code>Progress</code>, <code>Dialog</code> and nine dialogs had code changes but render pixel-for-pixel the same, which is what a labels-only fix should do.</li>
+      <li><code>Progress</code> now requires a label in its TypeScript type, so a progress bar without one fails the type check instead of slipping back in.</li>
+    </ul>
+  </section>
+
+  <section aria-labelledby="visual">
+    <h2 id="visual">Visual changes</h2>
+    <p class="lede">Before is <code>main</code> just before this PR (build 86). After is this PR (build 88). Use <em>Show changes</em> to mark the pixels that differ.</p>
+
+    <article class="change">
+      <div class="change-head">
+        <h3>ItemCard · Fulfilled</h3>
+        <span class="chip good">Expected</span>
+        <a href="https://www.chromatic.com/test?appId=699985adca9a5d19b5523928&amp;id=6aefe6436e5217efeaf6854f">Open in Chromatic</a>
+      </div>
+      <p>Title, price, tags and note go from faded to full color. The photo area stays faded, so the item still reads as done. The PR measured the old text at 4.47:1 and the tags as low as 2.7:1, under the 4.5:1 minimum.</p>
+      <div class="pair">
+        <figure><figcaption>Before</figcaption><div class="shot"><img src="img/itemcard-before.png" width="896" height="326" alt="Fulfilled item card for Newton Crib Mattress, with all of its text and tags faded"></div></figure>
+        <figure><figcaption>After <button class="toggle" type="button" aria-pressed="false" data-target="itemcard">Show changes</button></figcaption><div class="shot"><img id="itemcard" src="img/itemcard-after.png" data-after="img/itemcard-after.png" data-changes="img/itemcard-changes.png" width="896" height="326" alt="The same card with dark text and saturated Gifted and Most wanted tags"></div></figure>
+      </div>
+    </article>
+
+    <article class="change">
+      <div class="change-head">
+        <h3>RegistryTabs · With data</h3>
+        <span class="chip good">Expected</span>
+        <a href="https://www.chromatic.com/test?appId=699985adca9a5d19b5523928&amp;id=6aefe6436e5217efeaf6855f">Open in Chromatic</a>
+      </div>
+      <p>“Gift Activity” and “Suggestions Inbox” move from gray-500 to gray-600 text, about 4.4:1 to 6.9:1 against the tab bar. The selected tab doesn't change.</p>
+      <div class="pair single">
+        <figure><figcaption>Before</figcaption><div class="shot"><img src="img/tabs-before.png" width="860" height="76" alt="Tab bar with Items selected and lighter gray labels on the other two tabs"></div></figure>
+        <figure><figcaption>After <button class="toggle" type="button" aria-pressed="false" data-target="tabs">Show changes</button></figcaption><div class="shot"><img id="tabs" src="img/tabs-after.png" data-after="img/tabs-after.png" data-changes="img/tabs-changes.png" width="860" height="76" alt="The same tab bar with slightly darker labels on Gift Activity and Suggestions Inbox"></div></figure>
+      </div>
+    </article>
+
+    <article class="change">
+      <div class="change-head">
+        <h3>Pages · Registry Management</h3>
+        <span class="chip good">Expected</span>
+        <a href="https://www.chromatic.com/test?appId=699985adca9a5d19b5523928&amp;id=6aefe6436e5217efeaf68522">Open in Chromatic</a>
+      </div>
+      <p>The owner's page uses both changes: darker tab labels at the top, and gifted cards (here Newton Crib Mattress) with full-strength text. The six gifted cards further down the page change the same way. Ungifted cards like the Babyletto crib are untouched.</p>
+      <div class="pair">
+        <figure><figcaption>Before</figcaption><div class="shot"><img src="img/manage-before.png" width="1200" height="491" alt="Registry Management page section with a faded Newton Crib Mattress card"></div></figure>
+        <figure><figcaption>After <button class="toggle" type="button" aria-pressed="false" data-target="manage">Show changes</button></figcaption><div class="shot"><img id="manage" src="img/manage-after.png" data-after="img/manage-after.png" data-changes="img/manage-changes.png" width="1200" height="491" alt="The same section with the Newton Crib Mattress card's text at full color"></div></figure>
+      </div>
+    </article>
+
+    <article class="change">
+      <div class="change-head">
+        <h3>Pages · Public Registry (gift giver view)</h3>
+        <span class="chip good">Expected</span>
+        <a href="https://www.chromatic.com/test?appId=699985adca9a5d19b5523928&amp;id=6aefe6436e5217efeaf68523">Open in Chromatic</a>
+      </div>
+      <p>What guests see: gifted items keep their “Already purchased by guest” tag but are no longer washed out. The other changed pixels on this page are anti-aliasing at a few button corners, invisible at normal size.</p>
+      <div class="pair">
+        <figure><figcaption>Before</figcaption><div class="shot"><img src="img/public-before.png" width="1200" height="437" alt="Public registry row with a faded Newton Crib Mattress card between two normal cards"></div></figure>
+        <figure><figcaption>After <button class="toggle" type="button" aria-pressed="false" data-target="public">Show changes</button></figcaption><div class="shot"><img id="public" src="img/public-after.png" data-after="img/public-after.png" data-changes="img/public-changes.png" width="1200" height="437" alt="The same row with the Newton Crib Mattress card's text at full strength"></div></figure>
+      </div>
+    </article>
+  </section>
+
+  <section aria-labelledby="a11y">
+    <h2 id="a11y">Accessibility</h2>
+    <p class="lede">Problems Chromatic's axe scan had flagged on <code>main</code> (build 86), and what's left on this PR (build 88).</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>axe rule</th><th>What it means</th><th>Where, on main</th><th>On this PR</th></tr></thead>
+        <tbody>
+          <tr><td><code>color-contrast</code></td><td>Text too faint against its background</td><td>Registry Management, Public Registry, ItemCard Fulfilled, RegistryTabs · 59 elements</td><td class="n"><span class="zero">0</span></td></tr>
+          <tr><td><code>aria-progressbar-name</code></td><td>Progress bar a screen reader can only call “progress bar”</td><td>Checklist, Dashboard, Registry Management, ContributeFundDialog, DashboardRegistryCard ×5</td><td class="n"><span class="zero">0</span></td></tr>
+          <tr><td><code>select-name</code></td><td>Currency dropdown with no label</td><td>AddItemDialog, ContributeFundDialog ×2, SuggestItemDialog</td><td class="n"><span class="zero">0</span></td></tr>
+          <tr><td><code>aria-dialog-name</code></td><td>Thank-you dialog with no title</td><td>CelebrationDialog ×2</td><td class="n"><span class="zero">0</span></td></tr>
+          <tr><td><code>heading-order</code></td><td>Headings skip a level</td><td>Dashboard, Public Registry</td><td class="n"><span class="zero">0</span></td></tr>
+          <tr><td><code>button-name</code></td><td>Icon-only button with no name</td><td>SuggestItemDialog</td><td class="n"><span class="zero">0</span></td></tr>
+          <tr><td><code>link-name</code></td><td>Icon-only back arrow with no name</td><td>Checklist, Registry Management</td><td class="n"><span class="zero">0</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section aria-labelledby="checks">
+    <h2 id="checks">Checks on this PR</h2>
+    <p class="lede">A PR doesn't run anything itself. It shows the statuses that tools report on its latest commit. Pushing the branch starts the GitHub Action, and Chromatic and Vercel report back on that same commit.</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Check</th><th>Status</th><th>Reported by</th><th>What it means</th></tr></thead>
+        <tbody>
+          <tr><td><code>chromatic</code></td><td><span class="status pass">Passed · 1m58s</span></td><td class="src">GitHub Actions</td><td>The workflow built Storybook and uploaded it. It passes even when snapshots changed.</td></tr>
+          <tr><td>Storybook Publish</td><td><span class="status pass">Passed</span></td><td class="src">Chromatic</td><td>76 stories published at a link anyone on the team can open.</td></tr>
+          <tr><td>UI Tests</td><td><span class="status pending">Pending</span></td><td class="src">Chromatic</td><td>64 snapshots differ from accepted baselines. Stays pending until someone reviews them. See below.</td></tr>
+          <tr><td>UI Review</td><td><span class="status pending">Pending</span></td><td class="src">Chromatic</td><td>Optional sign-off comparing this branch with <code>main</code>.</td></tr>
+          <tr><td>Vercel</td><td><span class="status pass">Deployed</span></td><td class="src">Vercel</td><td>The app built, and a preview URL is live (needs a Vercel login).</td></tr>
+          <tr><td>Vercel Preview Comments</td><td><span class="status pass">Passed</span></td><td class="src">Vercel</td><td>No open comments on the preview.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section aria-labelledby="accept">
+    <h2 id="accept">Accept and merge</h2>
+    <div class="callout">
+      <p>UI Tests shows 64 changes, but only <strong>4 come from this PR</strong>. The other 60 were already waiting for review on <code>main</code> before this branch existed, so they show up again on every branch. Accepting them here would sign off changes nobody has looked at.</p>
+      <div class="backlog" aria-label="Changes already waiting on main">
+        <span>NavBar ×5 new</span><span>CreateRegistryForm ×6 new</span><span>DashboardRegistryCard ×5 new</span><span>DashboardTabs ×4 new</span><span>ReserveItemDialog ×4</span><span>PublicProfile ×3</span><span>ChooseUsername ×2 new</span><span>AccountSettings ×2</span><span>CelebrationDialog ×2</span><span>ContributeFundDialog ×2</span><span>CoverItemDialog ×2</span><span>FollowingFeed ×2</span><span>ItemCard ×2</span><span>ProfileListingField ×2</span><span>Checklist</span><span>Dashboard</span><span>Landing Page</span><span>AddItemDialog</span><span>CopyLinkButton</span><span>FollowButton</span><span>FollowLists</span><span>PageSkeletons</span><span>PeopleSearch</span><span>PublicRegistryGrid new</span><span>StoreLinkNotice new</span><span>StoreRegistriesCard new</span><span>SuggestItemDialog</span><span>Badge</span><span>Button</span><span>Card</span><span>Dialog</span>
+      </div>
+      <p>The <strong>Accept and merge</strong> button in the chat, under the link to this page, accepts only this PR's four on build 88. That records your review and turns UI Tests green. Then it merges PR 55 at <code>d7572b2</code>, and GitHub refuses if anyone pushed since this review. Or ask Claude:</p>
+      <div class="ask">
+        <code id="ask-text">Accept the 4 changes from PR 55 on Chromatic build 88 and merge PR 55</code>
+        <button class="copy" type="button" data-copy="ask-text">Copy</button>
+      </div>
+    </div>
+  </section>
+
+  <section aria-labelledby="know">
+    <h2 id="know">Worth knowing</h2>
+    <ul class="plain">
+      <li>The “Open link” button beside the product URL in SuggestItemDialog now has a name but still does nothing when clicked. The PR calls this out as not fixed.</li>
+      <li>Icon-only buttons now use their <code>title</code> as their screen-reader label. React Aria already dropped <code>title</code>, so no visible tooltip was lost.</li>
+      <li>The author reports <code>tsc</code>, <code>npm run build</code> and <code>build-storybook</code> passing. This review didn't rerun them; the Chromatic and Vercel builds above passing backs that up.</li>
+    </ul>
+  </section>
+
+  <footer>
+    <span>How this was checked: each story's snapshot in build 88 (PR head <code>d7572b2</code>) was compared by content hash with the same story in build 86 (<code>main</code> at <code>0be9271</code>, the PR's base). Changed pairs were diffed pixel by pixel. Accessibility counts come from Chromatic's axe results for both builds.</span>
+    <span>Generated 7 Nov 2026.</span>
+  </footer>
+</div>
+
+<script>
+document.querySelectorAll('.toggle').forEach(function (btn) {
+  btn.addEventListener('click', function () {
+    var img = document.getElementById(btn.dataset.target);
+    var on = btn.getAttribute('aria-pressed') !== 'true';
+    btn.setAttribute('aria-pressed', String(on));
+    btn.textContent = on ? 'Hide changes' : 'Show changes';
+    img.src = on ? img.dataset.changes : img.dataset.after;
+  });
+});
+document.querySelectorAll('.copy').forEach(function (btn) {
+  btn.addEventListener('click', function () {
+    var el = document.getElementById(btn.dataset.copy);
+    var text = el.textContent;
+    function selectIt() {
+      var r = document.createRange(); r.selectNodeContents(el);
+      var s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
+      btn.textContent = 'Selected';
+    }
+    try {
+      navigator.clipboard.writeText(text).then(function () { btn.textContent = 'Copied'; }, selectIt);
+    } catch (e) { selectIt(); }
+    setTimeout(function () { btn.textContent = 'Copy'; }, 2000);
+  });
+});
+</script>
