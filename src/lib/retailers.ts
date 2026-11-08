@@ -24,6 +24,23 @@ interface LinkRules {
   productPath: RegExp;
   /** Hosts where product links follow these rules. Short-link hosts (a.co, amzn.to) aren't listed, because they hide the real link. */
   hosts: string[];
+  /**
+   * Captures the store's product ID from a product link's path, so a
+   * registry link and a plain link to the same product count as one item.
+   */
+  productId: RegExp;
+}
+
+/**
+ * Where the browser extension reads the owner's registry items on the
+ * store's own site. It reads only pages whose path matches.
+ */
+interface RegistryPage {
+  path: RegExp;
+  /** The page the extension's "Open" link goes to. */
+  openUrl: string;
+  /** False until someone has checked that the extension can read this store's page. */
+  verified: boolean;
 }
 
 export interface StoreInfo {
@@ -37,6 +54,8 @@ export interface StoreInfo {
   links?: LinkRules;
   /** The copy-link step that says which page to copy from, when it matters. */
   openRegistryStep?: string;
+  /** Missing when the extension can't read this store's registry yet. Needs `links` too. */
+  registryPage?: RegistryPage;
 }
 
 export const STORES: StoreInfo[] = [
@@ -54,9 +73,18 @@ export const STORES: StoreInfo[] = [
       registryParams: ["colid", "coliid"],
       productPath: /\/(dp|gp\/product)\//i,
       hosts: ["amazon.com"],
+      productId: /\/(?:dp|gp\/product)\/([A-Z0-9]{10})(?=[/?#]|$)/i,
     },
     openRegistryStep:
       'Open the "Your registry" page on amazon.com, not the registry home page.',
+    // Checked on a real registry: /baby-reg/your-registry redirects to the
+    // owner's own list, and every item there has its registry link, name,
+    // price and image on the page.
+    registryPage: {
+      path: /^\/baby-reg\/your-registry/i,
+      openUrl: "https://www.amazon.com/baby-reg/your-registry",
+      verified: true,
+    },
   },
   {
     id: "target",
@@ -70,9 +98,18 @@ export const STORES: StoreInfo[] = [
       registryParams: ["registryId"],
       productPath: /^\/p\//i,
       hosts: ["target.com"],
+      productId: /\/A-(\d+)(?=[/?#]|$)/i,
     },
     openRegistryStep:
       "Open your own registry view at target.com/gift-registry/my-registry, not the guest view.",
+    // UNVERIFIED: the owner view needed a fresh sign-in, so nobody has read
+    // it yet. The guest view (/gift-registry/gift-giver) has no item links at
+    // all, so the extension can't read that one.
+    registryPage: {
+      path: /^\/gift-registry\//i,
+      openUrl: "https://www.target.com/gift-registry/my-registry",
+      verified: false,
+    },
   },
   {
     id: "walmart",
@@ -86,6 +123,14 @@ export const STORES: StoreInfo[] = [
       registryParams: ["listRegistryId"],
       productPath: /^\/ip\//i,
       hosts: ["walmart.com"],
+      productId: /^\/ip\/(?:[^/?#]+\/)?(\d+)(?=[/?#]|$)/i,
+    },
+    // Checked on a real registry: the registry page lists every item with its
+    // registry link, even without signing in.
+    registryPage: {
+      path: /^\/registry\//i,
+      openUrl: "https://www.walmart.com/registry",
+      verified: true,
     },
   },
   {
@@ -99,6 +144,14 @@ export const STORES: StoreInfo[] = [
       registryParams: ["wlid", "wlitemid"],
       productPath: /^\/products\//i,
       hosts: ["potterybarnkids.com"],
+      productId: /^\/products\/([^/?#]+)/i,
+    },
+    // UNVERIFIED: nobody has opened a Pottery Barn Kids registry page yet, so
+    // both the path and the page to open are best guesses.
+    registryPage: {
+      path: /\/registry\//i,
+      openUrl: "https://www.potterybarnkids.com/registry/",
+      verified: false,
     },
   },
   {
@@ -182,6 +235,38 @@ export function classifyStoreLink(
   const params = new Set([...url.searchParams.keys()].map((k) => k.toLowerCase()));
   const hasRegistryParams = rules.registryParams.every((p) => params.has(p.toLowerCase()));
   return { store, kind: hasRegistryParams ? "registry" : "plain" };
+}
+
+/**
+ * "<store>:<product ID>" for a product link at a store whose links we know,
+ * e.g. "amazon:B0EXAMPLE1". A registry link and a plain link to the same
+ * product get the same key. Null for anything else, including short links.
+ */
+export function storeItemKey(raw: string | null | undefined): string | null {
+  const url = parseUrl(raw);
+  if (!url) return null;
+  const store = detectStore(url.toString());
+  const rules = store?.links;
+  if (!store || !rules) return null;
+  const hostname = url.hostname.toLowerCase();
+  if (!rules.hosts.some((h) => hostMatches(hostname, h))) return null;
+  const match = url.pathname.match(rules.productId);
+  if (!match?.[1]) return null;
+  // Amazon product IDs are uppercase; the others are digits or lowercase slugs.
+  const id = store.id === "amazon" ? match[1].toUpperCase() : match[1].toLowerCase();
+  return `${store.id}:${id}`;
+}
+
+/** Stores the browser extension can read registries from. */
+export const EXTENSION_STORES: StoreInfo[] = STORES.filter((s) => s.links && s.registryPage);
+
+/** The store whose registry page this is, if the extension can read it. */
+export function extensionStoreForPage(raw: string | null | undefined): StoreInfo | null {
+  const url = parseUrl(raw);
+  if (!url) return null;
+  const store = detectStore(url.toString());
+  if (!store?.links || !store.registryPage) return null;
+  return store.registryPage.path.test(url.pathname) ? store : null;
 }
 
 /** Stores that at least one of these links is a registry item link for. */
