@@ -50,7 +50,7 @@ export const OnStoreRegistry: Story = {
       price: 74,
       quantity_needed: 1,
       quantity_fulfilled: 0,
-      external_url: "https://www.amazon.com/dp/B0EXAMPLE?colid=EXAMPLE&coliid=EXAMPLE",
+      external_url: "https://www.amazon.com/dp/B0EXAMPLE?colid=EXAMPLE&coliid=EXAMPLE&psc=1",
     },
     registryStoreName: "Amazon",
   },

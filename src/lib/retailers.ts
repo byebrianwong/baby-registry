@@ -10,7 +10,21 @@
 // Never rewrite or strip the query string of an item link. That's where the
 // store keeps its registry tracking.
 
-export type StoreId = "amazon" | "target" | "walmart" | "babylist";
+export type StoreId = "amazon" | "target" | "walmart" | "potterybarnkids" | "babylist";
+
+/**
+ * How to tell a registry item link from a plain product link at one store.
+ * The patterns come from real links: the 51 store links saved on a real
+ * Regibee registry, plus the item links on the stores' own registry pages.
+ */
+interface LinkRules {
+  /** Query params that must all be present for a registry item link. Matched ignoring case. */
+  registryParams: string[];
+  /** The store's product page paths. A product link without the registry params is a plain link. */
+  productPath: RegExp;
+  /** Hosts where product links follow these rules. Short-link hosts (a.co, amzn.to) aren't listed, because they hide the real link. */
+  hosts: string[];
+}
 
 export interface StoreInfo {
   id: StoreId;
@@ -19,13 +33,10 @@ export interface StoreInfo {
   domain: string;
   /** Hostnames that belong to the store. Subdomains match too. */
   hosts: string[];
-  /**
-   * Hostnames where a product link with no query string and no fragment is
-   * treated as a plain link: with nothing after the path, it has nowhere to
-   * carry registry tracking. Short-link hosts (a.co, amzn.to) aren't listed,
-   * because they hide the real link.
-   */
-  plainWhenBareOn: string[];
+  /** Missing when we don't know the store's registry link format yet: its links are always "unknown". */
+  links?: LinkRules;
+  /** The copy-link step that says which page to copy from, when it matters. */
+  openRegistryStep?: string;
 }
 
 export const STORES: StoreInfo[] = [
@@ -34,30 +45,70 @@ export const STORES: StoreInfo[] = [
     name: "Amazon",
     domain: "amazon.com",
     hosts: ["amazon.com", "a.co", "amzn.to"],
-    plainWhenBareOn: ["amazon.com"],
+    // Registry item links are /dp/<ASIN> links (sometimes /<slug>/dp/<ASIN>)
+    // with colid and coliid, often with sbo, psc, th and others too. Every
+    // item on the owner's "Your registry" page (/baby-reg/your-registry/...)
+    // links this way. sbo alone isn't a marker: item links on the registry
+    // home page carry sbo without colid.
+    links: {
+      registryParams: ["colid", "coliid"],
+      productPath: /\/(dp|gp\/product)\//i,
+      hosts: ["amazon.com"],
+    },
+    openRegistryStep:
+      'Open the "Your registry" page on amazon.com, not the registry home page.',
   },
   {
     id: "target",
     name: "Target",
     domain: "target.com",
     hosts: ["target.com"],
-    plainWhenBareOn: ["target.com"],
+    // Registry item links are /p/<slug>/-/A-<tcin> with registryId and
+    // itemLineNum, plus regMode, pageFrom, lnk and others. They come from the
+    // owner's view, /gift-registry/my-registry.
+    links: {
+      registryParams: ["registryId"],
+      productPath: /^\/p\//i,
+      hosts: ["target.com"],
+    },
+    openRegistryStep:
+      "Open your own registry view at target.com/gift-registry/my-registry, not the guest view.",
   },
   {
     id: "walmart",
     name: "Walmart",
     domain: "walmart.com",
     hosts: ["walmart.com"],
-    plainWhenBareOn: ["walmart.com"],
+    // Registry item links are /ip/seort/<id> with listRegistryId and
+    // listRegistryType=BR. Every item on the registry page
+    // (/registry/BR/<id>) links this way.
+    links: {
+      registryParams: ["listRegistryId"],
+      productPath: /^\/ip\//i,
+      hosts: ["walmart.com"],
+    },
+  },
+  {
+    id: "potterybarnkids",
+    name: "Pottery Barn Kids",
+    domain: "potterybarnkids.com",
+    hosts: ["potterybarnkids.com"],
+    // Registry item links are /products/<id>/ with wlid and wlitemid, plus
+    // fromrgl and atrelev.
+    links: {
+      registryParams: ["wlid", "wlitemid"],
+      productPath: /^\/products\//i,
+      hosts: ["potterybarnkids.com"],
+    },
   },
   {
     id: "babylist",
     name: "Babylist",
     domain: "babylist.com",
     hosts: ["babylist.com"],
-    // Babylist links often point at other stores, so a bare link tells us
-    // nothing either way.
-    plainWhenBareOn: [],
+    // UNVERIFIED: the only sample is a Babylist Shop product page
+    // (/gp/<slug>/<num>/<num>, no query string). We don't know what a
+    // Babylist registry item link looks like, so its links stay "unknown".
   },
 ];
 
@@ -101,31 +152,12 @@ export function isLinkForStore(raw: string, storeId: StoreId): boolean {
   return detectStore(raw)?.id === storeId;
 }
 
-// UNVERIFIED: these markers are a best guess at how a link copied from a store
-// registry identifies that registry. No store documents its registry item
-// links, and none has been checked against a real copied link yet. A match is
-// a strong hint (a plain product link wouldn't name a registry or a list
-// item), so false positives should be rare. Replace these with each store's
-// real pattern once we have sample links.
-const REGISTRY_QUERY_KEYS = new Set([
-  "registryid",
-  "registry_id",
-  "registry-id",
-  "registryitemid",
-  "registry_item_id",
-  "regid",
-  "colid",
-  "coliid",
-]);
-const REGISTRY_PATH = /\/(baby-reg|gift-registry|registry|registries)(\/|$)/i;
-
 /**
- * - "registry": the link names a registry, so gifts bought through it should
- *   count toward the owner's store registry.
- * - "plain": a store product link with nothing after the path, so it can't be
- *   carrying registry tracking.
- * - "unknown": anything else. Treat it neutrally: it may or may not be a
- *   registry link.
+ * - "registry": a registry item link, so gifts bought through it count toward
+ *   the owner's store registry.
+ * - "plain": a store product page link without the registry params.
+ * - "unknown": anything else, such as short links, registry pages, or stores
+ *   whose registry links we haven't seen. Treat it neutrally.
  */
 export type StoreLinkKind = "registry" | "plain" | "unknown";
 
@@ -136,28 +168,27 @@ export function classifyStoreLink(
   if (!url) return null;
   const store = detectStore(url.toString());
   if (!store) return null;
+  const rules = store.links;
+  if (!rules) return { store, kind: "unknown" };
 
-  const hasRegistryKey = [...url.searchParams.keys()].some((k) =>
-    REGISTRY_QUERY_KEYS.has(k.toLowerCase())
-  );
-  if (hasRegistryKey || REGISTRY_PATH.test(url.pathname)) {
-    return { store, kind: "registry" };
-  }
-
+  // Only product page links count either way. A registry page link (say
+  // /gift-registry/gift-giver?registryId=...) also carries the registry
+  // params, but it isn't an item.
   const hostname = url.hostname.toLowerCase();
-  const bare = url.search === "" && url.hash === "";
-  if (bare && store.plainWhenBareOn.some((h) => hostMatches(hostname, h))) {
-    return { store, kind: "plain" };
-  }
+  const isProductLink =
+    rules.hosts.some((h) => hostMatches(hostname, h)) && rules.productPath.test(url.pathname);
+  if (!isProductLink) return { store, kind: "unknown" };
 
-  return { store, kind: "unknown" };
+  const params = new Set([...url.searchParams.keys()].map((k) => k.toLowerCase()));
+  const hasRegistryParams = rules.registryParams.every((p) => params.has(p.toLowerCase()));
+  return { store, kind: hasRegistryParams ? "registry" : "plain" };
 }
 
 /** Steps for copying an item's registry link from the store's registry page. */
 export function copyLinkSteps(store: StoreInfo): string[] {
   return [
     `Add the item to your ${store.name} registry.`,
-    `Open your registry on ${store.domain}.`,
+    store.openRegistryStep ?? `Open your registry on ${store.domain}.`,
     "Right-click the item's name and choose Copy Link Address. On a phone, press and hold the name instead.",
     "Paste the link here.",
   ];

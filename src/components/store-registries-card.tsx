@@ -159,7 +159,7 @@ export function StoreRegistriesCard({
             <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
               {/* A plain select rather than NativeSelect, which gives its
                   label and select the same id. */}
-              <div className="flex flex-col gap-1.5 sm:w-40 sm:shrink-0">
+              <div className="flex flex-col gap-1.5 sm:w-48 sm:shrink-0">
                 <Label htmlFor={storeSelectId}>Store</Label>
                 <div className="relative grid items-center">
                   <select

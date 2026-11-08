@@ -3,8 +3,8 @@ import { StoreLinkNotice } from "./store-link-notice";
 import type { RetailerRegistry } from "@/lib/retailers";
 
 const LINKED: RetailerRegistry[] = [
-  { store: "amazon", url: "https://www.amazon.com/baby-reg/example" },
-  { store: "target", url: "https://www.target.com/gift-registry/example" },
+  { store: "amazon", url: "https://www.amazon.com/baby-reg/your-registry/EXAMPLE" },
+  { store: "target", url: "https://www.target.com/gift-registry/gift-giver?registryId=EXAMPLE&type=BABY" },
 ];
 
 const meta: Meta<typeof StoreLinkNotice> = {
@@ -15,30 +15,31 @@ const meta: Meta<typeof StoreLinkNotice> = {
 export default meta;
 type Story = StoryObj<typeof StoreLinkNotice>;
 
-// All four states in one story, to keep Chromatic snapshots down.
+// All four states in one story, to keep Chromatic snapshots down. The links
+// follow each store's real link shapes, with made-up ids.
 export const AllStates: Story = {
   render: () => (
     <div className="flex max-w-md flex-col gap-6">
       <section className="space-y-2">
-        <h3 className="text-xs font-semibold text-tertiary">Link names a registry</h3>
+        <h3 className="text-xs font-semibold text-tertiary">Registry item link</h3>
         <StoreLinkNotice
-          url="https://www.amazon.com/dp/B0EXAMPLE?colid=EXAMPLE&coliid=EXAMPLE"
+          url="https://www.amazon.com/dp/B0EXAMPLE?colid=EXAMPLE&coliid=EXAMPLE&psc=1"
           registryId="demo"
           linkedRegistries={LINKED}
         />
       </section>
       <section className="space-y-2">
-        <h3 className="text-xs font-semibold text-tertiary">Bare product link from a linked store</h3>
+        <h3 className="text-xs font-semibold text-tertiary">Plain product link from a linked store</h3>
         <StoreLinkNotice
-          url="https://www.target.com/p/hatch-rest-sound-machine/-/A-00000000"
+          url="https://www.target.com/p/hatch-rest-sound-machine/-/A-00000000?preselect=00000000"
           registryId="demo"
           linkedRegistries={LINKED}
         />
       </section>
       <section className="space-y-2">
-        <h3 className="text-xs font-semibold text-tertiary">Can&apos;t tell from the link</h3>
+        <h3 className="text-xs font-semibold text-tertiary">Can&apos;t tell from the link (a short link)</h3>
         <StoreLinkNotice
-          url="https://www.amazon.com/dp/B0EXAMPLE?th=1&psc=1"
+          url="https://a.co/d/EXAMPLE"
           registryId="demo"
           linkedRegistries={LINKED}
         />
@@ -46,7 +47,7 @@ export const AllStates: Story = {
       <section className="space-y-2">
         <h3 className="text-xs font-semibold text-tertiary">Store not linked yet</h3>
         <StoreLinkNotice
-          url="https://www.walmart.com/ip/baby-bath-support/000000"
+          url="https://www.walmart.com/ip/seort/000000?listRegistryId=EXAMPLE&listRegistryType=BR"
           registryId="demo"
           linkedRegistries={LINKED}
         />

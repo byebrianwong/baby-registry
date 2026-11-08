@@ -21,9 +21,11 @@ const meta: Meta<typeof PublicRegistryGrid> = {
 export default meta;
 type Story = StoryObj<typeof PublicRegistryGrid>;
 
-// Items from several stores. The owner linked their Amazon and Target
-// registries, so those items' gift dialogs explain how to buy there. The
-// store filter appears because items come from more than one store.
+// Items from several stores, using each store's real link shapes with
+// made-up ids. The owner linked their Amazon and Target registries, so those
+// items' gift dialogs explain how to buy there. Walmart isn't linked, so its
+// dialog stays as before. The store filter appears because items come from
+// more than one store.
 export const ItemsFromStores: Story = {
   args: {
     parentName: "Sarah & Mike",
@@ -40,21 +42,22 @@ export const ItemsFromStores: Story = {
         title: "Solly Baby Wrap, Newborn to Toddler Baby Carrier",
         price: 74,
         is_essential: true,
-        external_url: "https://www.amazon.com/dp/B0EXAMPLE?colid=EXAMPLE&coliid=EXAMPLE",
+        external_url: "https://www.amazon.com/dp/B0EXAMPLE?colid=EXAMPLE&coliid=EXAMPLE&psc=1",
       },
       {
         ...base,
         id: "2",
         title: "Hatch Rest+ Sound Machine",
         price: 69.99,
-        external_url: "https://www.target.com/p/hatch-rest-sound-machine/-/A-00000000?registryId=EXAMPLE",
+        external_url:
+          "https://www.target.com/p/hatch-rest-sound-machine/-/A-00000000?registryId=EXAMPLE&itemLineNum=1",
       },
       {
         ...base,
         id: "3",
         title: "Angelcare Baby Bath Support",
         price: 24.97,
-        external_url: "https://www.walmart.com/ip/angelcare-baby-bath-support/000000",
+        external_url: "https://www.walmart.com/ip/seort/000000?listRegistryId=EXAMPLE&listRegistryType=BR",
       },
       {
         ...base,

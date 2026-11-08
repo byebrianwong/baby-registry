@@ -31,8 +31,8 @@ type Story = StoryObj<typeof StoreRegistriesCard>;
 export const WithLinkedStores: Story = {
   args: {
     initialRegistries: [
-      { store: "amazon", url: "https://www.amazon.com/baby-reg/example" },
-      { store: "target", url: "https://www.target.com/gift-registry/example" },
+      { store: "amazon", url: "https://www.amazon.com/baby-reg/your-registry/EXAMPLE" },
+      { store: "target", url: "https://www.target.com/gift-registry/gift-giver?registryId=EXAMPLE&type=BABY" },
     ],
   },
 };
