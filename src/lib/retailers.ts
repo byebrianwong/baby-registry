@@ -238,6 +238,22 @@ export function classifyStoreLink(
 }
 
 /**
+ * The store whose registry a gift bought through this link counts toward, or
+ * null. A registry item link counts on its own. A link we can't classify, such
+ * as a short link, counts only if the owner linked that store.
+ */
+export function registryStoreFor(
+  raw: string | null | undefined,
+  linkedStores: StoreId[]
+): StoreInfo | null {
+  const result = classifyStoreLink(raw);
+  if (!result) return null;
+  if (result.kind === "registry") return result.store;
+  if (result.kind === "unknown" && linkedStores.includes(result.store.id)) return result.store;
+  return null;
+}
+
+/**
  * "<store>:<product ID>" for a product link at a store whose links we know,
  * e.g. "amazon:B0EXAMPLE1". A registry link and a plain link to the same
  * product get the same key. Null for anything else, including short links.

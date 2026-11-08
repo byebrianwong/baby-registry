@@ -8,6 +8,7 @@ import {
   itemCoveredOwnerHtml,
   cashFundContributionOwnerHtml,
   newSuggestionOwnerHtml,
+  completionDiscountOwnerHtml,
   managerInviteHtml,
   followRequestHtml,
   confirmSignupHtml,
@@ -97,6 +98,27 @@ export const OwnerItemReserved: Story = {
   },
 };
 
+// The first gift from a store registry adds a note about its welcome box.
+export const OwnerItemReservedWelcomeBox: Story = {
+  args: {
+    subject: '🎁 Jane Doe reserved "Solly Baby Wrap"',
+    to: "max@example.com",
+    html: itemReservedOwnerHtml({
+      ownerName: "Max",
+      registryTitle: "Remi & Max's Baby Registry",
+      buyerName: "Jane Doe",
+      itemTitle: "Solly Baby Wrap",
+      quantity: 1,
+      dashboardLink: "https://regibee.com/dashboard/registry/abc?highlight=123",
+      welcomeBox: {
+        storeName: "Amazon",
+        boxName: "welcome box",
+        perksLink: "https://regibee.com/dashboard/registry/abc?tab=perks",
+      },
+    }),
+  },
+};
+
 export const OwnerItemCovered: Story = {
   args: {
     subject: 'Jane Doe is covering "UPPAbaby Vista V2 Stroller"',
@@ -139,6 +161,24 @@ export const OwnerNewSuggestion: Story = {
       title: "Baby Monitor Pro",
       price: 129.99,
       notes: "This is the one we used and it's amazing!",
+    }),
+  },
+};
+
+// ── Store perks ──────────────────────────────────────────────
+
+export const OwnerCompletionDiscount: Story = {
+  args: {
+    subject: "Your store completion discounts may be open",
+    to: "max@example.com",
+    html: completionDiscountOwnerHtml({
+      ownerName: "Max",
+      registryTitle: "Remi & Max's Baby Registry",
+      stores: [
+        { name: "Amazon", amount: "10% off, or 15% with Prime" },
+        { name: "Babylist", amount: "15% off Babylist Shop items" },
+      ],
+      perksLink: "https://regibee.com/dashboard/registry/abc?tab=perks",
     }),
   },
 };
