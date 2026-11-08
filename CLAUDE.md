@@ -38,8 +38,10 @@ Vercel holds these env vars for production, preview and development: `NEXT_PUBLI
 ## Visual tests (Chromatic)
 
 - `.github/workflows/chromatic.yml` runs Chromatic on every push. It snapshots only the stories the commit affects.
-- A green `chromatic` job does not mean the review is done. The "UI Tests" check on a pull request stays pending until someone reviews the changed snapshots in Chromatic.
-- On a branch build, accept only the changes that branch made. A branch build also shows changes still waiting for review on `main`.
+- Builds on `main` accept their own changes (`autoAcceptChanges: main`). That keeps `main`'s baselines current, even when a PR merges before anyone accepted it.
+- Still accept a PR's changes on its branch build before merging. Accepting records that someone reviewed them, and turns the PR's "UI Tests" check green. The Accept and merge button that follows the review page does both steps.
+- On a branch build, accept only the changes that branch made.
+- Merging before the branch's `chromatic` check finishes is fine. It can cost extra snapshots, but development speed matters more.
 - The free plan includes 5,000 snapshots a month. When they run out, Chromatic pauses testing and review until the next month.
 - Storybook can't render async server components. Put a page's markup in a plain component and write the story for that. The landing page works this way.
 
@@ -56,3 +58,7 @@ Vercel holds these env vars for production, preview and development: `NEXT_PUBLI
 - If you changed components or stories, also run `npm run build-storybook`.
 - If you changed `extension/`, `src/lib/retailers.ts` or `src/lib/extension.ts`, also run `npm run extension:build`.
 - `npm run lint` fails right now. `eslint.config.mjs` imports `eslint-plugin-storybook`, which isn't in `package.json`.
+
+## After opening a pull request
+
+- When the PR's `chromatic` and `Vercel` checks finish, publish a review page with the `pr-review-page` skill (`.claude/skills/pr-review-page`) and give the user the link. End that turn with an Accept and merge button. The skill says how to set it up and what to do when the user clicks it.
