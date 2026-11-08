@@ -101,12 +101,12 @@ export const OwnerItemReserved: Story = {
 // The first gift from a store registry adds a note about its welcome box.
 export const OwnerItemReservedWelcomeBox: Story = {
   args: {
-    subject: '🎁 Jane Doe reserved "Solly Baby Wrap"',
+    subject: '🎁 Auntie Glinda reserved "Solly Baby Wrap"',
     to: "max@example.com",
     html: itemReservedOwnerHtml({
       ownerName: "Max",
       registryTitle: "Remi & Max's Baby Registry",
-      buyerName: "Jane Doe",
+      buyerName: "Auntie Glinda",
       itemTitle: "Solly Baby Wrap",
       quantity: 1,
       dashboardLink: "https://regibee.com/dashboard/registry/abc?highlight=123",
