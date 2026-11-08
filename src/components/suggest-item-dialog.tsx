@@ -199,14 +199,14 @@ export function SuggestItemDialog({ registryId, categories = [], action }: Sugge
               <Input
                 label="Your Name"
                 name="suggestedByName"
-                placeholder="Jane Doe"
+                placeholder="Alex Kim"
                 isRequired
               />
               <Input
                 label="Your Email"
                 name="suggestedByEmail"
                 type="email"
-                placeholder="jane@example.com"
+                placeholder="alex@example.com"
                 icon={Mail01}
                 isRequired
               />

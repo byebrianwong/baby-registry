@@ -23,7 +23,7 @@ const meta: Meta<typeof CreateRegistryForm> = {
   component: CreateRegistryForm,
   parameters: { layout: "fullscreen" },
   args: {
-    username: "jane-doe",
+    username: "remi-and-max",
     createAction: fn(async () => {
       await new Promise((resolve) => setTimeout(resolve, 600));
       return { error: "This is a story, so nothing was saved." };
@@ -89,7 +89,7 @@ export const AllStepsDone: Story = {
     await userEvent.click(canvas.getByRole("button", { name: /^Baby/ }));
     const title = canvas.getByLabelText(/Registry name/);
     await waitFor(() => expect(title).toHaveFocus());
-    fill(title, "The Doe Family Baby Registry");
+    fill(title, "Remi & Max's Baby Registry");
     await userEvent.keyboard("{Enter}");
 
     await waitFor(() => isOpen(canvasElement, /Who can see it/));
@@ -103,7 +103,7 @@ export const AllStepsDone: Story = {
     );
 
     await waitFor(() => isOpen(canvasElement, /Payments and sales tax/));
-    fill(canvas.getByLabelText(/Venmo/), "@doe-family");
+    fill(canvas.getByLabelText(/Venmo/), "@remi-and-max");
     fill(canvas.getByLabelText(/Zip code/), "94110");
 
     await waitFor(() =>

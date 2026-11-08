@@ -2,9 +2,9 @@ import type { Meta, StoryObj } from "@storybook/react";
 import { NavBar } from "./nav-bar";
 
 const account = {
-  name: "Jane & John Doe",
-  username: "jane-doe",
-  email: "jane@example.com",
+  name: "Remi & Max",
+  username: "remi-and-max",
+  email: "remi@example.com",
   followRequestCount: 0,
 };
 

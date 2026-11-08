@@ -8,8 +8,8 @@ const meta: Meta<typeof PublicProfile> = {
   title: "Components/PublicProfile",
   component: PublicProfile,
   args: {
-    username: "jane-doe",
-    fullName: "Jane & John Doe",
+    username: "remi-and-max",
+    fullName: "Remi & Max",
     today: "2026-11-02",
     registries: [
       {
@@ -22,7 +22,7 @@ const meta: Meta<typeof PublicProfile> = {
       },
       {
         slug: "anytime-wishlist",
-        title: "Jane's Wishlist",
+        title: "Remi's Wishlist",
         event_date: null,
         registry_type: "personal",
         event_type: null,
@@ -30,7 +30,7 @@ const meta: Meta<typeof PublicProfile> = {
       },
       {
         slug: "christmas",
-        title: "The Doe Family Christmas",
+        title: "Remi & Max's Christmas",
         event_date: "2026-12-25",
         registry_type: "personal",
         event_type: "christmas",
@@ -38,7 +38,7 @@ const meta: Meta<typeof PublicProfile> = {
       },
       {
         slug: "baby",
-        title: "The Doe Family Baby Registry",
+        title: "Remi & Max's Baby Registry",
         event_date: "2027-02-10",
         registry_type: "baby",
         event_type: null,
@@ -53,7 +53,7 @@ type Story = StoryObj<typeof PublicProfile>;
 // What an approved follower or the owner sees: private ones carry a badge.
 export const WithRegistries: Story = {
   args: {
-    followAction: <FollowButton username="jane-doe" state="approved" cancelAction={mockFollow} />,
+    followAction: <FollowButton username="remi-and-max" state="approved" cancelAction={mockFollow} />,
   },
 };
 
@@ -62,7 +62,7 @@ export const VisitorNotFollowing: Story = {
   args: {
     registries: [],
     followAction: (
-      <FollowButton username="jane-doe" state="none" requestAction={mockFollow} cancelAction={mockFollow} />
+      <FollowButton username="remi-and-max" state="none" requestAction={mockFollow} cancelAction={mockFollow} />
     ),
   },
 };

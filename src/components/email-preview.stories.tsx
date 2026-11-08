@@ -20,7 +20,7 @@ const meta: Meta<typeof EmailPreview> = {
   parameters: { layout: "centered" },
   args: {
     from: "Regibee <notifications@regibee.com>",
-    to: "jane@example.com",
+    to: "glinda@example.com",
   },
 };
 export default meta;
@@ -37,13 +37,13 @@ export const BuyerItemReserved: Story = {
   args: {
     subject: 'Your gift is confirmed — "Hatch Rest+ Sound Machine"',
     html: itemReservedBuyerHtml({
-      buyerName: "Jane",
+      buyerName: "Glinda",
       itemTitle: "Hatch Rest+ Sound Machine",
       quantity: 1,
       parentName: "Remi & Max",
       registryTitle: "Remi & Max's Baby Registry",
       shippingAddress: sampleAddress,
-      registryUrl: "https://regibee.com/r/remi-and-max?email=jane%40example.com&sig=a1b2c3d4e5f6a7b8",
+      registryUrl: "https://regibee.com/r/remi-and-max?email=glinda%40example.com&sig=a1b2c3d4e5f6a7b8",
       shopUrl: "https://amazon.com/dp/B07WFXGNGB",
     }),
   },
@@ -53,12 +53,12 @@ export const BuyerItemCovered: Story = {
   args: {
     subject: 'Your gift is confirmed — "UPPAbaby Vista V2 Stroller"',
     html: itemCoveredBuyerHtml({
-      buyerName: "Jane",
+      buyerName: "Glinda",
       itemTitle: "UPPAbaby Vista V2 Stroller",
       parentName: "Remi & Max",
       registryTitle: "Remi & Max's Baby Registry",
       paymentMethods: { venmo: "@remi-and-max", paypal: "max@example.com" },
-      registryUrl: "https://regibee.com/r/remi-and-max?email=jane%40example.com&sig=a1b2c3d4e5f6a7b8",
+      registryUrl: "https://regibee.com/r/remi-and-max?email=glinda%40example.com&sig=a1b2c3d4e5f6a7b8",
       shopUrl: "https://amazon.com/dp/B08XYZ",
     }),
   },
@@ -68,13 +68,13 @@ export const BuyerCashFundContribution: Story = {
   args: {
     subject: 'Your contribution is confirmed — "Nursery Furniture Fund"',
     html: cashFundContributionBuyerHtml({
-      buyerName: "Jane",
+      buyerName: "Glinda",
       fundTitle: "Nursery Furniture Fund",
       amount: 50,
       parentName: "Remi & Max",
       registryTitle: "Remi & Max's Baby Registry",
       paymentMethods: { venmo: "@remi-and-max", zelle: "max@example.com" },
-      registryUrl: "https://regibee.com/r/remi-and-max?email=jane%40example.com&sig=a1b2c3d4e5f6a7b8",
+      registryUrl: "https://regibee.com/r/remi-and-max?email=glinda%40example.com&sig=a1b2c3d4e5f6a7b8",
     }),
   },
 };
@@ -83,12 +83,12 @@ export const BuyerCashFundContribution: Story = {
 
 export const OwnerItemReserved: Story = {
   args: {
-    subject: 'Jane Doe reserved "Hatch Rest+ Sound Machine"',
+    subject: 'Auntie Glinda reserved "Hatch Rest+ Sound Machine"',
     to: "max@example.com",
     html: itemReservedOwnerHtml({
       ownerName: "Max",
       registryTitle: "Remi & Max's Baby Registry",
-      buyerName: "Jane Doe",
+      buyerName: "Auntie Glinda",
       itemTitle: "Hatch Rest+ Sound Machine",
       quantity: 2,
       message: "Can't wait to meet the little one!",
@@ -99,12 +99,12 @@ export const OwnerItemReserved: Story = {
 
 export const OwnerItemCovered: Story = {
   args: {
-    subject: 'Jane Doe is covering "UPPAbaby Vista V2 Stroller"',
+    subject: 'Auntie Glinda is covering "UPPAbaby Vista V2 Stroller"',
     to: "max@example.com",
     html: itemCoveredOwnerHtml({
       ownerName: "Max",
       registryTitle: "Remi & Max's Baby Registry",
-      buyerName: "Jane Doe",
+      buyerName: "Auntie Glinda",
       itemTitle: "UPPAbaby Vista V2 Stroller",
       message: "Happy to help with the big stuff!",
       dashboardLink: "https://regibee.com/dashboard/registry/abc?highlight=456",
@@ -114,12 +114,12 @@ export const OwnerItemCovered: Story = {
 
 export const OwnerCashFundContribution: Story = {
   args: {
-    subject: 'Jane Doe contributed $50.00 to "Nursery Furniture Fund"',
+    subject: 'Auntie Glinda contributed $50.00 to "Nursery Furniture Fund"',
     to: "max@example.com",
     html: cashFundContributionOwnerHtml({
       ownerName: "Max",
       registryTitle: "Remi & Max's Baby Registry",
-      buyerName: "Jane Doe",
+      buyerName: "Auntie Glinda",
       fundTitle: "Nursery Furniture Fund",
       amount: 50,
       message: "For a cozy nursery!",
@@ -130,12 +130,12 @@ export const OwnerCashFundContribution: Story = {
 
 export const OwnerNewSuggestion: Story = {
   args: {
-    subject: 'Aunt Mary suggested "Baby Monitor Pro"',
+    subject: 'Uncle Oz suggested "Baby Monitor Pro"',
     to: "max@example.com",
     html: newSuggestionOwnerHtml({
       ownerName: "Max",
       registryTitle: "Remi & Max's Baby Registry",
-      suggestedByName: "Aunt Mary",
+      suggestedByName: "Uncle Oz",
       title: "Baby Monitor Pro",
       price: 129.99,
       notes: "This is the one we used and it's amazing!",
@@ -148,7 +148,7 @@ export const OwnerNewSuggestion: Story = {
 export const ManagerInvite: Story = {
   args: {
     subject: `Remi & Max invited you to manage "Remi & Max's Baby Registry"`,
-    to: "grandma@example.com",
+    to: "dorothy@example.com",
     html: managerInviteHtml({
       inviterName: "Remi & Max",
       registryTitle: "Remi & Max's Baby Registry",
@@ -163,6 +163,7 @@ export const AuthSignupProposed: Story = {
   name: "Auth Signup (Proposed Branded)",
   args: {
     subject: "Confirm your Regibee account",
+    to: "max@example.com",
     html: confirmSignupHtml({
       confirmUrl: "https://placeholder.supabase.co/auth/v1/verify?token=abc",
     }),
@@ -173,6 +174,7 @@ export const AuthResetPasswordProposed: Story = {
   name: "Auth Reset Password (Proposed Branded)",
   args: {
     subject: "Reset your Regibee password",
+    to: "max@example.com",
     html: resetPasswordHtml({
       resetUrl: "https://placeholder.supabase.co/auth/v1/verify?token=abc",
     }),
@@ -183,11 +185,12 @@ export const AuthResetPasswordProposed: Story = {
 
 export const FollowRequest: Story = {
   args: {
-    subject: "Rose Doe wants to follow you on Regibee",
+    subject: "Grandma Dorothy wants to follow you on Regibee",
+    to: "max@example.com",
     html: followRequestHtml({
-      followerName: "Rose Doe",
-      followerUsername: "grandma-rose",
-      profileUrl: "https://regibee.com/u/grandma-rose",
+      followerName: "Grandma Dorothy",
+      followerUsername: "grandma-dorothy",
+      profileUrl: "https://regibee.com/u/grandma-dorothy",
       reviewUrl: "https://regibee.com/dashboard/account#follows",
       settingsUrl: "https://regibee.com/dashboard/account",
     }),

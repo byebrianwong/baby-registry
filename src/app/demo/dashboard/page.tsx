@@ -18,9 +18,9 @@ export default function DemoDashboardPage() {
   );
 
   const recentActivity = [
-    { id: "1", name: "Aunt Linda", item: "Newton Crib Mattress" },
-    { id: "2", name: "Grandma Rose", item: "Boppy Nursing Pillow" },
-    { id: "3", name: "Uncle Dave", item: "Ergobaby Omni 360 Carrier" },
+    { id: "1", name: "Auntie Glinda", item: "Newton Crib Mattress" },
+    { id: "2", name: "Grandma Dorothy", item: "Boppy Nursing Pillow" },
+    { id: "3", name: "Uncle Oz", item: "Ergobaby Omni 360 Carrier" },
   ];
 
   return (

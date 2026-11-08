@@ -13,7 +13,7 @@ export function EmailPreview({
   html,
   subject,
   from = "Regibee <notifications@regibee.com>",
-  to = "jane@example.com",
+  to = "glinda@example.com",
 }: EmailPreviewProps) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [height, setHeight] = useState(300);

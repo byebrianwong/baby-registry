@@ -86,7 +86,7 @@ export function ChooseUsername({
             <Input
               label="Username"
               name="username"
-              placeholder="jane-doe"
+              placeholder="remi-and-max"
               value={username}
               onChange={setUsername}
               hint={`/u/${previewUsername}`}

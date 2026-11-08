@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { ChooseUsername } from "./choose-username";
 
-const mockSave = async () => ({ success: true, username: "jane-john-doe" });
+const mockSave = async () => ({ success: true, username: "remi-max" });
 const mockTaken = async () => ({ error: "That username is taken." });
 
 const meta: Meta<typeof ChooseUsername> = {
@@ -12,7 +12,7 @@ const meta: Meta<typeof ChooseUsername> = {
     nextjs: { appDirectory: true },
   },
   args: {
-    fullName: "Jane & John Doe",
+    fullName: "Remi & Max",
     next: "/dashboard",
     saveAction: mockSave as never,
   },

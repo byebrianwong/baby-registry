@@ -561,7 +561,7 @@ export default function RegistrySettingsPage() {
             <TextArea
               label="Address"
               name="shippingAddress"
-              placeholder={"Jane & John Doe\n123 Main Street, Apt 4B\nNew York, NY 10001"}
+              placeholder={"Remi & Max Porter\n123 Main Street, Apt 4B\nNew York, NY 10001"}
               defaultValue={registry.settings?.shipping_address || ""}
               rows={3}
             />

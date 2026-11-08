@@ -6,7 +6,7 @@ const meta: Meta<typeof ProfileListingField> = {
   component: ProfileListingField,
   parameters: { layout: "centered" },
   args: {
-    username: "jane-doe",
+    username: "remi-and-max",
     isPublic: true,
     isSelected: true,
     onChange: () => {},
