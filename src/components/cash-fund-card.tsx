@@ -120,7 +120,7 @@ export function CashFundCard({ fund, registryId, highlightId, purchases }: CashF
                 <span>${fund.current_amount.toFixed(0)} raised</span>
                 <span>${fund.goal_amount.toFixed(0)} goal</span>
               </div>
-              <Progress value={fundProgress} />
+              <Progress value={fundProgress} aria-label={`Amount raised for ${fund.title}`} />
               <span className="text-xs text-tertiary">
                 ${Math.max(0, fund.goal_amount - fund.current_amount).toFixed(0)} remaining
               </span>
@@ -163,6 +163,7 @@ export function CashFundCard({ fund, registryId, highlightId, purchases }: CashF
                 <InputPrefix position="trailing">
                   <span className="relative inline-flex items-center">
                     <select
+                      aria-label="Currency"
                       className="appearance-none bg-transparent pr-5 text-primary outline-none cursor-pointer"
                       value={currency}
                       onChange={(e) => setCurrency(e.target.value)}

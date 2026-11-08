@@ -322,7 +322,7 @@ export default function RegistrySettingsPage() {
     <div className="container mx-auto max-w-2xl px-4 py-8">
       <div className="flex items-center gap-2 mb-6">
         <Button variant="ghost" size="sm" asChild>
-          <Link href={`/dashboard/registry/${registryId}`}>
+          <Link href={`/dashboard/registry/${registryId}`} aria-label="Back to registry">
             <ArrowLeft className="h-4 w-4" />
           </Link>
         </Button>
@@ -680,8 +680,9 @@ export default function RegistrySettingsPage() {
             </h4>
             <div className="flex gap-2 items-end">
               <div>
-                <label className="text-xs text-tertiary">Max uses</label>
+                <label htmlFor="invite-max-uses" className="text-xs text-tertiary">Max uses</label>
                 <select
+                  id="invite-max-uses"
                   value={maxUses}
                   onChange={(e) => setMaxUses(e.target.value)}
                   className="block w-full rounded-md border px-3 py-2 text-sm bg-transparent"

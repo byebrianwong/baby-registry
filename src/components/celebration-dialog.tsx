@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
+  DialogTitle,
 } from "@/components/ui/dialog";
 import { PaymentMethodsDisplay } from "@/components/payment-methods-display";
 import type { PaymentMethods } from "@/lib/types";
@@ -89,12 +90,13 @@ export function CelebrationDialog({
             className="h-28 w-28"
             style={{ animation: "celebration-bounce 1.2s ease-in-out infinite" }}
           />
-          <h2
+          {/* DialogTitle names the dialog for screen readers. */}
+          <DialogTitle
             className="text-xl font-bold text-primary"
             style={{ animation: "celebration-fade-in 0.5s ease-out 0.2s both" }}
           >
             Thank you!
-          </h2>
+          </DialogTitle>
           <p
             className="text-secondary"
             style={{ animation: "celebration-fade-in 0.5s ease-out 0.4s both" }}
