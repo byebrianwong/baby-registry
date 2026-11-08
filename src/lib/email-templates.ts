@@ -14,6 +14,13 @@ function formatPaymentBlock(paymentMethods?: { venmo?: string; paypal?: string; 
   return `<p style="color:#999;font-size:13px;">If not sent yet, send payment via:<br/>${lines.join("<br/>")}</p>`;
 }
 
+// Names typed by other people are escaped before going into an email.
+function escapeHtml(value: string): string {
+  return value.replace(/[&<>"']/g, (c) =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!,
+  );
+}
+
 function formatUSD(amount: number): string {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
@@ -112,13 +119,19 @@ export function itemReservedOwnerHtml(opts: {
   quantity: number;
   message?: string | null;
   dashboardLink: string;
+  /** Set when this is the first gift from a store registry whose welcome box needs one. */
+  welcomeBox?: { storeName: string; boxName: string; perksLink: string } | null;
 }): string {
   const qtyText = opts.quantity > 1 ? ` (×${opts.quantity})` : "";
+  const welcomeBlock = opts.welcomeBox
+    ? `<p style="background:#EAFBF5;border:1px solid #A0E4D4;border-radius:12px;padding:12px 14px;color:#074D31;">This is the first gift from your ${escapeHtml(opts.welcomeBox.storeName)} registry, so you may be able to request your ${escapeHtml(opts.welcomeBox.storeName)} ${escapeHtml(opts.welcomeBox.boxName)} now. <a href="${opts.welcomeBox.perksLink}" style="color:#004659;">See your store perks</a></p>`
+    : "";
 
   return `
     <p>Hi ${opts.ownerName},</p>
     <p><strong>${opts.buyerName}</strong> just reserved <strong>${opts.itemTitle}</strong>${qtyText} on your registry <em>${opts.registryTitle}</em>.</p>
     ${opts.message ? `<p>Their message: "${opts.message}"</p>` : ""}
+    ${welcomeBlock}
     <p style="margin: 16px 0;"><a href="${opts.dashboardLink}" style="color:#004659;">View on Dashboard</a></p>
     <p style="color:#888;font-size:13px;">You're receiving this because someone interacted with your registry.</p>
   `;
@@ -180,6 +193,30 @@ export function newSuggestionOwnerHtml(opts: {
   `;
 }
 
+// ── Store perks ──────────────────────────────────────────────
+
+export function completionDiscountOwnerHtml(opts: {
+  ownerName: string;
+  registryTitle: string;
+  /** Stores whose completion discount may have opened, with the discount. */
+  stores: { name: string; amount: string }[];
+  perksLink: string;
+}): string {
+  const items = opts.stores
+    .map((s) => `<li><strong>${escapeHtml(s.name)}</strong>: ${escapeHtml(s.amount)}</li>`)
+    .join("");
+  const one = opts.stores.length === 1;
+
+  return `
+    <p>Hi ${escapeHtml(opts.ownerName)},</p>
+    <p>Your due date is coming up, so ${one ? "this store's completion discount" : "these stores' completion discounts"} may be open now. ${one ? "It's" : "Each is"} a discount on what's still left on your store registry.</p>
+    <ul style="padding-left:20px;">${items}</ul>
+    <p>Rules differ by store, so check ${one ? "the store's" : "each store's"} terms before you buy.</p>
+    <p style="margin: 16px 0;"><a href="${opts.perksLink}" style="color:#004659;">See your store perks</a></p>
+    <p style="color:#888;font-size:13px;">You're receiving this because you linked store registries to <em>${escapeHtml(opts.registryTitle)}</em>. You can turn off these emails on its Store perks tab.</p>
+  `;
+}
+
 // ── Invitations ──────────────────────────────────────────────
 
 export function managerInviteHtml(opts: {
@@ -202,14 +239,6 @@ export function managerInviteHtml(opts: {
 }
 
 // ── Follows ──────────────────────────────────────────────────
-
-// Names here are typed by other people, so they're escaped before going into
-// the email.
-function escapeHtml(value: string): string {
-  return value.replace(/[&<>"']/g, (c) =>
-    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!,
-  );
-}
 
 export function followRequestHtml(opts: {
   followerName: string;

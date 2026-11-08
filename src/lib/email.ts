@@ -10,6 +10,7 @@ import {
   newSuggestionOwnerHtml,
   managerInviteHtml,
   followRequestHtml,
+  completionDiscountOwnerHtml,
 } from "./email-templates";
 
 let _resend: Resend | null = null;
@@ -232,6 +233,8 @@ export async function notifyItemReserved(opts: {
   buyerName: string;
   quantity: number;
   message?: string | null;
+  /** Set when this gift may have unlocked a store's welcome box. */
+  welcomeBox?: { storeName: string; boxName: string } | null;
 }) {
   try {
     const managers = await getRegistryManagerEmails({ itemId: opts.itemId });
@@ -239,6 +242,12 @@ export async function notifyItemReserved(opts: {
 
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
     const dashboardLink = `${siteUrl}/dashboard/registry/${managers[0].registryId}?highlight=${opts.itemId}`;
+    const welcomeBox = opts.welcomeBox
+      ? {
+          ...opts.welcomeBox,
+          perksLink: `${siteUrl}/dashboard/registry/${managers[0].registryId}?tab=perks`,
+        }
+      : null;
 
     await Promise.all(
       managers.map((m) =>
@@ -254,12 +263,49 @@ export async function notifyItemReserved(opts: {
             quantity: opts.quantity,
             message: opts.message,
             dashboardLink,
+            welcomeBox,
           }),
         })
       )
     );
   } catch (err) {
     console.error("[email] Failed to send item reserved notification:", err);
+  }
+}
+
+/** Tells a registry's managers that store completion discounts may have opened. */
+export async function notifyCompletionDiscounts(opts: {
+  registryId: string;
+  stores: { name: string; amount: string }[];
+}) {
+  try {
+    const managers = await getRegistryManagerEmails({ registryId: opts.registryId });
+    if (!managers) return;
+
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+    const perksLink = `${siteUrl}/dashboard/registry/${opts.registryId}?tab=perks`;
+    const subject =
+      opts.stores.length === 1
+        ? `Your ${opts.stores[0].name} completion discount may be open`
+        : "Your store completion discounts may be open";
+
+    await Promise.all(
+      managers.map((m) =>
+        getResend().emails.send({
+          from: FROM,
+          to: TEST_RECIPIENT_OVERRIDE || m.email,
+          subject,
+          html: completionDiscountOwnerHtml({
+            ownerName: m.name,
+            registryTitle: m.registryTitle,
+            stores: opts.stores,
+            perksLink,
+          }),
+        })
+      )
+    );
+  } catch (err) {
+    console.error("[email] Failed to send completion discount reminder:", err);
   }
 }
 

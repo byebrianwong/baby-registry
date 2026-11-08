@@ -184,6 +184,22 @@ export function classifyStoreLink(
   return { store, kind: hasRegistryParams ? "registry" : "plain" };
 }
 
+/**
+ * The store whose registry a gift bought through this link counts toward, or
+ * null. A registry item link counts on its own. A link we can't classify, such
+ * as a short link, counts only if the owner linked that store.
+ */
+export function registryStoreFor(
+  raw: string | null | undefined,
+  linkedStores: StoreId[]
+): StoreInfo | null {
+  const result = classifyStoreLink(raw);
+  if (!result) return null;
+  if (result.kind === "registry") return result.store;
+  if (result.kind === "unknown" && linkedStores.includes(result.store.id)) return result.store;
+  return null;
+}
+
 /** Stores that at least one of these links is a registry item link for. */
 export function storesWithRegistryLinks(urls: (string | null | undefined)[]): StoreId[] {
   const found = new Set<StoreId>();

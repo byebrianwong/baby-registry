@@ -25,6 +25,8 @@ import {
   MAX_RETAILER_REGISTRIES,
   type RetailerRegistry,
 } from "@/lib/retailers";
+import { parseStorePerksState, storePerksSettings } from "@/lib/store-perks";
+import { welcomeBoxUnlockedBy } from "@/lib/store-perks-server";
 import crypto from "crypto";
 
 const COOKIE_NAME = "regibee_my_gifts";
@@ -527,12 +529,18 @@ export async function reserveItem(formData: FormData) {
         .eq("id", itemId)
         .single();
       if (item) {
+        // A first gift from a store registry can unlock that store's welcome box.
+        const welcomeBox = await welcomeBoxUnlockedBy(itemId).catch((err) => {
+          console.error("[perks] Failed to check welcome box:", err);
+          return null;
+        });
         await notifyItemReserved({
           itemId,
           itemTitle: item.title,
           buyerName,
           quantity,
           message: message || null,
+          welcomeBox,
         });
         if (buyerEmail && registryInfo) {
           const registryUrl = buildBuyerRegistryUrl({ siteUrl, slug: registryInfo.slug, buyerEmail });
@@ -780,6 +788,60 @@ export async function updateRetailerRegistries(
   revalidatePath(`/dashboard/registry/${registryId}`);
   revalidatePath(`/dashboard/registry/${registryId}/settings`);
   return { success: true, registries: cleaned };
+}
+
+/** Records a welcome box the owner asked for, or turns perk emails on or off. */
+export async function updateStorePerks(
+  registryId: string,
+  change: { welcomeBoxDone?: { store: string; done: boolean }; emails?: boolean }
+) {
+  const { user, error: authError } = await requireManager(registryId);
+  if (authError || !user) return { error: authError || "Not authenticated" };
+
+  // Server actions can be called directly, so check the input here too.
+  const welcomeBox = change?.welcomeBoxDone;
+  if (welcomeBox && (!isStoreId(welcomeBox.store) || typeof welcomeBox.done !== "boolean")) {
+    return { error: "Invalid store perk" };
+  }
+  if (change?.emails !== undefined && typeof change.emails !== "boolean") {
+    return { error: "Invalid store perk" };
+  }
+
+  const supabase = await createClient();
+  const { data: registry } = await supabase
+    .from("registries")
+    .select("settings")
+    .eq("id", registryId)
+    .single();
+
+  if (!registry) {
+    return { error: "Registry not found" };
+  }
+
+  const settings = (registry.settings as Record<string, unknown>) || {};
+  const state = parseStorePerksState(settings);
+  if (welcomeBox && isStoreId(welcomeBox.store)) {
+    const store = welcomeBox.store;
+    state.welcomeBoxDone = welcomeBox.done
+      ? [...new Set([...state.welcomeBoxDone, store])]
+      : state.welcomeBoxDone.filter((s) => s !== store);
+  }
+  if (typeof change.emails === "boolean") {
+    state.emails = change.emails;
+  }
+  settings.store_perks = storePerksSettings(state);
+
+  const { error } = await supabase
+    .from("registries")
+    .update({ settings })
+    .eq("id", registryId);
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidatePath(`/dashboard/registry/${registryId}`);
+  return { success: true };
 }
 
 export async function updateZipCode(

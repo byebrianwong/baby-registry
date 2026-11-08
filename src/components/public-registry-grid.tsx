@@ -17,7 +17,7 @@ import { CategoryNav, type CategoryNavItem } from "@/components/category-nav";
 import { ItemImage } from "@/components/item-image";
 import { getCategorySectionId } from "@/lib/category-section-id";
 import type { PaymentMethods } from "@/lib/types";
-import { classifyStoreLink, detectStore, STORES, type StoreId } from "@/lib/retailers";
+import { classifyStoreLink, detectStore, registryStoreFor, STORES, type StoreId } from "@/lib/retailers";
 
 interface RegistryItem {
   id: string;
@@ -412,15 +412,9 @@ function PublicItemCard({
 }) {
   const storeLink = classifyStoreLink(item.external_url);
   const store = storeLink?.store;
-  // A registry link names the owner's store registry, so the gift counts
-  // there. A link we can't classify counts only if the owner linked that store.
-  const registryStoreName =
-    showStoreRegistries &&
-    storeLink &&
-    (storeLink.kind === "registry" ||
-      (storeLink.kind === "unknown" && linkedStores.includes(storeLink.store.id)))
-      ? storeLink.store.name
-      : undefined;
+  const registryStoreName = showStoreRegistries
+    ? registryStoreFor(item.external_url, linkedStores)?.name
+    : undefined;
   const isFulfilled = item.quantity_fulfilled >= item.quantity_needed;
   const remaining = item.quantity_needed - item.quantity_fulfilled;
   const itemPurchased = !!(myGifts.items && myGifts.items[item.id]);
