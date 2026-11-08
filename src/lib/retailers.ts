@@ -184,6 +184,16 @@ export function classifyStoreLink(
   return { store, kind: hasRegistryParams ? "registry" : "plain" };
 }
 
+/** Stores that at least one of these links is a registry item link for. */
+export function storesWithRegistryLinks(urls: (string | null | undefined)[]): StoreId[] {
+  const found = new Set<StoreId>();
+  for (const url of urls) {
+    const result = classifyStoreLink(url);
+    if (result?.kind === "registry") found.add(result.store.id);
+  }
+  return STORES.filter((s) => found.has(s.id)).map((s) => s.id);
+}
+
 /** Steps for copying an item's registry link from the store's registry page. */
 export function copyLinkSteps(store: StoreInfo): string[] {
   return [
