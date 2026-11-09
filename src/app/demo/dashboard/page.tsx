@@ -4,10 +4,12 @@ import Link from "next/link";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DashboardRegistryCard } from "@/components/dashboard-registry-card";
-import { DEMO_REGISTRY, DEMO_ITEMS } from "@/lib/demo-data";
+import { DEMO_REGISTRY, DEMO_ITEMS, demoDueDate } from "@/lib/demo-data";
 import { Logo } from "@/components/logo";
+import { useDemoToday } from "../demo-today";
 
 export default function DemoDashboardPage() {
+  const today = useDemoToday();
   const totalItems = DEMO_ITEMS.length;
   const fulfilledItems = DEMO_ITEMS.filter(
     (i) => i.quantity_fulfilled >= i.quantity_needed
@@ -18,9 +20,9 @@ export default function DemoDashboardPage() {
   );
 
   const recentActivity = [
-    { id: "1", name: "Aunt Linda", item: "Newton Crib Mattress" },
-    { id: "2", name: "Grandma Rose", item: "Boppy Nursing Pillow" },
-    { id: "3", name: "Uncle Dave", item: "Ergobaby Omni 360 Carrier" },
+    { id: "1", name: "Auntie Glinda", item: "Newton Crib Mattress" },
+    { id: "2", name: "Grandma Dorothy", item: "Boppy Nursing Pillow" },
+    { id: "3", name: "Uncle Oz", item: "Ergobaby Omni 360 Carrier" },
   ];
 
   return (
@@ -78,8 +80,8 @@ export default function DemoDashboardPage() {
               title={DEMO_REGISTRY.title}
               registryType="baby"
               eventType={null}
-              eventDate={DEMO_REGISTRY.event_date}
-              today={new Date().toISOString().slice(0, 10)}
+              eventDate={demoDueDate(today)}
+              today={today}
               totalItems={totalItems}
               fulfilledItems={fulfilledItems}
               totalValue={totalValue}

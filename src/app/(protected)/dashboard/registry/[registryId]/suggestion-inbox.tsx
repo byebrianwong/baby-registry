@@ -5,6 +5,7 @@ import { ExternalLink, Lightbulb } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { SuggestionActions } from "./suggestion-actions";
+import { formatPrice } from "@/lib/money";
 
 type SuggestionStatus = "pending" | "offering" | "added" | "accepted" | "declined";
 type FilterMode = "all" | SuggestionStatus;
@@ -139,7 +140,7 @@ export function SuggestionInbox({
                       </div>
                       {suggestion.price && (
                         <p className="text-sm font-semibold text-secondary">
-                          ${suggestion.price.toFixed(2)}
+                          {formatPrice(suggestion.price)}
                         </p>
                       )}
                       <div className="flex items-center gap-2.5 text-xs text-secondary">

@@ -25,6 +25,8 @@ import type { PersonalEventType, RegistryType } from "@/lib/types";
 import { copyFor } from "@/lib/registry-copy";
 import type { RetailerRegistry, StoreId } from "@/lib/retailers";
 import { StoreLinkNotice } from "@/components/store-link-notice";
+import { ItemImageField } from "@/components/item-image-field";
+import { uploadRegistryPhoto } from "@/lib/upload-registry-photo";
 
 interface Category {
   id: string;
@@ -87,7 +89,6 @@ export function AddItemDialog({
   const [title, setTitle] = useState(defaultValues?.title || "");
   const [price, setPrice] = useState(defaultValues?.price ? parseFloat(defaultValues.price).toFixed(2) : "");
   const [imageUrl, setImageUrl] = useState("");
-  const [imageError, setImageError] = useState(false);
   const [imageCandidates, setImageCandidates] = useState<string[]>([]);
   const [brokenCandidates, setBrokenCandidates] = useState<Set<string>>(new Set());
   const [categoryId, setCategoryId] = useState<string | undefined>(defaultValues?.categoryId);
@@ -202,7 +203,6 @@ export function AddItemDialog({
         setBrokenCandidates(new Set());
         if (!imageUrl) {
           setImageUrl(candidates[0]);
-          setImageError(false);
           filled.push(candidates.length > 1 ? `image (${candidates.length} options)` : "image");
         }
       }
@@ -248,7 +248,6 @@ export function AddItemDialog({
       setTitle(defaultValues?.title || "");
       setPrice(defaultValues?.price ? parseFloat(defaultValues.price).toFixed(2) : "");
       setImageUrl("");
-      setImageError(false);
       setImageCandidates([]);
       setBrokenCandidates(new Set());
       setCategoryId(defaultValues?.categoryId);
@@ -260,7 +259,7 @@ export function AddItemDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setScrapeStatus(""); setScrapeIsError(false); setParentPurchased(false); setOpenToUsed(false); setTaxInfo(null); setCurrency("USD"); setTitle(defaultValues?.title || ""); setPrice(defaultValues?.price ? parseFloat(defaultValues.price).toFixed(2) : ""); setImageUrl(""); setImageError(false); setImageCandidates([]); setBrokenCandidates(new Set()); setCategoryId(defaultValues?.categoryId); setExternalUrl(""); setError(""); } }}>
+    <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setScrapeStatus(""); setScrapeIsError(false); setParentPurchased(false); setOpenToUsed(false); setTaxInfo(null); setCurrency("USD"); setTitle(defaultValues?.title || ""); setPrice(defaultValues?.price ? parseFloat(defaultValues.price).toFixed(2) : ""); setImageUrl(""); setImageCandidates([]); setBrokenCandidates(new Set()); setCategoryId(defaultValues?.categoryId); setExternalUrl(""); setError(""); } }}>
       <DialogTrigger asChild>
         {trigger || (
           <Button>
@@ -444,23 +443,11 @@ export function AddItemDialog({
           </div>
 
           <div className="space-y-1.5">
-            <Input
-              label="Image URL (optional)"
-              name="imageUrl"
-              placeholder="https://www.example.com/image.jpg"
+            <ItemImageField
               value={imageUrl}
-              onChange={(val) => { setImageUrl(val); setImageError(false); }}
+              onChange={setImageUrl}
+              upload={(file) => uploadRegistryPhoto(registryId, file)}
             />
-            {imageUrl && !imageError && (
-              <div className="flex size-16 items-center justify-center rounded-lg bg-tertiary">
-                <img
-                  src={imageUrl}
-                  alt="Preview"
-                  className="size-16 rounded-lg object-cover"
-                  onError={() => setImageError(true)}
-                />
-              </div>
-            )}
             {imageCandidates.filter((c) => !brokenCandidates.has(c)).length > 1 && (
               <div className="space-y-1.5">
                 <p className="text-xs text-tertiary">
@@ -477,7 +464,6 @@ export function AddItemDialog({
                           type="button"
                           onClick={() => {
                             setImageUrl(candidate);
-                            setImageError(false);
                           }}
                           aria-label="Use this image"
                           aria-pressed={selected}

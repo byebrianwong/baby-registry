@@ -295,6 +295,43 @@ export function storesWithRegistryLinks(urls: (string | null | undefined)[]): St
   return STORES.filter((s) => found.has(s.id)).map((s) => s.id);
 }
 
+/**
+ * Items with a plain product link at a store where the owner has a registry,
+ * by store. Gifts bought through those links won't count toward the store
+ * registry. The owner "has a registry" at a store when they linked it in
+ * settings, or when another item already has a registry link from it.
+ * In the same order as STORES.
+ */
+export function plainLinksByStore<T extends { external_url: string | null }>(
+  items: T[],
+  linkedStores: StoreId[]
+): Map<StoreId, T[]> {
+  const known = new Set<StoreId>([
+    ...linkedStores,
+    ...storesWithRegistryLinks(items.map((i) => i.external_url)),
+  ]);
+  const byStore = new Map<StoreId, T[]>();
+  for (const item of items) {
+    const result = classifyStoreLink(item.external_url);
+    if (result?.kind !== "plain" || !known.has(result.store.id)) continue;
+    byStore.set(result.store.id, [...(byStore.get(result.store.id) ?? []), item]);
+  }
+  return new Map(STORES.filter((s) => byStore.has(s.id)).map((s) => [s.id, byStore.get(s.id)!]));
+}
+
+/**
+ * Item IDs the owner asked not to be reminded about, from
+ * `settings.hidden_plain_link_items`. Read defensively, since settings is
+ * untyped jsonb.
+ */
+export function parseHiddenPlainLinkItems(settings: unknown): string[] {
+  const raw =
+    settings && typeof settings === "object"
+      ? (settings as Record<string, unknown>).hidden_plain_link_items
+      : undefined;
+  return Array.isArray(raw) ? raw.filter((id): id is string => typeof id === "string") : [];
+}
+
 /** Steps for copying an item's registry link from the store's registry page. */
 export function copyLinkSteps(store: StoreInfo): string[] {
   return [

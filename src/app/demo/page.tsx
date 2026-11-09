@@ -13,6 +13,7 @@ import {
   LockOpen,
 } from "lucide-react";
 import { ItemImage } from "@/components/item-image";
+import { RegistryAvatar } from "@/components/registry-avatar";
 import { Badge } from "@/components/ui/badge";
 import { Tag } from "@/components/ui/tag";
 import { TightSelect } from "@/components/ui/tight-select";
@@ -47,9 +48,12 @@ import {
   DEMO_CATEGORIES,
   DEMO_ITEMS,
   DEMO_CASH_FUNDS,
+  demoDueDate,
 } from "@/lib/demo-data";
+import { useDemoToday } from "./demo-today";
 import { toWebUrl } from "@/lib/web-url";
 import { Logo } from "@/components/logo";
+import { formatDollars, formatPrice } from "@/lib/money";
 
 interface DemoItem {
   id: string;
@@ -160,7 +164,7 @@ function DemoSuggestItemDialog() {
                   >
                     <InputBase
                       type="url"
-                      placeholder="www.untitledui.com"
+                      placeholder="www.target.com/..."
                     />
                   </InputGroup>
                   <Button
@@ -234,13 +238,13 @@ function DemoSuggestItemDialog() {
 
               <Input
                 label="Your Name"
-                placeholder="Jane Doe"
+                placeholder="Alex Kim"
                 isRequired
               />
               <Input
                 label="Your Email"
                 type="email"
-                placeholder="jane@example.com"
+                placeholder="alex@example.com"
                 icon={Mail01}
                 isRequired
               />
@@ -263,7 +267,7 @@ function DemoSuggestItemDialog() {
   );
 }
 
-const DEMO_PARENT_NAME = "Sarah & Mike";
+const DEMO_PARENT_NAME = "Remi & Max";
 const DEMO_SHIPPING_ADDRESS = DEMO_REGISTRY.settings.shipping_address;
 
 type SortMode = "default" | "most-wanted" | "price-asc" | "price-desc";
@@ -276,6 +280,7 @@ const PRICE_BUCKETS = [
 ];
 
 export default function DemoPage() {
+  const today = useDemoToday();
   const [items, setItems] = useState(DEMO_ITEMS);
   const [funds, setFunds] = useState(DEMO_CASH_FUNDS);
   const [search, setSearch] = useState("");
@@ -413,12 +418,13 @@ export default function DemoPage() {
       {/* Registry Header */}
       <section className="border-b bg-secondary py-12">
         <div className="container mx-auto px-4 text-center">
+          <RegistryAvatar names={DEMO_REGISTRY.honoree_names} className="mx-auto mb-4" />
           <h1 className="text-3xl font-bold sm:text-4xl">
             {DEMO_REGISTRY.title}
           </h1>
           <p className="mt-2 flex items-center justify-center gap-2 text-tertiary">
             <Calendar className="h-4 w-4" />
-            {new Date(DEMO_REGISTRY.event_date + "T00:00:00").toLocaleDateString(
+            {new Date(`${demoDueDate(today)}T00:00:00`).toLocaleDateString(
               "en-US",
               {
                 month: "long",
@@ -519,12 +525,12 @@ export default function DemoPage() {
                       </p>
                       <div className="flex flex-col gap-1">
                         <div className="flex justify-between text-sm">
-                          <span>${fund.current_amount} raised</span>
-                          <span>${fund.goal_amount} goal</span>
+                          <span>{formatDollars(fund.current_amount)} raised</span>
+                          <span>{formatDollars(fund.goal_amount)} goal</span>
                         </div>
                         <Progress value={fundProgress} aria-label={`Amount raised for ${fund.title}`} />
                         <span className="text-xs">
-                          ${Math.max(0, fund.goal_amount - fund.current_amount)} remaining
+                          {formatDollars(Math.max(0, fund.goal_amount - fund.current_amount))} remaining
                         </span>
                       </div>
                       <div className="flex justify-end">
@@ -596,7 +602,7 @@ export default function DemoPage() {
                                 <div className="flex flex-wrap items-center gap-x-2.5">
                                   {item.price && (
                                     <span className="text-sm font-semibold">
-                                      ${item.price.toFixed(2)}
+                                      {formatPrice(item.price)}
                                     </span>
                                   )}
                                   <span className="text-xs text-secondary">

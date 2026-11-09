@@ -20,6 +20,7 @@ import { PaymentMethodsDisplay } from "@/components/payment-methods-display";
 import { contributeToCashFund } from "@/lib/actions/registry";
 import { CelebrationDialog } from "@/components/celebration-dialog";
 import type { PaymentMethods } from "@/lib/types";
+import { formatDollars } from "@/lib/money";
 
 type DialogAction = (formData: FormData) => Promise<{ error: string } | undefined>;
 
@@ -137,22 +138,21 @@ export function ContributeFundDialog({
         {fund.goal_amount != null && (
           <div className="flex flex-col gap-1">
             <div className="flex justify-between text-sm">
-              <span>${fund.current_amount.toFixed(0)} raised</span>
-              <span>${fund.goal_amount.toFixed(0)} goal</span>
+              <span>{formatDollars(fund.current_amount)} raised</span>
+              <span>{formatDollars(fund.goal_amount)} goal</span>
             </div>
             <Progress value={fundProgress} aria-label={`Amount raised for ${fund.title}`} />
             {remaining != null && remaining > 0 && (
               <span className="text-xs">
-                ${remaining.toFixed(0)} remaining
+                {formatDollars(remaining)} remaining
               </span>
             )}
           </div>
         )}
 
+        {/* No amount up here. The goal is in the progress row above, and a big
+            number next to "Send payment via" reads like the price to pay. */}
         <div className="flex flex-col gap-2 overflow-hidden rounded-xl px-4">
-          {fund.goal_amount != null && (
-            <p className="text-lg font-semibold">${fund.goal_amount.toFixed(0)}</p>
-          )}
           <PaymentMethodsDisplay paymentMethods={paymentMethods} />
         </div>
 
@@ -195,14 +195,14 @@ export function ContributeFundDialog({
           <Input
             label="Your Name"
             name="buyerName"
-            placeholder="Jane Doe"
+            placeholder="Alex Kim"
             isRequired
           />
           <Input
             label="Your Email"
             name="buyerEmail"
             type="email"
-            placeholder="jane@example.com"
+            placeholder="alex@example.com"
             icon={Mail01}
             isRequired
           />

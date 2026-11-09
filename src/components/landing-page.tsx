@@ -132,7 +132,7 @@ export function LandingPage({ ctaHref, nav }: { ctaHref: string; nav: React.Reac
                 {
                   icon: Baby,
                   title: "Baby Checklist",
-                  desc: "Baby registries get a curated list of 125+ essentials across 10 categories.",
+                  desc: "Baby registries get a curated list of 100 essentials across 10 categories.",
                 },
               ].map((feature) => (
                 <div

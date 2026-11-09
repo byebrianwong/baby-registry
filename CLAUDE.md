@@ -20,12 +20,15 @@ Vercel holds these env vars for production, preview and development: `NEXT_PUBLI
 - Changes live in `supabase/migrations`. Nothing runs them on deploy. Someone runs each new file by hand.
 - Production has no migration history table, so the Supabase CLI can't tell which files have run. Look at the database before running a file.
 - Give a new file the next number after the highest one. Two files already share `009`.
-- There's no staging database, so read a new file closely before running it on production. Use the SQL Editor in the Supabase dashboard, or the CLI:
+- There's no staging database, so read a new file closely before running it on production. Use the SQL Editor in the Supabase dashboard, or the Supabase CLI (version 3 or later, `brew install supabase/tap/supabase`):
 
   ```bash
+  supabase login
   supabase link --project-ref ibfvmgpfwhhyrhnxaxig
-  supabase db query --linked -f supabase/migrations/<file>.sql
+  supabase db query --remote -f supabase/migrations/<file>.sql
   ```
+
+  `--remote` runs the file on the linked project, and the CLI asks you to confirm first. Without it, `db query` runs against a local database. The older `--linked` flag still works in CLI 3 but is deprecated and goes away in v4.
 
 - If a migration takes away access that the live code still uses, deploy the code first and run the migration after. Run the other way round, and the live site breaks until the code is deployed. `009_restrict_registry_reads.sql` was one of these.
 - To test access rules (RLS) on production without saving anything, put the test in a `DO` block. Set `local role` and `request.jwt.claims` inside it, run the queries, and end the block with `raise exception` so everything rolls back.
@@ -38,8 +41,10 @@ Vercel holds these env vars for production, preview and development: `NEXT_PUBLI
 ## Visual tests (Chromatic)
 
 - `.github/workflows/chromatic.yml` runs Chromatic on every push. It snapshots only the stories the commit affects.
-- A green `chromatic` job does not mean the review is done. The "UI Tests" check on a pull request stays pending until someone reviews the changed snapshots in Chromatic.
-- On a branch build, accept only the changes that branch made. A branch build also shows changes still waiting for review on `main`.
+- Builds on `main` accept their own changes (`autoAcceptChanges: main`). That keeps `main`'s baselines current, even when a PR merges before anyone accepted it.
+- Still accept a PR's changes on its branch build before merging. Accepting records that someone reviewed them, and turns the PR's "UI Tests" check green. The Accept and merge button that follows the review page does both steps.
+- On a branch build, accept only the changes that branch made.
+- Merging before the branch's `chromatic` check finishes is fine. It can cost extra snapshots, but development speed matters more.
 - The free plan includes 5,000 snapshots a month. When they run out, Chromatic pauses testing and review until the next month.
 - Storybook can't render async server components. Put a page's markup in a plain component and write the story for that. The landing page works this way.
 
@@ -56,3 +61,7 @@ Vercel holds these env vars for production, preview and development: `NEXT_PUBLI
 - If you changed components or stories, also run `npm run build-storybook`.
 - If you changed `extension/`, `src/lib/retailers.ts` or `src/lib/extension.ts`, also run `npm run extension:build`.
 - `npm run lint` fails right now. `eslint.config.mjs` imports `eslint-plugin-storybook`, which isn't in `package.json`.
+
+## After opening a pull request
+
+- When the PR's `chromatic` and `Vercel` checks finish, publish a review page with the `pr-review-page` skill (`.claude/skills/pr-review-page`) and give the user the link. End that turn with an Accept and merge button. The skill says how to set it up and what to do when the user clicks it.

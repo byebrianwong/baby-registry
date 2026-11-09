@@ -29,7 +29,7 @@ type Story = StoryObj<typeof PublicRegistryGrid>;
 // come from more than one store.
 export const ItemsFromStores: Story = {
   args: {
-    parentName: "Sarah & Mike",
+    parentName: "Remi & Max",
     categories: [{ id: "nursery", name: "Nursery", sort_order: 0 }],
     cashFunds: [],
     myGifts: {},

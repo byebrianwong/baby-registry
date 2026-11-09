@@ -17,14 +17,17 @@ import {
   getRegistryInfoForBuyer,
 } from "@/lib/email";
 import { supabaseAdmin } from "@/lib/supabase-admin";
+import { registryPhotoUrlPrefix } from "@/lib/registry-photos";
 import { buildBuyerRegistryUrl } from "@/lib/buyer-link";
 import {
   getStore,
   isLinkForStore,
   isStoreId,
   MAX_RETAILER_REGISTRIES,
+  parseHiddenPlainLinkItems,
   type RetailerRegistry,
 } from "@/lib/retailers";
+import { isUuid } from "@/lib/extension";
 import { parseStorePerksState, storePerksSettings } from "@/lib/store-perks";
 import { welcomeBoxUnlockedBy } from "@/lib/store-perks-server";
 import crypto from "crypto";
@@ -844,6 +847,49 @@ export async function updateStorePerks(
   return { success: true };
 }
 
+/**
+ * Stops the dashboard reminding the owner that these items have plain store
+ * links. Items added with a plain link later still get a reminder.
+ */
+export async function hidePlainLinkReminders(registryId: string, itemIds: string[]) {
+  const { user, error: authError } = await requireManager(registryId);
+  if (authError || !user) return { error: authError || "Not authenticated" };
+
+  // Server actions can be called directly, so check the input here too.
+  if (!Array.isArray(itemIds) || itemIds.length === 0 || itemIds.length > 500 || !itemIds.every(isUuid)) {
+    return { error: "Invalid items" };
+  }
+
+  const supabase = await createClient();
+  const [{ data: registry }, { data: items }] = await Promise.all([
+    supabase.from("registries").select("settings").eq("id", registryId).single(),
+    supabase.from("registry_items").select("id").eq("registry_id", registryId),
+  ]);
+
+  if (!registry) {
+    return { error: "Registry not found" };
+  }
+
+  // Only items still on the registry, so the list doesn't keep growing.
+  const onRegistry = new Set((items ?? []).map((i) => i.id as string));
+  const settings = (registry.settings as Record<string, unknown>) || {};
+  settings.hidden_plain_link_items = [
+    ...new Set([...parseHiddenPlainLinkItems(settings), ...itemIds]),
+  ].filter((id) => onRegistry.has(id));
+
+  const { error } = await supabase
+    .from("registries")
+    .update({ settings })
+    .eq("id", registryId);
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidatePath(`/dashboard/registry/${registryId}`);
+  return { success: true };
+}
+
 export async function updateZipCode(
   registryId: string,
   formData: FormData
@@ -1478,4 +1524,33 @@ export async function listInvites(registryId: string) {
     .order("created_at", { ascending: false });
 
   return { error: null, invites: invites || [] };
+}
+
+/**
+ * Sets or clears the registry's photo, which the public registry page shows
+ * in its header. The browser uploads the file first (uploadRegistryPhoto) and
+ * passes its URL here.
+ */
+export async function updateRegistryPhoto(registryId: string, photoUrl: string | null) {
+  const { user, error: authError } = await requireManager(registryId);
+  if (authError || !user) return { error: authError || "Not authenticated" };
+
+  // Only photos in this registry's upload folder, so the header can't be
+  // pointed at any image on the web.
+  if (photoUrl !== null && !photoUrl.startsWith(registryPhotoUrlPrefix(registryId))) {
+    return { error: "That photo wasn't uploaded to this registry. Upload it again." };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("registries")
+    .update({ photo_url: photoUrl })
+    .eq("id", registryId);
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidatePath(`/dashboard/registry/${registryId}`);
+  return { success: true };
 }

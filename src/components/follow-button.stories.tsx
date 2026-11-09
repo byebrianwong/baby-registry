@@ -31,9 +31,9 @@ export const AllStates: Story = {
           <span className="text-xs font-mono text-tertiary">{state}</span>
           <FollowButton
             publicId="k7m2p9qx4t"
-            name="Jane Doe"
+            name="Remi & Max"
             state={state}
-            returnTo="/u/jane-doe-k7m2p9qx4t"
+            returnTo="/u/remi-max-k7m2p9qx4t"
             requestAction={mockAction}
             cancelAction={mockAction}
           />

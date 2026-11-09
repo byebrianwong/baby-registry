@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import DemoDashboardPage from "./page";
+import { withDemoToday } from "../story-today";
 
 const meta: Meta<typeof DemoDashboardPage> = {
   title: "Pages/Dashboard",
@@ -10,6 +11,7 @@ const meta: Meta<typeof DemoDashboardPage> = {
       appDirectory: true,
     },
   },
+  decorators: [withDemoToday],
 };
 export default meta;
 type Story = StoryObj<typeof DemoDashboardPage>;

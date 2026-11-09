@@ -10,7 +10,7 @@ const mockList = async () => ({ success: true });
 const registries: AccountRegistry[] = [
   {
     id: "1",
-    title: "The Doe Family Baby Registry",
+    title: "Remi & Max's Baby Registry",
     is_public: true,
     listed_on_profile: true,
     has_shipping_address: true,
@@ -19,7 +19,7 @@ const registries: AccountRegistry[] = [
   },
   {
     id: "2",
-    title: "Jane's 30th Birthday",
+    title: "Max's 30th Birthday",
     is_public: true,
     listed_on_profile: false,
     has_shipping_address: false,
@@ -54,7 +54,7 @@ export const NewAccount: Story = {
   args: {
     profile: {
       public_id: "k7m2p9qx4t",
-      full_name: "Jane & John Doe",
+      full_name: "Remi & Max",
       discoverable: true,
       findable_by_email: true,
     },
@@ -65,9 +65,9 @@ export const NewAccount: Story = {
 // An older account that hasn't turned on email search, with a request waiting.
 export const WithFollowers: Story = {
   args: {
-    profile: { public_id: "k7m2p9qx4t", full_name: "Jane & John Doe", discoverable: true },
+    profile: { public_id: "k7m2p9qx4t", full_name: "Remi & Max", discoverable: true },
     follows: {
-      requests: [{ public_id: "r4d8w2nb6h", full_name: "Rose Doe", status: "pending" }],
+      requests: [{ public_id: "r4d8w2nb6h", full_name: "Grandma Dorothy", status: "pending" }],
       followers: [{ public_id: "a3f9c2xz7e", full_name: "Alex Kim", status: "approved" }],
       following: [],
     },

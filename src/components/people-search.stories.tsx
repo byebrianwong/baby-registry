@@ -3,10 +3,10 @@ import { fireEvent, fn } from "storybook/test";
 import { PeopleSearch } from "./people-search";
 
 const people = [
-  { public_id: "k7m2p9qx4t", full_name: "Jane & John Doe", state: "none" as const },
-  { public_id: "r4d8w2nb6h", full_name: "Jane Smith", state: "pending" as const },
-  { public_id: "a3f9c2xz7e", full_name: "Janet Kim", state: "approved" as const },
-  { public_id: "h5n7b4ce9w", full_name: "Jane Wong", state: "self" as const },
+  { public_id: "k7m2p9qx4t", full_name: "Remi Wong", state: "none" as const },
+  { public_id: "r4d8w2nb6h", full_name: "Remi Smith", state: "pending" as const },
+  { public_id: "a3f9c2xz7e", full_name: "Remy Kim", state: "approved" as const },
+  { public_id: "h5n7b4ce9w", full_name: "Remi & Max", state: "self" as const },
 ];
 
 const meta: Meta<typeof PeopleSearch> = {
@@ -29,14 +29,14 @@ const meta: Meta<typeof PeopleSearch> = {
 export default meta;
 type Story = StoryObj<typeof PeopleSearch>;
 
-// Types "jan" so the snapshot shows results: one follow button per state, and
+// Types "rem" so the snapshot shows results: one follow button per state, and
 // "That's you" for your own profile. Type anything else for the empty state.
 export const WithResults: Story = {
   play: async ({ canvas }) => {
     // fireEvent, not userEvent: userEvent.type fills in this input, but React
     // never sees the change, so the search doesn't run.
     fireEvent.change(canvas.getByRole("textbox", { name: /find people/i }), {
-      target: { value: "jan" },
+      target: { value: "rem" },
     });
     await canvas.findByText("That's you");
   },

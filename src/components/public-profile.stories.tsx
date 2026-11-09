@@ -8,7 +8,7 @@ const meta: Meta<typeof PublicProfile> = {
   title: "Components/PublicProfile",
   component: PublicProfile,
   args: {
-    fullName: "Jane & John Doe",
+    fullName: "Remi & Max",
     today: "2026-11-02",
     registries: [
       {
@@ -21,7 +21,7 @@ const meta: Meta<typeof PublicProfile> = {
       },
       {
         slug: "anytime-wishlist",
-        title: "Jane's Wishlist",
+        title: "Remi's Wishlist",
         event_date: null,
         registry_type: "personal",
         event_type: null,
@@ -29,7 +29,7 @@ const meta: Meta<typeof PublicProfile> = {
       },
       {
         slug: "christmas",
-        title: "The Doe Family Christmas",
+        title: "Remi & Max's Christmas",
         event_date: "2026-12-25",
         registry_type: "personal",
         event_type: "christmas",
@@ -37,7 +37,7 @@ const meta: Meta<typeof PublicProfile> = {
       },
       {
         slug: "baby",
-        title: "The Doe Family Baby Registry",
+        title: "Remi & Max's Baby Registry",
         event_date: "2027-02-10",
         registry_type: "baby",
         event_type: null,
@@ -54,9 +54,9 @@ export const WithRegistries: Story = {
   args: {
     followAction: <FollowButton
         publicId="k7m2p9qx4t"
-        name="Jane & John Doe"
+        name="Remi & Max"
         state="approved"
-        returnTo="/u/jane-john-doe-k7m2p9qx4t"
+        returnTo="/u/remi-max-k7m2p9qx4t"
         cancelAction={mockFollow}
       />,
   },
@@ -69,9 +69,9 @@ export const VisitorNotFollowing: Story = {
     followAction: (
       <FollowButton
         publicId="k7m2p9qx4t"
-        name="Jane & John Doe"
+        name="Remi & Max"
         state="none"
-        returnTo="/u/jane-john-doe-k7m2p9qx4t"
+        returnTo="/u/remi-max-k7m2p9qx4t"
         requestAction={mockFollow}
         cancelAction={mockFollow}
       />

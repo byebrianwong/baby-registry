@@ -2,9 +2,9 @@ import type { Meta, StoryObj } from "@storybook/react";
 import { NavBar } from "./nav-bar";
 
 const account = {
-  name: "Jane & John Doe",
-  profilePath: "/u/jane-john-doe-k7m2p9qx4t",
-  email: "jane@example.com",
+  name: "Remi & Max",
+  profilePath: "/u/remi-max-k7m2p9qx4t",
+  email: "remi@example.com",
   followRequestCount: 0,
 };
 

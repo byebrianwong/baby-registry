@@ -7,7 +7,7 @@ const meta: Meta<typeof FollowInviteCard> = {
   component: FollowInviteCard,
   parameters: { layout: "fullscreen", nextjs: { appDirectory: true } },
   args: {
-    inviter: { public_id: "r4d8w2nb6h", full_name: "Rose Doe" },
+    inviter: { public_id: "r4d8w2nb6h", full_name: "Grandma Dorothy" },
     token: "abc123",
     acceptAction: fn(async () => ({ success: true })),
     declineAction: fn(async () => ({ success: true })),

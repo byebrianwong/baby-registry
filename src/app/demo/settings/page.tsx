@@ -14,10 +14,12 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { DEMO_REGISTRY } from "@/lib/demo-data";
+import { DEMO_REGISTRY, demoDueDate } from "@/lib/demo-data";
 import { Logo } from "@/components/logo";
+import { useDemoToday } from "../demo-today";
 
 export default function DemoSettingsPage() {
+  const today = useDemoToday();
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [savingPayment, setSavingPayment] = useState(false);
@@ -100,7 +102,7 @@ export default function DemoSettingsPage() {
                   label="Due Date"
                   name="eventDate"
                   type="date"
-                  defaultValue={DEMO_REGISTRY.event_date || ""}
+                  defaultValue={demoDueDate(today)}
                 />
 
                 <TextArea

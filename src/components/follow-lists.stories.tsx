@@ -24,13 +24,13 @@ type Story = StoryObj<typeof FollowLists>;
 export const WithEverything: Story = {
   args: {
     requests: [
-      { public_id: "r4d8w2nb6h", full_name: "Rose Doe", status: "pending" },
+      { public_id: "r4d8w2nb6h", full_name: "Grandma Dorothy", status: "pending" },
       { public_id: "s6g2t8vy3j", full_name: null, status: "pending" },
     ],
     followers: [{ public_id: "a3f9c2xz7e", full_name: "Alex Kim", status: "approved" }],
     following: [
       { public_id: "h5n7b4ce9w", full_name: "Jordan Lee", status: "approved" },
-      { public_id: "u2q6r8kd3m", full_name: "Priya Raman", status: "pending" },
+      { public_id: "u2q6r8kd3m", full_name: "Tin Man", status: "pending" },
     ],
     blocked: [{ public_id: "e9w4z7pa2s", full_name: "Not A Real Aunt" }],
   },
