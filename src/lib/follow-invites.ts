@@ -3,7 +3,7 @@ import { supabaseAdmin } from "@/lib/supabase-admin";
 import type { PersonSummary } from "@/lib/follows";
 
 // Server-side reads of `follow_invites`, which the API roles can't reach (see
-// 015_profile_links_and_email_search.sql). Invites keep only hashes of the
+// 017_profile_links_and_email_search.sql). Invites keep only hashes of the
 // address and the token.
 
 export function sha256(value: string): string {

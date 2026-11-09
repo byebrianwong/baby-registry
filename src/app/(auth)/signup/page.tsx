@@ -44,7 +44,7 @@ function SignupForm() {
         data: {
           full_name: fullName,
           // Read by the handle_new_user trigger, which sets both search
-          // settings on the new profile (015_profile_links_and_email_search.sql).
+          // settings on the new profile (017_profile_links_and_email_search.sql).
           findable,
         },
         emailRedirectTo: `${siteUrl}/auth/callback?next=${encodeURIComponent(redirectTo)}`,

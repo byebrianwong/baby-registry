@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="1400" viewBox="0 0 1000 1400">
+  <!-- A sample invitation for Storybook stories and the demo. -->
+  <rect width="1000" height="1400" fill="#FFF4F4"/>
+  <rect x="48" y="48" width="904" height="1304" rx="24" fill="none" stroke="#F9B8B9" stroke-width="4"/>
+  <circle cx="160" cy="190" r="70" fill="#FFDFDF"/>
+  <circle cx="860" cy="250" r="46" fill="#CDF6E9"/>
+  <circle cx="830" cy="1190" r="80" fill="#FFDFDF"/>
+  <circle cx="190" cy="1130" r="40" fill="#F7EFA9"/>
+  <path d="M500 250c-30-48-110-40-110 22 0 52 110 110 110 110s110-58 110-110c0-62-80-70-110-22z" fill="#EF9494"/>
+  <text x="500" y="520" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="44" letter-spacing="10" fill="#99383E">PLEASE JOIN US FOR A</text>
+  <text x="500" y="660" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="128" font-style="italic" fill="#004659">Baby Shower</text>
+  <text x="500" y="760" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="48" fill="#414651">honoring Remi</text>
+  <line x1="380" y1="830" x2="620" y2="830" stroke="#F9B8B9" stroke-width="4"/>
+  <text x="500" y="930" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="46" fill="#004659">Saturday, March 14</text>
+  <text x="500" y="1000" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="40" fill="#414651">2 to 5 in the afternoon</text>
+  <text x="500" y="1100" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="36" fill="#717680">Grandma Jo's garden</text>
+</svg>

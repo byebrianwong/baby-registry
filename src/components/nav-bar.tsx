@@ -86,7 +86,7 @@ function AccountMenu({ account }: { account: NavAccount }) {
 }
 
 // Signed-in people get just the logo and their account menu. The logo goes to
-// the dashboard, where My registries and Following are tabs
+// the dashboard, where My registries, Events and Following are tabs
 // (src/components/dashboard-tabs.tsx).
 export function NavBar({ account }: { account: NavAccount | null }) {
   return (

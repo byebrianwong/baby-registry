@@ -80,6 +80,56 @@ export function DashboardSkeleton() {
   );
 }
 
+/** Matches src/components/event-card.tsx. */
+function EventCardSkeleton() {
+  return (
+    <Card className="gap-0 overflow-hidden py-0">
+      <div className="h-32 bg-secondary" />
+      <div className="space-y-4 p-5">
+        <div className="space-y-2">
+          <Skeleton className="h-3 w-20" />
+          <Skeleton className="h-5 w-2/3" />
+          <Skeleton className="h-4 w-32" />
+        </div>
+        <Skeleton className="h-4 w-40" />
+        <div className="flex gap-2">
+          <Skeleton className="h-9 flex-1 rounded-full" />
+          <Skeleton className="h-9 w-16 rounded-full" />
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+/** Matches src/components/events-overview.tsx. */
+export function EventsSkeleton() {
+  return (
+    <div className="container mx-auto px-4 pt-6 pb-8" aria-busy="true">
+      <LoadingMessage>Loading your events</LoadingMessage>
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <h1 className="sr-only">Events</h1>
+          <p className="text-tertiary">Send invitations and track RSVPs</p>
+        </div>
+        <Button asChild>
+          <Link href="/dashboard/events/new">
+            <span className="inline-flex items-center gap-1.5">
+              <Plus className="h-4 w-4 shrink-0" />
+              New Event
+            </span>
+          </Link>
+        </Button>
+      </div>
+
+      <div className="mt-8 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <EventCardSkeleton />
+        <EventCardSkeleton />
+        <EventCardSkeleton />
+      </div>
+    </div>
+  );
+}
+
 function ProfileRegistryCardSkeleton() {
   return (
     <div className="flex items-center gap-4 rounded-xl border border-secondary bg-primary p-4 shadow-sm">

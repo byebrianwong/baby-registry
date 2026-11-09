@@ -3,7 +3,7 @@
 // person changes their name, and the profile page redirects to the current one.
 
 // Mirrors profiles_public_id_format in
-// supabase/migrations/015_profile_links_and_email_search.sql.
+// supabase/migrations/017_profile_links_and_email_search.sql.
 const PUBLIC_ID_PATTERN = /^[a-kmnp-z2-9]{10}$/;
 
 export interface ProfileRef {
