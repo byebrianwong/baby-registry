@@ -20,12 +20,15 @@ Vercel holds these env vars for production, preview and development: `NEXT_PUBLI
 - Changes live in `supabase/migrations`. Nothing runs them on deploy. Someone runs each new file by hand.
 - Production has no migration history table, so the Supabase CLI can't tell which files have run. Look at the database before running a file.
 - Give a new file the next number after the highest one. Two files already share `009`.
-- There's no staging database, so read a new file closely before running it on production. Use the SQL Editor in the Supabase dashboard, or the CLI:
+- There's no staging database, so read a new file closely before running it on production. Use the SQL Editor in the Supabase dashboard, or the Supabase CLI (version 3 or later, `brew install supabase/tap/supabase`):
 
   ```bash
+  supabase login
   supabase link --project-ref ibfvmgpfwhhyrhnxaxig
-  supabase db query --linked -f supabase/migrations/<file>.sql
+  supabase db query --remote -f supabase/migrations/<file>.sql
   ```
+
+  `--remote` runs the file on the linked project, and the CLI asks you to confirm first. Without it, `db query` runs against a local database. The older `--linked` flag still works in CLI 3 but is deprecated and goes away in v4.
 
 - If a migration takes away access that the live code still uses, deploy the code first and run the migration after. Run the other way round, and the live site breaks until the code is deployed. `009_restrict_registry_reads.sql` was one of these.
 - To test access rules (RLS) on production without saving anything, put the test in a `DO` block. Set `local role` and `request.jwt.claims` inside it, run the queries, and end the block with `raise exception` so everything rolls back.
