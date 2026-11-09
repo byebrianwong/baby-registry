@@ -67,17 +67,19 @@ export function DashboardTabs({ hasAccount }: { hasAccount: boolean }) {
   return (
     <div className="container mx-auto px-4 pt-6">
       <nav aria-label="Dashboard">
-        <ul className="flex gap-6 border-b border-secondary sm:gap-8">
+        {/* On phones the three tabs share the width by the length of their
+            labels, in a smaller size, so "My registries" stays on one line. */}
+        <ul className="flex gap-4 border-b border-secondary sm:gap-8">
           {tabs.map((tab) => {
             const current = currentHref === tab.href;
             return (
-              <li key={tab.href} className="flex max-sm:flex-1">
+              <li key={tab.href} className="flex max-sm:flex-auto">
                 <Link
                   href={tab.href}
                   onNavigate={() => setClickedHref(tab.href)}
                   aria-current={current ? "page" : undefined}
                   className={cx(
-                    "relative flex min-h-12 w-full items-center justify-center font-display text-lg font-semibold outline-focus-ring transition-colors focus-visible:outline-2 focus-visible:-outline-offset-2 sm:justify-start",
+                    "relative flex min-h-12 w-full items-center justify-center font-display text-base font-semibold whitespace-nowrap outline-focus-ring sm:text-lg transition-colors focus-visible:outline-2 focus-visible:-outline-offset-2 sm:justify-start",
                     current ? "text-primary" : "text-tertiary hover:text-primary",
                   )}
                 >

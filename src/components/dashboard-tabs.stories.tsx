@@ -52,7 +52,7 @@ export const Guest: Story = {
   render: MyRegistries.render,
 };
 
-/** On phones the three tabs split the width. */
+/** On phones the three tabs share the width and stay on one line each. */
 export const Phone: Story = {
   globals: { viewport: { value: "mobile1" } },
   render: MyRegistries.render,
