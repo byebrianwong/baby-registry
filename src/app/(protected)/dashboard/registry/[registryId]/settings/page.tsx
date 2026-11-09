@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { useRouter, useParams } from "next/navigation";
-import { ArrowLeft, Copy, Check, X, Users, Mail, LinkIcon } from "lucide-react";
+import { ArrowLeft, Copy, Check, X, Users, Mail, LinkIcon, ImageIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/base/input/input";
 import { TextArea } from "@/components/base/textarea/textarea";
@@ -14,6 +14,7 @@ import { createClient } from "@/utils/supabase/client";
 import { Checkbox } from "@/components/base/checkbox/checkbox";
 import {
   updateRegistry,
+  updateRegistryPhoto,
   deleteRegistry,
   updatePaymentMethods,
   updateShippingAddress,
@@ -31,6 +32,9 @@ import { StoreRegistriesCard } from "@/components/store-registries-card";
 import { parseRetailerRegistries } from "@/lib/retailers";
 import type { PaymentMethods, PersonalEventType, RegistryType } from "@/lib/types";
 import { copyFor } from "@/lib/registry-copy";
+import { PhotoUploadButton } from "@/components/photo-upload-button";
+import { RegistryAvatar, monogramFor } from "@/components/registry-avatar";
+import { uploadRegistryPhoto } from "@/lib/upload-registry-photo";
 
 interface Manager {
   id: string;
@@ -61,6 +65,7 @@ export default function RegistrySettingsPage() {
     honoree_names: string | null;
     event_date: string | null;
     description: string | null;
+    photo_url: string | null;
     is_public: boolean;
     listed_on_profile: boolean;
     slug: string;
@@ -75,6 +80,8 @@ export default function RegistrySettingsPage() {
   const [savingZip, setSavingZip] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+  const [photoError, setPhotoError] = useState<string | null>(null);
+  const [removingPhoto, setRemovingPhoto] = useState(false);
   const [paymentError, setPaymentError] = useState("");
   const [paymentSuccess, setPaymentSuccess] = useState(false);
   const [savingAddress, setSavingAddress] = useState(false);
@@ -118,7 +125,7 @@ export default function RegistrySettingsPage() {
       const [{ data }, { data: cats }, { data: { user } }] = await Promise.all([
         supabase
           .from("registries")
-          .select("title, parent_names, honoree_names, event_date, description, is_public, listed_on_profile, slug, owner_id, registry_type, event_type, settings")
+          .select("title, parent_names, honoree_names, event_date, description, photo_url, is_public, listed_on_profile, slug, owner_id, registry_type, event_type, settings")
           .eq("id", registryId)
           .single(),
         supabase
@@ -174,6 +181,18 @@ export default function RegistrySettingsPage() {
       });
     }
     setSaving(false);
+  };
+
+  // The photo saves as soon as it's uploaded or removed, apart from the form
+  // below, so there's no second step to forget.
+  const savePhoto = async (photoUrl: string | null) => {
+    const result = await updateRegistryPhoto(registryId, photoUrl);
+    if (result.error) {
+      setPhotoError(result.error);
+      return;
+    }
+    setPhotoError(null);
+    setRegistry((current) => (current ? { ...current, photo_url: photoUrl } : current));
   };
 
   const handleSavePayment = async (formData: FormData) => {
@@ -335,6 +354,55 @@ export default function RegistrySettingsPage() {
           <CardDescription>Update your registry details</CardDescription>
         </CardHeader>
         <CardContent>
+          <div className="mb-6 flex items-center gap-4">
+            {registry.photo_url || monogramFor(registry.honoree_names || registry.parent_names) ? (
+              <RegistryAvatar
+                photoUrl={registry.photo_url}
+                names={registry.honoree_names || registry.parent_names}
+                className="size-20 text-2xl ring-0 shadow-none"
+              />
+            ) : (
+              <span
+                aria-hidden="true"
+                className="flex size-20 shrink-0 items-center justify-center rounded-full border border-dashed border-primary text-tertiary"
+              >
+                <ImageIcon className="h-6 w-6" />
+              </span>
+            )}
+            <div className="min-w-0 space-y-2">
+              <div>
+                <p className="text-sm font-medium text-secondary">Registry photo</p>
+                <p className="text-xs text-tertiary">
+                  Shown at the top of your registry page. Without one, guests see your initials.
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <PhotoUploadButton
+                  label={registry.photo_url ? "Change photo" : "Upload photo"}
+                  upload={(file) => uploadRegistryPhoto(registryId, file)}
+                  onUploaded={savePhoto}
+                  onError={setPhotoError}
+                />
+                {registry.photo_url && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="h-10"
+                    disabled={removingPhoto}
+                    onClick={async () => {
+                      setRemovingPhoto(true);
+                      await savePhoto(null);
+                      setRemovingPhoto(false);
+                    }}
+                  >
+                    {removingPhoto ? "Removing..." : "Remove"}
+                  </Button>
+                )}
+              </div>
+              {photoError && <p className="text-xs text-error-primary">{photoError}</p>}
+            </div>
+          </div>
+
           {/* onSubmit, not action: React resets a form after its action runs, which
               would put the listing checkbox back to its old value and unlist the
               registry on the next save. */}

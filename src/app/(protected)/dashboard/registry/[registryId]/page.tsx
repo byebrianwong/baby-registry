@@ -39,6 +39,7 @@ import { AddCashFundDialog } from "@/components/add-cash-fund-dialog";
 import { CashFundCard } from "@/components/cash-fund-card";
 import { PandaMark } from "@/components/panda-mark";
 import { copyForRegistry } from "@/lib/registry-copy";
+import { formatDollars, formatPrice } from "@/lib/money";
 
 interface RegistryItem {
   id: string;
@@ -338,7 +339,7 @@ export default async function RegistryManagePage({
         <Card>
           <CardContent className="p-4">
             <p className="text-sm text-tertiary">Total Value</p>
-            <p className="text-2xl font-bold">${totalValue.toFixed(0)}</p>
+            <p className="text-2xl font-bold">{formatDollars(totalValue)}</p>
           </CardContent>
         </Card>
       </div>
@@ -558,7 +559,7 @@ export default async function RegistryManagePage({
                             <div className="flex-1 min-w-0">
                               <span className="text-sm font-semibold text-secondary">
                                 {displayAmount != null
-                                  ? `$${Number(displayAmount).toFixed(2)}`
+                                  ? formatPrice(Number(displayAmount))
                                   : ""}
                               </span>
                             </div>

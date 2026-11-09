@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import DemoManagePage from "./page";
+import { withDemoToday } from "../story-today";
 
 const meta: Meta<typeof DemoManagePage> = {
   title: "Pages/Registry Management",
@@ -10,6 +11,7 @@ const meta: Meta<typeof DemoManagePage> = {
       appDirectory: true,
     },
   },
+  decorators: [withDemoToday],
 };
 export default meta;
 type Story = StoryObj<typeof DemoManagePage>;

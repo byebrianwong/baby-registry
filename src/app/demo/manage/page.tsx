@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import { Link01 } from "@untitledui/icons";
 import { ItemImage } from "@/components/item-image";
+import { ItemImageField } from "@/components/item-image-field";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tag } from "@/components/ui/tag";
@@ -58,14 +59,17 @@ import {
   DEMO_REGISTRY,
   DEMO_CATEGORIES,
   DEMO_ITEMS,
-  DEMO_PURCHASES,
-  DEMO_SUGGESTIONS,
+  demoDueDate,
+  demoPurchases,
+  demoSuggestions,
 } from "@/lib/demo-data";
+import { useDemoToday } from "../demo-today";
 import { Tabs, TabList, Tab, TabPanel } from "@/components/base/tabs/tabs";
 import { CategoryNav, type CategoryNavItem } from "@/components/category-nav";
 import { getCategorySectionId } from "@/lib/category-section-id";
 import { ScrollToTop } from "@/components/scroll-to-top";
 import { Logo } from "@/components/logo";
+import { formatDollars, formatPrice } from "@/lib/money";
 
 interface DemoItem {
   id: string;
@@ -108,6 +112,10 @@ interface DemoSuggestion {
   created_at: string;
 }
 
+// The demo saves nothing, so an "uploaded" photo is a URL to the file in this
+// browser tab. It lasts until the page reloads.
+const demoUpload = async (file: File) => ({ url: URL.createObjectURL(file) });
+
 const currencySymbols: Record<string, string> = {
   USD: "$",
   EUR: "€",
@@ -129,10 +137,10 @@ function DemoAddItemDialog({
   const [scrapeStatus, setScrapeStatus] = useState("");
   const [openToUsed, setOpenToUsed] = useState(false);
   const [currency, setCurrency] = useState("USD");
+  const [imageUrl, setImageUrl] = useState("");
   const urlRef = React.useRef<HTMLInputElement>(null);
   const titleRef = React.useRef<HTMLInputElement>(null);
   const priceRef = React.useRef<HTMLInputElement>(null);
-  const imageUrlRef = React.useRef<HTMLInputElement>(null);
 
   const handleDemoScrape = async (url: string) => {
     if (!url || scraping) return;
@@ -159,8 +167,8 @@ function DemoAddItemDialog({
       priceRef.current.value = mockData.price;
       filled.push("price");
     }
-    if (imageUrlRef.current && !imageUrlRef.current.value) {
-      imageUrlRef.current.value = mockData.imageUrl;
+    if (!imageUrl) {
+      setImageUrl(mockData.imageUrl);
       filled.push("image");
     }
 
@@ -199,10 +207,11 @@ function DemoAddItemDialog({
     onAdd(newItem);
     setOpen(false);
     setScrapeStatus("");
+    setImageUrl("");
   };
 
   return (
-    <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setScrapeStatus(""); setOpenToUsed(false); setCurrency("USD"); } }}>
+    <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setScrapeStatus(""); setOpenToUsed(false); setCurrency("USD"); setImageUrl(""); } }}>
       <DialogTrigger asChild>
         <Button>
           <span className="inline-flex items-center gap-1.5">
@@ -304,17 +313,7 @@ function DemoAddItemDialog({
             {(item) => <Select.Item id={item.id} label={item.label} />}
           </Select>
 
-          <InputGroup
-            label="Image URL (optional)"
-            leadingAddon={<InputPrefix>http://</InputPrefix>}
-          >
-            <InputBase
-              ref={imageUrlRef}
-              name="imageUrl"
-              type="url"
-              placeholder="www.untitledui.com"
-            />
-          </InputGroup>
+          <ItemImageField value={imageUrl} onChange={setImageUrl} upload={demoUpload} />
 
           <div className="grid grid-cols-2 gap-4">
             <InputGroup
@@ -426,10 +425,10 @@ function DemoEditItemDialog({
   const [scrapeStatus, setScrapeStatus] = useState("");
   const [openToUsed, setOpenToUsed] = useState(false);
   const [currency, setCurrency] = useState("USD");
+  const [imageUrl, setImageUrl] = useState(item.image_url || "");
   const urlRef = React.useRef<HTMLInputElement>(null);
   const titleRef = React.useRef<HTMLInputElement>(null);
   const priceRef = React.useRef<HTMLInputElement>(null);
-  const imageUrlRef = React.useRef<HTMLInputElement>(null);
 
   const handleDemoScrape = async (url: string) => {
     if (!url || scraping) return;
@@ -455,8 +454,8 @@ function DemoEditItemDialog({
       priceRef.current.value = mockData.price;
       filled.push("price");
     }
-    if (imageUrlRef.current && !imageUrlRef.current.value) {
-      imageUrlRef.current.value = mockData.imageUrl;
+    if (!imageUrl) {
+      setImageUrl(mockData.imageUrl);
       filled.push("image");
     }
 
@@ -499,7 +498,7 @@ function DemoEditItemDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={(v) => { onOpenChange(v); if (!v) { setScrapeStatus(""); setOpenToUsed(false); setCurrency("USD"); } }}>
+    <Dialog open={open} onOpenChange={(v) => { onOpenChange(v); if (!v) { setScrapeStatus(""); setOpenToUsed(false); setCurrency("USD"); setImageUrl(item.image_url || ""); } }}>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg" showCloseButton={false}>
         <DialogHeader>
           <DialogTitle>Edit item in registry</DialogTitle>
@@ -519,7 +518,7 @@ function DemoEditItemDialog({
                   ref={urlRef}
                   name="externalUrl"
                   type="url"
-                  placeholder="www.untitledui.com"
+                  placeholder="www.target.com/..."
                   defaultValue={item.external_url || ""}
                   onBlur={(e) => handleDemoScrape((e.target as HTMLInputElement).value)}
                 />
@@ -572,18 +571,7 @@ function DemoEditItemDialog({
             {(item) => <Select.Item id={item.id} label={item.label} />}
           </Select>
 
-          <InputGroup
-            label="Image URL (optional)"
-            leadingAddon={<InputPrefix>http://</InputPrefix>}
-          >
-            <InputBase
-              ref={imageUrlRef}
-              name="imageUrl"
-              type="url"
-              placeholder="www.untitledui.com"
-              defaultValue={item.image_url || ""}
-            />
-          </InputGroup>
+          <ItemImageField value={imageUrl} onChange={setImageUrl} upload={demoUpload} />
 
           <div className="grid grid-cols-2 gap-4">
             <InputGroup
@@ -756,7 +744,7 @@ function DemoItemCard({
             <div className="flex items-center gap-2.5">
               {item.price && (
                 <span className="text-sm font-semibold">
-                  ${item.price.toFixed(2)}
+                  {formatPrice(item.price)}
                 </span>
               )}
               <span className="text-xs">
@@ -940,12 +928,13 @@ function DemoCategoryManager({
 
 
 export default function DemoManagePage() {
+  const today = useDemoToday();
   const [items, setItems] = useState<DemoItem[]>(DEMO_ITEMS);
   const [categories, setCategories] = useState(DEMO_CATEGORIES);
-  const [purchases, setPurchases] = useState<DemoPurchase[]>(DEMO_PURCHASES);
+  const [purchases, setPurchases] = useState<DemoPurchase[]>(() => demoPurchases(today));
   const [copied, setCopied] = useState(false);
   const [editingItem, setEditingItem] = useState<DemoItem | null>(null);
-  const [suggestions, setSuggestions] = useState<DemoSuggestion[]>(DEMO_SUGGESTIONS);
+  const [suggestions, setSuggestions] = useState<DemoSuggestion[]>(() => demoSuggestions(today));
 
   const handleAddItem = (item: DemoItem) => {
     setItems((prev) => [...prev, item]);
@@ -1139,9 +1128,7 @@ export default function DemoManagePage() {
               </div>
               <p className="text-tertiary ml-10">
                 Due date:{" "}
-                {new Date(
-                  DEMO_REGISTRY.event_date
-                ).toLocaleDateString("en-US", {
+                {new Date(`${demoDueDate(today)}T00:00:00`).toLocaleDateString("en-US", {
                   month: "long",
                   day: "numeric",
                   year: "numeric",
@@ -1220,7 +1207,7 @@ export default function DemoManagePage() {
                   Total Value
                 </p>
                 <p className="text-2xl font-bold">
-                  ${totalValue.toFixed(0)}
+                  {formatDollars(totalValue)}
                 </p>
               </CardContent>
             </Card>
@@ -1391,7 +1378,7 @@ export default function DemoManagePage() {
                               <div className="flex-1 min-w-0">
                                 <span className="text-sm font-semibold text-secondary">
                                   {displayAmount != null
-                                    ? `$${Number(displayAmount).toFixed(2)}`
+                                    ? formatPrice(Number(displayAmount))
                                     : ""}
                                 </span>
                               </div>
@@ -1408,6 +1395,9 @@ export default function DemoManagePage() {
                                     month: "short",
                                     day: "numeric",
                                     year: "numeric",
+                                    // The demo makes these times in UTC. Show them in UTC too, so the server and
+                                    // the browser print the same day.
+                                    timeZone: "UTC",
                                   })}
                                 </span>
                               </div>
@@ -1480,12 +1470,13 @@ export default function DemoManagePage() {
                                   month: "short",
                                   day: "numeric",
                                   year: "numeric",
+                                  timeZone: "UTC",
                                 })}
                               </span>
                             </div>
                             {suggestion.price != null && (
                               <p className="text-sm font-semibold text-secondary">
-                                ${suggestion.price.toFixed(2)}
+                                {formatPrice(suggestion.price)}
                               </p>
                             )}
                             <div className="flex items-center gap-2.5 text-xs text-secondary">

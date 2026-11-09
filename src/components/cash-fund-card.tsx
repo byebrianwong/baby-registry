@@ -18,6 +18,7 @@ import {
 import { updateCashFund, deleteCashFund } from "@/lib/actions/registry";
 import { Tag } from "@/components/ui/tag";
 import { GiftDetailModal, type Purchase } from "@/components/gift-detail-modal";
+import { formatDollars, formatPrice } from "@/lib/money";
 
 interface CashFundCardProps {
   fund: {
@@ -117,16 +118,16 @@ export function CashFundCard({ fund, registryId, highlightId, purchases }: CashF
           {fund.goal_amount != null && fund.goal_amount > 0 ? (
             <div className="flex flex-col gap-1">
               <div className="flex justify-between text-sm">
-                <span>${fund.current_amount.toFixed(0)} raised</span>
-                <span>${fund.goal_amount.toFixed(0)} goal</span>
+                <span>{formatDollars(fund.current_amount)} raised</span>
+                <span>{formatDollars(fund.goal_amount)} goal</span>
               </div>
               <Progress value={fundProgress} aria-label={`Amount raised for ${fund.title}`} />
               <span className="text-xs text-tertiary">
-                ${Math.max(0, fund.goal_amount - fund.current_amount).toFixed(0)} remaining
+                {formatDollars(Math.max(0, fund.goal_amount - fund.current_amount))} remaining
               </span>
             </div>
           ) : fund.current_amount > 0 ? (
-            <p className="text-sm">${fund.current_amount.toFixed(0)} raised</p>
+            <p className="text-sm">{formatDollars(fund.current_amount)} raised</p>
           ) : null}
         </CardContent>
       </Card>
@@ -190,7 +191,7 @@ export function CashFundCard({ fund, registryId, highlightId, purchases }: CashF
 
             {fund.current_amount > 0 && (
               <p className="text-sm text-tertiary">
-                ${fund.current_amount.toFixed(2)} has been contributed so far.
+                {formatPrice(fund.current_amount)} has been contributed so far.
               </p>
             )}
 

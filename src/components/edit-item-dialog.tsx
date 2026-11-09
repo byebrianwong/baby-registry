@@ -29,6 +29,8 @@ import { copyFor } from "@/lib/registry-copy";
 import type { PersonalEventType, RegistryType } from "@/lib/types";
 import type { RetailerRegistry, StoreId } from "@/lib/retailers";
 import { StoreLinkNotice } from "@/components/store-link-notice";
+import { ItemImageField } from "@/components/item-image-field";
+import { uploadRegistryPhoto } from "@/lib/upload-registry-photo";
 
 interface Category {
   id: string;
@@ -99,7 +101,6 @@ export function EditItemDialog({
   const [title, setTitle] = useState(item.title);
   const [price, setPrice] = useState(item.price != null ? item.price.toFixed(2) : "");
   const [imageUrl, setImageUrl] = useState(item.image_url || "");
-  const [imageError, setImageError] = useState(false);
   const [externalUrl, setExternalUrl] = useState(item.external_url || "");
   const [taxInfo, setTaxInfo] = useState<{ original: string; rate: number } | null>(null);
   const [categories, setCategories] = useState<Category[]>(initialCategories);
@@ -183,7 +184,6 @@ export function EditItemDialog({
       }
       if (result.imageUrl && !imageUrl) {
         setImageUrl(result.imageUrl);
-        setImageError(false);
         filled.push("image");
       }
       if (filled.length > 0) {
@@ -234,7 +234,7 @@ export function EditItemDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={(v) => { onOpenChange(v); if (!v) { setScrapeStatus(""); setScrapeIsError(false); setOpenToUsed(item.is_open_to_used); setParentPurchased(item.is_parent_purchased); setCurrency("USD"); setError(""); setTitle(item.title); setPrice(item.price != null ? item.price.toFixed(2) : ""); setImageUrl(item.image_url || ""); setImageError(false); setExternalUrl(item.external_url || ""); setTaxInfo(null); setCategoryId(item.category_id ?? undefined); setAddingCategory(false); setNewCategoryName(""); setCategoryError(""); } }}>
+    <Dialog open={open} onOpenChange={(v) => { onOpenChange(v); if (!v) { setScrapeStatus(""); setScrapeIsError(false); setOpenToUsed(item.is_open_to_used); setParentPurchased(item.is_parent_purchased); setCurrency("USD"); setError(""); setTitle(item.title); setPrice(item.price != null ? item.price.toFixed(2) : ""); setImageUrl(item.image_url || ""); setExternalUrl(item.external_url || ""); setTaxInfo(null); setCategoryId(item.category_id ?? undefined); setAddingCategory(false); setNewCategoryName(""); setCategoryError(""); } }}>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg" showCloseButton={false}>
         <DialogHeader>
           <DialogTitle>Edit item in registry</DialogTitle>
@@ -384,23 +384,11 @@ export function EditItemDialog({
           </div>
 
           <div className="space-y-1.5">
-            <Input
-              label="Image URL (optional)"
-              name="imageUrl"
-              placeholder="https://www.example.com/image.jpg"
+            <ItemImageField
               value={imageUrl}
-              onChange={(val) => { setImageUrl(val); setImageError(false); }}
+              onChange={setImageUrl}
+              upload={(file) => uploadRegistryPhoto(registryId, file)}
             />
-            {imageUrl && !imageError && (
-              <div className="flex size-16 items-center justify-center rounded-lg bg-tertiary">
-                <img
-                  src={imageUrl}
-                  alt="Preview"
-                  className="size-16 rounded-lg object-cover"
-                  onError={() => setImageError(true)}
-                />
-              </div>
-            )}
           </div>
 
           <div className="grid grid-cols-2 gap-4">

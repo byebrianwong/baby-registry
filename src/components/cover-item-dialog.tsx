@@ -18,6 +18,7 @@ import { PaymentMethodsDisplay } from "@/components/payment-methods-display";
 import { coverParentPurchasedItem } from "@/lib/actions/registry";
 import { CelebrationDialog } from "@/components/celebration-dialog";
 import type { PaymentMethods } from "@/lib/types";
+import { formatPrice } from "@/lib/money";
 
 type DialogAction = (formData: FormData) => Promise<{ error: string } | undefined>;
 
@@ -122,7 +123,7 @@ export function CoverItemDialog({ item, availableToGift, paymentMethods, parentN
 
         <div className="flex flex-col gap-2 overflow-hidden rounded-xl px-4">
           {totalPrice != null && (
-            <p className="text-lg font-semibold">${totalPrice.toFixed(2)}</p>
+            <p className="text-lg font-semibold">{formatPrice(totalPrice)}</p>
           )}
           <PaymentMethodsDisplay paymentMethods={paymentMethods} />
         </div>

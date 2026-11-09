@@ -17,6 +17,7 @@ import {
   getRegistryInfoForBuyer,
 } from "@/lib/email";
 import { supabaseAdmin } from "@/lib/supabase-admin";
+import { registryPhotoUrlPrefix } from "@/lib/registry-photos";
 import { buildBuyerRegistryUrl } from "@/lib/buyer-link";
 import {
   getStore,
@@ -1523,4 +1524,33 @@ export async function listInvites(registryId: string) {
     .order("created_at", { ascending: false });
 
   return { error: null, invites: invites || [] };
+}
+
+/**
+ * Sets or clears the registry's photo, which the public registry page shows
+ * in its header. The browser uploads the file first (uploadRegistryPhoto) and
+ * passes its URL here.
+ */
+export async function updateRegistryPhoto(registryId: string, photoUrl: string | null) {
+  const { user, error: authError } = await requireManager(registryId);
+  if (authError || !user) return { error: authError || "Not authenticated" };
+
+  // Only photos in this registry's upload folder, so the header can't be
+  // pointed at any image on the web.
+  if (photoUrl !== null && !photoUrl.startsWith(registryPhotoUrlPrefix(registryId))) {
+    return { error: "That photo wasn't uploaded to this registry. Upload it again." };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("registries")
+    .update({ photo_url: photoUrl })
+    .eq("id", registryId);
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidatePath(`/dashboard/registry/${registryId}`);
+  return { success: true };
 }

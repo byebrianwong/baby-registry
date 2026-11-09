@@ -6,6 +6,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { formatPrice } from "@/lib/money";
 
 export interface Purchase {
   id: string;
@@ -82,7 +83,7 @@ export function GiftDetailModal({ open, onOpenChange, itemTitle, purchases }: Gi
                 </div>
                 <div className="flex items-center gap-4 text-xs text-secondary">
                   {displayAmount != null && (
-                    <span className="font-semibold text-sm">${Number(displayAmount).toFixed(2)}</span>
+                    <span className="font-semibold text-sm">{formatPrice(Number(displayAmount))}</span>
                   )}
                   {purchase.buyer_email && <span>{purchase.buyer_email}</span>}
                   <span>

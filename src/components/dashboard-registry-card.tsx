@@ -9,6 +9,7 @@ import { initialsFor } from "@/lib/initials";
 import { countdownLabel, occasionTheme } from "@/lib/occasion-theme";
 import type { PersonalEventType, RegistryType } from "@/lib/types";
 import { cx } from "@/lib/utils/cx";
+import { formatDollars } from "@/lib/money";
 
 export interface RegistryActivity {
   id: string;
@@ -143,7 +144,7 @@ export function DashboardRegistryCard({
 
         <div className="flex justify-between text-sm text-tertiary">
           <span>{totalItems} items</span>
-          <span>${totalValue.toFixed(0)} total value</span>
+          <span>{formatDollars(totalValue)} total value</span>
         </div>
 
         {recentActivity.length > 0 && (
