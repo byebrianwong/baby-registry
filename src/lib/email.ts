@@ -12,7 +12,19 @@ import {
   managerInviteHtml,
   followRequestHtml,
   completionDiscountOwnerHtml,
+  eventInvitationHtml,
+  rsvpGuestConfirmationHtml,
+  rsvpHostNotificationHtml,
+  type EventEmailDetails,
 } from "./email-templates";
+import {
+  formatEventDate,
+  formatEventTime,
+  googleCalendarUrl,
+  mapsUrl,
+  type EventDetails,
+  type LinkedRegistry,
+} from "./events";
 
 let _resend: Resend | null = null;
 function getResend() {
@@ -497,5 +509,168 @@ export async function notifyFollowRequest(opts: { followerId: string; followeeId
     });
   } catch (err) {
     console.error("[email] Failed to send follow request email:", err);
+  }
+}
+
+// ── Events ───────────────────────────────────────────────────
+
+function siteUrl() {
+  return process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+}
+
+/** A guest's own link to the event page, which lets them RSVP as themselves. */
+export function guestRsvpUrl(slug: string, token: string): string {
+  return `${siteUrl()}/e/${slug}?g=${encodeURIComponent(token)}`;
+}
+
+/** What the event emails say about an event. */
+export function eventEmailDetails(event: EventDetails, registry: LinkedRegistry | null): EventEmailDetails {
+  return {
+    title: event.title,
+    hostedBy: event.hosted_by,
+    date: event.event_date ? formatEventDate(event.event_date) : null,
+    time: formatEventTime(event),
+    locationName: event.location_name,
+    locationAddress: event.location_address,
+    mapUrl: mapsUrl(event),
+    imageUrl: event.image_url,
+    rsvpBy: event.rsvp_by ? formatEventDate(event.rsvp_by) : null,
+    registry: registry ? { title: registry.title, url: `${siteUrl()}/r/${registry.slug}` } : null,
+  };
+}
+
+// The From line shows the host's name, so guests know who the invitation is
+// from. Quotes and angle brackets would break the address, so they go.
+function fromHost(hostName: string): string {
+  const name = hostName.replace(/["<>\\\r\n]/g, "").trim().slice(0, 60);
+  return name ? `"${name} via Regibee" <notifications@regibee.com>` : FROM;
+}
+
+// Resend takes up to 100 emails in one batch request.
+const BATCH_SIZE = 100;
+
+/**
+ * Emails invitations (or reminders) to guests, in batches. Returns the tokens
+ * of the guests whose emails Resend accepted, so the caller marks only those
+ * as invited. Replies go to the host's own address.
+ */
+export async function sendEventInvitations(opts: {
+  event: EventDetails;
+  registry: LinkedRegistry | null;
+  hostName: string;
+  replyTo: string | null;
+  guests: { name: string; email: string; token: string }[];
+  reminder?: boolean;
+}): Promise<{ sentTokens: string[]; error: string | null }> {
+  const details = eventEmailDetails(opts.event, opts.registry);
+  const subject = opts.reminder
+    ? `Reminder: will you be at ${opts.event.title}?`
+    : `You're invited: ${opts.event.title}`;
+  const sentTokens: string[] = [];
+
+  for (let start = 0; start < opts.guests.length; start += BATCH_SIZE) {
+    const chunk = opts.guests.slice(start, start + BATCH_SIZE);
+    try {
+      const { error } = await getResend().batch.send(
+        chunk.map((guest) => ({
+          from: fromHost(opts.hostName),
+          to: TEST_RECIPIENT_OVERRIDE || guest.email,
+          ...(opts.replyTo ? { replyTo: opts.replyTo } : {}),
+          subject,
+          html: eventInvitationHtml({
+            guestName: guest.name,
+            hostName: opts.hostName,
+            event: details,
+            message: opts.event.message,
+            rsvpUrl: guestRsvpUrl(opts.event.slug, guest.token),
+            reminder: opts.reminder,
+          }),
+        })),
+      );
+      if (error) {
+        console.error("[email] Failed to send event invitations:", error);
+        return { sentTokens, error: "Some emails didn't send. Try again in a few minutes." };
+      }
+      sentTokens.push(...chunk.map((guest) => guest.token));
+    } catch (err) {
+      console.error("[email] Failed to send event invitations:", err);
+      return { sentTokens, error: "Some emails didn't send. Try again in a few minutes." };
+    }
+  }
+
+  return { sentTokens, error: null };
+}
+
+/** Confirms a guest's RSVP, with their link to change it. */
+export async function confirmRsvpToGuest(opts: {
+  event: EventDetails;
+  registry: LinkedRegistry | null;
+  guest: { name: string; email: string; token: string };
+  status: "yes" | "no" | "maybe";
+  partySize: number;
+}) {
+  try {
+    const eventUrl = `${siteUrl()}/e/${opts.event.slug}`;
+    const subject =
+      opts.status === "yes"
+        ? `You're going to ${opts.event.title}`
+        : `Your RSVP for ${opts.event.title}`;
+    await getResend().emails.send({
+      from: FROM,
+      to: TEST_RECIPIENT_OVERRIDE || opts.guest.email,
+      subject,
+      html: rsvpGuestConfirmationHtml({
+        guestName: opts.guest.name,
+        status: opts.status,
+        partySize: opts.partySize,
+        event: eventEmailDetails(opts.event, opts.registry),
+        rsvpUrl: guestRsvpUrl(opts.event.slug, opts.guest.token),
+        calendarUrl: googleCalendarUrl(opts.event, eventUrl),
+      }),
+    });
+  } catch (err) {
+    console.error("[email] Failed to send RSVP confirmation:", err);
+  }
+}
+
+/** Tells the event's owner that a guest replied. */
+export async function notifyHostOfRsvp(opts: {
+  event: EventDetails;
+  guestName: string;
+  status: "yes" | "no" | "maybe";
+  partySize: number;
+  note: string | null;
+  attending: number;
+  pending: number;
+  newGuest: boolean;
+}) {
+  try {
+    const [{ data: userData }, { data: profile }] = await Promise.all([
+      supabaseAdmin.auth.admin.getUserById(opts.event.owner_id),
+      supabaseAdmin.from("profiles").select("full_name").eq("id", opts.event.owner_id).single(),
+    ]);
+    const email = userData?.user?.email;
+    if (!email) return;
+
+    const answer = opts.status === "yes" ? "is going" : opts.status === "maybe" ? "might come" : "can't make it";
+    await getResend().emails.send({
+      from: FROM,
+      to: TEST_RECIPIENT_OVERRIDE || email,
+      subject: `${opts.guestName} ${answer} to ${opts.event.title}`,
+      html: rsvpHostNotificationHtml({
+        hostName: profile?.full_name?.trim() || "there",
+        guestName: opts.guestName,
+        status: opts.status,
+        partySize: opts.partySize,
+        note: opts.note,
+        eventTitle: opts.event.title,
+        attending: opts.attending,
+        pending: opts.pending,
+        manageUrl: `${siteUrl()}/dashboard/events/${opts.event.id}`,
+        newGuest: opts.newGuest,
+      }),
+    });
+  } catch (err) {
+    console.error("[email] Failed to send RSVP notification:", err);
   }
 }

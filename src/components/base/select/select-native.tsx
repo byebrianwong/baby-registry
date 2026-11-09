@@ -16,12 +16,15 @@ interface NativeSelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
 export const NativeSelect = ({ label, hint, options, className, selectClassName, ...props }: NativeSelectProps) => {
     const id = useId();
     const selectId = `select-native-${id}`;
+    const labelId = `select-native-label-${id}`;
     const hintId = `select-native-hint-${id}`;
 
     return (
         <div className={cx("w-full in-data-input-wrapper:w-max", className)}>
             {label && (
-                <Label htmlFor={selectId} id={selectId} className="mb-1.5">
+                // The label needs its own id. Sharing the select's id meant
+                // `for` pointed back at the label, so the select had no label.
+                <Label htmlFor={selectId} id={labelId} className="mb-1.5">
                     {label}
                 </Label>
             )}
@@ -30,8 +33,8 @@ export const NativeSelect = ({ label, hint, options, className, selectClassName,
                 <select
                     {...props}
                     id={selectId}
-                    aria-describedby={hintId}
-                    aria-labelledby={selectId}
+                    aria-describedby={hint ? hintId : props["aria-describedby"]}
+                    aria-labelledby={label ? labelId : props["aria-labelledby"]}
                     className={cx(
                         "appearance-none rounded-lg bg-primary px-3.5 py-2.5 text-md font-medium text-primary shadow-xs ring-1 ring-primary outline-hidden transition duration-100 ease-linear ring-inset placeholder:text-fg-quaternary focus-visible:ring-2 focus-visible:ring-brand disabled:cursor-not-allowed disabled:bg-disabled_subtle disabled:text-disabled",
                         // Styles when the select is within an `InputGroup`

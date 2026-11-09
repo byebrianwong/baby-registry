@@ -12,6 +12,7 @@ const useLinkStatus: () => { pending: boolean } =
 
 const TABS = [
   { href: "/dashboard", label: "My registries" },
+  { href: "/dashboard/events", label: "Events" },
   { href: "/dashboard/following", label: "Following" },
 ];
 
@@ -44,11 +45,12 @@ function TabStatus({ label, current }: { label: string; current: boolean }) {
 }
 
 /**
- * The My registries and Following tabs at the top of the dashboard. Each tab
- * is its own page with its own URL and data, but the tabs stay on screen while
- * you switch. Guests can't follow anyone, so they only get My registries.
+ * The My registries, Events and Following tabs at the top of the dashboard.
+ * Each tab is its own page with its own URL and data, but the tabs stay on
+ * screen while you switch. Guests can't plan events or follow anyone, so they
+ * only get My registries.
  */
-export function DashboardTabs({ showFollowing }: { showFollowing: boolean }) {
+export function DashboardTabs({ hasAccount }: { hasAccount: boolean }) {
   const pathname = usePathname() ?? "";
 
   // The tab you just clicked shows as current straight away, before the URL
@@ -60,12 +62,12 @@ export function DashboardTabs({ showFollowing }: { showFollowing: boolean }) {
     setClickedHref(null);
   }
   const currentHref = clickedHref ?? pathname;
-  const tabs = showFollowing ? TABS : TABS.slice(0, 1);
+  const tabs = hasAccount ? TABS : TABS.slice(0, 1);
 
   return (
     <div className="container mx-auto px-4 pt-6">
       <nav aria-label="Dashboard">
-        <ul className="flex gap-8 border-b border-secondary">
+        <ul className="flex gap-6 border-b border-secondary sm:gap-8">
           {tabs.map((tab) => {
             const current = currentHref === tab.href;
             return (

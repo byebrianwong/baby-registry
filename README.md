@@ -24,6 +24,15 @@ A gift registry app built with Next.js, Supabase, and Tailwind CSS. It started a
 - **Shipping address after reserving** - A guest sees your shipping address only after they reserve an item. It's also in their confirmation email.
 - **Emails** - Every manager gets an email when someone reserves an item, gives an item you already bought, pledges to a cash fund or suggests an item. Guests who give their email get a confirmation with a signed link back to the registry that highlights their gifts.
 
+### Planning events
+
+- **Events with invitations** - Plan a baby shower, bridal shower, birthday, Christmas party or any other event on the Events tab (`/dashboard/events`). Add the date, time, place, who's hosting and a message for guests.
+- **Your own invitation** - Upload a picture of the invitation you designed, or a photo. Guests see it at the top of the event page and in their email.
+- **Guest list and emails** - Add guests one at a time or paste a list from a spreadsheet. Regibee emails each guest the invitation with their own RSVP link, and can remind guests who haven't replied (at most once a day each). Replies to the email go to the host.
+- **RSVPs** - Guests answer Going, Maybe or Can't go, say how many people are coming, and leave a note. They don't need an account. With open RSVPs on, anyone with the event link can RSVP and is added to the guest list. The host sees counts, can change an answer they heard in person, and can download the list as a CSV.
+- **Linked to a registry** - An event can link to one of your registries, and its page sends guests there. Managers of that registry can manage the event too. Each registry's page shows its events and has a "Plan an event" button.
+- **Calendars and maps** - The event page has Google Calendar and .ics links, and a map link for the address. Event pages are always hidden from search engines.
+
 ### Privacy
 
 - **The share link always works** - Anyone with a registry's link can open it, public or private. That way guests never need an account.
@@ -129,6 +138,7 @@ src/
 │   │       ├── page.tsx           # Your registries
 │   │       ├── account/           # Profile, follow requests, followers, blocked people
 │   │       ├── following/         # Registries from people you follow, people search
+│   │       ├── events/            # The Events tab, new events, and each event's guests and RSVPs
 │   │       └── registry/
 │   │           ├── new/           # Create a registry
 │   │           └── [registryId]/
@@ -140,6 +150,7 @@ src/
 │   ├── demo/             # Demo pages with sample data
 │   ├── extension/connect/ # Connects the browser extension to an account
 │   ├── invite/[token]/   # Accept an invite to co-manage a registry
+│   ├── e/[slug]/         # Public event page with the RSVP form, and its .ics download
 │   ├── r/[slug]/         # Public registry page (gift givers)
 │   ├── u/[username]/     # Public profile
 │   └── page.tsx          # Landing page
@@ -151,9 +162,12 @@ src/
 │   │   ├── registry.ts   # Server actions: registries, items, funds, reservations, managers
 │   │   ├── profile.ts    # Server actions: profile and "Show on my profile"
 │   │   ├── follows.ts    # Server actions: follows, blocking, people search
+│   │   ├── events.ts     # Server actions: events, guests, invitations, RSVPs
 │   │   ├── scrape.ts     # Reads the title, price and pictures from a product link
 │   │   └── tax.ts        # Sales tax estimate
 │   ├── email.ts          # Notification emails (Resend)
+│   ├── events.ts         # Event types, labels, dates and calendar links
+│   ├── events-server.ts  # Reads for the event pages
 │   ├── retailers.ts      # Store registry link rules, shared with the extension
 │   ├── extension.ts      # Types and checks shared with the extension
 │   ├── extension-server.ts # The extension's sessions and access checks
@@ -174,7 +188,7 @@ extension/                # Chrome extension (see extension/README.md)
 
 ## Database Schema
 
-Twelve tables, all with Row Level Security turned on:
+Fourteen tables, all with Row Level Security turned on:
 
 | Table | Purpose |
 |-------|---------|
@@ -190,8 +204,10 @@ Twelve tables, all with Row Level Security turned on:
 | `follows` | Follow requests and approved follows |
 | `user_blocks` | Who has blocked whom |
 | `follow_request_emails` | When each follow request email was last sent, so asking again doesn't send another |
+| `events` | Events: details, invitation picture, RSVP settings and the registry they link to |
+| `event_guests` | Each event's guests, their personal RSVP link token, their answer and when they were emailed |
 
-`follows`, `user_blocks` and `follow_request_emails` have no access policies, so only server code using the service-role key can read or write them. The files in `supabase/migrations` hold the full schema, the access rules, and the database functions that handle reservations.
+`follows`, `user_blocks`, `follow_request_emails`, `events` and `event_guests` have no access policies, so only server code using the service-role key can read or write them. The files in `supabase/migrations` hold the full schema, the access rules, and the database functions that handle reservations.
 
 ## Deployment
 
