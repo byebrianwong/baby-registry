@@ -1,6 +1,6 @@
 // Messages between the popup, the content scripts and the background worker.
 
-import type { AddResponse, ExtensionRegistry, ExtensionSession, ProductItem, StoreItem } from "@/lib/extension";
+import type { AddResponse, ExtensionRegistry, ExtensionSession, LinkResponse, ProductItem, StoreItem } from "@/lib/extension";
 import type { StoreId } from "@/lib/retailers";
 
 export type Mode = "ask" | "auto";
@@ -21,11 +21,21 @@ export interface PopupState {
 export interface CheckResult {
   /** storeItemKey values already on the registry. */
   existing: string[];
+  /** Items on the registry whose plain store link the check swapped for a registry link. */
+  linked: LinkResponse["linked"];
 }
 
 export interface AutoImportResult {
   added: AddResponse["added"];
+  linked: LinkResponse["linked"];
   registry: { id: string; title: string } | null;
+}
+
+/** The right-click menu item the owner just used, for the popup it opened. */
+export interface MenuClick {
+  tabId: number;
+  /** The picture they right-clicked, if it was one. */
+  imageUrl: string | null;
 }
 
 /** Requests to the background worker. */
@@ -39,9 +49,13 @@ export type BackgroundRequest =
   | { type: "check"; registryId: string; store: StoreId; items: StoreItem[] }
   | { type: "add"; registryId: string; items: StoreItem[]; listed: string[] }
   | { type: "undo"; registryId: string; itemIds: string[] }
+  // From the popup, opened by the right-click menu.
+  | { type: "menu-click" }
   // From the popup's "Add to Regibee" form on a product page.
   | { type: "check-url"; registryId: string; url: string }
   | { type: "add-product"; registryId: string; item: ProductItem }
+  // Swaps in a registry link for an item already on Regibee with a plain one.
+  | { type: "link"; registryId: string; items: StoreItem[] }
   // From the store content script, once a registry page has loaded.
   | { type: "page-items"; store: StoreId; items: StoreItem[] }
   // From the connect content script on regibee.com.

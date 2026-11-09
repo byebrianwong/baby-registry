@@ -9,6 +9,7 @@ import {
   type CheckResponse,
   type ExtensionRegistry,
   type ExtensionSession,
+  type LinkResponse,
   type MeResponse,
   type StoreItem,
   type UndoResponse,
@@ -20,6 +21,7 @@ import type {
   AutoImportResult,
   BackgroundRequest,
   CheckResult,
+  MenuClick,
   PopupState,
   RegistriesResult,
   Result,
@@ -63,13 +65,42 @@ async function currentRegistry(): Promise<ExtensionRegistry | null> {
   return list.find((r) => r.id === registryId) ?? null;
 }
 
+/**
+ * Gives items already on Regibee with a plain store link the registry link
+ * from the store's page. It only makes gifts count toward the store
+ * registry, so it happens in both modes without asking.
+ */
+async function link(registryId: string, items: StoreItem[]): Promise<LinkResponse["linked"]> {
+  if (items.length === 0) return [];
+  const { linked } = await api<LinkResponse>("/api/extension/items", {
+    method: "PATCH",
+    body: { registryId, items },
+  });
+  // The home screen counts plain links, so read the registries again next time.
+  if (linked.length > 0) await save({ registriesFetchedAt: 0 });
+  return linked;
+}
+
+/**
+ * Which items are already on the registry. Those on it with a plain store
+ * link get their registry link now.
+ */
 async function check(registryId: string, items: StoreItem[]): Promise<CheckResult> {
-  const { existing } = await api<CheckResponse>("/api/extension/items/check", {
+  const { existing, plain = [] } = await api<CheckResponse>("/api/extension/items/check", {
     method: "POST",
     body: { registryId, urls: items.map((i) => i.url) },
   });
   await markSeen(registryId, existing);
-  return { existing };
+  const plainKeys = new Set(plain);
+  let linked: LinkResponse["linked"] = [];
+  try {
+    linked = await link(registryId, items.filter((i) => plainKeys.has(storeItemKey(i.url) ?? "")));
+  } catch (error) {
+    if (error instanceof NotConnectedError) throw error;
+    // The check still stands. The next visit tries the swap again.
+    console.warn("Regibee: couldn't swap in registry links.", error);
+  }
+  return { existing, linked };
 }
 
 async function add(registryId: string, items: StoreItem[], listed: string[]): Promise<AddResponse> {
@@ -101,7 +132,7 @@ function setBadge(tabId: number | undefined, count: number) {
  * content script shows a notice with Undo.
  */
 async function onPageItems(store: StoreId, items: StoreItem[], tabId?: number): Promise<AutoImportResult> {
-  const none: AutoImportResult = { added: [], registry: null };
+  const none: AutoImportResult = { added: [], linked: [], registry: null };
   await recordChecked(store, items.length);
   const { session, mode = "ask" } = await load("session", "mode");
   if (!session || items.length === 0) return none;
@@ -109,7 +140,8 @@ async function onPageItems(store: StoreId, items: StoreItem[], tabId?: number): 
   const registry = await currentRegistry();
   if (!registry) return none;
 
-  const { existing } = await check(registry.id, items);
+  const { existing, linked } = await check(registry.id, items);
+  const result: AutoImportResult = { added: [], linked, registry: { id: registry.id, title: registry.title } };
   const onRegistry = new Set(existing);
   const fresh = items.filter((item) => {
     const key = storeItemKey(item.url);
@@ -118,15 +150,15 @@ async function onPageItems(store: StoreId, items: StoreItem[], tabId?: number): 
 
   if (mode !== "auto") {
     setBadge(tabId, fresh.length);
-    return none;
+    return result;
   }
 
   const seen = await seenKeys(registry.id);
   const unseen = fresh.filter((item) => !seen.has(storeItemKey(item.url)!));
   setBadge(tabId, 0);
-  if (unseen.length === 0) return none;
-  const result = await add(registry.id, unseen, []);
-  return { added: result.added, registry: { id: registry.id, title: registry.title } };
+  if (unseen.length === 0) return result;
+  const { added } = await add(registry.id, unseen, []);
+  return { ...result, added };
 }
 
 async function onConnectSession(session: ExtensionSession) {
@@ -215,12 +247,20 @@ async function handle(request: BackgroundRequest, sender: chrome.runtime.Message
     }
     case "check-url": {
       const key = itemMatchKey(request.url);
-      if (!key) return { exists: false };
-      const { existing } = await api<CheckResponse>("/api/extension/items/check", {
+      if (!key) return { exists: false, plain: false };
+      const { existing, plain = [] } = await api<CheckResponse>("/api/extension/items/check", {
         method: "POST",
         body: { registryId: request.registryId, urls: [request.url] },
       });
-      return { exists: existing.includes(key) };
+      return { exists: existing.includes(key), plain: plain.includes(key) };
+    }
+    case "link":
+      return { linked: await link(request.registryId, request.items) } satisfies LinkResponse;
+    case "menu-click": {
+      // Only the popup that the click just opened gets it.
+      const click = lastMenuClick && Date.now() - lastMenuClick.at < MENU_CLICK_MAX_AGE_MS ? lastMenuClick : null;
+      lastMenuClick = null;
+      return click ? ({ tabId: click.tabId, imageUrl: click.imageUrl } satisfies MenuClick) : null;
     }
     case "add-product": {
       const result = await api<AddProductResponse>("/api/extension/product", {
@@ -263,8 +303,50 @@ chrome.runtime.onMessage.addListener((request: BackgroundRequest, sender, sendRe
   return true;
 });
 
-// First install: open the Connect page so the owner can sign in right away.
+// ── Right-click menu ─────────────────────────────────────────────────────
+// "Add to Regibee" on any web page opens the popup, the same as the toolbar
+// button. Chrome gives the extension the same one-time access to the page
+// for a menu click as for a button click, so the popup can read it.
+
+const MENU_ID = "add-to-regibee";
+const MENU_CLICK_MAX_AGE_MS = 15_000;
+let lastMenuClick: (MenuClick & { at: number }) | null = null;
+
+function createMenu() {
+  chrome.contextMenus.removeAll(() => {
+    chrome.contextMenus.create({
+      id: MENU_ID,
+      title: "Add to Regibee",
+      // Not links: the item would be the page the link goes to, which the
+      // extension can't read without opening it.
+      contexts: ["page", "image", "selection"],
+      documentUrlPatterns: ["https://*/*", "http://*/*"],
+    });
+  });
+}
+
+chrome.contextMenus.onClicked.addListener((info, tab) => {
+  if (info.menuItemId !== MENU_ID || tab?.id === undefined) return;
+  const imageUrl = info.mediaType === "image" && info.srcUrl?.startsWith("https:") ? info.srcUrl : null;
+  lastMenuClick = { tabId: tab.id, imageUrl, at: Date.now() };
+  // Chrome before 127, and some other Chromium browsers, can't open the
+  // popup from here. Open it in a small window about the same tab instead.
+  const openWindow = () =>
+    void chrome.windows.create({
+      url: chrome.runtime.getURL(`popup.html?tab=${tab.id}`),
+      type: "popup",
+      width: 400,
+      height: 640,
+    });
+  // Open the popup straight away, before anything else awaits. Before Chrome
+  // 118 openPopup doesn't exist at all.
+  if (typeof chrome.action.openPopup !== "function") openWindow();
+  else chrome.action.openPopup({ windowId: tab.windowId }).catch(openWindow);
+});
+
 chrome.runtime.onInstalled.addListener((details) => {
+  createMenu();
+  // First install: open the Connect page so the owner can sign in right away.
   if (details.reason === "install") {
     void chrome.tabs.create({ url: `${REGIBEE_URL}${CONNECT_PATH}` });
   }

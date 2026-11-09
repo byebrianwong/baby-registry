@@ -85,7 +85,8 @@ select {
   flex: 0 1 auto; min-height: 0; display: flex; flex-direction: column;
   border: 1px solid var(--border); border-radius: 12px; overflow: hidden;
 }
-.items { list-style: none; margin: 0; padding: 0; flex: 0 1 auto; min-height: 120px; overflow-y: auto; }
+/* At least one row, so the notes above it can't squeeze out the "already on Regibee" toggle below. */
+.items { list-style: none; margin: 0; padding: 0; flex: 0 1 auto; min-height: 61px; overflow-y: auto; }
 .items > li + li { border-top: 1px solid var(--border); }
 .already { flex: none; border-top: 1px solid var(--border); }
 .item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; cursor: pointer; }
@@ -193,3 +194,4 @@ input::placeholder, textarea::placeholder { color: var(--text-tertiary); }
 .done svg { color: var(--success); }
 .done h1 { margin: 0; font-size: 16px; font-weight: 600; }
 h1.title { margin: 0; font-size: 16px; font-weight: 600; }
+.warn { font-size: 12px; line-height: 1.45; color: var(--warning-text); }

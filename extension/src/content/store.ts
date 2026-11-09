@@ -1,5 +1,7 @@
 // Runs on the stores' sites. On a registry page it reads the items once the
-// page has settled, tells the background worker, and answers the popup.
+// page has settled, tells the background worker, and answers the popup. The
+// worker adds new items (automatic mode) and swaps in registry links for
+// items already on Regibee, and this shows a notice when it did either.
 
 import { extensionStoreForPage, getStore, storeItemKey } from "@/lib/retailers";
 import { REGIBEE_URL } from "../config";
@@ -52,10 +54,12 @@ async function report() {
   lastReportAt = Date.now();
 
   const response = await ask<AutoImportResult>({ type: "page-items", store: result.store, items: result.items });
-  if (!response.ok || response.data.added.length === 0 || !response.data.registry) return;
-  const { added, registry } = response.data;
+  if (!response.ok || !response.data.registry) return;
+  const { added, linked, registry } = response.data;
+  if (added.length === 0 && linked.length === 0) return;
   showImportToast({
     count: added.length,
+    linkedCount: linked.length,
     storeName: getStore(result.store).name,
     registryTitle: registry.title,
     reviewUrl: `${REGIBEE_URL}/dashboard/registry/${registry.id}`,
