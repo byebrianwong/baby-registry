@@ -7,6 +7,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { formatPrice } from "@/lib/money";
+import { formatReservedUntil, isOpenReservation } from "@/lib/gifts";
 
 export interface Purchase {
   id: string;
@@ -16,6 +17,8 @@ export interface Purchase {
   amount: number | null;
   message: string | null;
   status: string;
+  /** Set while a guest's reservation waits for them to buy the item. */
+  reserved_until?: string | null;
   created_at: string;
   registry_item_id: string | null;
   cash_fund_id: string | null;
@@ -33,6 +36,12 @@ function getTagStyle(purchase: Purchase) {
     return {
       className: "bg-mint-500 border-mint-500 text-primary",
       label: "Contribution",
+    };
+  }
+  if (isOpenReservation(purchase)) {
+    return {
+      className: "bg-sunshine-50 border-sunshine-200 text-primary",
+      label: `Reserved until ${formatReservedUntil(purchase.reserved_until!, "short")}`,
     };
   }
   if (purchase.registry_items?.is_parent_purchased) {

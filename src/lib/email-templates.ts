@@ -29,32 +29,123 @@ function formatPaymentBlock(paymentMethods?: { venmo?: string; paypal?: string; 
 
 // ── Buyer Confirmations ──────────────────────────────────────
 
+function buttonLink(href: string, label: string): string {
+  return `<a href="${escapeHtml(href)}" style="background-color: #004659; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 500;">${escapeHtml(label)}</a>`;
+}
+
+function textLinks(links: { href?: string; label: string }[]): string {
+  const html = links
+    .filter((l) => l.href)
+    .map((l) => `<a href="${escapeHtml(l.href!)}" style="color:#004659;">${escapeHtml(l.label)}</a>`)
+    .join(" &nbsp;|&nbsp; ");
+  return html ? `<p style="margin: 16px 0;">${html}</p>` : "";
+}
+
+function addressBlock(shippingAddress?: string): string {
+  return shippingAddress
+    ? `<p><strong>Ship to:</strong><br/>${escapeHtml(shippingAddress).replace(/\n/g, "<br/>")}</p>`
+    : "";
+}
+
+/** Sent when a guest reserves an item. The item is held for them while they buy it. */
 export function itemReservedBuyerHtml(opts: {
   buyerName: string;
   itemTitle: string;
   quantity: number;
   parentName: string;
   registryTitle: string;
+  holdDays: number;
   shippingAddress?: string;
-  registryUrl?: string;
   shopUrl?: string;
+  storeName?: string;
+  confirmUrl: string;
+  releaseUrl: string;
 }): string {
   const qtyText = opts.quantity > 1 ? ` (×${opts.quantity})` : "";
-  const addressBlock = opts.shippingAddress
-    ? `<p><strong>Shipping address:</strong><br/>${escapeHtml(opts.shippingAddress).replace(/\n/g, "<br/>")}</p>`
-    : "";
-  const linksBlock = [
-    opts.registryUrl ? `<a href="${escapeHtml(opts.registryUrl)}" style="color:#004659;">View Registry</a>` : "",
-    opts.shopUrl ? `<a href="${escapeHtml(opts.shopUrl)}" style="color:#004659;">Shop This Item</a>` : "",
-  ].filter(Boolean).join(" &nbsp;|&nbsp; ");
+  const buyLabel = opts.storeName ? `Buy at ${opts.storeName}` : "Buy it";
 
   return `
     <p>Hi ${escapeHtml(opts.buyerName)},</p>
-    <p>Thanks for reserving <strong>${escapeHtml(opts.itemTitle)}</strong>${qtyText} on <em>${escapeHtml(opts.registryTitle)}</em>!</p>
-    <p>${escapeHtml(opts.parentName)} will really appreciate it.</p>
-    ${addressBlock}
-    ${linksBlock ? `<p style="margin: 16px 0;">${linksBlock}</p>` : ""}
+    <p>You reserved <strong>${escapeHtml(opts.itemTitle)}</strong>${qtyText} on <em>${escapeHtml(opts.registryTitle)}</em>. It's held for you for ${opts.holdDays} days, so nobody else buys it.</p>
+    ${addressBlock(opts.shippingAddress)}
+    ${opts.shopUrl ? `<p style="margin: 24px 0 16px;">${buttonLink(opts.shopUrl, buyLabel)}</p>` : ""}
+    <p>When you've bought it, tell ${escapeHtml(opts.parentName)} so they know it's from you.</p>
+    ${textLinks([
+      { href: opts.confirmUrl, label: "I bought it" },
+      { href: opts.releaseUrl, label: "I'm not getting it" },
+    ])}
+    <p style="color:#888;font-size:13px;">If you don't confirm within ${opts.holdDays} days, the item goes back on the list for other guests. You're receiving this because you reserved a gift on a Regibee registry.</p>
+  `;
+}
+
+/** Sent before a guest's reservation runs out. */
+export function itemReservationReminderBuyerHtml(opts: {
+  buyerName: string;
+  itemTitle: string;
+  parentName: string;
+  registryTitle: string;
+  /** Whole days left, rounded up. 1 means it ends within a day. */
+  daysLeft: number;
+  shippingAddress?: string;
+  shopUrl?: string;
+  storeName?: string;
+  confirmUrl: string;
+  releaseUrl: string;
+}): string {
+  const when = opts.daysLeft <= 1 ? "ends tomorrow" : `ends in ${opts.daysLeft} days`;
+  const buyLabel = opts.storeName ? `Buy at ${opts.storeName}` : "Buy it";
+
+  return `
+    <p>Hi ${escapeHtml(opts.buyerName)},</p>
+    <p>Your reservation of <strong>${escapeHtml(opts.itemTitle)}</strong> on <em>${escapeHtml(opts.registryTitle)}</em> ${when}. After that, it goes back on the list for other guests.</p>
+    ${addressBlock(opts.shippingAddress)}
+    ${opts.shopUrl ? `<p style="margin: 24px 0 16px;">${buttonLink(opts.shopUrl, buyLabel)}</p>` : ""}
+    <p>Already bought it? Tell ${escapeHtml(opts.parentName)} so they know it's from you.</p>
+    ${textLinks([
+      { href: opts.confirmUrl, label: "I bought it" },
+      { href: opts.releaseUrl, label: "I'm not getting it" },
+    ])}
     <p style="color:#888;font-size:13px;">You're receiving this because you reserved a gift on a Regibee registry.</p>
+  `;
+}
+
+/** Sent when a reservation ran out and the item went back on the list. */
+export function itemReservationEndedBuyerHtml(opts: {
+  buyerName: string;
+  itemTitle: string;
+  registryTitle: string;
+  registryUrl?: string;
+}): string {
+  return `
+    <p>Hi ${escapeHtml(opts.buyerName)},</p>
+    <p>Your reservation of <strong>${escapeHtml(opts.itemTitle)}</strong> on <em>${escapeHtml(opts.registryTitle)}</em> ended, so it's back on the list for other guests.</p>
+    <p>If you bought it anyway, or still want to, reserve it again on the registry. If someone else has, you could pick another gift.</p>
+    ${textLinks([{ href: opts.registryUrl, label: "View Registry" }])}
+    <p style="color:#888;font-size:13px;">You're receiving this because you reserved a gift on a Regibee registry.</p>
+  `;
+}
+
+/** Sent when a guest says they bought the item. */
+export function itemGivenBuyerHtml(opts: {
+  buyerName: string;
+  itemTitle: string;
+  quantity: number;
+  parentName: string;
+  registryTitle: string;
+  registryUrl?: string;
+  undoUrl?: string;
+}): string {
+  const qtyText = opts.quantity > 1 ? ` (×${opts.quantity})` : "";
+
+  return `
+    <p>Hi ${escapeHtml(opts.buyerName)},</p>
+    <p>Thanks for giving <strong>${escapeHtml(opts.itemTitle)}</strong>${qtyText} from <em>${escapeHtml(opts.registryTitle)}</em>!</p>
+    <p>${escapeHtml(opts.parentName)} will see it's from you, and will really appreciate it.</p>
+    ${textLinks([
+      { href: opts.registryUrl, label: "View Registry" },
+      { href: opts.undoUrl, label: "Undo this gift" },
+    ])}
+    <p style="color:#888;font-size:13px;">You're receiving this because you gave a gift on a Regibee registry.</p>
   `;
 }
 
@@ -110,7 +201,8 @@ export function cashFundContributionBuyerHtml(opts: {
 
 // ── Owner Notifications ──────────────────────────────────────
 
-export function itemReservedOwnerHtml(opts: {
+/** Sent to the owners and managers when a guest says they bought an item. */
+export function itemGivenOwnerHtml(opts: {
   ownerName: string;
   registryTitle: string;
   buyerName: string;
@@ -128,7 +220,7 @@ export function itemReservedOwnerHtml(opts: {
 
   return `
     <p>Hi ${escapeHtml(opts.ownerName)},</p>
-    <p><strong>${escapeHtml(opts.buyerName)}</strong> just reserved <strong>${escapeHtml(opts.itemTitle)}</strong>${qtyText} on your registry <em>${escapeHtml(opts.registryTitle)}</em>.</p>
+    <p><strong>${escapeHtml(opts.buyerName)}</strong> bought <strong>${escapeHtml(opts.itemTitle)}</strong>${qtyText} from your registry <em>${escapeHtml(opts.registryTitle)}</em>.</p>
     ${opts.message ? `<p>Their message: "${escapeHtml(opts.message)}"</p>` : ""}
     ${welcomeBlock}
     <p style="margin: 16px 0;"><a href="${escapeHtml(opts.dashboardLink)}" style="color:#004659;">View on Dashboard</a></p>

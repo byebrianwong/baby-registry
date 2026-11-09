@@ -14,16 +14,6 @@ const meta: Meta<typeof CelebrationDialog> = {
 export default meta;
 type Story = StoryObj<typeof CelebrationDialog>;
 
-// After reserving: a link to buy the item and the address to ship it to.
-export const ItemReservedWithAddress: Story = {
-  args: {
-    variant: "reserve",
-    itemTitle: "Hatch Rest+ Sound Machine",
-    shopUrl: "https://www.amazon.com/dp/B07WFXGNGB",
-    shippingAddress: "123 Main St\nApt 4B\nSan Francisco, CA 94102",
-  },
-};
-
 // After covering an item or contributing to a fund: where to send the money.
 export const ItemCoveredWithPayment: Story = {
   args: {

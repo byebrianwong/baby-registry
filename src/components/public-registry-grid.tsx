@@ -1,16 +1,16 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import { ExternalLink, Search, Store } from "lucide-react";
+import { Search, Store } from "lucide-react";
 import { TightSelect } from "@/components/ui/tight-select";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
-import { Button } from "@/components/ui/button";
 import { Tag } from "@/components/ui/tag";
 import { UsedConditionTag } from "@/components/ui/used-condition-tag";
-import { ReserveItemDialog } from "@/components/reserve-item-dialog";
+import { ReserveItemDialog, type OpenGift } from "@/components/reserve-item-dialog";
+import { formatReservedUntil, type MyItemGift } from "@/lib/gifts";
 import { CoverItemDialog } from "@/components/cover-item-dialog";
 import { ContributeFundDialog } from "@/components/contribute-fund-dialog";
 import { CategoryNav, type CategoryNavItem } from "@/components/category-nav";
@@ -58,6 +58,12 @@ interface Props {
   paymentMethods?: PaymentMethods;
   shippingAddress?: string;
   myGifts: { items?: Record<string, string>; funds?: Record<string, number> };
+  /** This visitor's own gifts on regular items, by item id. */
+  myItemGifts?: Record<string, MyItemGift>;
+  /** How many of each item other guests have reserved but not bought yet. */
+  reservedCounts?: Record<string, number>;
+  /** Opens one item's gift dialog on load, from a link in a guest's email. */
+  openGift?: OpenGift;
   coverCounts: Record<string, number>;
   suggestButton: ReactNode;
   selfPurchasedLabel?: string;
@@ -95,6 +101,9 @@ export function PublicRegistryGrid({
   paymentMethods,
   shippingAddress,
   myGifts,
+  myItemGifts = {},
+  reservedCounts = {},
+  openGift,
   coverCounts,
   suggestButton,
   selfPurchasedLabel = "Purchased by parent",
@@ -343,6 +352,9 @@ export function PublicRegistryGrid({
                     categoryName={category.name}
                     coverCounts={coverCounts}
                     myGifts={myGifts}
+                    myItemGift={myItemGifts[item.id]}
+                    reservedQty={reservedCounts[item.id] || 0}
+                    openStep={openGift?.itemId === item.id ? openGift.step : undefined}
                     paymentMethods={paymentMethods}
                     parentName={parentName}
                     shippingAddress={shippingAddress}
@@ -369,6 +381,9 @@ export function PublicRegistryGrid({
                   categoryName={null}
                   coverCounts={coverCounts}
                   myGifts={myGifts}
+                  myItemGift={myItemGifts[item.id]}
+                  reservedQty={reservedCounts[item.id] || 0}
+                  openStep={openGift?.itemId === item.id ? openGift.step : undefined}
                   paymentMethods={paymentMethods}
                   parentName={parentName}
                   shippingAddress={shippingAddress}
@@ -391,6 +406,9 @@ function PublicItemCard({
   categoryName,
   coverCounts,
   myGifts,
+  myItemGift,
+  reservedQty,
+  openStep,
   paymentMethods,
   parentName,
   shippingAddress,
@@ -403,6 +421,9 @@ function PublicItemCard({
   categoryName: string | null;
   coverCounts: Record<string, number>;
   myGifts: Props["myGifts"];
+  myItemGift?: MyItemGift;
+  reservedQty: number;
+  openStep?: OpenGift["step"];
   paymentMethods?: PaymentMethods;
   parentName: string;
   shippingAddress?: string;
@@ -418,17 +439,23 @@ function PublicItemCard({
     : undefined;
   const isFulfilled = item.quantity_fulfilled >= item.quantity_needed;
   const remaining = item.quantity_needed - item.quantity_fulfilled;
-  const itemPurchased = !!(myGifts.items && myGifts.items[item.id]);
+  // Covers of items the owners bought go by the cookie alone; regular items
+  // by the gift the server matched to this visitor.
+  const itemPurchased = item.is_parent_purchased
+    ? !!(myGifts.items && myGifts.items[item.id])
+    : myItemGift?.status === "purchased";
+  const myReservation = !item.is_parent_purchased && myItemGift?.status === "reserved";
   const coveredQty = coverCounts[item.id] || 0;
   const availableToGift = item.is_parent_purchased
     ? item.quantity_needed - coveredQty
     : remaining;
   const isFullyCovered = item.is_parent_purchased && coveredQty >= item.quantity_needed;
+  const looksDone = (isFulfilled && !item.is_parent_purchased && !myReservation) || isFullyCovered;
 
   return (
     <Card
       className={`py-0 gap-0 rounded-2xl shadow-none ${
-        (isFulfilled && !item.is_parent_purchased) || isFullyCovered
+        looksDone
           ? "border-tertiary"
           : item.is_parent_purchased
             ? "bg-mint-200/20 border-primary"
@@ -444,7 +471,7 @@ function PublicItemCard({
                 imageUrl={item.image_url}
                 title={item.title}
                 categoryName={categoryName}
-                className={(isFulfilled && !item.is_parent_purchased) || isFullyCovered ? "opacity-60" : ""}
+                className={looksDone ? "opacity-60" : ""}
               />
               {itemPurchased && (
                 <img
@@ -486,8 +513,23 @@ function PublicItemCard({
           <div className="flex w-full min-w-0 flex-wrap gap-2.5 empty:hidden">
             {item.is_parent_purchased ? (
               <Tag variant="parent-purchased">{selfPurchasedLabel}</Tag>
+            ) : myReservation ? (
+              <Tag variant="reserved">
+                {/* One text node: the tag is a flex box, which would drop the space between pieces. */}
+                <span suppressHydrationWarning>
+                  {myItemGift?.reservedUntil
+                    ? `Reserved for you · until ${formatReservedUntil(myItemGift.reservedUntil, "short")}`
+                    : "Reserved for you"}
+                </span>
+              </Tag>
+            ) : itemPurchased ? (
+              <Tag variant="purchased-by-you">You gifted this</Tag>
             ) : isFulfilled ? (
-              <Tag variant="guest-purchased">Already purchased by guest</Tag>
+              reservedQty > 0 ? (
+                <Tag variant="reserved">Reserved by a guest</Tag>
+              ) : (
+                <Tag variant="gifted">Gifted</Tag>
+              )
             ) : (
               item.is_essential && <Tag variant="most-wanted">Most wanted</Tag>
             )}
@@ -499,7 +541,7 @@ function PublicItemCard({
 
         {(item.is_parent_purchased
           ? availableToGift > 0 || itemPurchased
-          : !isFulfilled || itemPurchased) && (
+          : !isFulfilled || !!myItemGift || openStep === "ended") && (
           <div className="flex flex-wrap items-center justify-end gap-2">
             {item.is_parent_purchased ? (
               <CoverItemDialog
@@ -513,29 +555,17 @@ function PublicItemCard({
                 shippingAddress={shippingAddress}
               />
             ) : (
-              <>
-                {item.external_url && !itemPurchased && (
-                  <Button variant="outline" asChild>
-                    <a
-                      href={item.external_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      <span className="inline-flex items-center gap-1.5">
-                        <ExternalLink className="h-4 w-4 shrink-0" />
-                        {store ? `Shop at ${store.name}` : "Shop"}
-                      </span>
-                    </a>
-                  </Button>
-                )}
-                <ReserveItemDialog
-                  item={item}
-                  parentName={parentName}
-                  registryStoreName={registryStoreName}
-                  alreadyPurchased={itemPurchased}
-                  shippingAddress={shippingAddress}
-                />
-              </>
+              // One way in: the dialog takes the guest through reserving,
+              // buying and confirming, with the store link in the Buy step.
+              <ReserveItemDialog
+                item={item}
+                parentName={parentName}
+                registryStoreName={registryStoreName}
+                storeName={store?.name}
+                gift={myItemGift}
+                shippingAddress={shippingAddress}
+                initialStep={openStep}
+              />
             )}
           </div>
         )}

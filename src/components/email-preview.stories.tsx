@@ -2,9 +2,12 @@ import type { Meta, StoryObj } from "@storybook/react";
 import { EmailPreview } from "./email-preview";
 import {
   itemReservedBuyerHtml,
+  itemReservationReminderBuyerHtml,
+  itemReservationEndedBuyerHtml,
+  itemGivenBuyerHtml,
   itemCoveredBuyerHtml,
   cashFundContributionBuyerHtml,
-  itemReservedOwnerHtml,
+  itemGivenOwnerHtml,
   itemCoveredOwnerHtml,
   cashFundContributionOwnerHtml,
   newSuggestionOwnerHtml,
@@ -34,18 +37,72 @@ const sampleAddress = "123 Main St\nApt 4B\nSan Francisco, CA 94102";
 
 // ── Buyer Confirmations ──────────────────────────────────────
 
+const sampleGiftLink = "https://regibee.com/r/remi-and-max/gift/6f1c2a4e-8b3d-4c5e-9f70-1a2b3c4d5e6f";
+
+// Sent when a guest reserves an item, which holds it for them for 7 days.
 export const BuyerItemReserved: Story = {
   args: {
-    subject: 'Your gift is confirmed — "Hatch Rest+ Sound Machine"',
+    subject: 'You reserved "Hatch Rest+ Sound Machine". It\'s held for 7 days',
     html: itemReservedBuyerHtml({
       buyerName: "Glinda",
       itemTitle: "Hatch Rest+ Sound Machine",
       quantity: 1,
       parentName: "Remi & Max",
       registryTitle: "Remi & Max's Baby Registry",
+      holdDays: 7,
       shippingAddress: sampleAddress,
-      registryUrl: "https://regibee.com/r/remi-and-max?email=glinda%40example.com&sig=a1b2c3d4e5f6a7b8",
       shopUrl: "https://amazon.com/dp/B07WFXGNGB",
+      storeName: "Amazon",
+      confirmUrl: `${sampleGiftLink}?step=confirm`,
+      releaseUrl: `${sampleGiftLink}?step=release`,
+    }),
+  },
+};
+
+// Sent on day 3 and day 6 of a reservation the guest hasn't confirmed.
+export const BuyerItemReservationReminder: Story = {
+  args: {
+    subject: '4 days left to finish your gift: "Hatch Rest+ Sound Machine"',
+    html: itemReservationReminderBuyerHtml({
+      buyerName: "Glinda",
+      itemTitle: "Hatch Rest+ Sound Machine",
+      parentName: "Remi & Max",
+      registryTitle: "Remi & Max's Baby Registry",
+      daysLeft: 4,
+      shippingAddress: sampleAddress,
+      shopUrl: "https://amazon.com/dp/B07WFXGNGB",
+      storeName: "Amazon",
+      confirmUrl: `${sampleGiftLink}?step=confirm`,
+      releaseUrl: `${sampleGiftLink}?step=release`,
+    }),
+  },
+};
+
+// Sent when a reservation runs out and the item goes back on the list.
+export const BuyerItemReservationEnded: Story = {
+  args: {
+    subject: 'Your reservation of "Hatch Rest+ Sound Machine" ended',
+    html: itemReservationEndedBuyerHtml({
+      buyerName: "Glinda",
+      itemTitle: "Hatch Rest+ Sound Machine",
+      registryTitle: "Remi & Max's Baby Registry",
+      registryUrl: "https://regibee.com/r/remi-and-max",
+    }),
+  },
+};
+
+// Sent when the guest says they bought it.
+export const BuyerItemGiven: Story = {
+  args: {
+    subject: 'Your gift is confirmed — "Hatch Rest+ Sound Machine"',
+    html: itemGivenBuyerHtml({
+      buyerName: "Glinda",
+      itemTitle: "Hatch Rest+ Sound Machine",
+      quantity: 1,
+      parentName: "Remi & Max",
+      registryTitle: "Remi & Max's Baby Registry",
+      registryUrl: "https://regibee.com/r/remi-and-max?email=glinda%40example.com&sig=a1b2c3d4e5f6a7b8",
+      undoUrl: `${sampleGiftLink}?step=release`,
     }),
   },
 };
@@ -82,11 +139,12 @@ export const BuyerCashFundContribution: Story = {
 
 // ── Owner Notifications ──────────────────────────────────────
 
-export const OwnerItemReserved: Story = {
+// Sent when a guest says they bought an item, not when they reserve it.
+export const OwnerItemGiven: Story = {
   args: {
-    subject: 'Auntie Glinda reserved "Hatch Rest+ Sound Machine"',
+    subject: '🎁 Auntie Glinda bought "Hatch Rest+ Sound Machine"',
     to: "max@example.com",
-    html: itemReservedOwnerHtml({
+    html: itemGivenOwnerHtml({
       ownerName: "Max",
       registryTitle: "Remi & Max's Baby Registry",
       buyerName: "Auntie Glinda",
@@ -99,11 +157,11 @@ export const OwnerItemReserved: Story = {
 };
 
 // The first gift from a store registry adds a note about its welcome box.
-export const OwnerItemReservedWelcomeBox: Story = {
+export const OwnerItemGivenWelcomeBox: Story = {
   args: {
-    subject: '🎁 Auntie Glinda reserved "Solly Baby Wrap"',
+    subject: '🎁 Auntie Glinda bought "Solly Baby Wrap"',
     to: "max@example.com",
-    html: itemReservedOwnerHtml({
+    html: itemGivenOwnerHtml({
       ownerName: "Max",
       registryTitle: "Remi & Max's Baby Registry",
       buyerName: "Auntie Glinda",

@@ -5,7 +5,6 @@ import Link from "next/link";
 import {
   Baby,
   Calendar,
-  ExternalLink,
   ArrowLeft,
   Lightbulb,
   ChevronDown,
@@ -37,7 +36,9 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { ReserveItemDialog } from "@/components/reserve-item-dialog";
+import { ReserveItemDialog, type GiftActions } from "@/components/reserve-item-dialog";
+import { GIFT_HOLD_DAYS, formatReservedUntil, type MyItemGift } from "@/lib/gifts";
+import { classifyStoreLink } from "@/lib/retailers";
 import { CoverItemDialog } from "@/components/cover-item-dialog";
 import { ContributeFundDialog } from "@/components/contribute-fund-dialog";
 import { CategoryNav, type CategoryNavItem } from "@/components/category-nav";
@@ -287,17 +288,53 @@ export default function DemoPage() {
   const [priceBucket, setPriceBucket] = useState("any");
   const [sort, setSort] = useState<SortMode>("default");
 
-  const demoReserveAction = (itemId: string) => async (formData: FormData) => {
-    const quantity = parseInt(formData.get("quantity") as string) || 1;
+  // The demo keeps gifts in memory, the way the live site keeps them in a
+  // cookie and the database.
+  const [demoGifts, setDemoGifts] = useState<Record<string, MyItemGift>>({});
+
+  const addToFulfilled = (itemId: string, change: number) =>
     setItems((prev) =>
       prev.map((item) =>
         item.id === itemId
-          ? { ...item, quantity_fulfilled: item.quantity_fulfilled + quantity }
+          ? { ...item, quantity_fulfilled: Math.max(0, item.quantity_fulfilled + change) }
           : item
       )
     );
-    return undefined;
-  };
+
+  const demoGiftActions = (itemId: string): GiftActions => ({
+    reserve: async (formData: FormData) => {
+      const quantity = parseInt(formData.get("quantity") as string) || 1;
+      const bought = formData.get("alreadyBought") === "1";
+      const gift: MyItemGift = {
+        purchaseId: `demo-${itemId}`,
+        status: bought ? "purchased" : "reserved",
+        reservedUntil: bought
+          ? null
+          : new Date(Date.now() + GIFT_HOLD_DAYS * 24 * 60 * 60 * 1000).toISOString(),
+        quantity,
+      };
+      addToFulfilled(itemId, quantity);
+      setDemoGifts((prev) => ({ ...prev, [itemId]: gift }));
+      return { success: true, ...gift, shippingAddress: DEMO_SHIPPING_ADDRESS };
+    },
+    confirm: async () => {
+      setDemoGifts((prev) => ({
+        ...prev,
+        [itemId]: { ...prev[itemId], status: "purchased", reservedUntil: null },
+      }));
+      return {};
+    },
+    release: async () => {
+      const gift = demoGifts[itemId];
+      if (gift) addToFulfilled(itemId, -gift.quantity);
+      setDemoGifts((prev) => {
+        const next = { ...prev };
+        delete next[itemId];
+        return next;
+      });
+      return {};
+    },
+  });
 
   const [demoCoverCounts, setDemoCoverCounts] = useState<Record<string, number>>({});
 
@@ -573,12 +610,14 @@ export default function DemoPage() {
                     const availableToGift = item.is_parent_purchased
                       ? item.quantity_needed - (demoCoverCounts[item.id] || 0)
                       : remaining;
+                    const myGift = item.is_parent_purchased ? undefined : demoGifts[item.id];
+                    const looksDone = isFulfilled && !item.is_parent_purchased && myGift?.status !== "reserved";
 
                     return (
                       <Card
                         key={item.id}
                         className={`py-0 gap-0 rounded-2xl shadow-none ${
-                          isFulfilled && !item.is_parent_purchased
+                          looksDone
                             ? "border-tertiary"
                             : item.is_parent_purchased
                               ? "bg-mint-200/20 border-primary"
@@ -622,8 +661,16 @@ export default function DemoPage() {
                             <div className="flex flex-wrap gap-2.5 empty:hidden">
                               {item.is_parent_purchased ? (
                                 <Tag variant="parent-purchased">Purchased by parent</Tag>
+                              ) : myGift?.status === "reserved" ? (
+                                <Tag variant="reserved">
+                                  {myGift.reservedUntil
+                                    ? `Reserved for you · until ${formatReservedUntil(myGift.reservedUntil, "short")}`
+                                    : "Reserved for you"}
+                                </Tag>
+                              ) : myGift ? (
+                                <Tag variant="purchased-by-you">You gifted this</Tag>
                               ) : isFulfilled ? (
-                                <Tag variant="guest-purchased">Already purchased by guest</Tag>
+                                <Tag variant="gifted">Gifted</Tag>
                               ) : (
                                 <>
                                   {item.is_essential && (
@@ -637,7 +684,7 @@ export default function DemoPage() {
                             </div>
                           </div>
 
-                          {(item.is_parent_purchased ? availableToGift > 0 || (demoCoverCounts[item.id] || 0) > 0 : !isFulfilled) && (
+                          {(item.is_parent_purchased ? availableToGift > 0 || (demoCoverCounts[item.id] || 0) > 0 : !isFulfilled || !!myGift) && (
                             <div className="flex items-center justify-end gap-2">
                               {item.is_parent_purchased ? (
                                 <CoverItemDialog
@@ -649,27 +696,14 @@ export default function DemoPage() {
                                   shippingAddress={DEMO_SHIPPING_ADDRESS}
                                 />
                               ) : (
-                                <>
-                                  {item.external_url && (
-                                    <Button
-                                      variant="outline"
-                                      asChild
-                                    >
-                                      <a href={item.external_url} target="_blank" rel="noopener noreferrer">
-                                        <span className="inline-flex items-center gap-1.5">
-                                          <ExternalLink className="h-4 w-4 shrink-0" />
-                                          Shop
-                                        </span>
-                                      </a>
-                                    </Button>
-                                  )}
-                                  <ReserveItemDialog
-                                    item={item}
-                                    parentName={DEMO_PARENT_NAME}
-                                    action={demoReserveAction(item.id)}
-                                    shippingAddress={DEMO_SHIPPING_ADDRESS}
-                                  />
-                                </>
+                                <ReserveItemDialog
+                                  item={item}
+                                  parentName={DEMO_PARENT_NAME}
+                                  storeName={classifyStoreLink(item.external_url)?.store.name}
+                                  gift={myGift}
+                                  actions={demoGiftActions(item.id)}
+                                  shippingAddress={myGift ? DEMO_SHIPPING_ADDRESS : undefined}
+                                />
                               )}
                             </div>
                           )}

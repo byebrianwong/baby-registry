@@ -18,7 +18,8 @@ interface CelebrationDialogProps {
   onClose: () => void;
   itemTitle: string;
   parentName: string;
-  variant: "reserve" | "cover" | "contribute";
+  /** Gifts of regular items finish in the reserve dialog's own last step. */
+  variant: "cover" | "contribute";
   amount?: number;
   shippingAddress?: string;
   paymentMethods?: PaymentMethods;
@@ -32,8 +33,6 @@ function getMessage(
   amount?: number
 ) {
   switch (variant) {
-    case "reserve":
-      return `You're gifting "${itemTitle}"! ${parentName} will really appreciate it. ❤️`;
     case "cover":
       return `You're gifting "${itemTitle}"! ${parentName} will really appreciate it. ❤️`;
     case "contribute":

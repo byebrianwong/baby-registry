@@ -3,9 +3,12 @@ import { supabaseAdmin } from "./supabase-admin";
 import { formatPrice } from "./money";
 import {
   itemReservedBuyerHtml,
+  itemReservationReminderBuyerHtml,
+  itemReservationEndedBuyerHtml,
+  itemGivenBuyerHtml,
   itemCoveredBuyerHtml,
   cashFundContributionBuyerHtml,
-  itemReservedOwnerHtml,
+  itemGivenOwnerHtml,
   itemCoveredOwnerHtml,
   cashFundContributionOwnerHtml,
   newSuggestionOwnerHtml,
@@ -159,26 +162,70 @@ async function getRegistryInfoForBuyer(opts: {
   };
 }
 
-export async function confirmItemReserved(opts: {
-  buyerEmail: string;
-  buyerName: string;
-  itemTitle: string;
-  quantity: number;
-  parentName: string;
-  registryTitle: string;
-  shippingAddress?: string;
-  registryUrl?: string;
-  shopUrl?: string;
-}) {
+type ReservationEmailOpts = Parameters<typeof itemReservedBuyerHtml>[0] & { buyerEmail: string };
+
+/** Tells a guest their reservation is held, with the address and links to finish. */
+export async function confirmItemReserved(opts: ReservationEmailOpts) {
+  try {
+    await getResend().emails.send({
+      from: FROM,
+      to: TEST_RECIPIENT_OVERRIDE || opts.buyerEmail,
+      subject: `You reserved "${opts.itemTitle}". It's held for ${opts.holdDays} days`,
+      html: itemReservedBuyerHtml(opts),
+    });
+  } catch (err) {
+    console.error("[email] Failed to send buyer item reserved email:", err);
+  }
+}
+
+/** Reminds a guest that their reservation runs out soon. */
+export async function remindItemReservation(
+  opts: Parameters<typeof itemReservationReminderBuyerHtml>[0] & { buyerEmail: string }
+) {
+  try {
+    await getResend().emails.send({
+      from: FROM,
+      to: TEST_RECIPIENT_OVERRIDE || opts.buyerEmail,
+      subject:
+        opts.daysLeft <= 1
+          ? `Last day to finish your gift: "${opts.itemTitle}"`
+          : `${opts.daysLeft} days left to finish your gift: "${opts.itemTitle}"`,
+      html: itemReservationReminderBuyerHtml(opts),
+    });
+  } catch (err) {
+    console.error("[email] Failed to send reservation reminder:", err);
+  }
+}
+
+/** Tells a guest their reservation ran out and the item went back on the list. */
+export async function notifyItemReservationEnded(
+  opts: Parameters<typeof itemReservationEndedBuyerHtml>[0] & { buyerEmail: string }
+) {
+  try {
+    await getResend().emails.send({
+      from: FROM,
+      to: TEST_RECIPIENT_OVERRIDE || opts.buyerEmail,
+      subject: `Your reservation of "${opts.itemTitle}" ended`,
+      html: itemReservationEndedBuyerHtml(opts),
+    });
+  } catch (err) {
+    console.error("[email] Failed to send reservation ended email:", err);
+  }
+}
+
+/** Thanks a guest once they say they bought the item. */
+export async function confirmItemGiven(
+  opts: Parameters<typeof itemGivenBuyerHtml>[0] & { buyerEmail: string }
+) {
   try {
     await getResend().emails.send({
       from: FROM,
       to: TEST_RECIPIENT_OVERRIDE || opts.buyerEmail,
       subject: `Your gift is confirmed — "${opts.itemTitle}"`,
-      html: itemReservedBuyerHtml(opts),
+      html: itemGivenBuyerHtml(opts),
     });
   } catch (err) {
-    console.error("[email] Failed to send buyer item reserved confirmation:", err);
+    console.error("[email] Failed to send buyer gift confirmation:", err);
   }
 }
 
@@ -228,7 +275,8 @@ export async function confirmCashFundContribution(opts: {
 
 export { getRegistryInfoForBuyer };
 
-export async function notifyItemReserved(opts: {
+/** Tells the owners and managers that a guest bought an item. */
+export async function notifyItemGiven(opts: {
   itemId: string;
   itemTitle: string;
   buyerName: string;
@@ -255,8 +303,8 @@ export async function notifyItemReserved(opts: {
         getResend().emails.send({
           from: FROM,
           to: TEST_RECIPIENT_OVERRIDE || m.email,
-          subject: `🎁 ${opts.buyerName} reserved "${opts.itemTitle}"`,
-          html: itemReservedOwnerHtml({
+          subject: `🎁 ${opts.buyerName} bought "${opts.itemTitle}"`,
+          html: itemGivenOwnerHtml({
             ownerName: m.name,
             registryTitle: m.registryTitle,
             buyerName: opts.buyerName,
@@ -270,7 +318,7 @@ export async function notifyItemReserved(opts: {
       )
     );
   } catch (err) {
-    console.error("[email] Failed to send item reserved notification:", err);
+    console.error("[email] Failed to send item given notification:", err);
   }
 }
 

@@ -17,6 +17,8 @@ import { getViewer, getViewerRelation } from "@/lib/viewer";
 import type { RegistryType } from "@/lib/types";
 import { Logo } from "@/components/logo";
 import { parseRetailerRegistries, type StoreId } from "@/lib/retailers";
+import { isGiftLinkStep, isOpenReservation, toMyItemGift, type MyItemGift } from "@/lib/gifts";
+import type { OpenGift } from "@/components/reserve-item-dialog";
 
 const PURCHASE_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
@@ -76,10 +78,10 @@ export default async function PublicRegistryPage({
   searchParams,
 }: {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ email?: string; sig?: string }>;
+  searchParams: Promise<{ email?: string; sig?: string; gift?: string; step?: string }>;
 }) {
   const { slug } = await params;
-  const { email: buyerEmail, sig } = await searchParams;
+  const { email: buyerEmail, sig, gift: giftParam, step: stepParam } = await searchParams;
 
   // Registry data is read with the service-role client, always filtered by the
   // slug in the URL. Anonymous database clients have no read access to these
@@ -186,6 +188,8 @@ export default async function PublicRegistryPage({
     allItems.filter((i) => !i.is_parent_purchased).map((i) => i.id)
   );
   let hasReservation = false;
+  // This visitor's own gifts on regular items, by item id.
+  const myItemGifts: Record<string, MyItemGift> = {};
 
   const claimedItemByPurchase = new Map<string, string>();
   for (const [itemId, purchaseId] of Object.entries(myGifts.items ?? {})) {
@@ -200,12 +204,15 @@ export default async function PublicRegistryPage({
   if (claimedItemByPurchase.size > 0) {
     const { data: claimedPurchases } = await supabaseAdmin
       .from("purchases")
-      .select("id, registry_item_id")
+      .select("id, registry_item_id, status, reserved_until, quantity")
       .in("id", [...claimedItemByPurchase.keys()])
       .neq("status", "cancelled");
-    hasReservation = (claimedPurchases || []).some(
-      (p) => claimedItemByPurchase.get(p.id) === p.registry_item_id
-    );
+    for (const p of claimedPurchases || []) {
+      if (p.registry_item_id && claimedItemByPurchase.get(p.id) === p.registry_item_id) {
+        hasReservation = true;
+        myItemGifts[p.registry_item_id] = toMyItemGift(p);
+      }
+    }
   }
 
   // If the visitor arrived via a signed buyer link, look up their purchases
@@ -221,7 +228,7 @@ export default async function PublicRegistryPage({
           queries.push(
             supabaseAdmin
               .from("purchases")
-              .select("registry_item_id, cash_fund_id, amount")
+              .select("id, registry_item_id, cash_fund_id, amount, status, reserved_until, quantity")
               .eq("buyer_email", buyerEmail.toLowerCase())
               .neq("status", "cancelled")
               .in("registry_item_id", itemIds)
@@ -231,7 +238,7 @@ export default async function PublicRegistryPage({
           queries.push(
             supabaseAdmin
               .from("purchases")
-              .select("registry_item_id, cash_fund_id, amount")
+              .select("id, registry_item_id, cash_fund_id, amount, status, reserved_until, quantity")
               .eq("buyer_email", buyerEmail.toLowerCase())
               .neq("status", "cancelled")
               .in("cash_fund_id", fundIds)
@@ -245,7 +252,12 @@ export default async function PublicRegistryPage({
           if (p.registry_item_id) {
             if (!myGifts.items) myGifts.items = {};
             myGifts.items[p.registry_item_id] = "reserved";
-            if (reservableItemIds.has(p.registry_item_id)) hasReservation = true;
+            if (reservableItemIds.has(p.registry_item_id)) {
+              hasReservation = true;
+              // The signed link proves this visitor is the buyer, so their
+              // purchase ids can go to the page for them to finish or release.
+              if (!myItemGifts[p.registry_item_id]) myItemGifts[p.registry_item_id] = toMyItemGift(p);
+            }
           }
           if (p.cash_fund_id && p.amount) {
             if (!myGifts.funds) myGifts.funds = {};
@@ -257,6 +269,31 @@ export default async function PublicRegistryPage({
       // Invalid signature — ignore silently
     }
   }
+
+  // How many of each item are only reserved so far, not bought, so other
+  // guests see "Reserved by a guest" rather than "Gifted".
+  const reservedCounts: Record<string, number> = {};
+  const reservableIds = [...reservableItemIds];
+  if (reservableIds.length > 0) {
+    const { data: openReservations } = await supabaseAdmin
+      .from("purchases")
+      .select("registry_item_id, quantity, status, reserved_until")
+      .in("registry_item_id", reservableIds)
+      .eq("status", "reserved")
+      .not("reserved_until", "is", null);
+    for (const p of openReservations || []) {
+      if (p.registry_item_id && isOpenReservation(p)) {
+        reservedCounts[p.registry_item_id] = (reservedCounts[p.registry_item_id] || 0) + (p.quantity || 1);
+      }
+    }
+  }
+
+  // A link from a guest's email opens the gift dialog at a step. The link
+  // route has already put the gift in this browser's cookie.
+  const openGift: OpenGift | undefined =
+    giftParam && reservableItemIds.has(giftParam) && (isGiftLinkStep(stepParam) || stepParam === "ended")
+      ? { itemId: giftParam, step: stepParam }
+      : undefined;
 
   const shippingAddress = hasReservation
     ? (registry.settings as RegistrySettings | null)?.shipping_address
@@ -388,6 +425,9 @@ export default async function PublicRegistryPage({
             paymentMethods={paymentMethods}
             shippingAddress={shippingAddress}
             myGifts={myGifts}
+            myItemGifts={myItemGifts}
+            reservedCounts={reservedCounts}
+            openGift={openGift}
             coverCounts={coverCountsObj}
             selfPurchasedLabel={copy.selfPurchasedLabel}
             coverFlavor={copy.coverItemFlavor(parentName)}
