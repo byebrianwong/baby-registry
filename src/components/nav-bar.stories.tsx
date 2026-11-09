@@ -3,7 +3,7 @@ import { NavBar } from "./nav-bar";
 
 const account = {
   name: "Jane & John Doe",
-  username: "jane-doe",
+  profilePath: "/u/jane-john-doe-k7m2p9qx4t",
   email: "jane@example.com",
   followRequestCount: 0,
 };
@@ -24,10 +24,6 @@ export const SignedIn: Story = {};
 
 export const WithFollowRequests: Story = {
   args: { account: { ...account, followRequestCount: 3 } },
-};
-
-export const NoUsernameYet: Story = {
-  args: { account: { ...account, username: null } },
 };
 
 export const SignedOut: Story = {

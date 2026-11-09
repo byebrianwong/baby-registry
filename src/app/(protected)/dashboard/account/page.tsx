@@ -14,7 +14,7 @@ export default async function AccountPage() {
   }
 
   // Guests have anonymous sessions, which get past the /dashboard middleware
-  // check, but only real accounts can have a public profile.
+  // check, but only real accounts have a profile.
   if (user.is_anonymous) {
     redirect("/signup?redirect=/dashboard/account");
   }
@@ -22,7 +22,7 @@ export default async function AccountPage() {
   const [{ data: profile }, { data: registries }, follows] = await Promise.all([
     supabase
       .from("profiles")
-      .select("username, full_name, discoverable, email_follow_requests")
+      .select("public_id, full_name, discoverable, findable_by_email, email_follow_requests")
       .eq("id", user.id)
       .single(),
     supabase
@@ -43,9 +43,10 @@ export default async function AccountPage() {
   return (
     <AccountSettings
       profile={{
-        username: profile?.username ?? null,
+        public_id: profile?.public_id ?? "",
         full_name: profile?.full_name ?? null,
         discoverable: profile?.discoverable ?? false,
+        findable_by_email: profile?.findable_by_email ?? false,
         email_follow_requests: profile?.email_follow_requests ?? true,
       }}
       registries={accountRegistries}

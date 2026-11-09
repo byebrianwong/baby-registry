@@ -12,11 +12,6 @@ export default async function NewRegistryPage() {
     redirect("/login");
   }
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("username")
-    .eq("id", user.id)
-    .single();
-
-  return <CreateRegistryForm username={profile?.username ?? null} />;
+  // Guests have anonymous sessions and no profile page.
+  return <CreateRegistryForm canListOnProfile={!user.is_anonymous} />;
 }

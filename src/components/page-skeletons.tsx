@@ -161,7 +161,7 @@ export function AccountSkeleton() {
       <div className="space-y-6">
         <Card>
           <CardHeader>
-            <CardTitle>Public profile</CardTitle>
+            <CardTitle>Your profile</CardTitle>
             <div className="space-y-1.5">
               <Skeleton className="h-4 w-full" />
               <Skeleton className="h-4 w-1/2" />
@@ -169,7 +169,7 @@ export function AccountSkeleton() {
           </CardHeader>
           <CardContent className="space-y-4">
             <FieldSkeleton />
-            <FieldSkeleton />
+            <CheckboxSkeleton />
             <CheckboxSkeleton />
             <CheckboxSkeleton />
             <Skeleton className="h-10 w-32 rounded-lg" />

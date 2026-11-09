@@ -19,7 +19,6 @@ const states: FollowButtonState[] = [
   "pending",
   "approved",
   "signed-out",
-  "needs-profile",
   "blocked",
 ];
 
@@ -31,8 +30,10 @@ export const AllStates: Story = {
         <div key={state} className="flex flex-col items-center gap-2">
           <span className="text-xs font-mono text-tertiary">{state}</span>
           <FollowButton
-            username="jane-doe"
+            publicId="k7m2p9qx4t"
+            name="Jane Doe"
             state={state}
+            returnTo="/u/jane-doe-k7m2p9qx4t"
             requestAction={mockAction}
             cancelAction={mockAction}
           />

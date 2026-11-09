@@ -84,7 +84,8 @@ export default function RegistrySettingsPage() {
   const [addressSuccess, setAddressSuccess] = useState(false);
   const [categories, setCategories] = useState<{ id: string; name: string; sort_order: number }[]>([]);
   const [slugCopied, setSlugCopied] = useState(false);
-  const [username, setUsername] = useState<string | null | undefined>(undefined);
+  // Guests (anonymous sessions) have no profile page to list a registry on.
+  const [hasProfile, setHasProfile] = useState(false);
   const [isPublicChoice, setIsPublicChoice] = useState(true);
   const [listedChoice, setListedChoice] = useState(false);
 
@@ -133,14 +134,7 @@ export default function RegistrySettingsPage() {
       setListedChoice(data?.listed_on_profile ?? false);
       setCategories(cats || []);
       setCurrentUserId(user?.id || null);
-      if (user) {
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("username")
-          .eq("id", user.id)
-          .single();
-        setUsername(profile?.username ?? null);
-      }
+      setHasProfile(Boolean(user && !user.is_anonymous));
       setLoading(false);
     };
     fetchData();
@@ -401,9 +395,8 @@ export default function RegistrySettingsPage() {
               </div>
             </div>
 
-            {isOwner && username !== undefined && (
+            {isOwner && hasProfile && (
               <ProfileListingField
-                username={username}
                 isPublic={isPublicChoice}
                 isSelected={listedChoice}
                 onChange={setListedChoice}

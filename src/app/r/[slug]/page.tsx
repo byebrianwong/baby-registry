@@ -12,6 +12,7 @@ import { SuggestItemDialog } from "@/components/suggest-item-dialog";
 import { PublicRegistryGrid } from "@/components/public-registry-grid";
 import { copyForRegistry, honoreeDisplayName } from "@/lib/registry-copy";
 import { FollowButton } from "@/components/follow-button";
+import { displayName, profilePath } from "@/lib/profile-link";
 import { getViewer, getViewerRelation } from "@/lib/viewer";
 import type { RegistryType } from "@/lib/types";
 import { Logo } from "@/components/logo";
@@ -97,20 +98,21 @@ export default async function PublicRegistryPage({
 
   // Only registries the owner chose to show on their profile say who owns them,
   // so unlisted ones never point to a profile.
-  let owner: { username: string; name: string } | null = null;
+  let owner: { publicId: string; path: string; name: string } | null = null;
   let ownerRelation: Awaited<ReturnType<typeof getViewerRelation>> | null = null;
   if (registry.listed_on_profile) {
     const { data: ownerProfile } = await supabaseAdmin
       .from("profiles")
-      .select("id, username, full_name")
+      .select("id, public_id, full_name")
       .eq("id", registry.owner_id)
       .single();
-    if (ownerProfile?.username) {
+    if (ownerProfile) {
       ownerRelation = await getViewerRelation(ownerProfile.id);
       if (!ownerRelation.hidden) {
         owner = {
-          username: ownerProfile.username,
-          name: ownerProfile.full_name?.trim() || `@${ownerProfile.username}`,
+          publicId: ownerProfile.public_id,
+          path: profilePath(ownerProfile),
+          name: displayName(ownerProfile),
         };
       }
     }
@@ -350,7 +352,7 @@ export default async function PublicRegistryPage({
               <p className="text-sm text-secondary">
                 Shared by{" "}
                 <Link
-                  href={`/u/${owner.username}`}
+                  href={owner.path}
                   className="font-medium text-primary underline-offset-2 hover:underline"
                 >
                   {owner.name}
@@ -358,7 +360,8 @@ export default async function PublicRegistryPage({
               </p>
               {!ownerRelation.isOwner && (
                 <FollowButton
-                  username={owner.username}
+                  publicId={owner.publicId}
+                  name={owner.name}
                   state={ownerRelation.state}
                   returnTo={`/r/${slug}`}
                 />

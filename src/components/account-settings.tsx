@@ -9,9 +9,9 @@ import { Input } from "@/components/base/input/input";
 import { Checkbox } from "@/components/base/checkbox/checkbox";
 import { CopyLinkButton } from "@/components/copy-link-button";
 import { FollowLists } from "@/components/follow-lists";
-import { removeProfile, saveProfile, setRegistryListed } from "@/lib/actions/profile";
+import { saveProfile, setRegistryListed } from "@/lib/actions/profile";
 import { occasionLabel } from "@/lib/registry-copy";
-import { normalizeUsername } from "@/lib/username";
+import { profilePath } from "@/lib/profile-link";
 import type { FollowPerson, PersonSummary } from "@/lib/follows";
 import type { PersonalEventType, RegistryType } from "@/lib/types";
 
@@ -73,14 +73,14 @@ export function AccountSettings({
   profile,
   registries,
   saveAction = saveProfile,
-  removeAction = removeProfile,
   listAction = setRegistryListed,
   follows,
 }: {
   profile: {
-    username: string | null;
+    public_id: string;
     full_name: string | null;
     discoverable?: boolean;
+    findable_by_email?: boolean;
     email_follow_requests?: boolean;
   };
   registries: AccountRegistry[];
@@ -91,20 +91,18 @@ export function AccountSettings({
     blocked?: PersonSummary[];
   };
   saveAction?: typeof saveProfile;
-  removeAction?: typeof removeProfile;
   listAction?: typeof setRegistryListed;
 }) {
-  const [username, setUsername] = useState(profile.username ?? "");
+  const [savedName, setSavedName] = useState(profile.full_name);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
-  const [removing, setRemoving] = useState(false);
   const [error, setError] = useState("");
-
-  const hasProfile = Boolean(profile.username);
-  // New profiles start out findable; existing ones keep what they chose.
-  const [discoverable, setDiscoverable] = useState(hasProfile ? Boolean(profile.discoverable) : true);
+  const [discoverable, setDiscoverable] = useState(Boolean(profile.discoverable));
+  const [findableByEmail, setFindableByEmail] = useState(Boolean(profile.findable_by_email));
   const [emailRequests, setEmailRequests] = useState(profile.email_follow_requests ?? true);
-  const previewUsername = normalizeUsername(username) || "your-username";
+
+  // The link has the name in it, so it follows the saved name.
+  const link = profilePath({ public_id: profile.public_id, full_name: savedName });
 
   const handleSave = async (formData: FormData) => {
     setSaving(true);
@@ -114,30 +112,11 @@ export function AccountSettings({
     if (result?.error) {
       setError(result.error);
     } else {
-      if (result?.username) setUsername(result.username);
+      setSavedName(((formData.get("fullName") as string) || "").trim());
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
     }
     setSaving(false);
-  };
-
-  const handleRemove = async () => {
-    if (
-      !confirm(
-        "Turn off your public profile? Your profile link will stop working, and your followers and the people you follow will be removed. Registry share links keep working.",
-      )
-    ) {
-      return;
-    }
-    setRemoving(true);
-    setError("");
-    const result = await removeAction();
-    if (result?.error) {
-      setError(result.error);
-    } else {
-      setUsername("");
-    }
-    setRemoving(false);
   };
 
   return (
@@ -154,16 +133,15 @@ export function AccountSettings({
       <div className="space-y-6">
         <Card>
           <CardHeader>
-            <CardTitle>Public profile</CardTitle>
+            <CardTitle>Your profile</CardTitle>
             <CardDescription>
-              {hasProfile
-                ? "Anyone with your link can see your name and the registries you choose below."
-                : "Get one link to all your registries. Nobody can find you until you claim a username."}
+              One link to all the registries you choose below. Anyone with the link can see your name
+              and those registries.
             </CardDescription>
           </CardHeader>
           <CardContent>
             {/* onSubmit, not action: React resets a form after its action runs, which
-                would clear the username field. */}
+                would put the checkboxes back. */}
             <form
               onSubmit={(e) => {
                 e.preventDefault();
@@ -175,20 +153,7 @@ export function AccountSettings({
                 label="Name"
                 name="fullName"
                 defaultValue={profile.full_name ?? ""}
-                hint="Shown on your profile"
-                isRequired
-              />
-              <Input
-                label="Username"
-                name="username"
-                placeholder="jane-doe"
-                value={username}
-                onChange={setUsername}
-                hint={
-                  hasProfile
-                    ? `/u/${previewUsername} (changing this breaks links you've already shared)`
-                    : `/u/${previewUsername}`
-                }
+                hint="Shown on your profile, and to people you ask to follow"
                 isRequired
               />
               <input type="hidden" name="discoverable" value={discoverable ? "true" : "false"} />
@@ -196,22 +161,26 @@ export function AccountSettings({
                 isSelected={discoverable}
                 onChange={setDiscoverable}
                 label="Show me in people search"
-                hint="People signed in to Regibee can find you by name or username."
+                hint="People signed in to Regibee can find you by name."
+              />
+              <input type="hidden" name="findableByEmail" value={findableByEmail ? "true" : "false"} />
+              <Checkbox
+                isSelected={findableByEmail}
+                onChange={setFindableByEmail}
+                label="Let people find me by my email address"
+                hint="Only someone who types your whole email address finds you this way. Your email is never shown."
               />
               <input type="hidden" name="emailFollowRequests" value={emailRequests ? "true" : "false"} />
               <Checkbox
                 isSelected={emailRequests}
                 onChange={setEmailRequests}
                 label="Email me when someone asks to follow me"
-                hint="At most one email per person per day."
+                hint="Includes invites sent to your email address. At most one email per person per day."
               />
               {error && <p className="text-sm text-error-primary">{error}</p>}
               <div className="flex flex-wrap items-center gap-2">
-                <Button
-                  type="submit"
-                  disabled={saving}
-                >
-                  {saving ? "Saving..." : hasProfile ? "Save" : "Claim username"}
+                <Button type="submit" disabled={saving}>
+                  {saving ? "Saving..." : "Save"}
                 </Button>
                 {saved && (
                   <span className="inline-flex items-center gap-1 text-sm text-tertiary">
@@ -222,19 +191,17 @@ export function AccountSettings({
               </div>
             </form>
 
-            {profile.username && (
-              <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-secondary pt-4">
-                <CopyLinkButton path={`/u/${profile.username}`} />
-                <Button variant="outline" asChild>
-                  <Link href={`/u/${profile.username}`}>View profile</Link>
-                </Button>
-              </div>
-            )}
+            <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-secondary pt-4">
+              <CopyLinkButton path={link} />
+              <Button variant="outline" asChild>
+                <Link href={link}>View profile</Link>
+              </Button>
+            </div>
           </CardContent>
         </Card>
 
         {/* Requests come first: the dashboard notice links straight here. */}
-        {hasProfile && follows && (
+        {follows && (
           <div id="follows" className="scroll-mt-20 space-y-6">
             <FollowLists
               requests={follows.requests}
@@ -245,46 +212,27 @@ export function AccountSettings({
           </div>
         )}
 
-        {hasProfile && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Registries on your profile</CardTitle>
-              <CardDescription>
-                Only the ones you check appear. Anyone with your link sees the public ones;
-                private ones only show to followers you approve. Registries you help manage for
-                someone else aren&apos;t included.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {registries.length === 0 ? (
-                <p className="text-sm text-tertiary">You don&apos;t own any registries yet.</p>
-              ) : (
-                <div className="space-y-4">
-                  {registries.map((registry) => (
-                    <RegistryListingRow key={registry.id} registry={registry} action={listAction} />
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        )}
-
-        {hasProfile && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Turn off public profile</CardTitle>
-              <CardDescription>
-                Removes your profile page, frees up your username, and removes your followers and
-                the people you follow. Registry share links keep working.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button variant="outline" onClick={handleRemove} disabled={removing}>
-                {removing ? "Turning off..." : "Turn off profile"}
-              </Button>
-            </CardContent>
-          </Card>
-        )}
+        <Card>
+          <CardHeader>
+            <CardTitle>Registries on your profile</CardTitle>
+            <CardDescription>
+              Only the ones you check appear. Anyone with your link sees the public ones;
+              private ones only show to followers you approve. Registries you help manage for
+              someone else aren&apos;t included.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {registries.length === 0 ? (
+              <p className="text-sm text-tertiary">You don&apos;t own any registries yet.</p>
+            ) : (
+              <div className="space-y-4">
+                {registries.map((registry) => (
+                  <RegistryListingRow key={registry.id} registry={registry} action={listAction} />
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

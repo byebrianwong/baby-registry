@@ -8,7 +8,6 @@ const meta: Meta<typeof PublicProfile> = {
   title: "Components/PublicProfile",
   component: PublicProfile,
   args: {
-    username: "jane-doe",
     fullName: "Jane & John Doe",
     today: "2026-11-02",
     registries: [
@@ -53,7 +52,13 @@ type Story = StoryObj<typeof PublicProfile>;
 // What an approved follower or the owner sees: private ones carry a badge.
 export const WithRegistries: Story = {
   args: {
-    followAction: <FollowButton username="jane-doe" state="approved" cancelAction={mockFollow} />,
+    followAction: <FollowButton
+        publicId="k7m2p9qx4t"
+        name="Jane & John Doe"
+        state="approved"
+        returnTo="/u/jane-john-doe-k7m2p9qx4t"
+        cancelAction={mockFollow}
+      />,
   },
 };
 
@@ -62,7 +67,14 @@ export const VisitorNotFollowing: Story = {
   args: {
     registries: [],
     followAction: (
-      <FollowButton username="jane-doe" state="none" requestAction={mockFollow} cancelAction={mockFollow} />
+      <FollowButton
+        publicId="k7m2p9qx4t"
+        name="Jane & John Doe"
+        state="none"
+        returnTo="/u/jane-john-doe-k7m2p9qx4t"
+        requestAction={mockFollow}
+        cancelAction={mockFollow}
+      />
     ),
   },
 };

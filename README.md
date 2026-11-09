@@ -31,7 +31,8 @@ A gift registry app built with Next.js, Supabase, and Tailwind CSS. It started a
 
 ### Profiles and following
 
-- **Optional public profile** - Claim a username on the Account page (`/dashboard/account`) to get a profile at `/u/your-username`. Without a username you have no profile. Profiles are hidden from search engines. Removing your profile also removes your follows and takes your registries off it.
+- **Profiles** - Every account has a profile at a link like `/u/jane-doe-k7m2p9qx4t`. The random id at the end is what's looked up, so the link can't be guessed and survives a name change. A profile shows only the registries its owner picks on the Account page (`/dashboard/account`). Profiles are hidden from search engines.
+- **Finding people** - The Following page searches by name, for people who chose to show up in search, or by a whole email address, for people who turned on email search. Email addresses are never shown. When an address finds nobody, you can email it a follow invite (`/follow-invite/<token>`), which the person accepts after signing in or signing up.
 - **You choose which registries appear** - Each registry has a "Show on my profile" option. Only the owner can turn it on, and it starts off.
 - **Follows need approval** - Following someone sends them a request. They approve or decline it on their Account page, and can get an email about it (at most one a day from the same person). Approved followers see private registries on the profile. Everyone else sees only the public ones.
 - **Following page** - `/dashboard/following` lists the registries of people who approved your follow, grouped into "Coming up", "Anytime" and "Past events".
@@ -111,8 +112,8 @@ Open [http://localhost:3000](http://localhost:3000). You should see the landing 
 5. **Fill in Settings** — click "Settings" to add the names guests see (for example "Denise & Brian") and your shipping address. Under Managers, invite a co-manager by email or with a link.
 6. **Share your registry** — click "Share Link" to copy the public link (for example `/r/your-slug`).
 7. **Try the gift giver view** — open that link in a private window and reserve an item. Your shipping address appears after you reserve.
-8. **Set up a profile (optional)** — open Account from the menu, claim a username, and tick "Show on my profile" for a registry. Then visit `/u/your-username`.
-9. **Try following (optional)** — sign up a second account in another browser and claim a username. On its Following page, search for the first account and click Follow. Approve the request on the first account's Account page. The first account's registries now appear on the second account's Following page.
+8. **Fill in your profile (optional)** — open Account from the menu and tick "Show on my profile" for a registry. Then click View profile.
+9. **Try following (optional)** — sign up a second account in another browser. On its Following page, search for the first account by name or email and click Follow. Approve the request on the first account's Account page. The first account's registries now appear on the second account's Following page.
 
 ## Project Structure
 
@@ -139,9 +140,10 @@ src/
 │   ├── auth/callback/    # Where email confirmation and password reset links land
 │   ├── demo/             # Demo pages with sample data
 │   ├── extension/connect/ # Connects the browser extension to an account
+│   ├── follow-invite/[token]/ # Answer an emailed invite to be followed
 │   ├── invite/[token]/   # Accept an invite to co-manage a registry
 │   ├── r/[slug]/         # Public registry page (gift givers)
-│   ├── u/[username]/     # Public profile
+│   ├── u/[profile]/      # Profile pages
 │   └── page.tsx          # Landing page
 ├── components/           # App components, many with a Storybook story beside them
 │   ├── ui/               # shadcn/ui components

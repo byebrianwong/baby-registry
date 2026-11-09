@@ -260,13 +260,16 @@ function ChoiceCard({
 }
 
 export interface CreateRegistryFormProps {
-  /** The owner's profile username, or null if they haven't set up a profile. */
-  username: string | null;
+  /**
+   * False for guests (anonymous sessions), who have no profile page, so the
+   * "Show on my profile" choice is left out.
+   */
+  canListOnProfile?: boolean;
   createAction?: (formData: FormData) => Promise<{ error?: string } | void>;
 }
 
 export function CreateRegistryForm({
-  username,
+  canListOnProfile = true,
   createAction = createRegistry,
 }: CreateRegistryFormProps) {
   const [registryType, setRegistryType] = useState<RegistryType>("baby");
@@ -395,8 +398,8 @@ export function CreateRegistryForm({
 
   const chooseVisibility = (value: boolean) => {
     setIsPublic(value);
-    // With no profile, visibility is the only choice in this section.
-    if (!username) advanceSoon("privacy");
+    // Without a profile, visibility is the only choice in this section.
+    if (!canListOnProfile) advanceSoon("privacy");
   };
 
   // The zip code is the last field in the payments section, so a full zip
@@ -461,7 +464,7 @@ export function CreateRegistryForm({
   const occasion = PERSONAL_EVENT_TYPE_OPTIONS.find((option) => option.value === eventType);
   const privacySummary = [
     isPublic ? "Public" : "Private",
-    username ? (isListed ? "on your profile" : "not on your profile") : null,
+    canListOnProfile ? (isListed ? "on your profile" : "not on your profile") : null,
   ]
     .filter(Boolean)
     .join(" · ");
@@ -631,14 +634,15 @@ export function CreateRegistryForm({
                 description="Hidden from search engines. Only followers you approve see it on your profile."
               />
             </div>
-            <div className="mt-4">
-              <ProfileListingField
-                username={username}
-                isPublic={isPublic}
-                isSelected={isListed}
-                onChange={setListedChoice}
-              />
-            </div>
+            {canListOnProfile && (
+              <div className="mt-4">
+                <ProfileListingField
+                  isPublic={isPublic}
+                  isSelected={isListed}
+                  onChange={setListedChoice}
+                />
+              </div>
+            )}
             <SectionFooter label={footerLabel("privacy")} onClick={() => finish("privacy")} />
           </Section>
 

@@ -14,7 +14,8 @@ import { Logo } from "@/components/logo";
 
 export interface NavAccount {
   name: string;
-  username: string | null;
+  /** Link to the account's profile page. */
+  profilePath: string;
   email: string | null;
   followRequestCount: number;
 }
@@ -57,9 +58,7 @@ function AccountMenu({ account }: { account: NavAccount }) {
         <Dropdown.Popover placement="bottom end" className="w-64">
           <div className="border-b border-secondary px-4 py-3">
             <p className="truncate text-sm font-semibold text-primary">{account.name}</p>
-            <p className="truncate text-sm text-tertiary">
-              {account.username ? `@${account.username}` : account.email}
-            </p>
+            {account.email && <p className="truncate text-sm text-tertiary">{account.email}</p>}
           </div>
           <Dropdown.Menu
             aria-label="Account"
@@ -68,20 +67,14 @@ function AccountMenu({ account }: { account: NavAccount }) {
               if (key === "sign-out") signOut();
             }}
           >
-            {account.username ? (
-              <Dropdown.Item id="profile" href={`/u/${account.username}`} icon={UserRound} label="Your profile" />
-            ) : (
-              <Dropdown.Item id="profile" href="/dashboard/account" icon={UserRound} label="Set up your profile" />
-            )}
-            {account.username && (
-              <Dropdown.Item
-                id="requests"
-                href="/dashboard/account#follows"
-                icon={UserPlus}
-                label="Follow requests"
-                addon={count > 0 ? String(count) : undefined}
-              />
-            )}
+            <Dropdown.Item id="profile" href={account.profilePath} icon={UserRound} label="Your profile" />
+            <Dropdown.Item
+              id="requests"
+              href="/dashboard/account#follows"
+              icon={UserPlus}
+              label="Follow requests"
+              addon={count > 0 ? String(count) : undefined}
+            />
             <Dropdown.Item id="account" href="/dashboard/account" icon={Settings} label="Account settings" />
             <Dropdown.Separator />
             <Dropdown.Item id="sign-out" icon={LogOut} label="Sign out" />

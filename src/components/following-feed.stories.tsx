@@ -1,23 +1,25 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { FollowingFeed } from "./following-feed";
 
-const jane = { username: "jane-doe", full_name: "Jane & John Doe" };
+const jane = { public_id: "k7m2p9qx4t", full_name: "Jane & John Doe" };
 const mockSearch = async () => ({
-  results: [{ username: "sam-lee", full_name: "Sam Lee", state: "none" as const }],
+  kind: "name" as const,
+  results: [{ public_id: "b8c3j6tf5y", full_name: "Sam Lee", state: "none" as const }],
 });
-const alex = { username: "alex-kim", full_name: "Alex Kim" };
+const mockInvite = async () => ({ success: true });
+const alex = { public_id: "a3f9c2xz7e", full_name: "Alex Kim" };
 
 const meta: Meta<typeof FollowingFeed> = {
   title: "Components/FollowingFeed",
   component: FollowingFeed,
   args: {
-    hasUsername: true,
     today: "2026-11-07",
     searchAction: mockSearch,
+    inviteAction: mockInvite,
     people: [
       { ...jane, status: "approved" },
       { ...alex, status: "approved" },
-      { username: "priya-r", full_name: "Priya Raman", status: "pending" },
+      { public_id: "u2q6r8kd3m", full_name: "Priya Raman", status: "pending" },
     ],
     registries: [
       { slug: "jane-baby", title: "The Doe Family Baby Registry", event_date: "2027-02-10", registry_type: "baby", event_type: null, is_public: false, owner: jane },
@@ -34,7 +36,7 @@ type Story = StoryObj<typeof FollowingFeed>;
 // (one still waiting for approval).
 export const WithRegistries: Story = {};
 
-// No username yet: no search box, and an empty state that links to set one up.
-export const NoUsername: Story = {
-  args: { hasUsername: false, people: [], registries: [] },
+// Not following anyone yet: the search box and an empty state.
+export const NotFollowingAnyone: Story = {
+  args: { people: [], registries: [] },
 };
