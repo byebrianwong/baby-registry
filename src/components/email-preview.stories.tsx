@@ -14,6 +14,9 @@ import {
   completionDiscountOwnerHtml,
   managerInviteHtml,
   followRequestHtml,
+  eventInvitationHtml,
+  rsvpGuestConfirmationHtml,
+  rsvpHostNotificationHtml,
   confirmSignupHtml,
   resetPasswordHtml,
 } from "@/lib/email-templates";
@@ -251,6 +254,70 @@ export const ManagerInvite: Story = {
       inviterName: "Remi & Max",
       registryTitle: "Remi & Max's Baby Registry",
       inviteUrl: "https://regibee.com/invite/abc123token",
+    }),
+  },
+};
+
+// ── Events ───────────────────────────────────────────────────
+
+const sampleEventEmail = {
+  title: "Remi's Baby Shower",
+  hostedBy: "Aunt Linda & Grandma Jo",
+  date: "Saturday, March 14, 2026",
+  time: "2 – 5 PM PDT",
+  locationName: "Grandma Jo's garden",
+  locationAddress: "1450 Sunnyside Ave\nBerkeley, CA 94703",
+  mapUrl: "https://www.google.com/maps/search/?api=1&query=1450%20Sunnyside%20Ave",
+  // Storybook serves public/, so the sample picture loads in the preview.
+  imageUrl: "/samples/invitation.svg",
+  rsvpBy: "Saturday, March 7, 2026",
+  registry: { title: "Remi & Max's Baby Registry", url: "https://regibee.com/r/remi-and-max-baby" },
+};
+
+// The reminder only changes the subject and the first line, so it has no story.
+export const EventInvitation: Story = {
+  args: {
+    subject: "You're invited: Remi's Baby Shower",
+    from: '"Aunt Linda & Grandma Jo via Regibee" <notifications@regibee.com>',
+    html: eventInvitationHtml({
+      guestName: "Glinda",
+      hostName: "Aunt Linda & Grandma Jo",
+      event: sampleEventEmail,
+      message:
+        "Join us for tea, cake and games as we celebrate Remi and the baby on the way! Bring a favorite children's book instead of a card.",
+      rsvpUrl: "https://regibee.com/e/remis-baby-shower-k3m9q2xa?g=Qm9vayBmb3IgYSBiYWJ5",
+    }),
+  },
+};
+
+export const RsvpGuestConfirmation: Story = {
+  args: {
+    subject: "You're going to Remi's Baby Shower",
+    html: rsvpGuestConfirmationHtml({
+      guestName: "Glinda",
+      status: "yes",
+      partySize: 2,
+      event: sampleEventEmail,
+      rsvpUrl: "https://regibee.com/e/remis-baby-shower-k3m9q2xa?g=Qm9vayBmb3IgYSBiYWJ5",
+      calendarUrl: "https://calendar.google.com/calendar/render?action=TEMPLATE",
+    }),
+  },
+};
+
+export const RsvpHostNotification: Story = {
+  args: {
+    subject: "Glinda Upland is going to Remi's Baby Shower",
+    to: "linda@example.com",
+    html: rsvpHostNotificationHtml({
+      hostName: "Linda",
+      guestName: "Glinda Upland",
+      status: "yes",
+      partySize: 2,
+      note: "Wouldn't miss it! Bringing Goodnight Moon.",
+      eventTitle: "Remi's Baby Shower",
+      attending: 14,
+      pending: 6,
+      manageUrl: "https://regibee.com/dashboard/events/abc",
     }),
   },
 };

@@ -1,17 +1,18 @@
 import { DashboardTabs } from "@/components/dashboard-tabs";
 import { getViewer } from "@/lib/viewer";
 
-// /dashboard and /dashboard/following share this layout, so the tabs stay on
+// /dashboard, /dashboard/events and /dashboard/following share this layout, so the tabs stay on
 // screen while you switch between them. Each tab keeps its own loading.tsx in
 // its own folder. A loading.tsx here would show one tab's skeleton for both.
 export default async function DashboardTabsLayout({ children }: { children: React.ReactNode }) {
   // getViewer counts guests (anonymous sessions) as signed out, and guests
-  // can't follow anyone. The top bar calls it too, and it's cached per request.
+  // can't plan events or follow anyone. The top bar calls it too, and it's
+  // cached per request.
   const viewer = await getViewer();
 
   return (
     <>
-      <DashboardTabs showFollowing={Boolean(viewer)} />
+      <DashboardTabs hasAccount={Boolean(viewer)} />
       {children}
     </>
   );

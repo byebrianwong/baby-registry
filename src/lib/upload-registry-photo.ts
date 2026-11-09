@@ -8,19 +8,19 @@ export type PhotoUploadResult = { url: string } | { error: string };
 // photo shows, the registry header.
 const MAX_SIDE = 1200;
 
-const EXTENSIONS: Record<string, string> = {
+export const EXTENSIONS: Record<string, string> = {
   "image/jpeg": "jpg",
   "image/png": "png",
   "image/webp": "webp",
   "image/gif": "gif",
 };
 
-async function shrinkPhoto(file: File): Promise<Blob> {
+export async function shrinkPhoto(file: File, maxSide = MAX_SIDE): Promise<Blob> {
   const bitmap = await createImageBitmap(file).catch(() => null);
   // A format the browser can't draw goes up as it is. The bucket only takes
   // JPEG, PNG, WebP and GIF, so anything else is refused there.
   if (!bitmap) return file;
-  const scale = Math.min(1, MAX_SIDE / Math.max(bitmap.width, bitmap.height));
+  const scale = Math.min(1, maxSide / Math.max(bitmap.width, bitmap.height));
   const canvas = document.createElement("canvas");
   canvas.width = Math.round(bitmap.width * scale);
   canvas.height = Math.round(bitmap.height * scale);

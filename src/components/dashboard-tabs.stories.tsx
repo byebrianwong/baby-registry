@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { DashboardTabs } from "./dashboard-tabs";
-import { DashboardSkeleton, FollowingSkeleton } from "./page-skeletons";
+import { DashboardSkeleton, EventsSkeleton, FollowingSkeleton } from "./page-skeletons";
 
 // The tabs above each tab's loading skeleton, as they appear while a tab
 // loads. The pages themselves load data on the server, which Storybook can't
@@ -12,7 +12,7 @@ const meta: Meta<typeof DashboardTabs> = {
     layout: "fullscreen",
     nextjs: { appDirectory: true, navigation: { pathname: "/dashboard" } },
   },
-  args: { showFollowing: true },
+  args: { hasAccount: true },
 };
 export default meta;
 type Story = StoryObj<typeof DashboardTabs>;
@@ -22,6 +22,16 @@ export const MyRegistries: Story = {
     <>
       <DashboardTabs {...args} />
       <DashboardSkeleton />
+    </>
+  ),
+};
+
+export const Events: Story = {
+  parameters: { nextjs: { appDirectory: true, navigation: { pathname: "/dashboard/events" } } },
+  render: (args) => (
+    <>
+      <DashboardTabs {...args} />
+      <EventsSkeleton />
     </>
   ),
 };
@@ -36,13 +46,13 @@ export const Following: Story = {
   ),
 };
 
-/** Guests can't follow anyone, so they get only My registries. */
+/** Guests can't plan events or follow anyone, so they get only My registries. */
 export const Guest: Story = {
-  args: { showFollowing: false },
+  args: { hasAccount: false },
   render: MyRegistries.render,
 };
 
-/** On phones the two tabs split the width. */
+/** On phones the three tabs share the width and stay on one line each. */
 export const Phone: Story = {
   globals: { viewport: { value: "mobile1" } },
   render: MyRegistries.render,
