@@ -44,8 +44,8 @@ export function isValidUsernameFormat(username: string): boolean {
 }
 
 /**
- * A starting suggestion made from someone's name, such as "Jane & John Doe" →
- * "jane-john-doe". Returns "" when the name doesn't make a valid username. It
+ * A starting suggestion made from someone's name, such as "Remi & Max" →
+ * "remi-max". Returns "" when the name doesn't make a valid username. It
  * may still be taken, which saving reports.
  */
 export function suggestUsername(fullName: string): string {

@@ -1,10 +1,12 @@
 import { NextResponse } from "next/server";
 import { authenticateExtension, isRegistryManager, jsonError, readJson } from "@/lib/extension-server";
 import { isUuid, itemMatchKey, MAX_ITEMS_PER_REQUEST, type CheckResponse } from "@/lib/extension";
+import { classifyStoreLink } from "@/lib/retailers";
 
 // POST { registryId, urls } → which of those items are already on the
-// registry. At stores we know, items match on the product ID inside each
-// link, so a plain link already on Regibee counts as the same item.
+// registry, and which of those have only a plain store link. At stores we
+// know, items match on the product ID inside each link, so a plain link
+// already on Regibee counts as the same item.
 export async function POST(request: Request) {
   const auth = await authenticateExtension(request);
   if (auth.response) return auth.response;
@@ -29,11 +31,15 @@ export async function POST(request: Request) {
   if (error) return jsonError("Couldn't read the registry.", 500);
 
   const existing = new Set<string>();
+  const plain = new Set<string>();
   for (const item of items ?? []) {
-    const key = itemMatchKey(item.external_url as string | null);
-    if (key && wanted.has(key)) existing.add(key);
+    const url = item.external_url as string | null;
+    const key = itemMatchKey(url);
+    if (!key || !wanted.has(key)) continue;
+    existing.add(key);
+    if (classifyStoreLink(url)?.kind === "plain") plain.add(key);
   }
 
-  const response: CheckResponse = { existing: [...existing] };
+  const response: CheckResponse = { existing: [...existing], plain: [...plain] };
   return NextResponse.json(response);
 }

@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { FollowingFeed } from "./following-feed";
 
-const jane = { username: "jane-doe", full_name: "Jane & John Doe" };
+const remiAndMax = { username: "remi-and-max", full_name: "Remi & Max" };
 const mockSearch = async () => ({
   results: [{ username: "sam-lee", full_name: "Sam Lee", state: "none" as const }],
 });
@@ -15,14 +15,14 @@ const meta: Meta<typeof FollowingFeed> = {
     today: "2026-11-07",
     searchAction: mockSearch,
     people: [
-      { ...jane, status: "approved" },
+      { ...remiAndMax, status: "approved" },
       { ...alex, status: "approved" },
-      { username: "priya-r", full_name: "Priya Raman", status: "pending" },
+      { username: "tin-man", full_name: "Tin Man", status: "pending" },
     ],
     registries: [
-      { slug: "jane-baby", title: "The Doe Family Baby Registry", event_date: "2027-02-10", registry_type: "baby", event_type: null, is_public: false, owner: jane },
+      { slug: "remi-max-baby", title: "Remi & Max's Baby Registry", event_date: "2027-02-10", registry_type: "baby", event_type: null, is_public: false, owner: remiAndMax },
       { slug: "alex-xmas", title: "Alex's Christmas List", event_date: "2026-12-25", registry_type: "personal", event_type: "christmas", is_public: true, owner: alex },
-      { slug: "jane-wishlist", title: "Jane's Wishlist", event_date: null, registry_type: "personal", event_type: null, is_public: true, owner: jane },
+      { slug: "remi-wishlist", title: "Remi's Wishlist", event_date: null, registry_type: "personal", event_type: null, is_public: true, owner: remiAndMax },
       { slug: "alex-housewarming", title: "Our New Home", event_date: "2026-03-14", registry_type: "personal", event_type: "housewarming", is_public: true, owner: alex },
     ],
   },

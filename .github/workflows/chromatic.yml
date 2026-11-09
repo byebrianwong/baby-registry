@@ -20,3 +20,4 @@ jobs:
         with:
           projectToken: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
           onlyChanged: true # only snapshot stories affected by the commit
+          autoAcceptChanges: main # builds on main accept their changes, so merged work becomes the baseline

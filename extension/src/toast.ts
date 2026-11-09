@@ -1,4 +1,6 @@
-// The notice automatic mode shows over a store's page after adding items.
+// The notice shown over a store's registry page after the extension adds
+// items (automatic mode) or swaps in registry links for items already on
+// Regibee (either mode).
 // It lives in a shadow root, so the store's styles can't change it.
 
 const LOGO_URL = () => chrome.runtime.getURL("logo.svg");
@@ -39,11 +41,14 @@ const STYLES = `
 `;
 
 export interface ImportToastOptions {
+  /** Items just added. */
   count: number;
+  /** Items already on Regibee that just got their registry link in place of a plain one. */
+  linkedCount: number;
   storeName: string;
   registryTitle: string;
   reviewUrl: string;
-  /** Resolves to how many items were removed, or throws. */
+  /** Removes the items just added. Resolves to how many were removed, or throws. */
   onUndo: () => Promise<number>;
 }
 
@@ -70,14 +75,24 @@ export function showImportToast(options: ImportToastOptions) {
   text.className = "text";
   const title = document.createElement("span");
   title.className = "title";
-  const noun = options.count === 1 ? "item" : "items";
-  title.textContent = `${options.count} new ${noun} added to Regibee`;
   const body = document.createElement("span");
   body.className = "body";
-  body.textContent =
-    options.count === 1
-      ? `From your ${options.storeName} registry, with its registry link. It's in ${options.registryTitle}.`
-      : `From your ${options.storeName} registry, with their registry links. They're in ${options.registryTitle}.`;
+  const linkedText =
+    options.linkedCount === 1
+      ? `1 item already in ${options.registryTitle} now has its ${options.storeName} registry link.`
+      : `${options.linkedCount} items already in ${options.registryTitle} now have their ${options.storeName} registry links.`;
+  if (options.count > 0) {
+    const noun = options.count === 1 ? "item" : "items";
+    title.textContent = `${options.count} new ${noun} added to Regibee`;
+    body.textContent =
+      (options.count === 1
+        ? `From your ${options.storeName} registry, with its registry link. It's in ${options.registryTitle}.`
+        : `From your ${options.storeName} registry, with their registry links. They're in ${options.registryTitle}.`) +
+      (options.linkedCount > 0 ? ` ${linkedText}` : "");
+  } else {
+    title.textContent = options.linkedCount === 1 ? "Registry link saved" : "Registry links saved";
+    body.textContent = `${linkedText} Gifts bought through Regibee now count toward your ${options.storeName} registry.`;
+  }
   text.append(title, body);
   const close = document.createElement("button");
   close.type = "button";
@@ -99,7 +114,9 @@ export function showImportToast(options: ImportToastOptions) {
   undo.type = "button";
   undo.className = "secondary";
   undo.textContent = "Undo";
-  actions.append(review, undo);
+  // Swapped links only make gifts count, so there's nothing to undo.
+  actions.append(review);
+  if (options.count > 0) actions.append(undo);
 
   toast.append(row, actions);
   shadow.append(style, toast);

@@ -7,6 +7,7 @@ import {
   type AddProductResponse,
   type AddResponse,
   type ExtensionRegistry,
+  type LinkResponse,
   type ProductItem,
   type StoreItem,
 } from "@/lib/extension";
@@ -17,6 +18,7 @@ import {
   ask,
   type CheckResult,
   type ContentRequest,
+  type MenuClick,
   type Mode,
   type PopupState,
   type ReadResult,
@@ -233,6 +235,7 @@ async function showImport(ctx: ImportContext) {
   const checked = await ask<CheckResult>({ type: "check", registryId, store: store.id, items });
   if (!checked.ok) return handleFailure(checked, user, ctx.reload);
   const existing = new Set(checked.data.existing);
+  const linkedNote = linkedItemsNote(store, checked.data.linked.length);
   const fresh = items.filter((i) => !existing.has(storeItemKey(i.url)!));
   const already = items.filter((i) => existing.has(storeItemKey(i.url)!));
   const listed = items.map((i) => storeItemKey(i.url)!).filter(Boolean);
@@ -342,6 +345,7 @@ async function showImport(ctx: ImportContext) {
         storeRow(store, summary),
         registries.length > 1 && registrySelect(registries, registryId, "Add to", onRegistryChange),
         h("p", { className: "lead" }, `Everything on your ${store.name} registry is already on ${registryTitle()}.`),
+        linkedNote,
         h(
           "div",
           { className: "footer-actions" },
@@ -362,6 +366,7 @@ async function showImport(ctx: ImportContext) {
       "main",
       { className: "body" },
       storeRow(store, summary),
+      linkedNote,
       !store.registryPage?.verified &&
         h("p", { className: "note" }, `Reading ${store.name} registries is new. Check the items look right before you add them.`),
       registrySelect(registries, registryId, "Add to", onRegistryChange),
@@ -373,6 +378,23 @@ async function showImport(ctx: ImportContext) {
         button,
         h("p", { className: "footnote" }, `We save each item's registry link, so gifts still count toward your ${store.name} registry.`)
       )
+    )
+  );
+}
+
+/** Says how many items already on Regibee just got their registry link in place of a plain one. */
+function linkedItemsNote(store: StoreInfo, count: number) {
+  if (count === 0) return null;
+  return h(
+    "p",
+    { className: "ok-note", role: "status" },
+    icon(CHECK, 14),
+    h(
+      "span",
+      {},
+      count === 1
+        ? `1 item already on Regibee now has its ${store.name} registry link.`
+        : `${count} items already on Regibee now have their ${store.name} registry links.`
     )
   );
 }
@@ -415,14 +437,29 @@ function showAdded(user: { name: string }, store: StoreInfo, registryId: string,
 
 function showHome(state: PopupState, user: { name: string }, data: RegistriesResult, page: ProductPage | null = null) {
   const registryId = data.registryId!;
+  const registry = data.registries.find((r) => r.id === registryId);
   const storeItems = EXTENSION_STORES.map((store) => {
     const last = state.lastChecked[store.id as StoreId];
     const status = last ? `Checked ${ago(last.at)} · ${plural(last.count, "item")}` : "Not checked yet";
+    // Items added from a product page with a plain link. Opening the store's
+    // registry swaps in their registry links.
+    const plainCount = registry?.plainLinks?.[store.id] ?? 0;
     return h(
       "li",
       {},
       h("span", { className: "initial", "aria-hidden": "true" }, initialOf(store.name)),
-      h("span", { className: "stack" }, h("span", { className: "name", style: "font-weight: 600" }, store.name), h("span", { className: "muted" }, status)),
+      h(
+        "span",
+        { className: "stack" },
+        h("span", { className: "name", style: "font-weight: 600" }, store.name),
+        h("span", { className: "muted" }, status),
+        plainCount > 0 &&
+          h(
+            "span",
+            { className: "warn" },
+            plainCount === 1 ? "1 item has a plain link. Open to fix it." : `${plainCount} items have plain links. Open to fix them.`
+          )
+      ),
       h(
         "a",
         {
@@ -473,15 +510,22 @@ function showHome(state: PopupState, user: { name: string }, data: RegistriesRes
                 product: page,
                 registries: data.registries,
                 registryId,
-                storesWithRegistries: storesWithRegistries(state, data.registries.find((r) => r.id === registryId)),
+                storesWithRegistries: storesWithRegistries(state, registry),
               }),
           },
           "Add this page to Regibee"
         ),
-      h("p", { className: "lead" }, "Open one of your store registries and we'll find items to add to Regibee. On a product page, click the Regibee button to add that item."),
+      h(
+        "p",
+        { className: "lead" },
+        "Open one of your store registries and we'll find items to add to Regibee. On a product page, click the Regibee button, or right-click and choose Add to Regibee."
+      ),
       h("ul", { className: "stores" }, ...storeItems),
       data.registries.length > 1 &&
-        registrySelect(data.registries, registryId, "New items go to", (id) => void ask({ type: "set-registry", registryId: id })),
+        registrySelect(data.registries, registryId, "New items go to", async (id) => {
+          await ask({ type: "set-registry", registryId: id });
+          showHome(state, user, { ...data, registryId: id }, page);
+        }),
       h("fieldset", {}, h("legend", {}, "When new items show up"), modeRadio("ask", "Ask me first"), modeRadio("auto", "Add them automatically")),
       h(
         "div",
@@ -521,6 +565,8 @@ interface ProductContext {
   registryId: string;
   /** Stores the owner has a registry at: linked in Settings or read by the extension. */
   storesWithRegistries: Set<StoreId>;
+  /** The picture the owner right-clicked to open the form, shown first. */
+  preferredImage?: string | null;
 }
 
 const PREV = '<path d="m15 18-6-6 6-6"/>';
@@ -536,27 +582,39 @@ function showProduct(ctx: ProductContext) {
   let quantity = 1;
   const registry = () => registries.find((r) => r.id === registryId)!;
   const link = classifyStoreLink(product.url);
+  // A store registry this owner has, where the extension can read the
+  // registry page and swap in the registry link later.
+  const plainStore =
+    link?.kind === "plain" && ctx.storesWithRegistries.has(link.store.id) ? link.store : null;
+  const images = [...product.images];
+  if (ctx.preferredImage) {
+    const at = images.indexOf(ctx.preferredImage);
+    if (at !== 0) {
+      if (at > 0) images.splice(at, 1);
+      images.unshift(ctx.preferredImage);
+    }
+  }
 
   // ── Picture ──
   const picture = h("img", { className: "product-image", alt: "", referrerpolicy: "no-referrer" }) as HTMLImageElement;
   const counter = h("span", { className: "muted", "aria-live": "polite" });
   const showImage = () => {
-    if (product.images.length === 0) {
+    if (images.length === 0) {
       picture.removeAttribute("src");
       return;
     }
-    picture.src = product.images[imageIndex];
-    counter.textContent = `${imageIndex + 1} of ${product.images.length}`;
+    picture.src = images[imageIndex];
+    counter.textContent = `${imageIndex + 1} of ${images.length}`;
   };
   const step = (by: number) => () => {
-    imageIndex = (imageIndex + by + product.images.length) % product.images.length;
+    imageIndex = (imageIndex + by + images.length) % images.length;
     showImage();
   };
   const gallery = h(
     "div",
     { className: "gallery" },
-    product.images.length > 0 ? picture : h("span", { className: "product-image", "aria-hidden": "true" }),
-    product.images.length > 1 &&
+    images.length > 0 ? picture : h("span", { className: "product-image", "aria-hidden": "true" }),
+    images.length > 1 &&
       h(
         "div",
         { className: "gallery-controls" },
@@ -615,22 +673,37 @@ function showProduct(ctx: ProductContext) {
       icon(CHECK, 14),
       h("span", {}, `${link.store.name} registry link. Gifts bought through it count toward your ${link.store.name} registry.`)
     );
-  } else if (link?.kind === "plain" && ctx.storesWithRegistries.has(link.store.id)) {
+  } else if (plainStore) {
+    const name = plainStore.name;
     linkNote = h(
       "p",
       { className: "note" },
-      `This is a plain ${link.store.name} link, so gifts bought through it won't count toward your ${link.store.name} registry. Add it to your ${link.store.name} registry first, then open it from there and add it to Regibee.`
+      plainStore.registryPage
+        ? `This is a plain ${name} link, so gifts bought through it won't count toward your ${name} registry yet. Add it here, then add it to your ${name} registry on this page. The next time you open your ${name} registry, we'll swap in its registry link.`
+        : `This is a plain ${name} link, so gifts bought through it won't count toward your ${name} registry. Add it to your ${name} registry first, then open it from there and add it to Regibee.`
     );
   }
   const duplicateNote = h("p", { className: "note", hidden: true });
   const error = h("p", { className: "error", role: "alert", hidden: true });
   const button = h("button", { type: "button", className: "button primary" }, "Add to Regibee") as HTMLButtonElement;
 
+  // Already on Regibee with a plain link, and this page has the registry
+  // link: the button swaps it in instead of adding the item again.
+  let swapLink = false;
+
   const checkDuplicate = async () => {
     duplicateNote.hidden = true;
+    swapLink = false;
     button.disabled = false;
     button.textContent = "Add to Regibee";
-    const result = await ask<{ exists: boolean }>({ type: "check-url", registryId, url: product.url });
+    const result = await ask<{ exists: boolean; plain?: boolean }>({ type: "check-url", registryId, url: product.url });
+    if (result.ok && result.data.exists && result.data.plain && link?.kind === "registry") {
+      duplicateNote.textContent = `This item is already on ${registry().title} with a plain ${link.store.name} link. Use this registry link instead, so gifts bought through it count toward your ${link.store.name} registry.`;
+      duplicateNote.hidden = false;
+      swapLink = true;
+      button.textContent = "Use this registry link";
+      return;
+    }
     if (result.ok && result.data.exists) {
       duplicateNote.replaceChildren(
         `This item is already on ${registry().title}. `,
@@ -661,6 +734,27 @@ function showProduct(ctx: ProductContext) {
 
   button.addEventListener("click", async () => {
     error.hidden = true;
+    if (swapLink && link) {
+      button.disabled = true;
+      button.textContent = "Saving…";
+      const item: StoreItem = { url: product.url, title: title.value.trim() || product.title, price: null, imageUrl: null, quantity: 1 };
+      const result = await ask<LinkResponse>({ type: "link", registryId, items: [item] });
+      if (!result.ok) {
+        if (result.notConnected) return showConnect(true);
+        error.textContent = result.error;
+        error.hidden = false;
+        button.disabled = false;
+        button.textContent = "Use this registry link";
+        return;
+      }
+      if (result.data.linked.length === 0) {
+        // The link changed on Regibee since the check. Check again.
+        await checkDuplicate();
+        return;
+      }
+      showLinked(user, registryId, registry().title, link.store);
+      return;
+    }
     const name = title.value.replace(/\s+/g, " ").trim();
     if (!name) {
       error.textContent = "Give the item a name.";
@@ -680,7 +774,7 @@ function showProduct(ctx: ProductContext) {
       url: product.url,
       title: name,
       price: priceValue,
-      imageUrl: product.images[imageIndex] ?? null,
+      imageUrl: images[imageIndex] ?? null,
       quantity,
       categoryId: category.value || null,
       isEssential: essential.checked,
@@ -703,7 +797,7 @@ function showProduct(ctx: ProductContext) {
       await checkDuplicate();
       return;
     }
-    showProductAdded(user, registryId, registry().title, link?.kind === "registry" ? link.store.name : null);
+    showProductAdded(user, registryId, registry().title, link?.kind === "registry" ? link.store.name : null, plainStore);
   });
 
   const field = (id: string, label: string, control: Node, extra?: string) =>
@@ -753,7 +847,45 @@ function showProduct(ctx: ProductContext) {
   void checkDuplicate();
 }
 
-function showProductAdded(user: { name: string }, registryId: string, registryTitle: string, registryStore: string | null) {
+function showProductAdded(
+  user: { name: string },
+  registryId: string,
+  registryTitle: string,
+  registryStore: string | null,
+  /** Set when it went on with a plain link at a store where the owner has a registry. */
+  plainStore: StoreInfo | null = null
+) {
+  const review = () => openTab(`${REGIBEE_URL}/dashboard/registry/${registryId}`);
+  // Next, the owner adds it to their store registry on the same page. The
+  // extension swaps in the registry link when they next open that registry.
+  if (plainStore?.registryPage) {
+    render(
+      header(user),
+      h(
+        "main",
+        { className: "body" },
+        h(
+          "div",
+          { className: "done", role: "status" },
+          icon(CIRCLE_CHECK, 36),
+          h("h1", {}, "Added to Regibee"),
+          h("p", { className: "lead" }, `It's on ${registryTitle}. Now add it to your ${plainStore.name} registry on this page.`),
+          h(
+            "p",
+            { className: "muted" },
+            `The next time you open your ${plainStore.name} registry, we'll swap in its registry link, so gifts bought through Regibee count toward your ${plainStore.name} registry.`
+          )
+        ),
+        h(
+          "div",
+          { className: "footer-actions" },
+          h("button", { type: "button", className: "button primary", onclick: () => window.close() }, "Done"),
+          h("button", { type: "button", className: "button secondary", onclick: review }, "Review on Regibee")
+        )
+      )
+    );
+    return;
+  }
   render(
     header(user),
     h(
@@ -770,6 +902,33 @@ function showProductAdded(user: { name: string }, registryId: string, registryTi
           registryStore
             ? `It's on ${registryTitle}, with its ${registryStore} registry link.`
             : `It's on ${registryTitle}.`
+        )
+      ),
+      h(
+        "div",
+        { className: "footer-actions" },
+        h("button", { type: "button", className: "button primary", onclick: review }, "Review on Regibee")
+      )
+    )
+  );
+}
+
+/** The item was already on Regibee with a plain link, and now has its registry link. */
+function showLinked(user: { name: string }, registryId: string, registryTitle: string, store: StoreInfo) {
+  render(
+    header(user),
+    h(
+      "main",
+      { className: "body" },
+      h(
+        "div",
+        { className: "done", role: "status" },
+        icon(CIRCLE_CHECK, 36),
+        h("h1", {}, "Registry link saved"),
+        h(
+          "p",
+          { className: "lead" },
+          `The item on ${registryTitle} now has its ${store.name} registry link, so gifts bought through it count toward your ${store.name} registry.`
         )
       ),
       h(
@@ -840,7 +999,13 @@ async function start() {
   if (!state.connected) return showConnect();
 
   const tab = await targetTab();
-  const [registriesResult, read] = await Promise.all([ask<RegistriesResult>({ type: "registries" }), readTab(tab)]);
+  const [registriesResult, read, menu] = await Promise.all([
+    ask<RegistriesResult>({ type: "registries" }),
+    readTab(tab),
+    ask<MenuClick | null>({ type: "menu-click" }),
+  ]);
+  // Opened from the right-click menu on this tab.
+  const menuClick = menu.ok && menu.data && menu.data.tabId === tab?.id ? menu.data : null;
   if (!registriesResult.ok) return handleFailure(registriesResult, state.user, start);
   const data = registriesResult.data;
   const user = data.user;
@@ -861,13 +1026,16 @@ async function start() {
   }
 
   const page = await readProduct(tab);
-  if (page?.isProduct) {
+  // From the right-click menu the owner asked to add this page, so show the
+  // form even when nothing on it says it's a product.
+  if (page && (page.isProduct || menuClick)) {
     return showProduct({
       user,
       product: page,
       registries: data.registries,
       registryId: data.registryId,
       storesWithRegistries: storesWithRegistries(state, data.registries.find((r) => r.id === data.registryId)),
+      preferredImage: menuClick?.imageUrl,
     });
   }
   showHome(state, user, data, page);

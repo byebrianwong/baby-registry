@@ -36,9 +36,15 @@ export function buildManifest(siteUrl: string) {
     action: { default_popup: "popup.html", default_title: "Regibee", default_icon: icons },
     background: { service_worker: "background.js", type: "module" },
     // activeTab and scripting let the popup read the product on the page
-    // you're on, only when you click the toolbar button. Neither adds an
-    // install warning, and neither lets it see other pages.
-    permissions: ["storage", "activeTab", "scripting"],
+    // you're on, only when you click the toolbar button, the "Add to
+    // Regibee" menu item or the shortcut. contextMenus adds that menu item.
+    // None of them adds an install warning or lets it see other pages.
+    permissions: ["storage", "activeTab", "scripting", "contextMenus"],
+    // Opens the popup, like clicking the toolbar button. Owners can change
+    // it at chrome://extensions/shortcuts.
+    commands: {
+      _execute_action: { suggested_key: { default: "Alt+Shift+R" } },
+    },
     // Only the stores' sites and Regibee. Nothing else.
     host_permissions: [...stores, ...sites.map((origin) => `${origin}/*`)],
     content_scripts: [

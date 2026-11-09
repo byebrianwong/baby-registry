@@ -33,6 +33,12 @@ export interface ExtensionRegistry {
   storeRegistries: RetailerRegistry[];
   /** In the registry's own order. */
   categories: { id: string; name: string }[];
+  /**
+   * How many items have a plain link at each store where the owner has a
+   * registry. Opening that store's registry swaps in the registry links.
+   * Missing from older servers.
+   */
+  plainLinks?: Partial<Record<StoreId, number>>;
 }
 
 export interface MeResponse {
@@ -48,6 +54,48 @@ export interface CheckRequest {
 export interface CheckResponse {
   /** itemMatchKey values that are already on the registry. */
   existing: string[];
+  /**
+   * The ones among `existing` that are on the registry with a plain store
+   * link, so a registry link can replace it. Missing from older servers.
+   */
+  plain?: string[];
+}
+
+export interface LinkRequest {
+  registryId: string;
+  /** Items read from a store registry page, each with its registry link. */
+  items: StoreItem[];
+}
+
+export interface LinkResponse {
+  /** Items on the registry whose plain store link now is a registry link. */
+  linked: { id: string; title: string; key: string }[];
+}
+
+/**
+ * Which items on a registry get a registry link in place of their plain one:
+ * a plain product link at the same store, for the same product. A registry
+ * link that's already there, even one from another store registry, stays.
+ */
+export function planLinkSwaps(
+  existing: { id: string; title: string; external_url: string | null }[],
+  incoming: { url: string }[]
+): { id: string; title: string; key: string; from: string; to: string }[] {
+  const registryLinks = new Map<string, string>();
+  for (const item of incoming) {
+    const key = storeItemKey(item.url);
+    if (key && classifyStoreLink(item.url)?.kind === "registry" && !registryLinks.has(key)) {
+      registryLinks.set(key, item.url);
+    }
+  }
+  const swaps: { id: string; title: string; key: string; from: string; to: string }[] = [];
+  for (const row of existing) {
+    if (!row.external_url || classifyStoreLink(row.external_url)?.kind !== "plain") continue;
+    const key = storeItemKey(row.external_url);
+    const to = key ? registryLinks.get(key) : undefined;
+    if (key && to) swaps.push({ id: row.id, title: row.title, key, from: row.external_url, to });
+  }
+  return swaps;
 }
 
 /** An item added from a product page, with the add-item dialog's fields. */

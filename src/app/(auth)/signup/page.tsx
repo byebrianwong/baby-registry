@@ -103,7 +103,7 @@ function SignupForm() {
             <Input
               label="Full Name"
               type="text"
-              placeholder="Jane & John Doe"
+              placeholder="Remi & Max Porter"
               value={fullName}
               onChange={(val) => setFullName(val)}
               isRequired

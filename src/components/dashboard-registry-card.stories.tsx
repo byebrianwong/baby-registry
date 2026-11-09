@@ -5,7 +5,7 @@ import { DashboardRegistryCard, type DashboardRegistryCardProps } from "./dashbo
 const TODAY = "2026-11-07";
 
 const base: DashboardRegistryCardProps = {
-  title: "Sarah & Mike's Baby Registry",
+  title: "Remi & Max's Baby Registry",
   registryType: "baby",
   eventType: null,
   eventDate: "2027-03-14",
@@ -14,8 +14,8 @@ const base: DashboardRegistryCardProps = {
   fulfilledItems: 9,
   totalValue: 3784,
   recentActivity: [
-    { id: "1", name: "Aunt Linda", action: "reserved an item" },
-    { id: "2", name: "Grandma Rose", action: "reserved an item" },
+    { id: "1", name: "Auntie Glinda", action: "reserved an item" },
+    { id: "2", name: "Grandma Dorothy", action: "reserved an item" },
   ],
   manageHref: "/dashboard/registry/demo",
   publicHref: "/r/demo",
@@ -73,7 +73,7 @@ export const WeddingAllDone: Story = {
     totalItems: 18,
     fulfilledItems: 18,
     totalValue: 2150,
-    recentActivity: [{ id: "1", name: "Priya T.", action: "reserved an item" }],
+    recentActivity: [{ id: "1", name: "Cousin Toto", action: "reserved an item" }],
   },
 };
 

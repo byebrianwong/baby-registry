@@ -31,7 +31,7 @@ export const AllStates: Story = {
         <div key={state} className="flex flex-col items-center gap-2">
           <span className="text-xs font-mono text-tertiary">{state}</span>
           <FollowButton
-            username="jane-doe"
+            username="remi-and-max"
             state={state}
             requestAction={mockAction}
             cancelAction={mockAction}

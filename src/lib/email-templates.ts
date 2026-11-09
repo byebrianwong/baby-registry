@@ -3,22 +3,26 @@
  * Used by email.ts for sending and by Storybook for visual preview.
  */
 
+// Every value that goes into an email is escaped: guests type names, messages
+// and suggestions on a public page, and owners and managers set titles, names,
+// addresses and links. Without this, anyone with a registry link could put
+// their own links or images into an email sent from Regibee. Links are escaped
+// too, because they go inside an href="" attribute.
+function escapeHtml(value: string): string {
+  return value.replace(/[&<>"']/g, (c) =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!,
+  );
+}
+
 function formatPaymentBlock(paymentMethods?: { venmo?: string; paypal?: string; zelle?: string }): string {
   if (!paymentMethods || (!paymentMethods.venmo && !paymentMethods.paypal && !paymentMethods.zelle)) {
     return "";
   }
   const lines = [];
-  if (paymentMethods.venmo) lines.push(`Venmo: ${paymentMethods.venmo}`);
-  if (paymentMethods.paypal) lines.push(`PayPal: ${paymentMethods.paypal}`);
-  if (paymentMethods.zelle) lines.push(`Zelle: ${paymentMethods.zelle}`);
+  if (paymentMethods.venmo) lines.push(`Venmo: ${escapeHtml(paymentMethods.venmo)}`);
+  if (paymentMethods.paypal) lines.push(`PayPal: ${escapeHtml(paymentMethods.paypal)}`);
+  if (paymentMethods.zelle) lines.push(`Zelle: ${escapeHtml(paymentMethods.zelle)}`);
   return `<p style="color:#999;font-size:13px;">If not sent yet, send payment via:<br/>${lines.join("<br/>")}</p>`;
-}
-
-// Names typed by other people are escaped before going into an email.
-function escapeHtml(value: string): string {
-  return value.replace(/[&<>"']/g, (c) =>
-    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!,
-  );
 }
 
 function formatUSD(amount: number): string {
@@ -42,17 +46,17 @@ export function itemReservedBuyerHtml(opts: {
 }): string {
   const qtyText = opts.quantity > 1 ? ` (×${opts.quantity})` : "";
   const addressBlock = opts.shippingAddress
-    ? `<p><strong>Shipping address:</strong><br/>${opts.shippingAddress.replace(/\n/g, "<br/>")}</p>`
+    ? `<p><strong>Shipping address:</strong><br/>${escapeHtml(opts.shippingAddress).replace(/\n/g, "<br/>")}</p>`
     : "";
   const linksBlock = [
-    opts.registryUrl ? `<a href="${opts.registryUrl}" style="color:#004659;">View Registry</a>` : "",
-    opts.shopUrl ? `<a href="${opts.shopUrl}" style="color:#004659;">Shop This Item</a>` : "",
+    opts.registryUrl ? `<a href="${escapeHtml(opts.registryUrl)}" style="color:#004659;">View Registry</a>` : "",
+    opts.shopUrl ? `<a href="${escapeHtml(opts.shopUrl)}" style="color:#004659;">Shop This Item</a>` : "",
   ].filter(Boolean).join(" &nbsp;|&nbsp; ");
 
   return `
-    <p>Hi ${opts.buyerName},</p>
-    <p>Thanks for reserving <strong>${opts.itemTitle}</strong>${qtyText} on <em>${opts.registryTitle}</em>!</p>
-    <p>${opts.parentName} will really appreciate it.</p>
+    <p>Hi ${escapeHtml(opts.buyerName)},</p>
+    <p>Thanks for reserving <strong>${escapeHtml(opts.itemTitle)}</strong>${qtyText} on <em>${escapeHtml(opts.registryTitle)}</em>!</p>
+    <p>${escapeHtml(opts.parentName)} will really appreciate it.</p>
     ${addressBlock}
     ${linksBlock ? `<p style="margin: 16px 0;">${linksBlock}</p>` : ""}
     <p style="color:#888;font-size:13px;">You're receiving this because you reserved a gift on a Regibee registry.</p>
@@ -70,14 +74,14 @@ export function itemCoveredBuyerHtml(opts: {
 }): string {
   const paymentBlock = formatPaymentBlock(opts.paymentMethods);
   const linksBlock = [
-    opts.registryUrl ? `<a href="${opts.registryUrl}" style="color:#004659;">View Registry</a>` : "",
-    opts.shopUrl ? `<a href="${opts.shopUrl}" style="color:#004659;">Shop This Item</a>` : "",
+    opts.registryUrl ? `<a href="${escapeHtml(opts.registryUrl)}" style="color:#004659;">View Registry</a>` : "",
+    opts.shopUrl ? `<a href="${escapeHtml(opts.shopUrl)}" style="color:#004659;">Shop This Item</a>` : "",
   ].filter(Boolean).join(" &nbsp;|&nbsp; ");
 
   return `
-    <p>Hi ${opts.buyerName},</p>
-    <p>Thanks for gifting <strong>${opts.itemTitle}</strong> on <em>${opts.registryTitle}</em>!</p>
-    <p>${opts.parentName} will really appreciate it.</p>
+    <p>Hi ${escapeHtml(opts.buyerName)},</p>
+    <p>Thanks for gifting <strong>${escapeHtml(opts.itemTitle)}</strong> on <em>${escapeHtml(opts.registryTitle)}</em>!</p>
+    <p>${escapeHtml(opts.parentName)} will really appreciate it.</p>
     ${paymentBlock}
     ${linksBlock ? `<p style="margin: 16px 0;">${linksBlock}</p>` : ""}
     <p style="color:#888;font-size:13px;">You're receiving this because you covered a gift on a Regibee registry.</p>
@@ -96,13 +100,13 @@ export function cashFundContributionBuyerHtml(opts: {
   const formatted = formatUSD(opts.amount);
   const paymentBlock = formatPaymentBlock(opts.paymentMethods);
   const linkBlock = opts.registryUrl
-    ? `<p style="margin: 16px 0;"><a href="${opts.registryUrl}" style="color:#004659;">View Registry</a></p>`
+    ? `<p style="margin: 16px 0;"><a href="${escapeHtml(opts.registryUrl)}" style="color:#004659;">View Registry</a></p>`
     : "";
 
   return `
-    <p>Hi ${opts.buyerName},</p>
-    <p>Thanks for contributing <strong>${formatted}</strong> to <strong>${opts.fundTitle}</strong> on <em>${opts.registryTitle}</em>!</p>
-    <p>${opts.parentName} will really appreciate it.</p>
+    <p>Hi ${escapeHtml(opts.buyerName)},</p>
+    <p>Thanks for contributing <strong>${formatted}</strong> to <strong>${escapeHtml(opts.fundTitle)}</strong> on <em>${escapeHtml(opts.registryTitle)}</em>!</p>
+    <p>${escapeHtml(opts.parentName)} will really appreciate it.</p>
     ${paymentBlock}
     ${linkBlock}
     <p style="color:#888;font-size:13px;">You're receiving this because you contributed to a cash fund on a Regibee registry.</p>
@@ -124,15 +128,15 @@ export function itemReservedOwnerHtml(opts: {
 }): string {
   const qtyText = opts.quantity > 1 ? ` (×${opts.quantity})` : "";
   const welcomeBlock = opts.welcomeBox
-    ? `<p style="background:#EAFBF5;border:1px solid #A0E4D4;border-radius:12px;padding:12px 14px;color:#074D31;">This is the first gift from your ${escapeHtml(opts.welcomeBox.storeName)} registry, so you may be able to request your ${escapeHtml(opts.welcomeBox.storeName)} ${escapeHtml(opts.welcomeBox.boxName)} now. <a href="${opts.welcomeBox.perksLink}" style="color:#004659;">See your store perks</a></p>`
+    ? `<p style="background:#EAFBF5;border:1px solid #A0E4D4;border-radius:12px;padding:12px 14px;color:#074D31;">This is the first gift from your ${escapeHtml(opts.welcomeBox.storeName)} registry, so you may be able to request your ${escapeHtml(opts.welcomeBox.storeName)} ${escapeHtml(opts.welcomeBox.boxName)} now. <a href="${escapeHtml(opts.welcomeBox.perksLink)}" style="color:#004659;">See your store perks</a></p>`
     : "";
 
   return `
-    <p>Hi ${opts.ownerName},</p>
-    <p><strong>${opts.buyerName}</strong> just reserved <strong>${opts.itemTitle}</strong>${qtyText} on your registry <em>${opts.registryTitle}</em>.</p>
-    ${opts.message ? `<p>Their message: "${opts.message}"</p>` : ""}
+    <p>Hi ${escapeHtml(opts.ownerName)},</p>
+    <p><strong>${escapeHtml(opts.buyerName)}</strong> just reserved <strong>${escapeHtml(opts.itemTitle)}</strong>${qtyText} on your registry <em>${escapeHtml(opts.registryTitle)}</em>.</p>
+    ${opts.message ? `<p>Their message: "${escapeHtml(opts.message)}"</p>` : ""}
     ${welcomeBlock}
-    <p style="margin: 16px 0;"><a href="${opts.dashboardLink}" style="color:#004659;">View on Dashboard</a></p>
+    <p style="margin: 16px 0;"><a href="${escapeHtml(opts.dashboardLink)}" style="color:#004659;">View on Dashboard</a></p>
     <p style="color:#888;font-size:13px;">You're receiving this because someone interacted with your registry.</p>
   `;
 }
@@ -146,10 +150,10 @@ export function itemCoveredOwnerHtml(opts: {
   dashboardLink: string;
 }): string {
   return `
-    <p>Hi ${opts.ownerName},</p>
-    <p><strong>${opts.buyerName}</strong> offered to cover the cost of <strong>${opts.itemTitle}</strong> on your registry <em>${opts.registryTitle}</em>.</p>
-    ${opts.message ? `<p>Their message: "${opts.message}"</p>` : ""}
-    <p style="margin: 16px 0;"><a href="${opts.dashboardLink}" style="color:#004659;">View on Dashboard</a></p>
+    <p>Hi ${escapeHtml(opts.ownerName)},</p>
+    <p><strong>${escapeHtml(opts.buyerName)}</strong> offered to cover the cost of <strong>${escapeHtml(opts.itemTitle)}</strong> on your registry <em>${escapeHtml(opts.registryTitle)}</em>.</p>
+    ${opts.message ? `<p>Their message: "${escapeHtml(opts.message)}"</p>` : ""}
+    <p style="margin: 16px 0;"><a href="${escapeHtml(opts.dashboardLink)}" style="color:#004659;">View on Dashboard</a></p>
     <p style="color:#888;font-size:13px;">You're receiving this because someone interacted with your registry.</p>
   `;
 }
@@ -166,10 +170,10 @@ export function cashFundContributionOwnerHtml(opts: {
   const formatted = formatUSD(opts.amount);
 
   return `
-    <p>Hi ${opts.ownerName},</p>
-    <p><strong>${opts.buyerName}</strong> contributed <strong>${formatted}</strong> to your cash fund <strong>${opts.fundTitle}</strong> on <em>${opts.registryTitle}</em>.</p>
-    ${opts.message ? `<p>Their message: "${opts.message}"</p>` : ""}
-    <p style="margin: 16px 0;"><a href="${opts.dashboardLink}" style="color:#004659;">View on Dashboard</a></p>
+    <p>Hi ${escapeHtml(opts.ownerName)},</p>
+    <p><strong>${escapeHtml(opts.buyerName)}</strong> contributed <strong>${formatted}</strong> to your cash fund <strong>${escapeHtml(opts.fundTitle)}</strong> on <em>${escapeHtml(opts.registryTitle)}</em>.</p>
+    ${opts.message ? `<p>Their message: "${escapeHtml(opts.message)}"</p>` : ""}
+    <p style="margin: 16px 0;"><a href="${escapeHtml(opts.dashboardLink)}" style="color:#004659;">View on Dashboard</a></p>
     <p style="color:#888;font-size:13px;">You're receiving this because someone interacted with your registry.</p>
   `;
 }
@@ -185,9 +189,9 @@ export function newSuggestionOwnerHtml(opts: {
   const priceText = opts.price ? ` (${formatUSD(opts.price)})` : "";
 
   return `
-    <p>Hi ${opts.ownerName},</p>
-    <p><strong>${opts.suggestedByName}</strong> suggested adding <strong>${opts.title}</strong>${priceText} to your registry <em>${opts.registryTitle}</em>.</p>
-    ${opts.notes ? `<p>Their note: "${opts.notes}"</p>` : ""}
+    <p>Hi ${escapeHtml(opts.ownerName)},</p>
+    <p><strong>${escapeHtml(opts.suggestedByName)}</strong> suggested adding <strong>${escapeHtml(opts.title)}</strong>${priceText} to your registry <em>${escapeHtml(opts.registryTitle)}</em>.</p>
+    ${opts.notes ? `<p>Their note: "${escapeHtml(opts.notes)}"</p>` : ""}
     <p>Head to your dashboard to accept or decline this suggestion.</p>
     <p style="color:#888;font-size:13px;">You're receiving this because someone interacted with your registry.</p>
   `;
@@ -212,7 +216,7 @@ export function completionDiscountOwnerHtml(opts: {
     <p>Your due date is coming up, so ${one ? "this store's completion discount" : "these stores' completion discounts"} may be open now. ${one ? "It's" : "Each is"} a discount on what's still left on your store registry.</p>
     <ul style="padding-left:20px;">${items}</ul>
     <p>Rules differ by store, so check ${one ? "the store's" : "each store's"} terms before you buy.</p>
-    <p style="margin: 16px 0;"><a href="${opts.perksLink}" style="color:#004659;">See your store perks</a></p>
+    <p style="margin: 16px 0;"><a href="${escapeHtml(opts.perksLink)}" style="color:#004659;">See your store perks</a></p>
     <p style="color:#888;font-size:13px;">You're receiving this because you linked store registries to <em>${escapeHtml(opts.registryTitle)}</em>. You can turn off these emails on its Store perks tab.</p>
   `;
 }
@@ -226,14 +230,14 @@ export function managerInviteHtml(opts: {
 }): string {
   return `
     <p>Hi there,</p>
-    <p><strong>${opts.inviterName}</strong> invited you to help manage the registry <strong>${opts.registryTitle}</strong>.</p>
+    <p><strong>${escapeHtml(opts.inviterName)}</strong> invited you to help manage the registry <strong>${escapeHtml(opts.registryTitle)}</strong>.</p>
     <p>As a manager, you'll be able to add and edit items, view gift activity, and help organize the registry.</p>
     <p style="margin: 24px 0;">
-      <a href="${opts.inviteUrl}" style="background-color: #004659; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
+      <a href="${escapeHtml(opts.inviteUrl)}" style="background-color: #004659; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
         Accept Invitation
       </a>
     </p>
-    <p style="color:#888;font-size:13px;">Or copy this link: ${opts.inviteUrl}</p>
+    <p style="color:#888;font-size:13px;">Or copy this link: ${escapeHtml(opts.inviteUrl)}</p>
     <p style="color:#888;font-size:13px;">This invite expires in 7 days.</p>
   `;
 }
@@ -254,12 +258,12 @@ export function followRequestHtml(opts: {
     <p><strong>${name}</strong> (@${username}) asked to follow you on Regibee.</p>
     <p>If you approve, they'll see the private registries on your profile as well as your public ones. If you don't know them, you can decline the request or block them.</p>
     <p style="margin: 24px 0;">
-      <a href="${opts.reviewUrl}" style="background-color: #004659; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
+      <a href="${escapeHtml(opts.reviewUrl)}" style="background-color: #004659; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
         Review request
       </a>
     </p>
     <p style="color:#888;font-size:13px;">See their profile: ${escapeHtml(opts.profileUrl)}</p>
-    <p style="color:#888;font-size:13px;">You're getting this because someone asked to follow you on Regibee. To stop these emails, turn them off on your account page: ${opts.settingsUrl}</p>
+    <p style="color:#888;font-size:13px;">You're getting this because someone asked to follow you on Regibee. To stop these emails, turn them off on your account page: ${escapeHtml(opts.settingsUrl)}</p>
   `;
 }
 

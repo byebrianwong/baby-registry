@@ -165,14 +165,14 @@ export function ReserveItemDialog({ item, parentName = "The Registry Owner", act
           <Input
             label="Your Name"
             name="buyerName"
-            placeholder="Jane Doe"
+            placeholder="Alex Kim"
             isRequired
           />
           <Input
             label="Your Email"
             name="buyerEmail"
             type="email"
-            placeholder="jane@example.com"
+            placeholder="alex@example.com"
             icon={Mail01}
             isRequired
           />
