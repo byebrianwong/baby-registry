@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import DemoPage from "./page";
-import { DemoTodayProvider } from "./demo-today";
+import { withDemoToday } from "./story-today";
 
 const meta: Meta<typeof DemoPage> = {
   title: "Pages/Public Registry (Gift Giver View)",
@@ -11,15 +11,7 @@ const meta: Meta<typeof DemoPage> = {
       appDirectory: true,
     },
   },
-  // The demo's dates count from today. Fix the day so the snapshot doesn't
-  // change every day.
-  decorators: [
-    (Story) => (
-      <DemoTodayProvider today="2026-04-06">
-        <Story />
-      </DemoTodayProvider>
-    ),
-  ],
+  decorators: [withDemoToday],
 };
 export default meta;
 type Story = StoryObj<typeof DemoPage>;
