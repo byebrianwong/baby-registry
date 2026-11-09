@@ -16,11 +16,15 @@
 -- cover_parent_item and reserve_cash_fund don't take a user id. Guests are
 -- meant to call them, so they stay as they are.
 --
--- cancel_reservation also accepts gifts with status 'purchased', the same as
--- 015_gift_reservations.sql. No gift has that status before that file runs, so
--- this changes nothing until then. Running this file before or after 015 gives
--- the same result, as long as 015's own copy of cancel_reservation also checks
--- auth.uid().
+-- Run this after 015_gift_reservations.sql. 015 also replaces
+-- cancel_reservation, still with the p_owner_id check, so running 015 after
+-- this file would undo the fix. If 015 runs again later, run this file again
+-- after it.
+--
+-- cancel_reservation accepts gifts with status 'purchased' as well as
+-- 'reserved', the same as 015, so this file keeps 015's change. Run on its own,
+-- without 015, it works too: no gift has status 'purchased' until 015's code
+-- confirms one.
 --
 -- Safe to run before or after deploying the app code: the deployed code calls
 -- cancel_reservation with the signed-in user's session and passes their own id
