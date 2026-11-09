@@ -105,7 +105,7 @@ function Stepper({ current }: { current: 0 | 1 | 2 }) {
           aria-current={i === current ? "step" : undefined}
           className={`flex-1 border-t-[3px] pt-1.5 text-xs ${
             i < current
-              ? "border-mint-500 text-mint-700"
+              ? "border-mint-500 text-mint-800"
               : i === current
                 ? "border-brand-600 font-semibold text-brand-600"
                 : "border-secondary text-tertiary"
@@ -432,7 +432,8 @@ export function ReserveItemDialog({
       <div className="space-y-4">
         <Stepper current={1} />
         {until && (
-          <p className="flex items-center gap-2 rounded-lg border border-mint-200 bg-mint-50 px-3 py-2 text-sm font-medium text-mint-700">
+          // mint-800, not 700: 700 on mint-50 is under 4.5:1 contrast.
+          <p className="flex items-center gap-2 rounded-lg border border-mint-200 bg-mint-50 px-3 py-2 text-sm font-medium text-mint-800">
             <Check className="h-4 w-4 shrink-0" />
             <span>Reserved for you until {until}</span>
           </p>
