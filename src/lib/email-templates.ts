@@ -3,6 +3,8 @@
  * Used by email.ts for sending and by Storybook for visual preview.
  */
 
+import { formatPrice } from "@/lib/money";
+
 function formatPaymentBlock(paymentMethods?: { venmo?: string; paypal?: string; zelle?: string }): string {
   if (!paymentMethods || (!paymentMethods.venmo && !paymentMethods.paypal && !paymentMethods.zelle)) {
     return "";
@@ -19,13 +21,6 @@ function escapeHtml(value: string): string {
   return value.replace(/[&<>"']/g, (c) =>
     ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!,
   );
-}
-
-function formatUSD(amount: number): string {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-  }).format(amount);
 }
 
 // ── Buyer Confirmations ──────────────────────────────────────
@@ -93,7 +88,7 @@ export function cashFundContributionBuyerHtml(opts: {
   paymentMethods?: { venmo?: string; paypal?: string; zelle?: string };
   registryUrl?: string;
 }): string {
-  const formatted = formatUSD(opts.amount);
+  const formatted = formatPrice(opts.amount);
   const paymentBlock = formatPaymentBlock(opts.paymentMethods);
   const linkBlock = opts.registryUrl
     ? `<p style="margin: 16px 0;"><a href="${opts.registryUrl}" style="color:#004659;">View Registry</a></p>`
@@ -163,7 +158,7 @@ export function cashFundContributionOwnerHtml(opts: {
   message?: string | null;
   dashboardLink: string;
 }): string {
-  const formatted = formatUSD(opts.amount);
+  const formatted = formatPrice(opts.amount);
 
   return `
     <p>Hi ${opts.ownerName},</p>
@@ -182,7 +177,7 @@ export function newSuggestionOwnerHtml(opts: {
   price?: number | null;
   notes?: string | null;
 }): string {
-  const priceText = opts.price ? ` (${formatUSD(opts.price)})` : "";
+  const priceText = opts.price ? ` (${formatPrice(opts.price)})` : "";
 
   return `
     <p>Hi ${opts.ownerName},</p>

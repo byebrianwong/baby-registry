@@ -10,6 +10,7 @@ import type { Metadata } from "next";
 import { ScrollToTop } from "@/components/scroll-to-top";
 import { SuggestItemDialog } from "@/components/suggest-item-dialog";
 import { PublicRegistryGrid } from "@/components/public-registry-grid";
+import { RegistryAvatar } from "@/components/registry-avatar";
 import { copyForRegistry, honoreeDisplayName } from "@/lib/registry-copy";
 import { FollowButton } from "@/components/follow-button";
 import { getViewer, getViewerRelation } from "@/lib/viewer";
@@ -314,6 +315,10 @@ export default async function PublicRegistryPage({
         )}
         {/* Center content */}
         <div className="relative z-10 flex max-w-[575px] flex-col items-center gap-4 px-4 text-center">
+          <RegistryAvatar
+            photoUrl={registry.photo_url}
+            names={registry.honoree_names || registry.parent_names}
+          />
           <h1 className="text-4xl font-bold leading-[44px] tracking-tight text-primary">
             {registry.title}
           </h1>

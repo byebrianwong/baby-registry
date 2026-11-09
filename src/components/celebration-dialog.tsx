@@ -10,6 +10,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { PaymentMethodsDisplay } from "@/components/payment-methods-display";
+import { formatPrice } from "@/lib/money";
 import type { PaymentMethods } from "@/lib/types";
 
 interface CelebrationDialogProps {
@@ -36,7 +37,7 @@ function getMessage(
     case "cover":
       return `You're gifting "${itemTitle}"! ${parentName} will really appreciate it. ❤️`;
     case "contribute":
-      return `You contributed $${amount} to "${itemTitle}"! ${parentName} will really appreciate it. ❤️`;
+      return `You contributed ${formatPrice(amount ?? 0)} to "${itemTitle}"! ${parentName} will really appreciate it. ❤️`;
   }
 }
 

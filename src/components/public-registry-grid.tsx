@@ -18,6 +18,7 @@ import { ItemImage } from "@/components/item-image";
 import { getCategorySectionId } from "@/lib/category-section-id";
 import type { PaymentMethods } from "@/lib/types";
 import { classifyStoreLink, detectStore, registryStoreFor, STORES, type StoreId } from "@/lib/retailers";
+import { formatDollars, formatPrice } from "@/lib/money";
 
 interface RegistryItem {
   id: string;
@@ -289,15 +290,15 @@ export function PublicRegistryGrid({
                           <div className="flex flex-col gap-1">
                             <div className="flex justify-between text-sm">
                               <span>
-                                ${fund.current_amount.toFixed(0)} raised
+                                {formatDollars(fund.current_amount)} raised
                               </span>
                               <span>
-                                ${fund.goal_amount.toFixed(0)} goal
+                                {formatDollars(fund.goal_amount)} goal
                               </span>
                             </div>
                             <Progress value={fundProgress} aria-label={`Amount raised for ${fund.title}`} />
                             <span className="text-xs text-tertiary">
-                              ${Math.max(0, fund.goal_amount - fund.current_amount).toFixed(0)} remaining
+                              {formatDollars(Math.max(0, fund.goal_amount - fund.current_amount))} remaining
                             </span>
                           </div>
                         )}
@@ -459,7 +460,7 @@ function PublicItemCard({
               <div className="flex flex-wrap items-center gap-x-2.5">
                 {item.price && (
                   <span className="text-sm font-semibold">
-                    ${item.price.toFixed(2)}
+                    {formatPrice(item.price)}
                   </span>
                 )}
                 <span className="text-xs text-secondary">

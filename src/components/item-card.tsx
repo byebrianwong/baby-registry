@@ -11,6 +11,7 @@ import { toggleParentPurchased } from "@/lib/actions/registry";
 import { EditItemDialog } from "@/components/edit-item-dialog";
 import { GiftDetailModal, type Purchase } from "@/components/gift-detail-modal";
 import type { RetailerRegistry, StoreId } from "@/lib/retailers";
+import { formatPrice } from "@/lib/money";
 
 interface ItemCardProps {
   item: {
@@ -143,7 +144,7 @@ export function ItemCard({ item, registryId, isOwner, categories = [], zipCode, 
             <div className="flex items-center gap-2.5">
               {item.price && (
                 <span className="text-sm font-semibold">
-                  ${item.price.toFixed(2)}
+                  {formatPrice(item.price)}
                 </span>
               )}
               <span className="text-xs">

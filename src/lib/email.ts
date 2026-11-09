@@ -1,5 +1,6 @@
 import { Resend } from "resend";
 import { supabaseAdmin } from "./supabase-admin";
+import { formatPrice } from "./money";
 import {
   itemReservedBuyerHtml,
   itemCoveredBuyerHtml,
@@ -322,10 +323,7 @@ export async function notifyCashFundContribution(opts: {
 
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
     const dashboardLink = `${siteUrl}/dashboard/registry/${managers[0].registryId}?highlight=${opts.fundId}`;
-    const formatted = new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-    }).format(opts.amount);
+    const formatted = formatPrice(opts.amount);
 
     await Promise.all(
       managers.map((m) =>
