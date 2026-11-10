@@ -43,7 +43,7 @@ export default async function ManageEventPage({
     <div className="container mx-auto px-4 py-8">
       <Link
         href="/dashboard/events"
-        className="inline-flex items-center gap-1.5 text-sm font-medium text-tertiary hover:text-primary"
+        className="inline-flex items-center gap-1.5 text-sm font-medium text-tertiary hover:text-primary max-sm:min-h-11"
       >
         <ArrowLeft className="size-4" />
         Events

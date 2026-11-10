@@ -151,7 +151,7 @@ export function StorePerksCard({
                   href={row.registryUrl ?? `https://www.${row.domain}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex min-h-9 items-center gap-1.5 rounded-full bg-brand-solid px-3.5 text-sm font-semibold text-white hover:bg-brand-solid_hover"
+                  className="inline-flex min-h-9 items-center gap-1.5 rounded-full bg-brand-solid px-3.5 text-sm font-semibold text-white hover:bg-brand-solid_hover max-sm:min-h-11"
                 >
                   <ExternalLink className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
                   Request at {row.name}
@@ -160,7 +160,7 @@ export function StorePerksCard({
                   type="button"
                   disabled={saving}
                   onClick={() => setWelcomeBoxDone(row.storeId, true)}
-                  className="min-h-9 px-1 text-sm font-semibold text-success-800 hover:underline disabled:opacity-60"
+                  className="min-h-9 px-1 text-sm font-semibold text-success-800 hover:underline disabled:opacity-60 max-sm:min-h-11"
                 >
                   Done, hide this
                 </button>
@@ -190,14 +190,14 @@ export function StorePerksCard({
                       href={row.registryUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="shrink-0 px-1 py-2 text-sm font-semibold text-brand-secondary hover:underline"
+                      className="shrink-0 px-1 py-2 text-sm font-semibold text-brand-secondary hover:underline max-sm:py-3"
                     >
                       Open registry
                     </a>
                   ) : (
                     <Link
                       href={`${settingsHref}#store-registries`}
-                      className="shrink-0 px-1 py-2 text-sm font-semibold text-brand-secondary hover:underline"
+                      className="shrink-0 px-1 py-2 text-sm font-semibold text-brand-secondary hover:underline max-sm:py-3"
                     >
                       Link registry
                     </Link>
@@ -228,7 +228,7 @@ export function StorePerksCard({
                       type="button"
                       disabled={saving}
                       onClick={() => setWelcomeBoxDone(row.storeId, true)}
-                      className="min-h-8 text-xs font-semibold text-brand-secondary hover:underline disabled:opacity-60"
+                      className="min-h-8 text-xs font-semibold text-brand-secondary hover:underline disabled:opacity-60 max-sm:min-h-11 max-sm:px-2"
                     >
                       I requested it
                     </button>
@@ -238,7 +238,7 @@ export function StorePerksCard({
                       type="button"
                       disabled={saving}
                       onClick={() => setWelcomeBoxDone(row.storeId, false)}
-                      className="min-h-8 text-xs font-semibold text-tertiary hover:underline disabled:opacity-60"
+                      className="min-h-8 text-xs font-semibold text-tertiary hover:underline disabled:opacity-60 max-sm:min-h-11 max-sm:px-2"
                     >
                       Undo
                     </button>

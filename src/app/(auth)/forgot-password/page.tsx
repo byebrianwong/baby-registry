@@ -82,6 +82,8 @@ export default function ForgotPasswordPage() {
               label="Email"
               type="email"
               placeholder="you@example.com"
+              autoComplete="email"
+              enterKeyHint="send"
               value={email}
               onChange={(val) => setEmail(val)}
               isRequired

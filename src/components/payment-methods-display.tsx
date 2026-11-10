@@ -35,7 +35,7 @@ export function PaymentMethodsDisplay({
             <span className="font-medium text-tertiary w-14">
               Venmo
             </span>
-            <span>{paymentMethods.venmo}</span>
+            <span className="min-w-0 break-all">{paymentMethods.venmo}</span>
           </div>
         )}
         {paymentMethods.paypal && (
@@ -43,7 +43,7 @@ export function PaymentMethodsDisplay({
             <span className="font-medium text-tertiary w-14">
               PayPal
             </span>
-            <span>{paymentMethods.paypal}</span>
+            <span className="min-w-0 break-all">{paymentMethods.paypal}</span>
           </div>
         )}
         {paymentMethods.zelle && (
@@ -51,7 +51,7 @@ export function PaymentMethodsDisplay({
             <span className="font-medium text-tertiary w-14">
               Zelle
             </span>
-            <span>{paymentMethods.zelle}</span>
+            <span className="min-w-0 break-all">{paymentMethods.zelle}</span>
           </div>
         )}
       </div>

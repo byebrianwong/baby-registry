@@ -90,11 +90,11 @@ export function GiftDetailModal({ open, onOpenChange, itemTitle, purchases }: Gi
                     {tag.label}
                   </span>
                 </div>
-                <div className="flex items-center gap-4 text-xs text-secondary">
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-secondary">
                   {displayAmount != null && (
                     <span className="font-semibold text-sm">{formatPrice(Number(displayAmount))}</span>
                   )}
-                  {purchase.buyer_email && <span>{purchase.buyer_email}</span>}
+                  {purchase.buyer_email && <span className="break-all">{purchase.buyer_email}</span>}
                   <span>
                     {new Date(purchase.created_at).toLocaleDateString("en-US", {
                       month: "short",

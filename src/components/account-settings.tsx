@@ -161,6 +161,7 @@ export function AccountSettings({
               <Input
                 label="Name"
                 name="fullName"
+                autoComplete="name"
                 defaultValue={profile.full_name ?? ""}
                 hint="Shown on your profile, and to people you ask to follow"
                 isRequired

@@ -182,3 +182,10 @@ export const CoverStates: Story = {
     ],
   },
 };
+
+// What a guest sees after opening a texted link: a 16px search box, so iOS
+// doesn't zoom in, and 44px filters and buttons.
+export const Phone: Story = {
+  ...ItemsFromStores,
+  globals: { viewport: { value: "mobile1" } },
+};

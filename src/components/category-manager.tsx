@@ -72,6 +72,8 @@ export function CategoryManager({
               <Input
                 value={editName}
                 onChange={(val) => setEditName(val)}
+                aria-label="Category name"
+                enterKeyHint="done"
                 className="flex-1"
                 onKeyDown={(e) => {
                   if (e.key === "Enter") handleUpdate(cat.id);
@@ -84,6 +86,7 @@ export function CategoryManager({
                 size="icon"
                 onClick={() => handleUpdate(cat.id)}
                 disabled={loading}
+                aria-label="Save name"
               >
                 <Check className="h-4 w-4" />
               </Button>
@@ -91,6 +94,7 @@ export function CategoryManager({
                 variant="ghost"
                 size="icon"
                 onClick={() => setEditingId(null)}
+                aria-label="Cancel renaming"
               >
                 <X className="h-4 w-4" />
               </Button>
@@ -102,6 +106,7 @@ export function CategoryManager({
                 variant="ghost"
                 size="icon"
                 onClick={() => startEditing(cat.id, cat.name)}
+                aria-label={`Rename ${cat.name}`}
               >
                 <Pencil className="h-3 w-3" />
               </Button>
@@ -109,6 +114,7 @@ export function CategoryManager({
                 variant="ghost"
                 size="icon"
                 onClick={() => handleDelete(cat.id, cat.name)}
+                aria-label={`Delete ${cat.name}`}
                 className="text-error-primary hover:text-error-primary"
               >
                 <Trash2 className="h-3 w-3" />
@@ -123,6 +129,7 @@ export function CategoryManager({
           value={newName}
           onChange={(val) => setNewName(val)}
           placeholder="New category name"
+          enterKeyHint="done"
           className="flex-1"
           onKeyDown={(e) => {
             if (e.key === "Enter") handleCreate();
@@ -133,6 +140,7 @@ export function CategoryManager({
           size="icon"
           onClick={handleCreate}
           disabled={loading || !newName.trim()}
+          aria-label="Add category"
         >
           <Plus className="h-4 w-4" />
         </Button>

@@ -17,11 +17,12 @@ interface RegistryTabsProps {
   defaultTab?: string;
 }
 
+// Phones get shorter labels, so four tabs fit across a 375px screen.
 const tabs = [
-  { id: "items", label: "Items" },
-  { id: "purchases", label: "Gift Activity" },
-  { id: "suggestions", label: "Suggestions Inbox" },
-  { id: "perks", label: "Store perks" },
+  { id: "items", label: "Items", phoneLabel: "Items" },
+  { id: "purchases", label: "Gift Activity", phoneLabel: "Gifts" },
+  { id: "suggestions", label: "Suggestions Inbox", phoneLabel: "Suggestions" },
+  { id: "perks", label: "Store perks", phoneLabel: "Perks" },
 ] as const;
 
 export function RegistryTabs({
@@ -50,15 +51,20 @@ export function RegistryTabs({
       <TabList
         type="button-minimal"
         size="sm"
-        className="w-fit"
+        className="w-fit max-sm:w-full"
         items={shown.map((t) => ({
           id: t.id,
-          children: t.label,
+          children: (
+            <>
+              <span className="sm:hidden">{t.phoneLabel}</span>
+              <span className="max-sm:hidden">{t.label}</span>
+            </>
+          ),
           badge: counts[t.id],
         }))}
       >
         {(item) => (
-          <Tab key={item.id} id={item.id} badge={item.badge}>
+          <Tab key={item.id} id={item.id} badge={item.badge} className="max-sm:min-h-11 max-sm:flex-1 max-sm:px-2">
             {item.children}
           </Tab>
         )}

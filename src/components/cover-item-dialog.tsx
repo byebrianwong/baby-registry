@@ -11,6 +11,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -65,10 +66,11 @@ interface CoverItemDialogProps {
   demo?: boolean;
 }
 
+// Text buttons get a 44px tap target on phones.
 const textButton =
-  "text-sm font-medium text-brand-600 underline-offset-2 hover:underline disabled:opacity-50";
+  "inline-flex items-center justify-center text-sm font-medium text-brand-600 underline-offset-2 hover:underline disabled:opacity-50 max-sm:min-h-11 max-sm:px-2";
 const dangerTextButton =
-  "text-sm font-medium text-error-primary underline-offset-2 hover:underline disabled:opacity-50";
+  "inline-flex items-center justify-center text-sm font-medium text-error-primary underline-offset-2 hover:underline disabled:opacity-50 max-sm:min-h-11 max-sm:px-2";
 
 export function CoverItemDialog({
   item,
@@ -249,6 +251,7 @@ export function CoverItemDialog({
               label="How many"
               name="quantity"
               type="number"
+              inputMode="numeric"
               min={1}
               max={available}
               value={quantityInput}
@@ -270,12 +273,21 @@ export function CoverItemDialog({
           <h3 id="cover-tell-heading" className="text-sm font-semibold text-primary">
             2. Tell {parentName} it&apos;s from you
           </h3>
-          <Input label="Your Name" name="buyerName" placeholder="Alex Kim" isRequired />
+          <Input
+            label="Your Name"
+            name="buyerName"
+            placeholder="Alex Kim"
+            autoComplete="name"
+            enterKeyHint="next"
+            isRequired
+          />
           <Input
             label="Your Email"
             name="buyerEmail"
             type="email"
             placeholder="alex@example.com"
+            autoComplete="email"
+            enterKeyHint="next"
             icon={Mail01}
             isRequired
             hint="We'll email you a copy, with a link to undo it if you need to."
@@ -334,7 +346,7 @@ export function CoverItemDialog({
           </DialogDescription>
         </DialogHeader>
         {errorLine}
-        <div className="flex justify-end gap-2">
+        <DialogFooter sticky>
           <Button
             variant="outline"
             onClick={() => (releaseFrom ? setStep(releaseFrom) : close())}
@@ -345,7 +357,7 @@ export function CoverItemDialog({
           <Button variant="destructive" onClick={handleRelease} disabled={loading}>
             {loading ? "Undoing..." : "Undo gift"}
           </Button>
-        </div>
+        </DialogFooter>
       </div>
     );
   } else if (step === "ended") {
@@ -358,12 +370,12 @@ export function CoverItemDialog({
             {available > 0 ? "You can gift it again." : "Other guests have given it since."}
           </DialogDescription>
         </DialogHeader>
-        <div className="flex justify-end gap-2">
+        <DialogFooter sticky>
           <Button variant="outline" onClick={close}>
             Close
           </Button>
           {available > 0 && <Button onClick={() => setStep("pay")}>Gift it again</Button>}
-        </div>
+        </DialogFooter>
       </div>
     );
   }

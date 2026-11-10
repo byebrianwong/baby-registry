@@ -11,6 +11,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -137,10 +138,11 @@ function ShipTo({ address, copyable = true }: { address: string; copyable?: bool
   );
 }
 
+// Text buttons get a 44px tap target on phones.
 const textButton =
-  "text-sm font-medium text-brand-600 underline-offset-2 hover:underline disabled:opacity-50";
+  "inline-flex items-center justify-center text-sm font-medium text-brand-600 underline-offset-2 hover:underline disabled:opacity-50 max-sm:min-h-11 max-sm:px-2";
 const dangerTextButton =
-  "text-sm font-medium text-error-primary underline-offset-2 hover:underline disabled:opacity-50";
+  "inline-flex items-center justify-center text-sm font-medium text-error-primary underline-offset-2 hover:underline disabled:opacity-50 max-sm:min-h-11 max-sm:px-2";
 const noteText = "text-center text-xs text-tertiary";
 
 export function ReserveItemDialog({
@@ -425,12 +427,21 @@ export function ReserveItemDialog({
             </DialogDescription>
           </DialogHeader>
         )}
-        <Input label="Your Name" name="buyerName" placeholder="Alex Kim" isRequired />
+        <Input
+          label="Your Name"
+          name="buyerName"
+          placeholder="Alex Kim"
+          autoComplete="name"
+          enterKeyHint="next"
+          isRequired
+        />
         <Input
           label="Your Email"
           name="buyerEmail"
           type="email"
           placeholder="alex@example.com"
+          autoComplete="email"
+          enterKeyHint="next"
           icon={Mail01}
           isRequired
         />
@@ -439,6 +450,7 @@ export function ReserveItemDialog({
             label="Quantity"
             name="quantity"
             type="number"
+            inputMode="numeric"
             min={1}
             max={remaining}
             defaultValue="1"
@@ -618,7 +630,7 @@ export function ReserveItemDialog({
           <DialogDescription>It goes back on the list so another guest can give it.</DialogDescription>
         </DialogHeader>
         {errorLine}
-        <div className="flex justify-end gap-2">
+        <DialogFooter sticky>
           <Button
             variant="outline"
             onClick={() => (releaseFrom ? setStep(releaseFrom) : close())}
@@ -629,7 +641,7 @@ export function ReserveItemDialog({
           <Button variant="destructive" onClick={handleRelease} disabled={loading}>
             {loading ? "Releasing..." : gift?.status === "purchased" ? "Undo gift" : "Release gift"}
           </Button>
-        </div>
+        </DialogFooter>
       </div>
     );
   } else if (step === "details") {
@@ -661,12 +673,12 @@ export function ReserveItemDialog({
             {remaining > 0 ? "It's still available, so you can reserve it again." : "Another guest has it now."}
           </DialogDescription>
         </DialogHeader>
-        <div className="flex justify-end gap-2">
+        <DialogFooter sticky>
           <Button variant="outline" onClick={close}>
             Close
           </Button>
           {remaining > 0 && <Button onClick={() => setStep("reserve")}>Reserve it again</Button>}
-        </div>
+        </DialogFooter>
       </div>
     );
   }
