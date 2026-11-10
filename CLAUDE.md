@@ -64,6 +64,18 @@ Vercel holds these env vars for production, preview and development: `NEXT_PUBLI
 - Its product reader is built from `extension/src/product-reader.ts`. After changing that file, run `npm run product-reader` in `mobile/`.
 - The root `tsconfig.json` leaves out `mobile/`. The app has its own checks.
 
+## Issues and follow-ups
+
+- Track follow-up work as GitHub Issues on `dango-design/regibee` (`gh issue create`): anything a PR leaves out, or an idea for later. Don't leave it only in a chat summary or a review page. A PR that fixes an issue says "Fixes #N" in its description, so merging closes it.
+- The repo is public. Anyone can read its issues, pull requests and commit messages. Keep out anything that might not be public:
+  - registry, user, purchase and event ids, slugs and invite tokens
+  - names, emails and anything else about owners, guests or other accounts
+  - real data, such as gift counts or what a registry holds
+  - preview and deployment URLs, and links into the Vercel, Supabase, Resend or Chromatic dashboards
+  - keys, tokens and env values, even partial ones
+  - screenshots of real pages, and text copied from them
+- Describe the problem through the code and the pages instead. If you aren't sure something is public, leave it out.
+
 ## Before opening a pull request
 
 - Run `npx tsc --noEmit` and `npm run build`.
