@@ -187,14 +187,17 @@ export default async function PublicRegistryPage({
   const reservableItemIds = new Set(
     allItems.filter((i) => !i.is_parent_purchased).map((i) => i.id)
   );
+  const allItemIds = new Set(allItems.map((i) => i.id));
   let hasReservation = false;
-  // This visitor's own gifts on regular items, by item id.
+  // This visitor's own gifts, by item id. Covers of items the owners bought
+  // are here too, so the guest can see and undo them, but they never reveal
+  // the address: nothing ships.
   const myItemGifts: Record<string, MyItemGift> = {};
 
   const claimedItemByPurchase = new Map<string, string>();
   for (const [itemId, purchaseId] of Object.entries(myGifts.items ?? {})) {
     if (
-      reservableItemIds.has(itemId) &&
+      allItemIds.has(itemId) &&
       typeof purchaseId === "string" &&
       PURCHASE_ID_PATTERN.test(purchaseId)
     ) {
@@ -209,7 +212,7 @@ export default async function PublicRegistryPage({
       .neq("status", "cancelled");
     for (const p of claimedPurchases || []) {
       if (p.registry_item_id && claimedItemByPurchase.get(p.id) === p.registry_item_id) {
-        hasReservation = true;
+        if (reservableItemIds.has(p.registry_item_id)) hasReservation = true;
         myItemGifts[p.registry_item_id] = toMyItemGift(p);
       }
     }
@@ -252,12 +255,10 @@ export default async function PublicRegistryPage({
           if (p.registry_item_id) {
             if (!myGifts.items) myGifts.items = {};
             myGifts.items[p.registry_item_id] = "reserved";
-            if (reservableItemIds.has(p.registry_item_id)) {
-              hasReservation = true;
-              // The signed link proves this visitor is the buyer, so their
-              // purchase ids can go to the page for them to finish or release.
-              if (!myItemGifts[p.registry_item_id]) myItemGifts[p.registry_item_id] = toMyItemGift(p);
-            }
+            if (reservableItemIds.has(p.registry_item_id)) hasReservation = true;
+            // The signed link proves this visitor is the buyer, so their
+            // purchase ids can go to the page for them to finish or release.
+            if (!myItemGifts[p.registry_item_id]) myItemGifts[p.registry_item_id] = toMyItemGift(p);
           }
           if (p.cash_fund_id && p.amount) {
             if (!myGifts.funds) myGifts.funds = {};
@@ -291,7 +292,7 @@ export default async function PublicRegistryPage({
   // A link from a guest's email opens the gift dialog at a step. The link
   // route has already put the gift in this browser's cookie.
   const openGift: OpenGift | undefined =
-    giftParam && reservableItemIds.has(giftParam) && (isGiftLinkStep(stepParam) || stepParam === "ended")
+    giftParam && allItemIds.has(giftParam) && (isGiftLinkStep(stepParam) || stepParam === "ended")
       ? { itemId: giftParam, step: stepParam }
       : undefined;
 

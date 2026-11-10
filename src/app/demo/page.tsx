@@ -39,7 +39,7 @@ import {
 import { ReserveItemDialog, type GiftActions } from "@/components/reserve-item-dialog";
 import { GIFT_HOLD_DAYS, formatReservedUntil, type MyItemGift } from "@/lib/gifts";
 import { classifyStoreLink } from "@/lib/retailers";
-import { CoverItemDialog } from "@/components/cover-item-dialog";
+import { CoverItemDialog, type CoverActions } from "@/components/cover-item-dialog";
 import { ContributeFundDialog } from "@/components/contribute-fund-dialog";
 import { CategoryNav, type CategoryNavItem } from "@/components/category-nav";
 import { getCategorySectionId } from "@/lib/category-section-id";
@@ -336,16 +336,28 @@ export default function DemoPage() {
     },
   });
 
-  const [demoCoverCounts, setDemoCoverCounts] = useState<Record<string, number>>({});
+  // The visitor's gifts of items the owners already bought, by item id.
+  const [demoCoverGifts, setDemoCoverGifts] = useState<Record<string, MyItemGift>>({});
 
-  const demoCoverAction = (itemId: string) => async (formData: FormData) => {
-    const quantity = parseInt(formData.get("quantity") as string) || 1;
-    setDemoCoverCounts((prev) => ({
-      ...prev,
-      [itemId]: (prev[itemId] || 0) + quantity,
-    }));
-    return undefined;
-  };
+  const demoCoverActions = (itemId: string): CoverActions => ({
+    give: async (formData: FormData) => {
+      const quantity = parseInt(formData.get("quantity") as string) || 1;
+      const purchaseId = `demo-cover-${itemId}`;
+      setDemoCoverGifts((prev) => ({
+        ...prev,
+        [itemId]: { purchaseId, status: "purchased", reservedUntil: null, quantity },
+      }));
+      return { success: true, purchaseId };
+    },
+    release: async () => {
+      setDemoCoverGifts((prev) => {
+        const next = { ...prev };
+        delete next[itemId];
+        return next;
+      });
+      return {};
+    },
+  });
 
   const demoContributeAction = (fundId: string) => async (formData: FormData) => {
     const amount = parseFloat(formData.get("amount") as string) || 25;
@@ -607,8 +619,9 @@ export default function DemoPage() {
                       item.quantity_fulfilled >= item.quantity_needed;
                     const remaining =
                       item.quantity_needed - item.quantity_fulfilled;
+                    const myCover = item.is_parent_purchased ? demoCoverGifts[item.id] : undefined;
                     const availableToGift = item.is_parent_purchased
-                      ? item.quantity_needed - (demoCoverCounts[item.id] || 0)
+                      ? item.quantity_needed - (myCover?.quantity || 0)
                       : remaining;
                     const myGift = item.is_parent_purchased ? undefined : demoGifts[item.id];
                     const looksDone = isFulfilled && !item.is_parent_purchased && myGift?.status !== "reserved";
@@ -684,7 +697,7 @@ export default function DemoPage() {
                             </div>
                           </div>
 
-                          {(item.is_parent_purchased ? availableToGift > 0 || (demoCoverCounts[item.id] || 0) > 0 : !isFulfilled || !!myGift) && (
+                          {(item.is_parent_purchased ? availableToGift > 0 || !!myCover : !isFulfilled || !!myGift) && (
                             <div className="flex items-center justify-end gap-2">
                               {item.is_parent_purchased ? (
                                 <CoverItemDialog
@@ -692,8 +705,9 @@ export default function DemoPage() {
                                   availableToGift={availableToGift}
                                   paymentMethods={DEMO_REGISTRY.settings.payment_methods}
                                   parentName={DEMO_PARENT_NAME}
-                                  action={demoCoverAction(item.id)}
-                                  shippingAddress={DEMO_SHIPPING_ADDRESS}
+                                  gift={myCover}
+                                  actions={demoCoverActions(item.id)}
+                                  demo
                                 />
                               ) : (
                                 <ReserveItemDialog

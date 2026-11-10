@@ -7,10 +7,8 @@ import { revalidatePath } from "next/cache";
 import { after } from "next/server";
 import {
   notifyCashFundContribution,
-  notifyItemCovered,
   notifyNewSuggestion,
   sendManagerInvite,
-  confirmItemCovered,
   confirmCashFundContribution,
   getRegistryInfoForBuyer,
 } from "@/lib/email";
@@ -29,7 +27,11 @@ import { isUuid } from "@/lib/extension";
 import { parseStorePerksState, storePerksSettings } from "@/lib/store-perks";
 import { MY_GIFTS_COOKIE, MY_GIFTS_COOKIE_OPTIONS, withGift } from "@/lib/my-gifts-cookie";
 import { GIFT_HOLD_DAYS, isOpenReservation } from "@/lib/gifts";
-import { sendGiftConfirmedEmails, sendReservationEmail } from "@/lib/gift-reservations-server";
+import {
+  sendCoverGiftEmails,
+  sendGiftConfirmedEmails,
+  sendReservationEmail,
+} from "@/lib/gift-reservations-server";
 import crypto from "crypto";
 
 async function addToMyGiftsCookie(
@@ -582,21 +584,26 @@ async function loadGuestGift(purchaseId: string) {
     .select("is_parent_purchased, registry_id")
     .eq("id", purchase.registry_item_id)
     .single();
-  // Covering an item the owners bought themselves has its own flow.
-  if (!item || item.is_parent_purchased) return null;
+  if (!item) return null;
 
   const { data: registry } = await supabaseAdmin
     .from("registries")
     .select("slug")
     .eq("id", item.registry_id)
     .single();
-  return { purchase, slug: registry?.slug as string | undefined };
+  return {
+    purchase,
+    slug: registry?.slug as string | undefined,
+    // Money sent for an item the owners bought themselves. It's saved as
+    // given when the guest sends it, so there's nothing to confirm.
+    isCover: !!item.is_parent_purchased,
+  };
 }
 
 /** The guest bought the item they reserved. */
 export async function confirmGift(purchaseId: string): Promise<{ error?: string; success?: true }> {
   const gift = await loadGuestGift(purchaseId);
-  if (!gift) return { error: "We couldn't find this gift." };
+  if (!gift || gift.isCover) return { error: "We couldn't find this gift." };
   if (gift.purchase.status === "cancelled") {
     return { error: "This reservation ended, so the item went back on the list." };
   }
@@ -620,7 +627,11 @@ export async function confirmGift(purchaseId: string): Promise<{ error?: string;
   return { success: true };
 }
 
-/** The guest isn't getting the item after all, so it goes back on the list. */
+/**
+ * The guest isn't getting the item after all, or didn't send the money for an
+ * item the owners bought, so it goes back on the list. release_registry_gift
+ * leaves the fulfilled count alone for the second kind.
+ */
 export async function releaseGift(purchaseId: string): Promise<{ error?: string; success?: true }> {
   const gift = await loadGuestGift(purchaseId);
   if (!gift) return { error: "We couldn't find this gift." };
@@ -1226,14 +1237,50 @@ export async function suggestItem(formData: FormData) {
   return { success: true };
 }
 
-export async function coverParentPurchasedItem(formData: FormData) {
+export type CoverItemResult = { error: string } | { success: true; purchaseId: string };
+
+/**
+ * A guest gives an item the owners already bought by sending them its price in
+ * Venmo, PayPal or Zelle, then saying so here. Nothing ships and paying takes
+ * seconds, so there's no reservation or hold: the gift is saved as given
+ * straight away. The guest's email has a link to undo it.
+ */
+export async function coverParentPurchasedItem(formData: FormData): Promise<CoverItemResult> {
   const supabase = await createClient();
 
   const itemId = formData.get("itemId") as string;
-  const buyerName = formData.get("buyerName") as string;
-  const buyerEmail = formData.get("buyerEmail") as string;
-  const message = formData.get("message") as string;
   const quantity = parseInt(formData.get("quantity") as string, 10) || 1;
+  const buyerName = String(formData.get("buyerName") ?? "").trim();
+  const buyerEmail = String(formData.get("buyerEmail") ?? "").trim();
+  const message = String(formData.get("message") ?? "").trim();
+
+  if (!isUuid(itemId)) return { error: "This item isn't on the registry anymore." };
+  if (!buyerName || !buyerEmail) return { error: "Add your name and email." };
+  if (quantity < 1) return { error: "Choose how many you're giving." };
+
+  // Production's cover_parent_item doesn't check how many are left (008 never
+  // ran there), so check here. Filtered by the item id.
+  const [{ data: item }, { data: covers }] = await Promise.all([
+    supabaseAdmin
+      .from("registry_items")
+      .select("quantity_needed, is_parent_purchased")
+      .eq("id", itemId)
+      .single(),
+    supabaseAdmin
+      .from("purchases")
+      .select("quantity")
+      .eq("registry_item_id", itemId)
+      .neq("status", "cancelled"),
+  ]);
+  if (!item) return { error: "This item isn't on the registry anymore." };
+  if (!item.is_parent_purchased) return { error: "This item changed. Reload the page to see how to give it." };
+  const given = (covers ?? []).reduce((sum, p) => sum + (p.quantity || 1), 0);
+  const available = item.quantity_needed - given;
+  if (quantity > available) {
+    return {
+      error: available > 0 ? `Only ${available} left to gift.` : "Other guests have already given this.",
+    };
+  }
 
   // Ensure the gift giver has at least an anonymous session
   const {
@@ -1244,7 +1291,7 @@ export async function coverParentPurchasedItem(formData: FormData) {
     await supabase.auth.signInAnonymously();
   }
 
-  const { data, error } = await supabase.rpc("cover_parent_item", {
+  const { data: purchaseId, error } = await supabase.rpc("cover_parent_item", {
     p_item_id: itemId,
     p_buyer_name: buyerName,
     p_buyer_email: buyerEmail,
@@ -1252,52 +1299,32 @@ export async function coverParentPurchasedItem(formData: FormData) {
     p_message: message || null,
   });
 
-  if (error) {
-    return { error: error.message };
+  if (error || !purchaseId) {
+    return { error: error?.message ?? "Couldn't save this gift. Try again." };
   }
 
-  await addToMyGiftsCookie("items", itemId, "cover");
+  // cover_parent_item saves the gift as 'reserved', which for a gift with no
+  // end date already counts as given. Mark it purchased so its status says so.
+  const { error: confirmError } = await supabaseAdmin.rpc("confirm_registry_gift", {
+    p_purchase_id: purchaseId,
+  });
+  if (confirmError) console.error("[gifts] Failed to mark a cover gift as purchased:", confirmError);
 
-  // Send email notifications after the response
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+  // The purchase id is what lets this guest see and undo their gift later.
+  await addToMyGiftsCookie("items", itemId, purchaseId);
+
   after(async () => {
     try {
-      const [{ data: item }, registryInfo] = await Promise.all([
-        supabaseAdmin
-          .from("registry_items")
-          .select("title, external_url")
-          .eq("id", itemId)
-          .single(),
-        getRegistryInfoForBuyer({ itemId }),
-      ]);
-      if (item) {
-        await notifyItemCovered({
-          itemId,
-          itemTitle: item.title,
-          buyerName,
-          message: message || null,
-        });
-        if (buyerEmail && registryInfo) {
-          const registryUrl = buildBuyerRegistryUrl({ siteUrl, slug: registryInfo.slug, buyerEmail });
-          const shopUrl = item.external_url || undefined;
-          await confirmItemCovered({
-            buyerEmail,
-            buyerName,
-            itemTitle: item.title,
-            parentName: registryInfo.parentName,
-            registryTitle: registryInfo.registryTitle,
-            paymentMethods: registryInfo.paymentMethods,
-            registryUrl,
-            shopUrl,
-          });
-        }
-      }
+      await sendCoverGiftEmails(purchaseId);
     } catch (err) {
-      console.error("[email] Failed to send cover item emails:", err);
+      console.error("[email] Failed to send cover gift emails:", err);
     }
   });
 
-  return { success: true, purchaseId: data };
+  const registryInfo = await getRegistryInfoForBuyer({ itemId }).catch(() => null);
+  if (registryInfo) revalidatePath(`/r/${registryInfo.slug}`);
+
+  return { success: true, purchaseId };
 }
 
 export async function acceptSuggestion(formData: FormData) {

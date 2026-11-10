@@ -241,16 +241,10 @@ export async function confirmItemGiven(
   }
 }
 
-export async function confirmItemCovered(opts: {
-  buyerEmail: string;
-  buyerName: string;
-  itemTitle: string;
-  parentName: string;
-  registryTitle: string;
-  paymentMethods?: { venmo?: string; paypal?: string; zelle?: string };
-  registryUrl?: string;
-  shopUrl?: string;
-}) {
+/** Thanks a guest for sending the money for an item the owners bought, with a link to undo it. */
+export async function confirmItemCovered(
+  opts: Parameters<typeof itemCoveredBuyerHtml>[0] & { buyerEmail: string }
+) {
   try {
     await getResend().emails.send({
       from: FROM,
@@ -408,10 +402,14 @@ export async function notifyCashFundContribution(opts: {
   }
 }
 
+/** Tells the owners and managers that a guest sent them the money for an item they bought. */
 export async function notifyItemCovered(opts: {
   itemId: string;
   itemTitle: string;
   buyerName: string;
+  quantity: number;
+  /** Price times quantity. Null when the item has no price. */
+  amount: number | null;
   message?: string | null;
 }) {
   try {
@@ -420,18 +418,21 @@ export async function notifyItemCovered(opts: {
 
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
     const dashboardLink = `${siteUrl}/dashboard/registry/${managers[0].registryId}?highlight=${opts.itemId}`;
+    const sent = opts.amount != null ? formatPrice(opts.amount) : "money";
 
     await Promise.all(
       managers.map((m) =>
         getResend().emails.send({
           from: FROM,
           to: TEST_RECIPIENT_OVERRIDE || m.email,
-          subject: `🎉 ${opts.buyerName} is covering "${opts.itemTitle}"`,
+          subject: `🎉 ${opts.buyerName} sent you ${sent} for "${opts.itemTitle}"`,
           html: itemCoveredOwnerHtml({
             ownerName: m.name,
             registryTitle: m.registryTitle,
             buyerName: opts.buyerName,
             itemTitle: opts.itemTitle,
+            quantity: opts.quantity,
+            amount: opts.amount,
             message: opts.message,
             dashboardLink,
           }),

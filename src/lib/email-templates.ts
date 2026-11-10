@@ -149,28 +149,34 @@ export function itemGivenBuyerHtml(opts: {
   `;
 }
 
+/**
+ * Sent when a guest says they sent the owners the money for an item the owners
+ * bought themselves. The gift is saved as given at once, so the guest gets a
+ * way to undo it.
+ */
 export function itemCoveredBuyerHtml(opts: {
   buyerName: string;
   itemTitle: string;
+  quantity: number;
+  /** Price times quantity. Null when the item has no price. */
+  amount: number | null;
   parentName: string;
   registryTitle: string;
-  paymentMethods?: { venmo?: string; paypal?: string; zelle?: string };
   registryUrl?: string;
-  shopUrl?: string;
+  undoUrl?: string;
 }): string {
-  const paymentBlock = formatPaymentBlock(opts.paymentMethods);
-  const linksBlock = [
-    opts.registryUrl ? `<a href="${escapeHtml(opts.registryUrl)}" style="color:#004659;">View Registry</a>` : "",
-    opts.shopUrl ? `<a href="${escapeHtml(opts.shopUrl)}" style="color:#004659;">Shop This Item</a>` : "",
-  ].filter(Boolean).join(" &nbsp;|&nbsp; ");
+  const qtyText = opts.quantity > 1 ? ` (×${opts.quantity})` : "";
+  const sent = opts.amount != null ? `<strong>${formatPrice(opts.amount)}</strong>` : "money";
 
   return `
     <p>Hi ${escapeHtml(opts.buyerName)},</p>
-    <p>Thanks for gifting <strong>${escapeHtml(opts.itemTitle)}</strong> on <em>${escapeHtml(opts.registryTitle)}</em>!</p>
-    <p>${escapeHtml(opts.parentName)} will really appreciate it.</p>
-    ${paymentBlock}
-    ${linksBlock ? `<p style="margin: 16px 0;">${linksBlock}</p>` : ""}
-    <p style="color:#888;font-size:13px;">You're receiving this because you covered a gift on a Regibee registry.</p>
+    <p>Thanks for sending ${sent} for <strong>${escapeHtml(opts.itemTitle)}</strong>${qtyText} on <em>${escapeHtml(opts.registryTitle)}</em>!</p>
+    <p>${escapeHtml(opts.parentName)} will see it's from you, and will really appreciate it.</p>
+    ${textLinks([
+      { href: opts.registryUrl, label: "View Registry" },
+      { href: opts.undoUrl, label: "Undo this gift" },
+    ])}
+    <p style="color:#888;font-size:13px;">Didn't send it after all? Undo the gift so ${escapeHtml(opts.parentName)} isn't expecting it. You're receiving this because you gave a gift on a Regibee registry.</p>
   `;
 }
 
@@ -228,17 +234,25 @@ export function itemGivenOwnerHtml(opts: {
   `;
 }
 
+/** Sent to the owners and managers when a guest says they sent the money for an item the owners bought. */
 export function itemCoveredOwnerHtml(opts: {
   ownerName: string;
   registryTitle: string;
   buyerName: string;
   itemTitle: string;
+  quantity: number;
+  /** Price times quantity. Null when the item has no price. */
+  amount: number | null;
   message?: string | null;
   dashboardLink: string;
 }): string {
+  const qtyText = opts.quantity > 1 ? ` (×${opts.quantity})` : "";
+  const sent = opts.amount != null ? `<strong>${formatPrice(opts.amount)}</strong>` : "money";
+
   return `
     <p>Hi ${escapeHtml(opts.ownerName)},</p>
-    <p><strong>${escapeHtml(opts.buyerName)}</strong> offered to cover the cost of <strong>${escapeHtml(opts.itemTitle)}</strong> on your registry <em>${escapeHtml(opts.registryTitle)}</em>.</p>
+    <p><strong>${escapeHtml(opts.buyerName)}</strong> sent you ${sent} for <strong>${escapeHtml(opts.itemTitle)}</strong>${qtyText} on your registry <em>${escapeHtml(opts.registryTitle)}</em>.</p>
+    <p>It went straight to you, so look for it in Venmo, PayPal or Zelle.</p>
     ${opts.message ? `<p>Their message: "${escapeHtml(opts.message)}"</p>` : ""}
     <p style="margin: 16px 0;"><a href="${escapeHtml(opts.dashboardLink)}" style="color:#004659;">View on Dashboard</a></p>
     <p style="color:#888;font-size:13px;">You're receiving this because someone interacted with your registry.</p>

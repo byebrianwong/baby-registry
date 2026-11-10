@@ -9,9 +9,11 @@ import { GIFT_HOLD_DAYS, giftLinkUrl } from "@/lib/gifts";
 import { classifyStoreLink } from "@/lib/retailers";
 import { welcomeBoxUnlockedBy } from "@/lib/store-perks-server";
 import {
+  confirmItemCovered,
   confirmItemGiven,
   confirmItemReserved,
   getRegistryInfoForBuyer,
+  notifyItemCovered,
   notifyItemGiven,
   notifyItemReservationEnded,
   remindItemReservation,
@@ -45,7 +47,7 @@ async function loadGift(purchaseId: string) {
 
   const { data: item } = await supabaseAdmin
     .from("registry_items")
-    .select("id, title, external_url")
+    .select("id, title, external_url, price")
     .eq("id", purchase.registry_item_id)
     .single();
   if (!item) return null;
@@ -112,6 +114,41 @@ export async function sendGiftConfirmedEmails(purchaseId: string) {
           buyerName: purchase.buyer_name,
           itemTitle: item.title,
           quantity: purchase.quantity,
+          parentName: registry.parentName,
+          registryTitle: registry.registryTitle,
+          registryUrl: links.registryUrl,
+          undoUrl: links.releaseUrl,
+        })
+      : Promise.resolve(),
+  ]);
+}
+
+/**
+ * Sent when a guest sends the owners money for an item they bought
+ * themselves: to the owners, and to the guest with a link to undo it.
+ */
+export async function sendCoverGiftEmails(purchaseId: string) {
+  const gift = await loadGift(purchaseId);
+  if (!gift) return;
+  const { purchase, item, registry, links } = gift;
+  const amount = item.price != null ? Number(item.price) * purchase.quantity : null;
+
+  await Promise.all([
+    notifyItemCovered({
+      itemId: item.id,
+      itemTitle: item.title,
+      buyerName: purchase.buyer_name,
+      quantity: purchase.quantity,
+      amount,
+      message: purchase.message,
+    }),
+    purchase.buyer_email
+      ? confirmItemCovered({
+          buyerEmail: purchase.buyer_email,
+          buyerName: purchase.buyer_name,
+          itemTitle: item.title,
+          quantity: purchase.quantity,
+          amount,
           parentName: registry.parentName,
           registryTitle: registry.registryTitle,
           registryUrl: links.registryUrl,

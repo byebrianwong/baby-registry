@@ -133,3 +133,52 @@ export const GiftStates: Story = {
     ],
   },
 };
+
+// Items the owners already bought, which guests give by sending the money.
+// The stroller is open, with one Gift this button. This guest gave the car
+// seat, so its card offers the gift's details. Other guests gave both high
+// chairs.
+export const CoverStates: Story = {
+  args: {
+    parentName: "Remi & Max",
+    categories: [{ id: "nursery", name: "Nursery", sort_order: 0 }],
+    cashFunds: [],
+    myGifts: {},
+    suggestButton: null,
+    paymentMethods: { venmo: "@remi-and-max", zelle: "max@example.com" },
+    myItemGifts: {
+      "2": { purchaseId: "p2", status: "purchased", reservedUntil: null, quantity: 1 },
+    },
+    coverCounts: { "2": 1, "3": 2 },
+    items: [
+      {
+        ...base,
+        id: "1",
+        title: "UPPAbaby Vista V2 Stroller",
+        price: 979.99,
+        is_parent_purchased: true,
+        quantity_fulfilled: 1,
+        external_url: "https://www.amazon.com/dp/B0EXAMPLE2",
+      },
+      {
+        ...base,
+        id: "2",
+        title: "Nuna PIPA Urbn Infant Car Seat",
+        price: 549.95,
+        is_parent_purchased: true,
+        quantity_fulfilled: 1,
+        external_url: null,
+      },
+      {
+        ...base,
+        id: "3",
+        title: "Stokke Tripp Trapp High Chair",
+        price: 299,
+        quantity_needed: 2,
+        is_parent_purchased: true,
+        quantity_fulfilled: 2,
+        external_url: null,
+      },
+    ],
+  },
+};
