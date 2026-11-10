@@ -18,9 +18,6 @@ export default function RootLayout({
     // The font variables go on <html> because theme tokens such as
     // --font-display are defined on :root and resolve var() there.
     <html lang="en" className={fontVariables}>
-      <head>
-        <script src="https://mcp.figma.com/mcp/html-to-design/capture.js" async></script>
-      </head>
       <body
         className="font-sans antialiased"
       >
