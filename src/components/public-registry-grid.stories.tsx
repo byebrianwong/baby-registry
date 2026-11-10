@@ -79,6 +79,117 @@ export const ItemsFromStores: Story = {
   },
 };
 
+// What a guest sees on each kind of item. The bassinet is reserved by this
+// guest, the blanket was given by them, the monitor is reserved by another
+// guest, the swing was given by another guest, and the bath is still open.
+export const GiftStates: Story = {
+  args: {
+    parentName: "Remi & Max",
+    categories: [{ id: "nursery", name: "Nursery", sort_order: 0 }],
+    cashFunds: [],
+    myGifts: {},
+    coverCounts: {},
+    suggestButton: null,
+    shippingAddress: "123 Main St\nApt 4B\nSan Francisco, CA 94102",
+    myItemGifts: {
+      "1": { purchaseId: "p1", status: "reserved", reservedUntil: "2026-11-15T12:00:00Z", quantity: 1 },
+      "2": { purchaseId: "p2", status: "purchased", reservedUntil: null, quantity: 1 },
+    },
+    reservedCounts: { "1": 1, "3": 1 },
+    items: [
+      {
+        ...base,
+        id: "1",
+        title: "Halo BassiNest Swivel Sleeper",
+        price: 249.99,
+        quantity_fulfilled: 1,
+        external_url: "https://www.amazon.com/dp/B0EXAMPLE1",
+      },
+      {
+        ...base,
+        id: "2",
+        title: "Hand-knit Baby Blanket",
+        price: 58,
+        quantity_fulfilled: 1,
+        external_url: "https://www.etsy.com/listing/000000/hand-knit-baby-blanket",
+      },
+      {
+        ...base,
+        id: "3",
+        title: "Nanit Pro Smart Baby Monitor",
+        price: 299,
+        quantity_fulfilled: 1,
+        external_url: "https://www.target.com/p/nanit-pro/-/A-00000001",
+      },
+      {
+        ...base,
+        id: "4",
+        title: "4moms MamaRoo Baby Swing",
+        price: 219.99,
+        quantity_fulfilled: 1,
+        external_url: null,
+      },
+      {
+        ...base,
+        id: "5",
+        title: "Angelcare Baby Bath Support",
+        price: 24.97,
+        is_essential: true,
+        external_url: "https://www.walmart.com/ip/seort/000000",
+      },
+    ],
+  },
+};
+
+// Items the owners already bought, which guests give by sending the money.
+// The stroller is open, with one Gift this button. This guest gave the car
+// seat, so its card offers the gift's details. Other guests gave both high
+// chairs.
+export const CoverStates: Story = {
+  args: {
+    parentName: "Remi & Max",
+    categories: [{ id: "nursery", name: "Nursery", sort_order: 0 }],
+    cashFunds: [],
+    myGifts: {},
+    suggestButton: null,
+    paymentMethods: { venmo: "@remi-and-max", zelle: "max@example.com" },
+    myItemGifts: {
+      "2": { purchaseId: "p2", status: "purchased", reservedUntil: null, quantity: 1 },
+    },
+    coverCounts: { "2": 1, "3": 2 },
+    items: [
+      {
+        ...base,
+        id: "1",
+        title: "UPPAbaby Vista V2 Stroller",
+        price: 979.99,
+        is_parent_purchased: true,
+        quantity_fulfilled: 1,
+        external_url: "https://www.amazon.com/dp/B0EXAMPLE2",
+      },
+      {
+        ...base,
+        id: "2",
+        title: "Nuna PIPA Urbn Infant Car Seat",
+        price: 549.95,
+        is_parent_purchased: true,
+        quantity_fulfilled: 1,
+        external_url: null,
+      },
+      {
+        ...base,
+        id: "3",
+        title: "Stokke Tripp Trapp High Chair",
+        price: 299,
+        quantity_needed: 2,
+        is_parent_purchased: true,
+        quantity_fulfilled: 2,
+        external_url: null,
+      },
+    ],
+  },
+};
+
 // What a guest sees after opening a texted link: a 16px search box, so iOS
 // doesn't zoom in, and 44px filters and buttons. The categories hide behind
 // the floating list button, so "Suggest an item" moves up under the filters.

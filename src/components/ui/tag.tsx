@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils";
 
-type TagVariant = "most-wanted" | "guest-purchased" | "parent-purchased" | "gifted" | "purchased-by-you";
+type TagVariant = "most-wanted" | "guest-purchased" | "parent-purchased" | "gifted" | "purchased-by-you" | "reserved";
 
 const variantStyles: Record<TagVariant, string> = {
   "most-wanted": "bg-sunshine-400 border-sunshine-400 text-primary",
@@ -8,6 +8,8 @@ const variantStyles: Record<TagVariant, string> = {
   "parent-purchased": "bg-primary border-sunshine-400 text-primary",
   "gifted": "bg-mint-500 border-mint-500 text-primary",
   "purchased-by-you": "bg-transparent border-mint-500 text-primary",
+  // A guest is holding the item while they buy it.
+  "reserved": "bg-sunshine-50 border-sunshine-200 text-primary",
 };
 
 interface TagProps {
