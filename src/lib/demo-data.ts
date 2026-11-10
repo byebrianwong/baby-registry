@@ -35,6 +35,13 @@ export const DEMO_REGISTRY = {
       zelle: "remiandmax@example.com",
     },
     shipping_address: "Remi & Max Porter\n123 Oak Street, Apt 4B\nSan Francisco, CA 94102",
+    zip_code: "94102",
+    // Their registries at stores. Items with these stores' registry links
+    // count there, and the Store perks tab tracks the stores' perks.
+    retailer_registries: [
+      { store: "amazon" as const, url: "https://www.amazon.com/baby-reg/remi-max-demo" },
+      { store: "target" as const, url: "https://www.target.com/gift-registry/gift-giver?registryId=demo-remi-max" },
+    ],
   },
 };
 
@@ -153,7 +160,7 @@ export const DEMO_ITEMS = [
     id: "item-7",
     title: "Dr. Brown's Anti-Colic Bottles (8oz, 4-pack)",
     category_id: "cat-2",
-    external_url: null,
+    external_url: "https://www.amazon.com/dp/B0DEMO0007?colid=DEMOREMIMAX&coliid=IDEMO0007",
     image_url: "https://images.unsplash.com/photo-1578643463396-0997cb5328c1?w=300&h=300&fit=crop",
     price: 24.99,
     quantity_needed: 2,
@@ -235,7 +242,7 @@ export const DEMO_ITEMS = [
     id: "item-12",
     title: "Pampers Newborn Diapers (Box)",
     category_id: "cat-3",
-    external_url: null,
+    external_url: "https://www.amazon.com/dp/B0DEMO0012?colid=DEMOREMIMAX&coliid=IDEMO0012",
     image_url: "https://images.unsplash.com/photo-1590073242678-70ee3fc28e8e?w=300&h=300&fit=crop",
     price: 29.99,
     quantity_needed: 3,
@@ -251,7 +258,7 @@ export const DEMO_ITEMS = [
     id: "item-13",
     title: "WaterWipes (12-pack)",
     category_id: "cat-3",
-    external_url: null,
+    external_url: "https://www.amazon.com/dp/B0DEMO0013",
     image_url: null,
     price: 34.99,
     quantity_needed: 2,
@@ -317,7 +324,7 @@ export const DEMO_ITEMS = [
     id: "item-17",
     title: "UPPAbaby Vista V2 Stroller",
     category_id: "cat-4",
-    external_url: null,
+    external_url: "https://www.target.com/p/uppababy-vista-v2-stroller/-/A-90000017?registryId=demo-remi-max",
     image_url: "https://images.unsplash.com/photo-1591088398332-8a7791972843?w=300&h=300&fit=crop",
     price: 979.99,
     quantity_needed: 1,
@@ -367,7 +374,7 @@ export const DEMO_ITEMS = [
     id: "item-20",
     title: "Skip Hop Moby Baby Bathtub",
     category_id: "cat-5",
-    external_url: null,
+    external_url: "https://www.target.com/p/skip-hop-moby-baby-bathtub/-/A-90000020?registryId=demo-remi-max",
     image_url: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=300&h=300&fit=crop",
     price: 34.99,
     quantity_needed: 1,
