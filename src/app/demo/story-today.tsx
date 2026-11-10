@@ -13,3 +13,14 @@ export const withDemoToday: Decorator = (Story) => (
     <Story />
   </DemoTodayProvider>
 );
+
+/**
+ * Story parameters for a demo page: full screen, with the app router mocked
+ * at `pathname`, so the dashboard tabs underline the right one.
+ */
+export function demoPageParameters(pathname: string) {
+  return {
+    layout: "fullscreen",
+    nextjs: { appDirectory: true, navigation: { pathname } },
+  };
+}

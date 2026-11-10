@@ -11,16 +11,20 @@ import type { NavAccount } from "@/components/nav-bar";
 
 // The account menu in the top bar. nav-bar.tsx loads it on its own, so
 // signed-out visitors don't download the menu code.
-export function AccountMenu({ account }: { account: NavAccount }) {
+export function AccountMenu({ account, basePath, demo }: { account: NavAccount; basePath: string; demo: boolean }) {
   const router = useRouter();
   const count = account.followRequestCount;
   const requestLabel = count === 1 ? "1 follow request" : `${count} follow requests`;
 
   const signOut = async () => {
-    // The Supabase client is a big download, and signing out is the only thing
-    // on most pages that needs it in the browser, so it loads on the click.
-    const { createClient } = await import("@/utils/supabase/client");
-    await createClient().auth.signOut();
+    // The demo has no session to end. Leaving it goes back to the home page.
+    if (!demo) {
+      // The Supabase client is a big download, and signing out is the only
+      // thing on most pages that needs it in the browser, so it loads on the
+      // click.
+      const { createClient } = await import("@/utils/supabase/client");
+      await createClient().auth.signOut();
+    }
     router.push("/");
     router.refresh();
   };
@@ -64,14 +68,14 @@ export function AccountMenu({ account }: { account: NavAccount }) {
             <Dropdown.Item id="profile" href={account.profilePath} icon={UserRound} label="Your profile" />
             <Dropdown.Item
               id="requests"
-              href="/dashboard/account#follows"
+              href={`${basePath}/dashboard/account#follows`}
               icon={UserPlus}
               label="Follow requests"
               addon={count > 0 ? String(count) : undefined}
             />
-            <Dropdown.Item id="account" href="/dashboard/account" icon={Settings} label="Account settings" />
+            <Dropdown.Item id="account" href={`${basePath}/dashboard/account`} icon={Settings} label="Account settings" />
             <Dropdown.Separator />
-            <Dropdown.Item id="sign-out" icon={LogOut} label="Sign out" />
+            <Dropdown.Item id="sign-out" icon={LogOut} label={demo ? "Leave the demo" : "Sign out"} />
           </Dropdown.Menu>
         </Dropdown.Popover>
       </Dropdown.Root>

@@ -68,6 +68,17 @@ interface Props {
   /** Tell guests when a gift is on the owner's store registry. Baby
    *  registries only. */
   showStoreRegistries?: boolean;
+  /** Stand-ins for the gift dialogs' server actions. The demo passes them. */
+  actions?: GiftActions;
+}
+
+type GiftAction<Result> = (formData: FormData) => Promise<Result | undefined>;
+
+/** The dialogs put the item's or fund's id in the form data as itemId or fundId. */
+export interface GiftActions {
+  reserve?: GiftAction<{ error?: string; shippingAddress?: string }>;
+  cover?: GiftAction<{ error: string }>;
+  contribute?: GiftAction<{ error: string }>;
 }
 
 type SortMode = "default" | "most-wanted" | "price-asc" | "price-desc";
@@ -101,6 +112,7 @@ export function PublicRegistryGrid({
   coverFlavor,
   linkedStores = [],
   showStoreRegistries = false,
+  actions,
 }: Props) {
   const [search, setSearch] = useState("");
   const [priceBucket, setPriceBucket] = useState("any");
@@ -311,6 +323,7 @@ export function PublicRegistryGrid({
                           alreadyPurchased={fundPurchased}
                           previousAmount={fundPrevAmount}
                           shippingAddress={shippingAddress}
+                          action={actions?.contribute}
                         />
                       </div>
                     </CardContent>
@@ -350,6 +363,7 @@ export function PublicRegistryGrid({
                     coverFlavor={coverFlavor}
                     linkedStores={linkedStores}
                     showStoreRegistries={showStoreRegistries}
+                    actions={actions}
                   />
                 ))}
               </div>
@@ -376,6 +390,7 @@ export function PublicRegistryGrid({
                   coverFlavor={coverFlavor}
                   linkedStores={linkedStores}
                   showStoreRegistries={showStoreRegistries}
+                  actions={actions}
                 />
               ))}
             </div>
@@ -398,6 +413,7 @@ function PublicItemCard({
   coverFlavor,
   linkedStores,
   showStoreRegistries,
+  actions,
 }: {
   item: RegistryItem;
   categoryName: string | null;
@@ -410,6 +426,7 @@ function PublicItemCard({
   coverFlavor?: string;
   linkedStores: StoreId[];
   showStoreRegistries: boolean;
+  actions?: GiftActions;
 }) {
   const storeLink = classifyStoreLink(item.external_url);
   const store = storeLink?.store;
@@ -511,6 +528,7 @@ function PublicItemCard({
                 alreadyPurchased={itemPurchased}
                 isCovered={coveredQty >= item.quantity_needed}
                 shippingAddress={shippingAddress}
+                action={actions?.cover}
               />
             ) : (
               <>
@@ -534,6 +552,7 @@ function PublicItemCard({
                   registryStoreName={registryStoreName}
                   alreadyPurchased={itemPurchased}
                   shippingAddress={shippingAddress}
+                  action={actions?.reserve}
                 />
               </>
             )}

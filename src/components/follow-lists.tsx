@@ -14,10 +14,10 @@ import {
 import type { FollowPerson, PersonSummary } from "@/lib/follows";
 import { displayName, profilePath } from "@/lib/profile-link";
 
-function PersonLabel({ person }: { person: PersonSummary }) {
+function PersonLabel({ person, basePath }: { person: PersonSummary; basePath: string }) {
   return (
     <Link
-      href={profilePath(person)}
+      href={`${basePath}${profilePath(person)}`}
       className="min-w-0 flex-1 break-words text-sm font-medium text-primary hover:underline"
     >
       {displayName(person)}
@@ -28,13 +28,15 @@ function PersonLabel({ person }: { person: PersonSummary }) {
 function PersonRow({
   person,
   actions,
+  basePath,
 }: {
   person: PersonSummary;
   actions: React.ReactNode;
+  basePath: string;
 }) {
   return (
     <div className="flex flex-wrap items-center gap-3">
-      <PersonLabel person={person} />
+      <PersonLabel person={person} basePath={basePath} />
       <div className="flex shrink-0 flex-wrap gap-2">{actions}</div>
     </div>
   );
@@ -50,6 +52,7 @@ export function FollowLists({
   cancelAction = cancelFollow,
   blockAction = blockUser,
   unblockAction = unblockUser,
+  basePath = "",
 }: {
   requests: FollowPerson[];
   followers: FollowPerson[];
@@ -60,6 +63,8 @@ export function FollowLists({
   cancelAction?: typeof cancelFollow;
   blockAction?: typeof blockUser;
   unblockAction?: typeof unblockUser;
+  /** Put in front of every link. The demo passes "/demo". */
+  basePath?: string;
 }) {
   const [requests, setRequests] = useState(initialRequests);
   const [followers, setFollowers] = useState(initialFollowers);
@@ -118,6 +123,7 @@ export function FollowLists({
           <CardContent className="space-y-4">
             {requests.map((person) => (
               <PersonRow
+                basePath={basePath}
                 key={person.public_id}
                 person={person}
                 actions={
@@ -168,6 +174,7 @@ export function FollowLists({
           ) : (
             followers.map((person) => (
               <PersonRow
+                basePath={basePath}
                 key={person.public_id}
                 person={person}
                 actions={
@@ -205,7 +212,7 @@ export function FollowLists({
           <CardTitle>Following</CardTitle>
           <CardDescription>
             People whose registries you follow. See them all on your{" "}
-            <Link href="/dashboard/following" className="font-medium text-brand-600 hover:underline">
+            <Link href={`${basePath}/dashboard/following`} className="font-medium text-brand-600 hover:underline">
               Following page
             </Link>
             .
@@ -215,7 +222,7 @@ export function FollowLists({
           {following.length === 0 ? (
             <p className="text-sm text-tertiary">
               You&apos;re not following anyone yet. Find people on your{" "}
-              <Link href="/dashboard/following" className="font-medium text-brand-600 hover:underline">
+              <Link href={`${basePath}/dashboard/following`} className="font-medium text-brand-600 hover:underline">
                 Following page
               </Link>
               , or open someone&apos;s profile link and tap Follow.
@@ -223,6 +230,7 @@ export function FollowLists({
           ) : (
             following.map((person) => (
               <PersonRow
+                basePath={basePath}
                 key={person.public_id}
                 person={person}
                 actions={
@@ -267,6 +275,7 @@ export function FollowLists({
           <CardContent className="space-y-4">
             {blocked.map((person) => (
               <PersonRow
+                basePath={basePath}
                 key={person.public_id}
                 person={person}
                 actions={
