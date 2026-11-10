@@ -17,12 +17,15 @@ export type BannerEvent = Pick<EventDetails, "id" | "title" | "event_date" | "ev
 export function RegistryEventsBanner({
   registryId,
   events,
+  basePath = "",
 }: {
   registryId: string;
   events: BannerEvent[];
+  /** Put in front of every link. The demo passes "/demo". */
+  basePath?: string;
 }) {
   const hasEvents = events.length > 0;
-  const planHref = `/dashboard/events/new?registry=${registryId}`;
+  const planHref = `${basePath}/dashboard/events/new?registry=${registryId}`;
 
   return (
     <div className="flex flex-col gap-3 rounded-2xl bg-blush-50 p-4 sm:flex-row sm:items-center sm:justify-between">
@@ -36,7 +39,7 @@ export function RegistryEventsBanner({
             <ul className="text-sm text-tertiary">
               {events.map((event) => (
                 <li key={event.id}>
-                  <Link href={`/dashboard/events/${event.id}`} className="font-medium text-brand-600 hover:underline">
+                  <Link href={`${basePath}/dashboard/events/${event.id}`} className="font-medium text-brand-600 hover:underline">
                     {event.title}
                   </Link>
                   {" · "}

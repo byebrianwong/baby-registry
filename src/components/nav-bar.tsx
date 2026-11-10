@@ -20,13 +20,14 @@ export interface NavAccount {
   followRequestCount: number;
 }
 
-function AccountMenu({ account }: { account: NavAccount }) {
+function AccountMenu({ account, basePath, demo }: { account: NavAccount; basePath: string; demo: boolean }) {
   const router = useRouter();
   const count = account.followRequestCount;
   const requestLabel = count === 1 ? "1 follow request" : `${count} follow requests`;
 
   const signOut = async () => {
-    await createClient().auth.signOut();
+    // The demo has no session to end. Leaving it goes back to the home page.
+    if (!demo) await createClient().auth.signOut();
     router.push("/");
     router.refresh();
   };
@@ -70,14 +71,14 @@ function AccountMenu({ account }: { account: NavAccount }) {
             <Dropdown.Item id="profile" href={account.profilePath} icon={UserRound} label="Your profile" />
             <Dropdown.Item
               id="requests"
-              href="/dashboard/account#follows"
+              href={`${basePath}/dashboard/account#follows`}
               icon={UserPlus}
               label="Follow requests"
               addon={count > 0 ? String(count) : undefined}
             />
-            <Dropdown.Item id="account" href="/dashboard/account" icon={Settings} label="Account settings" />
+            <Dropdown.Item id="account" href={`${basePath}/dashboard/account`} icon={Settings} label="Account settings" />
             <Dropdown.Separator />
-            <Dropdown.Item id="sign-out" icon={LogOut} label="Sign out" />
+            <Dropdown.Item id="sign-out" icon={LogOut} label={demo ? "Leave the demo" : "Sign out"} />
           </Dropdown.Menu>
         </Dropdown.Popover>
       </Dropdown.Root>
@@ -88,7 +89,15 @@ function AccountMenu({ account }: { account: NavAccount }) {
 // Signed-in people get just the logo and their account menu. The logo goes to
 // the dashboard, where My registries, Events and Following are tabs
 // (src/components/dashboard-tabs.tsx).
-export function NavBar({ account }: { account: NavAccount | null }) {
+export function NavBar({
+  account,
+  demo = false,
+}: {
+  account: NavAccount | null;
+  /** The demo's bar: links stay under /demo, and signing out just leaves. */
+  demo?: boolean;
+}) {
+  const basePath = demo ? "/demo" : "";
   return (
     <header className="sticky top-0 z-50 w-full border-b border-secondary bg-primary/95 backdrop-blur supports-[backdrop-filter]:bg-primary/80">
       <a
@@ -100,7 +109,7 @@ export function NavBar({ account }: { account: NavAccount | null }) {
 
       <div className="container mx-auto flex h-16 items-center gap-6 px-4">
         <Link
-          href={account ? "/dashboard" : "/"}
+          href={account ? `${basePath}/dashboard` : "/"}
           className="flex items-center gap-2 rounded-md font-semibold text-primary outline-focus-ring focus-visible:outline-2 focus-visible:outline-offset-4"
         >
           <Logo />
@@ -108,7 +117,7 @@ export function NavBar({ account }: { account: NavAccount | null }) {
 
         <div className="ml-auto flex items-center gap-2">
           {account ? (
-            <AccountMenu account={account} />
+            <AccountMenu account={account} basePath={basePath} demo={demo} />
           ) : (
             <>
               <Button variant="ghost" size="sm" asChild>

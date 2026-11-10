@@ -6,7 +6,16 @@ import { Button } from "@/components/ui/button";
 import { deleteEvent } from "@/lib/actions/events";
 
 /** Deletes the event and its guest list, after asking. Only the owner sees it. */
-export function DeleteEventButton({ eventId, guestCount }: { eventId: string; guestCount: number }) {
+export function DeleteEventButton({
+  eventId,
+  guestCount,
+  deleteAction = deleteEvent,
+}: {
+  eventId: string;
+  guestCount: number;
+  /** A stand-in for the server action. The demo passes one. */
+  deleteAction?: (eventId: string) => Promise<{ error: string | null } | undefined | void>;
+}) {
   const [confirming, setConfirming] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState("");
@@ -38,7 +47,7 @@ export function DeleteEventButton({ eventId, guestCount }: { eventId: string; gu
           disabled={deleting}
           onClick={async () => {
             setDeleting(true);
-            const result = await deleteEvent(eventId);
+            const result = await deleteAction(eventId);
             // On success the action redirects, so only errors come back.
             if (result?.error) {
               setError(result.error);

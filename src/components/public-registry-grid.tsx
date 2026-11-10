@@ -9,10 +9,14 @@ import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { Tag } from "@/components/ui/tag";
 import { UsedConditionTag } from "@/components/ui/used-condition-tag";
-import { ReserveItemDialog, type OpenGift } from "@/components/reserve-item-dialog";
+import {
+  ReserveItemDialog,
+  type GiftActions as ReserveActions,
+  type OpenGift,
+} from "@/components/reserve-item-dialog";
 import { ReservationBanner, type ReservationBannerEntry } from "@/components/reservation-banner";
 import { formatReservedUntil, type MyItemGift } from "@/lib/gifts";
-import { CoverItemDialog } from "@/components/cover-item-dialog";
+import { CoverItemDialog, type CoverActions } from "@/components/cover-item-dialog";
 import { ContributeFundDialog } from "@/components/contribute-fund-dialog";
 import { CategoryNav, type CategoryNavItem } from "@/components/category-nav";
 import { ItemImage } from "@/components/item-image";
@@ -75,6 +79,20 @@ interface Props {
   /** Tell guests when a gift is on the owner's store registry. Baby
    *  registries only. */
   showStoreRegistries?: boolean;
+  /** Stand-ins for the gift dialogs' server actions. The demo passes them. */
+  actions?: GiftActions;
+  /** The demo registry: the cover dialog's pay buttons don't open anything. */
+  demo?: boolean;
+}
+
+/** Stand-ins for the gift dialogs' server actions, for the demo. */
+export interface GiftActions {
+  /** The reserve dialog's actions for one item. */
+  reserve?: (itemId: string) => Partial<ReserveActions>;
+  /** The cover dialog's actions for one item the owners already bought. */
+  cover?: (itemId: string) => Partial<CoverActions>;
+  /** The contribute dialog puts the fund's id in the form data as fundId. */
+  contribute?: (formData: FormData) => Promise<{ error: string } | undefined>;
 }
 
 type SortMode = "default" | "most-wanted" | "price-asc" | "price-desc";
@@ -111,6 +129,8 @@ export function PublicRegistryGrid({
   coverFlavor,
   linkedStores = [],
   showStoreRegistries = false,
+  actions,
+  demo = false,
 }: Props) {
   const [search, setSearch] = useState("");
   const [priceBucket, setPriceBucket] = useState("any");
@@ -209,6 +229,7 @@ export function PublicRegistryGrid({
       registryStoreName: showStoreRegistries
         ? registryStoreFor(item.external_url, linkedStores)?.name
         : undefined,
+      actions: actions?.reserve?.(item.id),
     }));
 
   return (
@@ -342,6 +363,7 @@ export function PublicRegistryGrid({
                           alreadyPurchased={fundPurchased}
                           previousAmount={fundPrevAmount}
                           shippingAddress={shippingAddress}
+                          action={actions?.contribute}
                         />
                       </div>
                     </CardContent>
@@ -384,6 +406,8 @@ export function PublicRegistryGrid({
                     coverFlavor={coverFlavor}
                     linkedStores={linkedStores}
                     showStoreRegistries={showStoreRegistries}
+                    actions={actions}
+                    demo={demo}
                   />
                 ))}
               </div>
@@ -413,6 +437,8 @@ export function PublicRegistryGrid({
                   coverFlavor={coverFlavor}
                   linkedStores={linkedStores}
                   showStoreRegistries={showStoreRegistries}
+                  actions={actions}
+                  demo={demo}
                 />
               ))}
             </div>
@@ -438,6 +464,8 @@ function PublicItemCard({
   coverFlavor,
   linkedStores,
   showStoreRegistries,
+  actions,
+  demo,
 }: {
   item: RegistryItem;
   categoryName: string | null;
@@ -453,6 +481,8 @@ function PublicItemCard({
   coverFlavor?: string;
   linkedStores: StoreId[];
   showStoreRegistries: boolean;
+  actions?: GiftActions;
+  demo: boolean;
 }) {
   const storeLink = classifyStoreLink(item.external_url);
   const store = storeLink?.store;
@@ -575,6 +605,8 @@ function PublicItemCard({
                 coverFlavor={coverFlavor}
                 gift={myItemGift}
                 initialStep={openStep}
+                actions={actions?.cover?.(item.id)}
+                demo={demo}
               />
             ) : (
               // One way in: the dialog takes the guest through reserving,
@@ -587,6 +619,7 @@ function PublicItemCard({
                 gift={myItemGift}
                 shippingAddress={shippingAddress}
                 initialStep={openStep}
+                actions={actions?.reserve?.(item.id)}
               />
             )}
           </div>

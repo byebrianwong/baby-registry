@@ -17,12 +17,15 @@ export function PublicProfile({
   today,
   isOwnProfile = false,
   followAction,
+  basePath = "",
 }: {
   fullName: string | null;
   registries: ListedRegistry[];
   today: string;
   isOwnProfile?: boolean;
   followAction?: React.ReactNode;
+  /** Put in front of every link. The demo passes "/demo". */
+  basePath?: string;
 }) {
   const displayName = nameToShow({ full_name: fullName });
 
@@ -39,7 +42,7 @@ export function PublicProfile({
         </div>
         {isOwnProfile ? (
           <Button variant="outline" size="sm" asChild>
-            <Link href="/dashboard/account">Edit profile</Link>
+            <Link href={`${basePath}/dashboard/account`}>Edit profile</Link>
           </Button>
         ) : (
           followAction
@@ -52,7 +55,7 @@ export function PublicProfile({
           <p className="mt-3 text-tertiary">No registries to show yet.</p>
           {isOwnProfile && (
             <Link
-              href="/dashboard/account"
+              href={`${basePath}/dashboard/account`}
               className="mt-2 text-sm font-medium text-brand-600 hover:underline"
             >
               Choose which registries to show
@@ -68,6 +71,7 @@ export function PublicProfile({
                 key={registry.slug}
                 registry={registry}
                 isPast={isPastEvent(registry, today)}
+                basePath={basePath}
               />
             ))}
           </div>

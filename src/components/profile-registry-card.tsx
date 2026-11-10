@@ -9,14 +9,17 @@ export function ProfileRegistryCard({
   registry,
   isPast = false,
   ownerName,
+  basePath = "",
 }: {
   registry: ListedRegistry;
   isPast?: boolean;
   ownerName?: string;
+  /** Put in front of the registry link. The demo passes "/demo". */
+  basePath?: string;
 }) {
   return (
     <Link
-      href={`/r/${registry.slug}`}
+      href={`${basePath}/r/${registry.slug}`}
       className="group flex items-center gap-4 rounded-2xl border border-secondary bg-primary p-4 shadow-sm transition hover:border-primary hover:shadow-md motion-safe:hover:-translate-y-0.5"
     >
       <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-600/10">
