@@ -101,8 +101,13 @@ export const SaveError: Story = {
     await openWith(/gift this/i)!(context);
     fill(screen.getByLabelText(/your name/i), "Glinda");
     fill(screen.getByLabelText(/your email/i), "glinda@example.com");
-    await context.userEvent.click(screen.getByRole("button", { name: /i sent/i }));
+    const send = screen.getByRole("button", { name: /i sent/i });
+    await context.userEvent.click(send);
     await screen.findByText(/already given this/i);
+    // Leave the button without hover or focus. Its ring otherwise differs
+    // from one snapshot run to the next.
+    await context.userEvent.unhover(send);
+    send.blur();
   },
 };
 
