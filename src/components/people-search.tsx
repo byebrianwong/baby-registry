@@ -4,16 +4,74 @@ import { useRef, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/base/input/input";
-import { FollowButton } from "@/components/follow-button";
-import { searchPeople, type SearchResponse } from "@/lib/actions/follows";
+import { FollowToggle, useFollow, type FollowToggleState } from "@/components/follow-button";
+import { searchPeople, type SearchResponse, type SearchResult } from "@/lib/actions/follows";
 import { sendFollowInvite } from "@/lib/actions/follow-invites";
 import { looksLikeEmail } from "@/lib/email-address";
+import { initialsFor } from "@/lib/initials";
 import { displayName, profilePath } from "@/lib/profile-link";
 
 const MIN_NAME_LENGTH = 3;
-const RETURN_TO = "/dashboard/following";
 
 type InviteState = { status: "idle" | "sending" | "sent"; error?: string };
+
+// Each result matches the registry cards under the search on the Following
+// page: a tinted circle, the name, a line of detail and the action.
+const CARD = "rounded-2xl border border-secondary bg-primary p-4 shadow-sm";
+
+function PersonCard({
+  person,
+  detail,
+  error,
+  action,
+}: {
+  person: SearchResult;
+  detail: string;
+  error?: string;
+  action?: React.ReactNode;
+}) {
+  const name = displayName(person);
+  return (
+    <li className={`flex items-center gap-4 ${CARD}`}>
+      <span
+        aria-hidden="true"
+        className="flex size-10 shrink-0 items-center justify-center rounded-full bg-brand-600/10 text-sm font-semibold text-brand-600"
+      >
+        {initialsFor(name)}
+      </span>
+      <span className="min-w-0 flex-1">
+        <Link href={profilePath(person)} className="block break-words font-medium text-primary hover:underline">
+          {name}
+        </Link>
+        <span className="mt-0.5 block text-sm text-tertiary">{detail}</span>
+        {error && <span className="mt-0.5 block text-sm text-error-primary">{error}</span>}
+      </span>
+      {action && <span className="shrink-0">{action}</span>}
+    </li>
+  );
+}
+
+const DETAIL: Record<FollowToggleState, string> = {
+  none: "Approves every follower",
+  pending: "Waiting for approval",
+  approved: "You can see their private registries",
+};
+
+function FollowablePerson({ person, state: initialState }: { person: SearchResult; state: FollowToggleState }) {
+  const { state, busy, error, toggle } = useFollow({
+    publicId: person.public_id,
+    name: displayName(person),
+    state: initialState,
+  });
+  return (
+    <PersonCard
+      person={person}
+      detail={DETAIL[state]}
+      error={error}
+      action={<FollowToggle state={state} busy={busy} onClick={toggle} />}
+    />
+  );
+}
 
 /**
  * Names are searched as you type. Email addresses are looked up only when
@@ -118,7 +176,7 @@ export function PeopleSearch({
       )}
 
       {showEmpty && response.kind === "email" && (
-        <div className="space-y-3 rounded-xl border border-secondary p-4">
+        <div className={`space-y-3 ${CARD}`}>
           {invite.status === "sent" ? (
             <p className="text-sm text-secondary">
               Invite sent to <strong className="break-words">{response.query}</strong>. If they say yes,
@@ -145,27 +203,14 @@ export function PeopleSearch({
       )}
 
       {!searching && results.length > 0 && (
-        <ul className="divide-y divide-secondary rounded-xl border border-secondary">
-          {results.map((person) => (
-            <li key={person.public_id} className="flex flex-wrap items-center justify-between gap-3 p-3">
-              <Link
-                href={profilePath(person)}
-                className="min-w-0 break-words font-medium text-primary hover:underline"
-              >
-                {displayName(person)}
-              </Link>
-              {person.state === "self" ? (
-                <span className="text-sm font-medium text-tertiary">That&apos;s you</span>
-              ) : (
-                <FollowButton
-                  publicId={person.public_id}
-                  name={displayName(person)}
-                  state={person.state}
-                  returnTo={RETURN_TO}
-                />
-              )}
-            </li>
-          ))}
+        <ul className="flex flex-col gap-3">
+          {results.map((person) =>
+            person.state === "self" ? (
+              <PersonCard key={person.public_id} person={person} detail="That's you" />
+            ) : (
+              <FollowablePerson key={person.public_id} person={person} state={person.state} />
+            ),
+          )}
         </ul>
       )}
 
