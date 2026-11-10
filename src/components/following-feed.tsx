@@ -2,6 +2,7 @@ import Link from "next/link";
 import { PeopleSearch } from "@/components/people-search";
 import { ProfileRegistryCard } from "@/components/profile-registry-card";
 import { PandaMark } from "@/components/panda-mark";
+import type { FollowActions } from "@/components/follow-button";
 import type { searchPeople } from "@/lib/actions/follows";
 import type { sendFollowInvite } from "@/lib/actions/follow-invites";
 import type { FeedRegistry, FollowPerson } from "@/lib/follows";
@@ -23,10 +24,12 @@ function RegistryGroup({
   title,
   registries,
   today,
+  basePath,
 }: {
   title: string;
   registries: FeedRegistry[];
   today: string;
+  basePath: string;
 }) {
   if (registries.length === 0) return null;
   return (
@@ -39,6 +42,7 @@ function RegistryGroup({
             registry={registry}
             isPast={isPastEvent(registry, today)}
             ownerName={displayName(registry.owner)}
+            basePath={basePath}
           />
         ))}
       </div>
@@ -52,12 +56,18 @@ export function FollowingFeed({
   today,
   searchAction,
   inviteAction,
+  followActions,
+  basePath = "",
 }: {
   people: FollowPerson[];
   registries: FeedRegistry[];
   today: string;
   searchAction?: typeof searchPeople;
   inviteAction?: typeof sendFollowInvite;
+  /** Stand-ins for the Follow buttons' server actions. The demo passes them. */
+  followActions?: FollowActions;
+  /** Put in front of every link. The demo passes "/demo". */
+  basePath?: string;
 }) {
   const sorted = sortListedRegistries(registries, today);
   const upcoming = sorted.filter((r) => r.event_date !== null && !isPastEvent(r, today));
@@ -75,7 +85,12 @@ export function FollowingFeed({
         <p className="text-tertiary">Registries from people who&apos;ve approved your follow.</p>
 
         <div className="mt-6">
-          <PeopleSearch searchAction={searchAction} inviteAction={inviteAction} />
+          <PeopleSearch
+            searchAction={searchAction}
+            inviteAction={inviteAction}
+            followActions={followActions}
+            basePath={basePath}
+          />
         </div>
 
         {people.length === 0 ? (
@@ -96,9 +111,9 @@ export function FollowingFeed({
               />
             ) : (
               <>
-                <RegistryGroup title="Coming up" registries={upcoming} today={today} />
-                <RegistryGroup title="Anytime" registries={anytime} today={today} />
-                <RegistryGroup title="Past events" registries={past} today={today} />
+                <RegistryGroup title="Coming up" registries={upcoming} today={today} basePath={basePath} />
+                <RegistryGroup title="Anytime" registries={anytime} today={today} basePath={basePath} />
+                <RegistryGroup title="Past events" registries={past} today={today} basePath={basePath} />
               </>
             )}
 
@@ -107,7 +122,7 @@ export function FollowingFeed({
               <ul className="mt-3 flex flex-col gap-2">
                 {[...approved, ...waiting].map((person) => (
                   <li key={person.public_id} className="flex flex-wrap items-baseline gap-x-2">
-                    <Link href={profilePath(person)} className="font-medium text-primary hover:underline">
+                    <Link href={`${basePath}${profilePath(person)}`} className="font-medium text-primary hover:underline">
                       {displayName(person)}
                     </Link>
                     {person.status === "pending" && (
@@ -118,7 +133,7 @@ export function FollowingFeed({
               </ul>
               <p className="mt-3 text-sm text-tertiary">
                 Manage who you follow on your{" "}
-                <Link href="/dashboard/account#follows" className="font-medium text-brand-600 hover:underline">
+                <Link href={`${basePath}/dashboard/account#follows`} className="font-medium text-brand-600 hover:underline">
                   account page
                 </Link>
                 .

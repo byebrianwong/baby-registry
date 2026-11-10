@@ -50,7 +50,14 @@ function TabStatus({ label, current }: { label: string; current: boolean }) {
  * screen while you switch. Guests can't plan events or follow anyone, so they
  * only get My registries.
  */
-export function DashboardTabs({ hasAccount }: { hasAccount: boolean }) {
+export function DashboardTabs({
+  hasAccount,
+  basePath = "",
+}: {
+  hasAccount: boolean;
+  /** Put in front of every tab's link. The demo passes "/demo". */
+  basePath?: string;
+}) {
   const pathname = usePathname() ?? "";
 
   // The tab you just clicked shows as current straight away, before the URL
@@ -62,7 +69,7 @@ export function DashboardTabs({ hasAccount }: { hasAccount: boolean }) {
     setClickedHref(null);
   }
   const currentHref = clickedHref ?? pathname;
-  const tabs = hasAccount ? TABS : TABS.slice(0, 1);
+  const tabs = (hasAccount ? TABS : TABS.slice(0, 1)).map((tab) => ({ ...tab, href: `${basePath}${tab.href}` }));
 
   return (
     <div className="container mx-auto px-4 pt-6">

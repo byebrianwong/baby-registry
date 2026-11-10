@@ -34,6 +34,8 @@ export interface EventInvitationProps {
   calendar?: { google: string; ics: string } | null;
   /** The RSVP form, under the details. */
   children?: React.ReactNode;
+  /** Put in front of the registry link. The demo passes "/demo". */
+  basePath?: string;
 }
 
 function DetailRow({ icon: Icon, children }: { icon: typeof CalendarDays; children: React.ReactNode }) {
@@ -52,7 +54,7 @@ function DetailRow({ icon: Icon, children }: { icon: typeof CalendarDays; childr
  * the registry, and the RSVP form below. The public event page and the host's
  * preview both use it.
  */
-export function EventInvitation({ event, registry, calendar, children }: EventInvitationProps) {
+export function EventInvitation({ event, registry, calendar, children, basePath = "" }: EventInvitationProps) {
   const theme = eventTheme(event.event_type);
   const time = formatEventTime(event);
   const map = mapsUrl(event);
@@ -160,7 +162,7 @@ export function EventInvitation({ event, registry, calendar, children }: EventIn
               </div>
             </div>
             <Button variant="outline" size="sm" className="shrink-0" asChild>
-              <a href={`/r/${registry.slug}`}>View registry</a>
+              <a href={`${basePath}/r/${registry.slug}`}>View registry</a>
             </Button>
           </div>
         )}

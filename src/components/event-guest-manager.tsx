@@ -65,6 +65,8 @@ export interface EventGuestManagerProps {
   replyToEmail: string | null;
   /** The site's address, for copying RSVP links. Stories pass one. */
   origin?: string;
+  /** Put in front of the RSVP links' path. The demo passes "/demo". */
+  basePath?: string;
   actions?: Partial<GuestManagerActions>;
 }
 
@@ -127,6 +129,7 @@ export function EventGuestManager({
   maxPartySize,
   replyToEmail,
   origin,
+  basePath = "",
   actions: actionOverrides,
 }: EventGuestManagerProps) {
   const router = useRouter();
@@ -161,7 +164,7 @@ export function EventGuestManager({
   const pastePreview = useMemo(() => parseGuestList(pasted), [pasted]);
 
   const linkFor = (guest: EventGuest) =>
-    `${origin ?? (typeof window !== "undefined" ? window.location.origin : "")}/e/${eventSlug}?g=${encodeURIComponent(guest.token)}`;
+    `${origin ?? (typeof window !== "undefined" ? window.location.origin : "")}${basePath}/e/${eventSlug}?g=${encodeURIComponent(guest.token)}`;
 
   const add = async (list: ParsedGuest[]) => {
     setAdding(true);

@@ -52,7 +52,7 @@ A gift registry app built with Next.js, Supabase, and Tailwind CSS. It started a
 ### Accounts and demo
 
 - **Sign-up and password reset** - Accounts use an email and password. "Forgot password" sends a reset link by email.
-- **Demo** - `/demo` shows the gift giver view with sample data, and `/demo/dashboard` shows the owner's side. No account needed.
+- **Demo** - `/demo/dashboard` is the owner's side, signed in as the sample couple Remi & Max: a baby registry and a birthday wishlist, events with guest lists and RSVPs, following and profiles, and a guide to all of it. `/demo` is the gift giver view. No account needed, and nothing is saved. The demo pages mirror the real ones under `/demo` (`/demo/r/...`, `/demo/e/...`, `/demo/u/...`) and use the same components, with stand-ins for their server actions.
 
 ## Tech Stack
 
@@ -148,7 +148,7 @@ src/
 │   │               └── settings/      # Registry settings and managers
 │   ├── api/extension/    # The browser extension's API
 │   ├── auth/callback/    # Where email confirmation and password reset links land
-│   ├── demo/             # Demo pages with sample data
+│   ├── demo/             # Demo pages with sample data, at the real pages' paths under /demo
 │   ├── extension/connect/ # Connects the browser extension to an account
 │   ├── follow-invite/[token]/ # Answer an emailed invite to be followed
 │   ├── invite/[token]/   # Accept an invite to co-manage a registry
@@ -179,7 +179,10 @@ src/
 │   ├── registry-copy.ts  # Labels for each registry type and occasion
 │   ├── follows.ts        # Reads follows and the Following page's registries
 │   ├── username.ts       # Username rules
-│   └── demo-data.ts      # Sample data for the demo pages
+│   ├── demo-data.ts      # The demo's baby registry
+│   ├── demo-registries.ts # Every demo registry, including the wishlist and friends' registries
+│   ├── demo-events.ts    # The demo's events and guest lists
+│   └── demo-people.ts    # The demo's people, follows and people search
 ├── middleware.ts         # Refreshes the Supabase session on each request
 └── utils/supabase/
     ├── client.ts          # Browser client
