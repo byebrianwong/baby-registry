@@ -12,6 +12,12 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "storybook", "--", "--no-open"],
       "port": 6006
+    },
+    {
+      "name": "mobile-web",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "mobile", "run", "web", "--", "--port", "8081"],
+      "port": 8081
     }
   ]
 }
