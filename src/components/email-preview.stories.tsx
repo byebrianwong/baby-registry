@@ -14,6 +14,7 @@ import {
   completionDiscountOwnerHtml,
   managerInviteHtml,
   followRequestHtml,
+  followInviteHtml,
   eventInvitationHtml,
   rsvpGuestConfirmationHtml,
   rsvpHostNotificationHtml,
@@ -354,10 +355,19 @@ export const FollowRequest: Story = {
     to: "max@example.com",
     html: followRequestHtml({
       followerName: "Grandma Dorothy",
-      followerUsername: "grandma-dorothy",
-      profileUrl: "https://regibee.com/u/grandma-dorothy",
+      profileUrl: "https://regibee.com/u/grandma-dorothy-r4d8w2nb6h",
       reviewUrl: "https://regibee.com/dashboard/account#follows",
       settingsUrl: "https://regibee.com/dashboard/account",
+    }),
+  },
+};
+
+export const FollowInvite: Story = {
+  args: {
+    subject: "Grandma Dorothy wants to follow you on Regibee",
+    html: followInviteHtml({
+      inviterName: "Grandma Dorothy",
+      inviteUrl: "https://regibee.com/follow-invite/abc123",
     }),
   },
 };

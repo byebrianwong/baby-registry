@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { ProfileRegistryCard } from "@/components/profile-registry-card";
 import { PandaMark } from "@/components/panda-mark";
 import { initialsFor } from "@/lib/initials";
+import { displayName as nameToShow } from "@/lib/profile-link";
 import {
   isPastEvent,
   sortListedRegistries,
@@ -11,33 +12,30 @@ import {
 } from "@/lib/registry-listing";
 
 export function PublicProfile({
-  username,
   fullName,
   registries,
   today,
   isOwnProfile = false,
   followAction,
 }: {
-  username: string;
   fullName: string | null;
   registries: ListedRegistry[];
   today: string;
   isOwnProfile?: boolean;
   followAction?: React.ReactNode;
 }) {
-  const displayName = fullName?.trim() || `@${username}`;
+  const displayName = nameToShow({ full_name: fullName });
 
   return (
     <div className="container mx-auto max-w-2xl px-4 py-8">
       <div className="flex flex-col items-center gap-3 text-center">
         <Avatar className="size-20">
           <AvatarFallback className="text-2xl font-medium">
-            {initialsFor(fullName?.trim() || username)}
+            {initialsFor(displayName)}
           </AvatarFallback>
         </Avatar>
         <div className="min-w-0 max-w-full">
           <h1 className="break-words text-2xl font-bold">{displayName}</h1>
-          <p className="break-words text-tertiary">@{username}</p>
         </div>
         {isOwnProfile ? (
           <Button variant="outline" size="sm" asChild>

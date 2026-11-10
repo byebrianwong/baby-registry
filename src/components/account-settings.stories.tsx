@@ -1,11 +1,10 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { AccountSettings, type AccountRegistry } from "./account-settings";
 
-const mockSave = async (formData: FormData) => {
+const mockSave = async () => {
   await new Promise((r) => setTimeout(r, 500));
-  return { success: true, username: String(formData.get("username")).toLowerCase() };
+  return { success: true };
 };
-const mockRemove = async () => ({ success: true });
 const mockList = async () => ({ success: true });
 
 const registries: AccountRegistry[] = [
@@ -44,28 +43,33 @@ const meta: Meta<typeof AccountSettings> = {
   args: {
     registries,
     saveAction: mockSave as never,
-    removeAction: mockRemove as never,
     listAction: mockList as never,
   },
 };
 export default meta;
 type Story = StoryObj<typeof AccountSettings>;
 
-// Before claiming a username, only the profile form shows.
-export const NoProfileYet: Story = {
-  args: { profile: { username: null, full_name: "Remi & Max" } },
+// A new account: findable by name and email, no followers yet.
+export const NewAccount: Story = {
+  args: {
+    profile: {
+      public_id: "k7m2p9qx4t",
+      full_name: "Remi & Max",
+      discoverable: true,
+      findable_by_email: true,
+    },
+    follows: { requests: [], followers: [], following: [] },
+  },
 };
 
-// With a username: share buttons, follow lists, registries to list, and the
-// turn-off card.
-export const WithProfile: Story = {
+// An older account that hasn't turned on email search, with a request waiting.
+export const WithFollowers: Story = {
   args: {
-    profile: { username: "remi-and-max", full_name: "Remi & Max" },
+    profile: { public_id: "k7m2p9qx4t", full_name: "Remi & Max", discoverable: true },
     follows: {
-      requests: [{ username: "grandma-dorothy", full_name: "Grandma Dorothy", status: "pending" }],
-      followers: [{ username: "alex-friend", full_name: "Alex Kim", status: "approved" }],
+      requests: [{ public_id: "r4d8w2nb6h", full_name: "Grandma Dorothy", status: "pending" }],
+      followers: [{ public_id: "a3f9c2xz7e", full_name: "Alex Kim", status: "approved" }],
       following: [],
     },
   },
 };
-

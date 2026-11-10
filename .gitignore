@@ -54,3 +54,9 @@ next-env.d.ts
 
 # browser extension build
 /extension/dist/
+
+# browser extension tests: saved store pages hold real registries and live
+# outside the repo (see extension/README.md). These catch copies made by mistake.
+/extension/test/**/*.html
+/test-results/
+/playwright-report/

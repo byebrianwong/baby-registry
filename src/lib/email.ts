@@ -14,12 +14,14 @@ import {
   newSuggestionOwnerHtml,
   managerInviteHtml,
   followRequestHtml,
+  followInviteHtml,
   completionDiscountOwnerHtml,
   eventInvitationHtml,
   rsvpGuestConfirmationHtml,
   rsvpHostNotificationHtml,
   type EventEmailDetails,
 } from "./email-templates";
+import { displayName, profilePath } from "./profile-link";
 import {
   formatEventDate,
   formatEventTime,
@@ -510,10 +512,10 @@ export async function notifyFollowRequest(opts: { followerId: string; followeeId
     const [{ data: followee }, { data: follower }, { data: lastEmail }] = await Promise.all([
       supabaseAdmin
         .from("profiles")
-        .select("username, email_follow_requests")
+        .select("email_follow_requests")
         .eq("id", opts.followeeId)
         .single(),
-      supabaseAdmin.from("profiles").select("username, full_name").eq("id", opts.followerId).single(),
+      supabaseAdmin.from("profiles").select("public_id, full_name").eq("id", opts.followerId).single(),
       supabaseAdmin
         .from("follow_request_emails")
         .select("sent_at")
@@ -522,7 +524,7 @@ export async function notifyFollowRequest(opts: { followerId: string; followeeId
         .maybeSingle(),
     ]);
 
-    if (!followee?.username || !followee.email_follow_requests || !follower?.username) return;
+    if (!followee?.email_follow_requests || !follower) return;
     if (lastEmail && Date.now() - new Date(lastEmail.sent_at).getTime() < FOLLOW_REQUEST_EMAIL_GAP_MS) {
       return;
     }
@@ -541,7 +543,7 @@ export async function notifyFollowRequest(opts: { followerId: string; followeeId
       );
 
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
-    const followerName = (follower.full_name?.trim() || `@${follower.username}`).slice(0, 60);
+    const followerName = displayName(follower).slice(0, 60);
 
     await getResend().emails.send({
       from: FROM,
@@ -549,14 +551,34 @@ export async function notifyFollowRequest(opts: { followerId: string; followeeId
       subject: `${followerName} wants to follow you on Regibee`,
       html: followRequestHtml({
         followerName,
-        followerUsername: follower.username,
-        profileUrl: `${siteUrl}/u/${follower.username}`,
+        profileUrl: `${siteUrl}${profilePath(follower)}`,
         reviewUrl: `${siteUrl}/dashboard/account#follows`,
         settingsUrl: `${siteUrl}/dashboard/account`,
       }),
     });
   } catch (err) {
     console.error("[email] Failed to send follow request email:", err);
+  }
+}
+
+// An invite to follow someone who may not have an account yet. The caller
+// (sendFollowInvite) checks the sending limits and opt-outs first.
+export async function sendFollowInviteEmail(opts: { toEmail: string; inviterName: string; token: string }) {
+  try {
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+    const inviterName = opts.inviterName.slice(0, 60);
+
+    await getResend().emails.send({
+      from: FROM,
+      to: TEST_RECIPIENT_OVERRIDE || opts.toEmail,
+      subject: `${inviterName} wants to follow you on Regibee`,
+      html: followInviteHtml({
+        inviterName,
+        inviteUrl: `${siteUrl}/follow-invite/${opts.token}`,
+      }),
+    });
+  } catch (err) {
+    console.error("[email] Failed to send follow invite:", err);
   }
 }
 

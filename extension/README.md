@@ -8,11 +8,12 @@ A Chrome extension that brings the items on an owner's store registries into Reg
 - **Skips what's already on Regibee.** It matches items on the store's product ID inside each link, so an item already on Regibee with a plain link counts as the same item.
 - **Ask first, or automatic.** By default, the toolbar button shows how many new items a registry page has, and the popup lists them with checkboxes. In automatic mode it adds new items on its own and shows a notice with Undo. Automatic mode never re-adds an item the owner already saw, left out, removed or undid.
 - **Adds one item from any product page.** On a product page at any shop, the popup opens an "Add to Regibee" form filled in from the page: name, price, pictures to choose from, quantity, registry, category, most wanted, open to used with a minimum condition, and a note. It keeps the page's address exactly, so a product opened from a store registry keeps its registry link, and it says so. On a page that doesn't look like a product, the home screen offers "Add this page to Regibee".
+- **Reads a pasted store link for the site.** Amazon blocks the server's fetch of its product pages, so pasting an Amazon link into the add or edit item dialog on regibee.com used to fail. Now, at the stores the extension reads (Amazon, Target, Walmart and Pottery Barn Kids, short links like a.co included), the dialog asks the extension first. The extension opens the link in a background tab next to the owner's, reads the product with the same reader as the popup, closes the tab and sends back the name, price and pictures. Only regibee.com pages can ask, through the content script that runs there (`src/content/connect.ts`), and it opens only those stores' links, never a store registry page. A store page opened this way doesn't count as a visit, so automatic mode doesn't import from it. When the extension isn't installed, is older than 0.2.0 or can't read the page, the server fetches the link as before. The site side is `src/lib/fetch-product.ts`.
 - **Three ways to open it.** The toolbar button, the **Add to Regibee** item in the right-click menu on any web page, or the shortcut Alt+Shift+R (owners can change it at `chrome://extensions/shortcuts`). Right-clicking a picture shows that picture first in the form. From the right-click menu the form opens even on a page that doesn't look like a product. The menu item opens the toolbar popup with `chrome.action.openPopup`; where that fails (Chrome before 127, some other Chromium browsers) it opens the popup in a small window instead.
 - **Add now, registry link later.** A store registry link needs the item to be on the store registry first: Target's `itemLineNum` and Amazon's `coliid` name the item's place on it. So on a plain link at a store where the owner has a registry, the form says to add it to Regibee now, then add it to the store registry on the same page. The next time the owner opens that store registry, the extension matches items on the store's product ID and swaps the registry link in for the plain one. It does this in both modes without asking, since it only makes gifts count, and shows a notice on the page. It never replaces a registry link that's already there. Opening a product from the store registry and clicking the button does the same for that one item ("Use this registry link").
 - **Reminds the owner.** The home screen and the registry's dashboard say how many items still have plain links at stores where the owner has a registry. The dashboard notice has "Don't remind me", saved per item in `settings.hidden_plain_link_items`.
 
-The product form reads the page only after the owner clicks the toolbar button, uses the right-click menu item or presses the shortcut, using Chrome's `activeTab`, `scripting` and `contextMenus` permissions. None of them adds an install warning, and the extension still can't see other pages. The reader is `src/product-reader.ts`. It uses the page's structured product data where there is some, and reads Amazon's, Target's and Walmart's product blocks for the price and pictures they leave out. On real pages it read the name, price and every product picture from an Amazon page opened from a registry (keeping `colid` and `coliid`), a Target page and a Walmart page.
+The product form reads the page only after the owner clicks the toolbar button, uses the right-click menu item or presses the shortcut, using Chrome's `activeTab`, `scripting` and `contextMenus` permissions. None of them adds an install warning, and the extension still can't see other pages. Reading a pasted store link needs no new permission: the extension could already read those stores' pages to import registries. The reader is `src/product-reader.ts`. It uses the page's structured product data where there is some, and reads Amazon's, Target's and Walmart's product blocks for the price and pictures they leave out. On real pages it read the name, price and every product picture from an Amazon page opened from a registry (keeping `colid` and `coliid`), a Target page and a Walmart page.
 
 ## How it signs in
 
@@ -37,6 +38,32 @@ This builds for http://localhost:3000 and rebuilds on changes. A local dev serve
 To load it in Chrome: open `chrome://extensions`, turn on Developer mode, click **Load unpacked** and choose `extension/dist`. After a rebuild, click the reload button on the extension's card.
 
 The API routes and the Connect page have to be deployed before a build for regibee.com can connect.
+
+## Tests
+
+```bash
+npm run test:extension
+```
+
+This builds `extension/dist` and runs it in Playwright's Chromium, headless, on saved copies of real store pages. The first time, install that Chromium with `npx playwright install chromium`. The tests are in `extension/test/`.
+
+- **Registry pages.** The reader finds every item the page links with a registry link, and each item's link, name, price, picture and quantity match what was recorded from that page. The toolbar button counts the items that aren't on Regibee yet.
+- **Product pages.** The product reader reads the name, price and pictures, and keeps the address exactly, so a page opened from a store registry keeps its registry link. The popup's "Add to Regibee" form shows what it read.
+
+The tests never reach a store or Regibee. Each saved page is served at the address it was saved from, so the content scripts run on it as they do on the real site. No host name resolves, and every other request is refused. Calls to Regibee's API get made-up answers, so nothing touches the database.
+
+### The saved pages
+
+The pages hold the owner's real registries, so they stay on your computer, in `~/.regibee/extension-test-pages`, and never go in the repo. `REGIBEE_TEST_PAGES` points the tests at another folder. Without pages, the tests skip, which is why GitHub Actions doesn't run them. What the tests recorded from each page is in `expected/` in the same folder, and the files from failed tests are in `test-results/`. Both hold registry items too.
+
+The first set, saved on November 8, 2026: the Amazon "Your registry" page (30 items) and a Walmart registry page (23 items), an Amazon and a Walmart product page opened from those registries, and a Target product page.
+
+To save a page, or save it again after a store changes it:
+
+1. Open it in Chrome, signed in if it needs that.
+2. Open DevTools, paste all of [`test/save-page.js`](test/save-page.js) into the Console and press Enter. It downloads `<store>-<registry|product>.html`, named after the store and the kind of page.
+3. Move the file to the pages folder, replacing the old one.
+4. Run `npm run test:extension`. For a new page, the first run records what the extension reads from it in `expected/` and fails once, saying so. Check that file against the live page. For a page saved again, a failure shows what the extension now reads differently. When the differences are only the store's own changes, such as new prices or items, record them with `npm run test:extension -- --update-snapshots`.
 
 ## Stores
 

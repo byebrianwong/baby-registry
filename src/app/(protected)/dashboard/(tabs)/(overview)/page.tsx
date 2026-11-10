@@ -104,18 +104,6 @@ async function loadSharedRegistries(supabase: ServerClient, user: User) {
   return data || [];
 }
 
-// The user's username, and how many people are waiting for them to approve a
-// follow. Only people with a username can be followed.
-async function loadProfile(supabase: ServerClient, userId: string) {
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("username")
-    .eq("id", userId)
-    .single();
-  const username: string | null = profile?.username ?? null;
-  const followRequestCount = username ? await countFollowRequests(userId) : 0;
-  return { username, followRequestCount };
-}
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -129,7 +117,7 @@ export default async function DashboardPage() {
 
   // None of these three needs another's result, so they run at the same time.
   // The page waits for the slowest one, not for all of them in a row.
-  const [{ data: registries }, sharedRegistries, { username, followRequestCount }] =
+  const [{ data: registries }, sharedRegistries, followRequestCount] =
     await Promise.all([
       supabase
         .from("registries")
@@ -137,12 +125,16 @@ export default async function DashboardPage() {
         .eq("owner_id", user.id)
         .order("created_at", { ascending: false }),
       loadSharedRegistries(supabase, user),
-      loadProfile(supabase, user.id),
+      user.is_anonymous ? 0 : countFollowRequests(user.id),
     ]);
 
   const hasNoRegistries = (!registries || registries.length === 0) && sharedRegistries.length === 0;
+  // Until one of their registries is on their profile, the profile link has
+  // nothing on it to share.
   const showProfilePrompt =
-    !user.is_anonymous && !username && Boolean(registries && registries.length > 0);
+    !user.is_anonymous &&
+    Boolean(registries && registries.length > 0) &&
+    !registries!.some((registry) => registry.listed_on_profile);
 
   // Dates are YYYY-MM-DD in UTC, like the Following tab's (following/page.tsx).
   const now = new Date();
@@ -209,12 +201,12 @@ export default async function DashboardPage() {
             <div>
               <p className="font-medium">Give friends one link to all your registries</p>
               <p className="text-sm text-tertiary">
-                Claim a username to get a public profile. You choose what appears on it.
+                Your profile shows only the registries you choose. Friends can follow it to see new ones.
               </p>
             </div>
           </div>
           <Button variant="outline" size="sm" className="shrink-0" asChild>
-            <Link href="/dashboard/account">Set up profile</Link>
+            <Link href="/dashboard/account">Choose registries</Link>
           </Button>
         </div>
       )}

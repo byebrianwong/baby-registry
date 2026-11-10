@@ -23,7 +23,6 @@ const meta: Meta<typeof CreateRegistryForm> = {
   component: CreateRegistryForm,
   parameters: { layout: "fullscreen" },
   args: {
-    username: "remi-and-max",
     createAction: fn(async () => {
       await new Promise((resolve) => setTimeout(resolve, 600));
       return { error: "This is a story, so nothing was saved." };
@@ -35,14 +34,14 @@ type Story = StoryObj<typeof CreateRegistryForm>;
 
 export const FirstStep: Story = {};
 
-// Without a profile, the privacy section offers to set one up instead of the
-// "Show on my profile" checkbox.
-export const NoProfileYet: Story = {
-  args: { username: null },
+// Guests have no profile page, so the privacy section has no "Show on my
+// profile" checkbox.
+export const Guest: Story = {
+  args: { canListOnProfile: false },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await userEvent.click(canvas.getByRole("button", { name: /Who can see it/ }));
-    await expect(canvas.getByRole("link", { name: "Set up your public profile" })).toBeVisible();
+    await expect(canvas.queryByRole("checkbox", { name: /Show on my profile/ })).toBeNull();
     await settle();
   },
 };

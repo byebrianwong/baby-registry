@@ -8,19 +8,17 @@ import { LISTED_REGISTRY_COLUMNS, type ListedRegistry } from "@/lib/registry-lis
 
 export type FollowStatus = "pending" | "approved";
 
-export interface FollowPerson {
-  username: string;
+export interface PersonSummary {
+  public_id: string;
   full_name: string | null;
+}
+
+export interface FollowPerson extends PersonSummary {
   status: FollowStatus;
 }
 
-export interface PersonSummary {
-  username: string;
-  full_name: string | null;
-}
-
 export interface FeedRegistry extends ListedRegistry {
-  owner: { username: string; full_name: string | null };
+  owner: PersonSummary;
 }
 
 export async function getFollowStatus(
@@ -60,15 +58,15 @@ export async function countFollowRequests(userId: string): Promise<number> {
   return count ?? 0;
 }
 
-type JoinedProfile = { username: string | null; full_name: string | null } | null;
+type JoinedProfile = PersonSummary | null;
 
 function toPeople(
   rows: { status: string; person: JoinedProfile }[] | null,
 ): FollowPerson[] {
   return (rows || [])
-    .filter((row) => row.person?.username)
+    .filter((row) => row.person)
     .map((row) => ({
-      username: row.person!.username!,
+      public_id: row.person!.public_id,
       full_name: row.person!.full_name,
       status: row.status as FollowStatus,
     }));
@@ -78,25 +76,25 @@ export async function listFollows(userId: string) {
   const [{ data: incoming }, { data: outgoing }, { data: blockedRows }] = await Promise.all([
     supabaseAdmin
       .from("follows")
-      .select("status, person:profiles!follows_follower_id_fkey(username, full_name)")
+      .select("status, person:profiles!follows_follower_id_fkey(public_id, full_name)")
       .eq("followee_id", userId)
       .order("created_at", { ascending: false }),
     supabaseAdmin
       .from("follows")
-      .select("status, person:profiles!follows_followee_id_fkey(username, full_name)")
+      .select("status, person:profiles!follows_followee_id_fkey(public_id, full_name)")
       .eq("follower_id", userId)
       .order("created_at", { ascending: false }),
     supabaseAdmin
       .from("user_blocks")
-      .select("person:profiles!user_blocks_blocked_id_fkey(username, full_name)")
+      .select("person:profiles!user_blocks_blocked_id_fkey(public_id, full_name)")
       .eq("blocker_id", userId)
       .order("created_at", { ascending: false }),
   ]);
 
   const people = toPeople(incoming as never);
   const blocked: PersonSummary[] = ((blockedRows || []) as unknown as { person: JoinedProfile }[])
-    .filter((row) => row.person?.username)
-    .map((row) => ({ username: row.person!.username!, full_name: row.person!.full_name }));
+    .filter((row) => row.person)
+    .map((row) => ({ public_id: row.person!.public_id, full_name: row.person!.full_name }));
   return {
     requests: people.filter((p) => p.status === "pending"),
     followers: people.filter((p) => p.status === "approved"),
@@ -111,18 +109,18 @@ export async function listFollows(userId: string) {
 export async function listFollowingFeed(userId: string) {
   const { data: rows } = await supabaseAdmin
     .from("follows")
-    .select("status, person:profiles!follows_followee_id_fkey(id, username, full_name)")
+    .select("status, person:profiles!follows_followee_id_fkey(id, public_id, full_name)")
     .eq("follower_id", userId)
     .order("created_at", { ascending: false });
 
   type Row = {
     status: FollowStatus;
-    person: { id: string; username: string | null; full_name: string | null } | null;
+    person: { id: string; public_id: string; full_name: string | null } | null;
   };
-  const followed = ((rows || []) as unknown as Row[]).filter((row) => row.person?.username);
+  const followed = ((rows || []) as unknown as Row[]).filter((row) => row.person);
 
   const people: FollowPerson[] = followed.map((row) => ({
-    username: row.person!.username!,
+    public_id: row.person!.public_id,
     full_name: row.person!.full_name,
     status: row.status,
   }));
@@ -132,7 +130,7 @@ export async function listFollowingFeed(userId: string) {
       .filter((row) => row.status === "approved")
       .map((row) => [
         row.person!.id,
-        { username: row.person!.username!, full_name: row.person!.full_name },
+        { public_id: row.person!.public_id, full_name: row.person!.full_name },
       ]),
   );
   if (approvedOwners.size === 0) return { people, registries: [] as FeedRegistry[] };

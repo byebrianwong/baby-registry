@@ -333,16 +333,14 @@ export function managerInviteHtml(opts: {
 
 export function followRequestHtml(opts: {
   followerName: string;
-  followerUsername: string;
   profileUrl: string;
   reviewUrl: string;
   settingsUrl: string;
 }): string {
   const name = escapeHtml(opts.followerName);
-  const username = escapeHtml(opts.followerUsername);
   return `
     <p>Hi there,</p>
-    <p><strong>${name}</strong> (@${username}) asked to follow you on Regibee.</p>
+    <p><strong>${name}</strong> asked to follow you on Regibee.</p>
     <p>If you approve, they'll see the private registries on your profile as well as your public ones. If you don't know them, you can decline the request or block them.</p>
     <p style="margin: 24px 0;">
       <a href="${escapeHtml(opts.reviewUrl)}" style="background-color: #004659; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
@@ -351,6 +349,26 @@ export function followRequestHtml(opts: {
     </p>
     <p style="color:#888;font-size:13px;">See their profile: ${escapeHtml(opts.profileUrl)}</p>
     <p style="color:#888;font-size:13px;">You're getting this because someone asked to follow you on Regibee. To stop these emails, turn them off on your account page: ${escapeHtml(opts.settingsUrl)}</p>
+  `;
+}
+
+export function followInviteHtml(opts: {
+  inviterName: string;
+  inviteUrl: string;
+}): string {
+  const name = escapeHtml(opts.inviterName);
+  const inviteUrl = escapeHtml(opts.inviteUrl);
+  return `
+    <p>Hi there,</p>
+    <p><strong>${name}</strong> would like to follow you on Regibee, the gift registry for babies, birthdays and other occasions.</p>
+    <p>If you say yes, they'll see the registries you choose to show on your Regibee profile. You can say yes with a free account, and remove them as a follower whenever you like.</p>
+    <p style="margin: 24px 0;">
+      <a href="${inviteUrl}" style="background-color: #004659; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
+        See the invite
+      </a>
+    </p>
+    <p style="color:#888;font-size:13px;">Or copy this link: ${inviteUrl}</p>
+    <p style="color:#888;font-size:13px;">You're getting this because ${name} entered your email address on Regibee. If you don't know them, you can ignore this email. The invite expires in 30 days.</p>
   `;
 }
 
