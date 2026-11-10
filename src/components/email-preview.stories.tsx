@@ -14,6 +14,7 @@ import {
   completionDiscountOwnerHtml,
   managerInviteHtml,
   followRequestHtml,
+  followInviteHtml,
   eventInvitationHtml,
   rsvpGuestConfirmationHtml,
   rsvpHostNotificationHtml,
@@ -42,17 +43,17 @@ const sampleAddress = "123 Main St\nApt 4B\nSan Francisco, CA 94102";
 
 const sampleGiftLink = "https://regibee.com/r/remi-and-max/gift/6f1c2a4e-8b3d-4c5e-9f70-1a2b3c4d5e6f";
 
-// Sent when a guest reserves an item, which holds it for them for 7 days.
+// Sent when a guest reserves an item, which holds it for them for 2 days.
 export const BuyerItemReserved: Story = {
   args: {
-    subject: 'You reserved "Hatch Rest+ Sound Machine". It\'s held for 7 days',
+    subject: 'You reserved "Hatch Rest+ Sound Machine". It\'s held for 2 days',
     html: itemReservedBuyerHtml({
       buyerName: "Glinda",
       itemTitle: "Hatch Rest+ Sound Machine",
       quantity: 1,
       parentName: "Remi & Max",
       registryTitle: "Remi & Max's Baby Registry",
-      holdDays: 7,
+      holdDays: 2,
       shippingAddress: sampleAddress,
       shopUrl: "https://amazon.com/dp/B07WFXGNGB",
       storeName: "Amazon",
@@ -62,16 +63,37 @@ export const BuyerItemReserved: Story = {
   },
 };
 
-// Sent on day 3 and day 6 of a reservation the guest hasn't confirmed.
+// For an item on the owners' own store registry: no address, because the
+// store has it.
+export const BuyerItemReservedOnStoreRegistry: Story = {
+  args: {
+    subject: 'You reserved "Solly Baby Wrap". It\'s held for 2 days',
+    html: itemReservedBuyerHtml({
+      buyerName: "Glinda",
+      itemTitle: "Solly Baby Wrap",
+      quantity: 1,
+      parentName: "Remi & Max",
+      registryTitle: "Remi & Max's Baby Registry",
+      holdDays: 2,
+      registryStoreName: "Amazon",
+      shopUrl: "https://www.amazon.com/dp/B0EXAMPLE?colid=EXAMPLE&coliid=EXAMPLE&psc=1",
+      storeName: "Amazon",
+      confirmUrl: `${sampleGiftLink}?step=confirm`,
+      releaseUrl: `${sampleGiftLink}?step=release`,
+    }),
+  },
+};
+
+// Sent once, about a day before a reservation the guest hasn't confirmed ends.
 export const BuyerItemReservationReminder: Story = {
   args: {
-    subject: '4 days left to finish your gift: "Hatch Rest+ Sound Machine"',
+    subject: 'Your reservation of "Hatch Rest+ Sound Machine" ends soon',
     html: itemReservationReminderBuyerHtml({
       buyerName: "Glinda",
       itemTitle: "Hatch Rest+ Sound Machine",
       parentName: "Remi & Max",
       registryTitle: "Remi & Max's Baby Registry",
-      daysLeft: 4,
+      hoursLeft: 30,
       shippingAddress: sampleAddress,
       shopUrl: "https://amazon.com/dp/B07WFXGNGB",
       storeName: "Amazon",
@@ -359,10 +381,19 @@ export const FollowRequest: Story = {
     to: "max@example.com",
     html: followRequestHtml({
       followerName: "Grandma Dorothy",
-      followerUsername: "grandma-dorothy",
-      profileUrl: "https://regibee.com/u/grandma-dorothy",
+      profileUrl: "https://regibee.com/u/grandma-dorothy-r4d8w2nb6h",
       reviewUrl: "https://regibee.com/dashboard/account#follows",
       settingsUrl: "https://regibee.com/dashboard/account",
+    }),
+  },
+};
+
+export const FollowInvite: Story = {
+  args: {
+    subject: "Grandma Dorothy wants to follow you on Regibee",
+    html: followInviteHtml({
+      inviterName: "Grandma Dorothy",
+      inviteUrl: "https://regibee.com/follow-invite/abc123",
     }),
   },
 };

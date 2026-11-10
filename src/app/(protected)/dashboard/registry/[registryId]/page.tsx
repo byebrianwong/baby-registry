@@ -1,13 +1,11 @@
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 import {
-  CalendarHeart,
   ExternalLink,
   Settings,
   ClipboardList,
   Mail,
   MessageSquare,
-  Plus,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -43,7 +41,7 @@ import { copyForRegistry } from "@/lib/registry-copy";
 import { formatDollars, formatPrice } from "@/lib/money";
 import { formatReservedUntil, isOpenReservation } from "@/lib/gifts";
 import { listEventsForRegistry } from "@/lib/events-server";
-import { eventTypeLabel, formatShortEventDate } from "@/lib/events";
+import { RegistryEventsBanner } from "@/components/registry-events-banner";
 
 interface RegistryItem {
   id: string;
@@ -319,43 +317,8 @@ export default async function RegistryManagePage({
       </div>
 
       {/* Events that link to this registry, and a way to plan one. */}
-      <div className="mt-6 flex flex-col gap-3 rounded-2xl bg-blush-50 p-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-start gap-3">
-          <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary">
-            <CalendarHeart aria-hidden="true" className="h-4.5 w-4.5 text-blush-700" />
-          </span>
-          {linkedEvents.length > 0 ? (
-            <div>
-              <p className="font-medium">{linkedEvents.length === 1 ? "Your event" : "Your events"}</p>
-              <ul className="text-sm text-tertiary">
-                {linkedEvents.map((event) => (
-                  <li key={event.id}>
-                    <Link href={`/dashboard/events/${event.id}`} className="font-medium text-brand-600 hover:underline">
-                      {event.title}
-                    </Link>
-                    {" · "}
-                    {event.event_date ? formatShortEventDate(event.event_date) : eventTypeLabel(event.event_type)}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ) : (
-            <div>
-              <p className="font-medium">Planning a party?</p>
-              <p className="text-sm text-tertiary">
-                Send invitations, track RSVPs, and link guests to this registry.
-              </p>
-            </div>
-          )}
-        </div>
-        <Button variant="outline" size="sm" className="shrink-0" asChild>
-          <Link href={`/dashboard/events/new?registry=${registryId}`}>
-            <span className="inline-flex items-center gap-1.5">
-              <Plus className="h-4 w-4 shrink-0" />
-              Plan an event
-            </span>
-          </Link>
-        </Button>
+      <div className="mt-6">
+        <RegistryEventsBanner registryId={registryId} events={linkedEvents} />
       </div>
 
       {/* Stats */}

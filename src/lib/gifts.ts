@@ -1,12 +1,13 @@
 // Gift reservations, shared by the server and the browser.
 //
-// A guest reserves an item, buys it, then confirms. A reservation holds the
-// item for GIFT_HOLD_DAYS. A daily job reminds the guest and releases the
-// reservation when the time runs out (src/lib/gift-reservations-server.ts).
+// A guest reserves an item and buys it, then confirms. A reservation holds the
+// item for GIFT_HOLD_DAYS, short on purpose so guests buy right away and a
+// forgotten gift goes back on the list soon. A daily job sends one reminder
+// and releases reservations that ran out (src/lib/gift-reservations-server.ts).
 // See supabase/migrations/015_gift_reservations.sql.
 
 /** How long a reservation holds an item before it goes back on the list. */
-export const GIFT_HOLD_DAYS = 7;
+export const GIFT_HOLD_DAYS = 2;
 
 /** A visitor's own gift on an item, as the public registry page sends it. */
 export interface MyItemGift {
@@ -29,6 +30,14 @@ interface PurchaseLike {
  */
 export function isOpenReservation(p: PurchaseLike): boolean {
   return p.status === "reserved" && !!p.reserved_until;
+}
+
+/**
+ * True for a reservation whose time ran out. The daily job releases these, but
+ * until it runs, pages treat the item as available again.
+ */
+export function isExpiredReservation(p: PurchaseLike, now = Date.now()): boolean {
+  return isOpenReservation(p) && new Date(p.reserved_until!).getTime() <= now;
 }
 
 export function toMyItemGift(p: PurchaseLike & { id: string; quantity?: number | null }): MyItemGift {

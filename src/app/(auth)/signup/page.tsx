@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useState, Suspense } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/base/input/input";
+import { Checkbox } from "@/components/base/checkbox/checkbox";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { createClient } from "@/utils/supabase/client";
 import { Logo } from "@/components/logo";
@@ -21,9 +22,8 @@ function SignupForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get("redirect") || "/dashboard";
-  // New accounts choose a username first (or skip), then go on to redirectTo.
-  const afterSignup = `/welcome?next=${encodeURIComponent(redirectTo)}`;
   const [fullName, setFullName] = useState("");
+  const [findable, setFindable] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -43,8 +43,11 @@ function SignupForm() {
       options: {
         data: {
           full_name: fullName,
+          // Read by the handle_new_user trigger, which sets both search
+          // settings on the new profile (017_profile_links_and_email_search.sql).
+          findable,
         },
-        emailRedirectTo: `${siteUrl}/auth/callback?next=${encodeURIComponent(afterSignup)}`,
+        emailRedirectTo: `${siteUrl}/auth/callback?next=${encodeURIComponent(redirectTo)}`,
       },
     });
 
@@ -61,7 +64,7 @@ function SignupForm() {
       return;
     }
 
-    router.push(afterSignup);
+    router.push(redirectTo);
     router.refresh();
   };
 
@@ -124,6 +127,12 @@ function SignupForm() {
               onChange={(val) => setPassword(val)}
               isRequired
               minLength={6}
+            />
+            <Checkbox
+              isSelected={findable}
+              onChange={setFindable}
+              label="Let friends find me on Regibee"
+              hint="Signed-in people can find you by name, or by your email address if they already know it. Your email is never shown."
             />
             {error && (
               <p className="text-sm text-error-primary">{error}</p>

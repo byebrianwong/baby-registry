@@ -3,6 +3,9 @@
 
 import {
   classifyStoreLink,
+  detectStore,
+  EXTENSION_STORES,
+  extensionStoreForPage,
   storeItemKey,
   type RetailerRegistry,
   type StoreId,
@@ -286,23 +289,78 @@ export function parseProductItem(raw: unknown): (ProductItem & { key: string }) 
   };
 }
 
-// ── Connect page ↔ extension ────────────────────────────────────────────
-// The Connect page on regibee.com talks to the extension's content script
-// with window.postMessage. Both sides check the message came from the page's
-// own window and origin.
+// ── Reading a product link for the site ─────────────────────────────────
+// Some stores, Amazon above all, block the server's fetch of a product page.
+// When the extension is installed, the add and edit item dialogs ask it to
+// open the link in a background tab and read the product there instead.
+
+/** What the extension read from a product page for the site. */
+export interface ReadProduct {
+  title: string;
+  price: number | null;
+  /** Product pictures, best first. */
+  images: string[];
+}
+
+const MAX_READ_IMAGES = 12;
+
+/**
+ * True when the extension can open this link and read the product: an https
+ * link at a store whose pages it may read, short links included. Not a store
+ * registry page, though: opening one would set off the extension's import.
+ */
+export function extensionCanReadLink(raw: string | null | undefined): boolean {
+  if (!raw) return false;
+  let url: URL;
+  try {
+    url = new URL(raw.trim());
+  } catch {
+    return false;
+  }
+  if (url.protocol !== "https:") return false;
+  const store = detectStore(url.toString());
+  return Boolean(store && EXTENSION_STORES.includes(store) && !extensionStoreForPage(url.toString()));
+}
+
+/** Checks a product the extension read. Returns null when it's unusable. */
+export function parseReadProduct(raw: unknown): ReadProduct | null {
+  if (!raw || typeof raw !== "object") return null;
+  const value = raw as Record<string, unknown>;
+  const title =
+    typeof value.title === "string" ? value.title.replace(/\s+/g, " ").trim().slice(0, MAX_TITLE_LENGTH) : "";
+  if (!title) return null;
+  const price =
+    typeof value.price === "number" && Number.isFinite(value.price) && value.price > 0 && value.price <= MAX_PRICE
+      ? Math.round(value.price * 100) / 100
+      : null;
+  const images = Array.isArray(value.images)
+    ? [...new Set(value.images.map(httpsUrl).filter((u): u is string => Boolean(u)))].slice(0, MAX_READ_IMAGES)
+    : [];
+  return { title, price, images };
+}
+
+// ── Regibee pages ↔ extension ───────────────────────────────────────────
+// Pages on regibee.com talk to the extension's content script with
+// window.postMessage. Both sides check the message came from the page's own
+// window and origin.
 
 export const PAGE_SOURCE = "regibee-page";
 export const EXTENSION_SOURCE = "regibee-extension";
 
+/** What this version of the extension can do for the site. Older versions send none. */
+export type ExtensionFeature = "read-product";
+
 export type PageMessage =
   | { source: typeof PAGE_SOURCE; type: "hello" }
   | { source: typeof PAGE_SOURCE; type: "connect"; session: ExtensionSession }
-  | { source: typeof PAGE_SOURCE; type: "cancel" };
+  | { source: typeof PAGE_SOURCE; type: "cancel" }
+  | { source: typeof PAGE_SOURCE; type: "read-product"; id: string; url: string };
 
 export type ExtensionMessage =
-  | { source: typeof EXTENSION_SOURCE; type: "ready"; version: string }
+  | { source: typeof EXTENSION_SOURCE; type: "ready"; version: string; features?: ExtensionFeature[] }
   | { source: typeof EXTENSION_SOURCE; type: "connected" }
-  | { source: typeof EXTENSION_SOURCE; type: "connect-failed"; error: string };
+  | { source: typeof EXTENSION_SOURCE; type: "connect-failed"; error: string }
+  | { source: typeof EXTENSION_SOURCE; type: "product"; id: string; product: ReadProduct | null; error?: string };
 
 export function isExtensionMessage(data: unknown): data is ExtensionMessage {
   return Boolean(

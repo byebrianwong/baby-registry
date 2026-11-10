@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import confetti from "canvas-confetti";
-import { Check, Clock, Copy, ExternalLink, Gift, Store } from "lucide-react";
+import { Check, Clock, Copy, ExternalLink, Gift } from "lucide-react";
 import { Mail01 } from "@untitledui/icons";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/base/input/input";
@@ -28,9 +28,11 @@ import {
   type MyItemGift,
 } from "@/lib/gifts";
 
-// One path for giving an item: reserve it (which holds it and shows the
-// address), buy it at the store, then confirm. The card's buttons open the
-// dialog at the step the guest's gift is on.
+// Giving an item: the guest fills in their details and presses one button,
+// Reserve and buy. That holds the item for GIFT_HOLD_DAYS. On the owners' own
+// store registry it also opens the store, which has their address. Otherwise
+// it shows the address, with one button that copies it and opens the store.
+// Back on this tab, the dialog asks whether they bought it.
 
 type Step =
   | "reserve"
@@ -55,13 +57,21 @@ export interface GiftActions {
   release: (purchaseId: string) => Promise<{ error?: string }>;
 }
 
+/** What a custom trigger (the reservation banner) can do. */
+export interface GiftTriggerControls {
+  openAt: (step: "buy" | "confirm" | "release" | "details") => void;
+  /** Saves the gift as bought, then shows the thank-you step. */
+  confirmNow: () => void;
+  busy: boolean;
+}
+
 const SERVER_ACTIONS: GiftActions = {
   reserve: reserveItem,
   confirm: confirmGift,
   release: releaseGift,
 };
 
-interface ReserveItemDialogProps {
+export interface ReserveItemDialogProps {
   item: {
     id: string;
     title: string;
@@ -77,7 +87,8 @@ interface ReserveItemDialogProps {
    *  a new reservation gets it back from the action instead. */
   shippingAddress?: string;
   /** Set when the item's link is from a store where the owner has their own
-   *  registry. The Buy step then explains how to buy so the gift counts there. */
+   *  registry. That store has the owners' address, so there's no address
+   *  step, and Reserve and buy opens the store straight away. */
   registryStoreName?: string;
   /** The store's name, like "Amazon". Falls back to the link's host. */
   storeName?: string;
@@ -85,6 +96,8 @@ interface ReserveItemDialogProps {
   actions?: Partial<GiftActions>;
   /** Opens the dialog at this step on load, from a link in the guest's email. */
   initialStep?: OpenGift["step"];
+  /** Replaces the card's buttons, as the reservation banner does. */
+  renderTrigger?: (controls: GiftTriggerControls) => React.ReactNode;
 }
 
 function hostName(url: string): string {
@@ -95,30 +108,7 @@ function hostName(url: string): string {
   }
 }
 
-function Stepper({ current }: { current: 0 | 1 | 2 }) {
-  const labels = ["Reserve", "Buy", "Confirm"];
-  return (
-    <ol className="flex gap-2 pr-8" aria-label="Steps">
-      {labels.map((label, i) => (
-        <li
-          key={label}
-          aria-current={i === current ? "step" : undefined}
-          className={`flex-1 border-t-[3px] pt-1.5 text-xs ${
-            i < current
-              ? "border-mint-500 text-mint-800"
-              : i === current
-                ? "border-brand-600 font-semibold text-brand-600"
-                : "border-secondary text-tertiary"
-          }`}
-        >
-          {i + 1}. {label}
-        </li>
-      ))}
-    </ol>
-  );
-}
-
-function ShipTo({ address, label = "Ship to" }: { address: string; label?: string }) {
+function ShipTo({ address, copyable = true }: { address: string; copyable?: boolean }) {
   const [copied, setCopied] = useState(false);
   const copy = () => {
     navigator.clipboard
@@ -131,16 +121,18 @@ function ShipTo({ address, label = "Ship to" }: { address: string; label?: strin
   };
   return (
     <div className="rounded-lg border border-primary bg-secondary p-4 text-left">
-      <p className="mb-1 text-xs font-medium text-tertiary">{label}</p>
+      <p className="mb-1 text-xs font-medium text-tertiary">Ship to</p>
       <p className="whitespace-pre-line text-sm text-primary">{address}</p>
-      <button
-        type="button"
-        onClick={copy}
-        className="mt-2 inline-flex items-center gap-1.5 text-xs font-medium text-brand-600 transition-colors hover:text-brand-700"
-      >
-        {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-        {copied ? "Copied!" : "Copy address"}
-      </button>
+      {copyable && (
+        <button
+          type="button"
+          onClick={copy}
+          className="mt-2 inline-flex items-center gap-1.5 text-xs font-medium text-brand-600 transition-colors hover:text-brand-700"
+        >
+          {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+          {copied ? "Copied!" : "Copy address"}
+        </button>
+      )}
     </div>
   );
 }
@@ -149,6 +141,7 @@ const textButton =
   "text-sm font-medium text-brand-600 underline-offset-2 hover:underline disabled:opacity-50";
 const dangerTextButton =
   "text-sm font-medium text-error-primary underline-offset-2 hover:underline disabled:opacity-50";
+const noteText = "text-center text-xs text-tertiary";
 
 export function ReserveItemDialog({
   item,
@@ -159,6 +152,7 @@ export function ReserveItemDialog({
   storeName,
   actions,
   initialStep,
+  renderTrigger,
 }: ReserveItemDialogProps) {
   const act: GiftActions = { ...SERVER_ACTIONS, ...actions };
   const [open, setOpen] = useState(false);
@@ -172,7 +166,11 @@ export function ReserveItemDialog({
   const leftForStore = useRef(false);
 
   const remaining = item.quantity_needed - item.quantity_fulfilled;
-  const shopName = item.external_url ? storeName || hostName(item.external_url) : undefined;
+  const shopName = item.external_url
+    ? registryStoreName || storeName || hostName(item.external_url)
+    : undefined;
+  // On the owners' store registry, one tap reserves and opens the store.
+  const oneTap = !!(item.external_url && registryStoreName);
 
   // The page refreshes after each action, and its data wins.
   const giftKey = giftProp ? `${giftProp.purchaseId}:${giftProp.status}` : "";
@@ -243,7 +241,7 @@ export function ReserveItemDialog({
     confetti({ ...defaults, particleCount: 40, origin: { x: 0.8, y: 0.6 }, angle: 120 });
   }, [open, step]);
 
-  const handleSubmit = async (formData: FormData) => {
+  const handleSubmit = async (formData: FormData, storeTabOpened: boolean) => {
     setLoading(true);
     setError("");
     formData.set("itemId", item.id);
@@ -252,6 +250,7 @@ export function ReserveItemDialog({
     const result = await act.reserve(formData);
     setLoading(false);
     if (!result || "error" in result) {
+      leftForStore.current = false;
       setError(result?.error ?? "Couldn't save this gift. Try again.");
       return;
     }
@@ -262,7 +261,33 @@ export function ReserveItemDialog({
       quantity: parseInt(formData.get("quantity") as string) || 1,
     });
     if (result.shippingAddress) setAddress(result.shippingAddress);
-    setStep(result.status === "purchased" ? "done" : "buy");
+    // The buy step waits here while the guest is at the store. Coming back
+    // to this tab moves it on to "Did you buy it?".
+    if (result.status === "purchased") setStep("done");
+    else {
+      leftForStore.current = storeTabOpened;
+      setStep("buy");
+    }
+  };
+
+  const onSubmitForm = (e: React.FormEvent<HTMLFormElement>) => {
+    // onSubmit, not action: an action's state updates wait for it to finish,
+    // so the button wouldn't show "Reserving..." or stop a second submit.
+    e.preventDefault();
+    if (loading) return;
+    const formData = new FormData(e.currentTarget);
+    // Browsers only let a page open a tab during the click itself, so the
+    // store opens now and the reservation saves alongside it. If saving
+    // fails, the guest sees why when they come back to this tab.
+    let opened = false;
+    if (step === "reserve" && oneTap) {
+      const tab = window.open(item.external_url!, "_blank");
+      if (tab) {
+        tab.opener = null;
+        opened = true;
+      }
+    }
+    void handleSubmit(formData, opened);
   };
 
   const handleConfirm = async () => {
@@ -277,6 +302,24 @@ export function ReserveItemDialog({
     }
     setGift({ ...gift, status: "purchased", reservedUntil: null });
     setStep("done");
+  };
+
+  const confirmNow = async () => {
+    if (!gift || loading) return;
+    setLoading(true);
+    setError("");
+    const result = await act.confirm(gift.purchaseId);
+    setLoading(false);
+    if (result?.error) {
+      setError(result.error);
+      setReleaseFrom(null);
+      setStep("confirm");
+      setOpen(true);
+      return;
+    }
+    setGift({ ...gift, status: "purchased", reservedUntil: null });
+    setStep("done");
+    setOpen(true);
   };
 
   const handleRelease = async () => {
@@ -298,10 +341,17 @@ export function ReserveItemDialog({
   const until = gift?.reservedUntil ? (
     <span suppressHydrationWarning>{formatReservedUntil(gift.reservedUntil)}</span>
   ) : null;
+  const newTabNote = shopName ? (
+    <p className={noteText}>
+      {shopName} opens in a new tab. Come back to this tab when you&apos;ve checked out.
+    </p>
+  ) : null;
 
-  // The buttons on the card.
+  // The buttons on the card, or the banner's.
   let trigger: React.ReactNode = null;
-  if (!gift) {
+  if (renderTrigger) {
+    trigger = renderTrigger({ openAt, confirmNow: () => void confirmNow(), busy: loading });
+  } else if (!gift) {
     if (remaining > 0) {
       trigger = (
         <Button onClick={() => openAt("reserve")}>
@@ -334,23 +384,16 @@ export function ReserveItemDialog({
   if (step === "reserve" || step === "already") {
     // One form for both steps, so typed details survive switching between them.
     content = (
-      // onSubmit, not action: an action's state updates wait for it to finish,
-      // so the button wouldn't show "Reserving..." or stop a second submit.
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          if (!loading) handleSubmit(new FormData(e.currentTarget));
-        }}
-        className="space-y-4"
-      >
+      <form onSubmit={onSubmitForm} className="space-y-4">
         {step === "reserve" ? (
           <div className="space-y-4">
-            <Stepper current={0} />
-            <DialogHeader>
+            <DialogHeader className="pr-8">
               <DialogTitle>Gift the {item.title}</DialogTitle>
               <DialogDescription>
-                Reserve it so nobody else buys it. It&apos;s held for you for {GIFT_HOLD_DAYS} days,
-                and you&apos;ll see where to ship it. No account required.
+                {registryStoreName
+                  ? `It's on ${parentName}'s ${registryStoreName} registry, so the store has their address.`
+                  : "Reserve it so nobody else buys it, and you'll get the address to ship it to."}{" "}
+                No account required.
               </DialogDescription>
             </DialogHeader>
             {(item.price || shopName) && (
@@ -358,7 +401,7 @@ export function ReserveItemDialog({
                 <span className="text-secondary">
                   {item.price ? <span className="font-semibold text-primary">{formatPrice(item.price)}</span> : null}
                   {item.price && shopName ? " · " : null}
-                  {shopName ? `From ${shopName}` : null}
+                  {shopName ? (registryStoreName ? `On their ${registryStoreName} registry` : `From ${shopName}`) : null}
                 </span>
                 {item.external_url && (
                   <a
@@ -390,7 +433,6 @@ export function ReserveItemDialog({
           placeholder="alex@example.com"
           icon={Mail01}
           isRequired
-          hint={step === "reserve" ? "We'll email you the address and a link back to this gift." : undefined}
         />
         {item.quantity_needed > 1 && (
           <Input
@@ -405,15 +447,28 @@ export function ReserveItemDialog({
         )}
         <TextArea label="Message (optional)" name="message" placeholder="Congratulations!" rows={3} />
         {errorLine}
-        <Button type="submit" className="w-full" disabled={loading}>
-          {step === "reserve"
-            ? loading
-              ? "Reserving..."
-              : `Reserve for ${GIFT_HOLD_DAYS} days`
-            : loading
-              ? "Saving..."
-              : "Mark as bought"}
-        </Button>
+        <div className="space-y-2">
+          <Button type="submit" className="w-full" disabled={loading}>
+            {step === "already" ? (
+              loading ? "Saving..." : "Mark as bought"
+            ) : loading ? (
+              "Reserving..."
+            ) : oneTap ? (
+              <span className="inline-flex items-center gap-1.5">
+                <ExternalLink className="h-4 w-4 shrink-0" />
+                Reserve and buy at {registryStoreName}
+              </span>
+            ) : (
+              "Reserve and buy"
+            )}
+          </Button>
+          {step === "reserve" &&
+            (oneTap ? (
+              newTabNote
+            ) : (
+              <p className={noteText}>We&apos;ll hold it for you for {GIFT_HOLD_DAYS} days while you buy it.</p>
+            ))}
+        </div>
         <div className="flex justify-center">
           {step === "reserve" ? (
             <button type="button" className={textButton} onClick={() => setStep("already")}>
@@ -428,51 +483,53 @@ export function ReserveItemDialog({
       </form>
     );
   } else if (step === "buy") {
+    const copyAndGo = !registryStoreName && !!address && !!item.external_url;
     content = (
       <div className="space-y-4">
-        <Stepper current={1} />
         {until && (
           // mint-800, not 700: 700 on mint-50 is under 4.5:1 contrast.
-          <p className="flex items-center gap-2 rounded-lg border border-mint-200 bg-mint-50 px-3 py-2 text-sm font-medium text-mint-800">
+          <p className="mr-8 flex items-center gap-2 rounded-lg border border-mint-200 bg-mint-50 px-3 py-2 text-sm font-medium text-mint-800">
             <Check className="h-4 w-4 shrink-0" />
             <span>Reserved for you until {until}</span>
           </p>
         )}
-        <DialogHeader>
-          <DialogTitle>{shopName ? `Buy it at ${registryStoreName || shopName}` : "Buy it"}</DialogTitle>
-          <DialogDescription>
-            {registryStoreName
-              ? `Buy it at ${registryStoreName} with the button below, so the gift counts toward their registry. At checkout, you can choose their registry address.`
-              : address
-                ? "Paste this address at checkout. Only guests who reserve a gift can see it."
-                : `This registry has no shipping address yet. Ask ${parentName} where to send it.`}
-          </DialogDescription>
+        <DialogHeader className={until ? undefined : "pr-8"}>
+          <DialogTitle>
+            {registryStoreName || !address ? (shopName ? `Buy it at ${shopName}` : "Buy it") : `Ship it to ${parentName}`}
+          </DialogTitle>
+          {registryStoreName ? (
+            <DialogDescription>
+              It&apos;s on their registry, so {registryStoreName} has their address.
+            </DialogDescription>
+          ) : !address ? (
+            <DialogDescription>
+              This registry has no shipping address yet. Ask {parentName} where to send it.
+            </DialogDescription>
+          ) : null}
         </DialogHeader>
-        {registryStoreName && (
-          <p className="flex items-center gap-2 text-sm text-secondary">
-            <Store className="h-4 w-4 shrink-0 text-brand-600" aria-hidden="true" />
-            This gift is on {parentName}&apos;s {registryStoreName} registry
-          </p>
-        )}
-        {address && <ShipTo address={address} />}
+        {!registryStoreName && address && <ShipTo address={address} copyable={!copyAndGo} />}
         {item.external_url ? (
-          // A plain link styled as a button: Button's asChild drops onClick
-          // from links, and this click is how the dialog knows to ask
-          // "Did you buy it?" when the guest comes back.
-          <a
-            href={item.external_url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={buttonVariants({ className: "w-full" })}
-            onClick={() => {
-              leftForStore.current = true;
-            }}
-          >
-            <span className="inline-flex items-center gap-1.5">
-              <ExternalLink className="h-4 w-4 shrink-0" />
-              Buy at {registryStoreName || shopName}
-            </span>
-          </a>
+          <div className="space-y-2">
+            {/* A plain link styled as a button: Button's asChild drops onClick
+                from links, and this click is how the dialog knows to ask
+                "Did you buy it?" when the guest comes back. */}
+            <a
+              href={item.external_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={buttonVariants({ className: "w-full" })}
+              onClick={() => {
+                if (copyAndGo && address) navigator.clipboard?.writeText(address).catch(() => {});
+                leftForStore.current = true;
+              }}
+            >
+              <span className="inline-flex items-center gap-1.5">
+                <ExternalLink className="h-4 w-4 shrink-0" />
+                {copyAndGo ? `Copy address and open ${shopName}` : `Buy at ${shopName}`}
+              </span>
+            </a>
+            {newTabNote}
+          </div>
         ) : (
           <Button className="w-full" onClick={() => setStep("confirm")}>
             I bought it
@@ -495,8 +552,7 @@ export function ReserveItemDialog({
   } else if (step === "confirm") {
     content = (
       <div className="space-y-4">
-        <Stepper current={2} />
-        <DialogHeader>
+        <DialogHeader className="pr-8">
           <DialogTitle>Did you buy the {item.title}?</DialogTitle>
           <DialogDescription>
             Tell us so nobody else buys it. {parentName} will see it&apos;s from you.
@@ -527,8 +583,8 @@ export function ReserveItemDialog({
         <DialogTitle className="text-xl font-bold">It&apos;s still yours</DialogTitle>
         <p className="text-sm text-secondary">
           We&apos;ll hold the {item.title}
-          {until ? <> until {until}</> : null} and email you a reminder before then. When you&apos;re
-          ready, use Finish gift on this page or the link in your email.
+          {until ? <> until {until}</> : null} and remind you the day before. Finish it from the banner
+          at the top of the registry, or the link in your email.
         </p>
         <Button onClick={close}>Done</Button>
         <button type="button" className={dangerTextButton} onClick={goToRelease}>
@@ -586,7 +642,7 @@ export function ReserveItemDialog({
             {gift && gift.quantity > 1 ? ` (×${gift.quantity})` : ""}. {parentName} can see it&apos;s from you.
           </DialogDescription>
         </DialogHeader>
-        {address && <ShipTo address={address} />}
+        {address && !registryStoreName && <ShipTo address={address} />}
         <div className="flex items-center justify-between gap-2">
           <button type="button" className={dangerTextButton} onClick={goToRelease}>
             Undo this gift

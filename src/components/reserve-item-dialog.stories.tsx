@@ -33,6 +33,16 @@ const soundMachine = {
   external_url: "https://www.amazon.com/dp/B07WFXGNGB",
 };
 
+// On the owners' own Amazon registry.
+const wrap = {
+  id: "3",
+  title: "Solly Baby Wrap",
+  price: 74,
+  quantity_needed: 1,
+  quantity_fulfilled: 0,
+  external_url: "https://www.amazon.com/dp/B0EXAMPLE?colid=EXAMPLE&coliid=EXAMPLE&psc=1",
+};
+
 const reserved: MyItemGift = {
   purchaseId: "p1",
   status: "reserved",
@@ -62,9 +72,17 @@ const openWith =
     await screen.findByRole("dialog");
   };
 
-// Step 1. Reserving holds the item for 7 days. "See it" opens the store page.
+// Your details and one button. Reserving holds the item for 2 days and shows
+// the address. "See it" opens the store page.
 export const Reserve: Story = {
   args: { item: soundMachine },
+  play: openWith(/gift this/i),
+};
+
+// On the owners' store registry, the one button also opens the store, which
+// has their address.
+export const ReserveOnStoreRegistry: Story = {
+  args: { item: wrap, registryStoreName: "Amazon" },
   play: openWith(/gift this/i),
 };
 
@@ -92,33 +110,20 @@ export const AlreadyBought: Story = {
   },
 };
 
-// Step 2, from the card's Finish gift button: the address sits next to the
-// store button, before checkout.
+// After reserving, or from the card's Finish gift: the address, and one
+// button that copies it and opens the store.
 export const Buy: Story = {
   args: { item: soundMachine, gift: reserved, shippingAddress: ADDRESS },
   play: openWith(/finish gift/i),
 };
 
-// The owners linked their Amazon registry, so the Buy step explains how to buy
-// there so the gift counts toward it.
+// On the owners' store registry there's no address to copy.
 export const BuyOnStoreRegistry: Story = {
-  args: {
-    item: {
-      id: "3",
-      title: "Solly Baby Wrap",
-      price: 74,
-      quantity_needed: 1,
-      quantity_fulfilled: 0,
-      external_url: "https://www.amazon.com/dp/B0EXAMPLE?colid=EXAMPLE&coliid=EXAMPLE&psc=1",
-    },
-    registryStoreName: "Amazon",
-    gift: reserved,
-    shippingAddress: ADDRESS,
-  },
+  args: { item: wrap, registryStoreName: "Amazon", gift: reserved, shippingAddress: ADDRESS },
   play: openWith(/finish gift/i),
 };
 
-// Step 3. Coming back from the store tab, or from "I bought it" in the email.
+// Coming back from the store tab, or from "I bought it" in the email.
 export const Confirm: Story = {
   args: { item: soundMachine, gift: reserved, initialStep: "confirm" },
   play: async () => {

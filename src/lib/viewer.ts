@@ -1,7 +1,6 @@
 import { cache } from "react";
 import type { FollowButtonState } from "@/components/follow-button";
 import { getBlockState, getFollowStatus } from "@/lib/follows";
-import { supabaseAdmin } from "@/lib/supabase-admin";
 import { createClient } from "@/utils/supabase/server";
 
 // The signed-in account looking at a page. Guests have anonymous sessions, so
@@ -23,18 +22,13 @@ export const getViewerRelation = cache(
     if (!viewer) return { state: "signed-out", isOwner: false, hidden: false };
     if (viewer.id === ownerId) return { state: "none", isOwner: true, hidden: false };
 
-    const [{ data: viewerProfile }, status, blocks] = await Promise.all([
-      supabaseAdmin.from("profiles").select("username").eq("id", viewer.id).single(),
+    const [status, blocks] = await Promise.all([
       getFollowStatus(viewer.id, ownerId),
       getBlockState(viewer.id, ownerId),
     ]);
 
     if (blocks.blockedByOther) return { state: "none", isOwner: false, hidden: true };
     if (blocks.blockedOther) return { state: "blocked", isOwner: false, hidden: false };
-    return {
-      state: status ?? (viewerProfile?.username ? "none" : "needs-profile"),
-      isOwner: false,
-      hidden: false,
-    };
+    return { state: status ?? "none", isOwner: false, hidden: false };
   },
 );

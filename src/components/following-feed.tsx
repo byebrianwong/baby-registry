@@ -1,15 +1,12 @@
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
 import { PeopleSearch } from "@/components/people-search";
 import { ProfileRegistryCard } from "@/components/profile-registry-card";
 import { PandaMark } from "@/components/panda-mark";
 import type { searchPeople } from "@/lib/actions/follows";
+import type { sendFollowInvite } from "@/lib/actions/follow-invites";
 import type { FeedRegistry, FollowPerson } from "@/lib/follows";
+import { displayName, profilePath } from "@/lib/profile-link";
 import { isPastEvent, sortListedRegistries } from "@/lib/registry-listing";
-
-function displayName(person: { username: string; full_name: string | null }) {
-  return person.full_name?.trim() || `@${person.username}`;
-}
 
 function EmptyState({ title, body, action }: { title: string; body: string; action?: React.ReactNode }) {
   return (
@@ -50,17 +47,17 @@ function RegistryGroup({
 }
 
 export function FollowingFeed({
-  hasUsername,
   people,
   registries,
   today,
   searchAction,
+  inviteAction,
 }: {
-  hasUsername: boolean;
   people: FollowPerson[];
   registries: FeedRegistry[];
   today: string;
   searchAction?: typeof searchPeople;
+  inviteAction?: typeof sendFollowInvite;
 }) {
   const sorted = sortListedRegistries(registries, today);
   const upcoming = sorted.filter((r) => r.event_date !== null && !isPastEvent(r, today));
@@ -77,26 +74,14 @@ export function FollowingFeed({
         <h1 className="sr-only">Following</h1>
         <p className="text-tertiary">Registries from people who&apos;ve approved your follow.</p>
 
-        {hasUsername && (
-          <div className="mt-6">
-            <PeopleSearch searchAction={searchAction} />
-          </div>
-        )}
+        <div className="mt-6">
+          <PeopleSearch searchAction={searchAction} inviteAction={inviteAction} />
+        </div>
 
-        {!hasUsername ? (
-          <EmptyState
-            title="Claim a username to follow people"
-            body="People approve each follower, so they need to see who's asking."
-            action={
-              <Button variant="outline" asChild>
-                <Link href="/dashboard/account">Set up profile</Link>
-              </Button>
-            }
-          />
-        ) : people.length === 0 ? (
+        {people.length === 0 ? (
           <EmptyState
             title="You're not following anyone yet"
-            body="Search for friends above, or open their profile link and tap Follow. Once they approve, their registries show up here."
+            body="Search for friends above by name or email, or open their profile link and tap Follow. Once they approve, their registries show up here."
           />
         ) : (
           <>
@@ -121,11 +106,10 @@ export function FollowingFeed({
               <h2 className="text-lg font-semibold">People you follow</h2>
               <ul className="mt-3 flex flex-col gap-2">
                 {[...approved, ...waiting].map((person) => (
-                  <li key={person.username} className="flex flex-wrap items-baseline gap-x-2">
-                    <Link href={`/u/${person.username}`} className="font-medium text-primary hover:underline">
+                  <li key={person.public_id} className="flex flex-wrap items-baseline gap-x-2">
+                    <Link href={profilePath(person)} className="font-medium text-primary hover:underline">
                       {displayName(person)}
                     </Link>
-                    <span className="text-sm text-tertiary">@{person.username}</span>
                     {person.status === "pending" && (
                       <span className="text-sm text-tertiary">· Waiting for approval</span>
                     )}

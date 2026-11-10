@@ -1,9 +1,10 @@
 -- Guests reserve a gift, buy it, then confirm it.
 --
 -- A reservation is a purchase with status 'reserved' and a reserved_until
--- time. It holds the item for 7 days. A daily job (src/app/api/cron/
--- gift-reservations) emails reminders and releases reservations whose time has
--- run out. When the guest confirms, the status becomes 'purchased'.
+-- time. It holds the item for GIFT_HOLD_DAYS (src/lib/gifts.ts). A daily job
+-- (src/app/api/cron/gift-reservations) emails a reminder and releases
+-- reservations whose time has run out. When the guest confirms, the status
+-- becomes 'purchased'.
 --
 -- Gifts saved before this change keep status 'reserved' with no
 -- reserved_until. They count as given and never expire, as before.

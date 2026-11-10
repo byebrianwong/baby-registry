@@ -70,7 +70,8 @@ export function ExtensionConnectCard({ name, status, error, onConnect, onCancel 
                 </p>
                 <p className="flex items-start gap-2 text-sm text-primary">
                   <Check className="mt-0.5 size-4 shrink-0 text-success-600" aria-hidden="true" />
-                  Read a product page when you click its button, so you can add that item
+                  Read a product page when you click its button, or when you paste a link from those stores
+                  on Regibee, so you can add that item
                 </p>
                 <p className="flex items-start gap-2 text-sm text-primary">
                   <Check className="mt-0.5 size-4 shrink-0 text-success-600" aria-hidden="true" />
