@@ -19,14 +19,10 @@ export default async function FollowingPage() {
     redirect("/signup?redirect=/dashboard/following");
   }
 
-  const [{ data: profile }, feed] = await Promise.all([
-    supabase.from("profiles").select("username").eq("id", user.id).single(),
-    listFollowingFeed(user.id),
-  ]);
+  const feed = await listFollowingFeed(user.id);
 
   return (
     <FollowingFeed
-      hasUsername={Boolean(profile?.username)}
       people={feed.people}
       registries={feed.registries}
       today={new Date().toISOString().slice(0, 10)}

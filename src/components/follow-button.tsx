@@ -5,25 +5,23 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { cancelFollow, requestFollow } from "@/lib/actions/follows";
 
-export type FollowButtonState =
-  | "signed-out"
-  | "needs-profile"
-  | "none"
-  | "pending"
-  | "approved"
-  | "blocked";
+export type FollowButtonState = "signed-out" | "none" | "pending" | "approved" | "blocked";
 
 export function FollowButton({
-  username,
+  publicId,
+  name,
   state: initialState,
   returnTo,
   requestAction = requestFollow,
   cancelAction = cancelFollow,
 }: {
-  username: string;
+  /** The id from the person's profile link. */
+  publicId: string;
+  /** The person's name, for the hints under the button. */
+  name: string;
   state: FollowButtonState;
-  /** Where to come back to after logging in. Defaults to the profile. */
-  returnTo?: string;
+  /** Where to come back to after logging in. */
+  returnTo: string;
   requestAction?: typeof requestFollow;
   cancelAction?: typeof cancelFollow;
 }) {
@@ -35,20 +33,9 @@ export function FollowButton({
     return (
       <div className="flex flex-col items-center gap-1">
         <Button size="sm" asChild>
-          <Link href={`/login?redirect=${encodeURIComponent(returnTo ?? `/u/${username}`)}`}>Follow</Link>
+          <Link href={`/login?redirect=${encodeURIComponent(returnTo)}`}>Follow</Link>
         </Button>
-        <p className="text-xs text-tertiary">Log in to ask to follow @{username}.</p>
-      </div>
-    );
-  }
-
-  if (state === "needs-profile") {
-    return (
-      <div className="flex flex-col items-center gap-1">
-        <Button size="sm" variant="outline" asChild>
-          <Link href="/dashboard/account">Claim a username to follow</Link>
-        </Button>
-        <p className="text-xs text-tertiary">So @{username} can see who&apos;s asking.</p>
+        <p className="text-xs text-tertiary">Log in to ask to follow {name}.</p>
       </div>
     );
   }
@@ -60,7 +47,7 @@ export function FollowButton({
           Blocked
         </Button>
         <p className="text-xs text-tertiary">
-          You blocked @{username}.{" "}
+          You blocked {name}.{" "}
           <Link href="/dashboard/account#follows" className="font-medium text-brand-600 hover:underline">
             Unblock
           </Link>
@@ -83,22 +70,20 @@ export function FollowButton({
 
   const handleClick = () => {
     if (state === "none") {
-      run("pending", () => requestAction(username));
+      run("pending", () => requestAction(publicId));
     } else if (state === "pending") {
-      if (confirm(`Withdraw your request to follow @${username}?`)) {
-        run("none", () => cancelAction(username));
+      if (confirm(`Withdraw your request to follow ${name}?`)) {
+        run("none", () => cancelAction(publicId));
       }
-    } else if (
-      confirm(`Unfollow @${username}? You'll stop seeing their private registries.`)
-    ) {
-      run("none", () => cancelAction(username));
+    } else if (confirm(`Unfollow ${name}? You'll stop seeing their private registries.`)) {
+      run("none", () => cancelAction(publicId));
     }
   };
 
   const hint = {
-    none: `@${username} approves every follower.`,
-    pending: `Waiting for @${username} to approve.`,
-    approved: `You can see @${username}'s private registries.`,
+    none: `${name} approves every follower.`,
+    pending: `Waiting for ${name} to approve.`,
+    approved: `You can see ${name}'s private registries.`,
   }[state];
 
   return (

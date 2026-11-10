@@ -12,14 +12,15 @@ import {
   unblockUser,
 } from "@/lib/actions/follows";
 import type { FollowPerson, PersonSummary } from "@/lib/follows";
+import { displayName, profilePath } from "@/lib/profile-link";
 
 function PersonLabel({ person }: { person: PersonSummary }) {
   return (
-    <Link href={`/u/${person.username}`} className="min-w-0 flex-1 hover:underline">
-      <span className="block break-words text-sm font-medium text-primary">
-        {person.full_name?.trim() || `@${person.username}`}
-      </span>
-      <span className="block break-words text-sm text-tertiary">@{person.username}</span>
+    <Link
+      href={profilePath(person)}
+      className="min-w-0 flex-1 break-words text-sm font-medium text-primary hover:underline"
+    >
+      {displayName(person)}
     </Link>
   );
 }
@@ -80,21 +81,21 @@ export function FollowLists({
   };
 
   const without = <T extends PersonSummary>(list: T[], person: PersonSummary) =>
-    list.filter((p) => p.username !== person.username);
+    list.filter((p) => p.public_id !== person.public_id);
 
   const block = (person: PersonSummary) => {
     if (
       !confirm(
-        `Block @${person.username}? They'll be removed from your followers and the people you follow, and won't be able to ask to follow you.`,
+        `Block ${displayName(person)}? They'll be removed from your followers and the people you follow, and won't be able to ask to follow you.`,
       )
     ) {
       return;
     }
-    act(`block-${person.username}`, () => blockAction(person.username), () => {
+    act(`block-${person.public_id}`, () => blockAction(person.public_id), () => {
       setRequests((list) => without(list, person));
       setFollowers((list) => without(list, person));
       setFollowing((list) => without(list, person));
-      setBlocked((list) => [{ username: person.username, full_name: person.full_name }, ...without(list, person)]);
+      setBlocked((list) => [{ public_id: person.public_id, full_name: person.full_name }, ...without(list, person)]);
     });
   };
 
@@ -117,7 +118,7 @@ export function FollowLists({
           <CardContent className="space-y-4">
             {requests.map((person) => (
               <PersonRow
-                key={person.username}
+                key={person.public_id}
                 person={person}
                 actions={
                   <>
@@ -125,7 +126,7 @@ export function FollowLists({
                       size="sm"
                       disabled={busy !== null}
                       onClick={() =>
-                        act(`approve-${person.username}`, () => approveAction(person.username), () => {
+                        act(`approve-${person.public_id}`, () => approveAction(person.public_id), () => {
                           setRequests(without(requests, person));
                           setFollowers([{ ...person, status: "approved" }, ...followers]);
                         })
@@ -138,7 +139,7 @@ export function FollowLists({
                       variant="outline"
                       disabled={busy !== null}
                       onClick={() =>
-                        act(`decline-${person.username}`, () => removeAction(person.username), () =>
+                        act(`decline-${person.public_id}`, () => removeAction(person.public_id), () =>
                           setRequests(without(requests, person)),
                         )
                       }
@@ -162,12 +163,12 @@ export function FollowLists({
         <CardContent className="space-y-4">
           {followers.length === 0 ? (
             <p className="text-sm text-tertiary">
-              No followers yet. Share your profile link so people can find you.
+              No followers yet. Share your profile link, or let people find you in search.
             </p>
           ) : (
             followers.map((person) => (
               <PersonRow
-                key={person.username}
+                key={person.public_id}
                 person={person}
                 actions={
                   <>
@@ -178,12 +179,12 @@ export function FollowLists({
                       onClick={() => {
                         if (
                           !confirm(
-                            `Remove @${person.username}? They'll stop seeing your private registries.`,
+                            `Remove ${displayName(person)}? They'll stop seeing your private registries.`,
                           )
                         ) {
                           return;
                         }
-                        act(`remove-${person.username}`, () => removeAction(person.username), () =>
+                        act(`remove-${person.public_id}`, () => removeAction(person.public_id), () =>
                           setFollowers(without(followers, person)),
                         );
                       }}
@@ -222,7 +223,7 @@ export function FollowLists({
           ) : (
             following.map((person) => (
               <PersonRow
-                key={person.username}
+                key={person.public_id}
                 person={person}
                 actions={
                   <>
@@ -236,10 +237,10 @@ export function FollowLists({
                       onClick={() => {
                         const question =
                           person.status === "pending"
-                            ? `Withdraw your request to follow @${person.username}?`
-                            : `Unfollow @${person.username}? You'll stop seeing their private registries.`;
+                            ? `Withdraw your request to follow ${displayName(person)}?`
+                            : `Unfollow ${displayName(person)}? You'll stop seeing their private registries.`;
                         if (!confirm(question)) return;
-                        act(`cancel-${person.username}`, () => cancelAction(person.username), () =>
+                        act(`cancel-${person.public_id}`, () => cancelAction(person.public_id), () =>
                           setFollowing(without(following, person)),
                         );
                       }}
@@ -266,7 +267,7 @@ export function FollowLists({
           <CardContent className="space-y-4">
             {blocked.map((person) => (
               <PersonRow
-                key={person.username}
+                key={person.public_id}
                 person={person}
                 actions={
                   <Button
@@ -274,7 +275,7 @@ export function FollowLists({
                     variant="outline"
                     disabled={busy !== null}
                     onClick={() =>
-                      act(`unblock-${person.username}`, () => unblockAction(person.username), () =>
+                      act(`unblock-${person.public_id}`, () => unblockAction(person.public_id), () =>
                         setBlocked(without(blocked, person)),
                       )
                     }

@@ -6,7 +6,6 @@ const meta: Meta<typeof ProfileListingField> = {
   component: ProfileListingField,
   parameters: { layout: "centered" },
   args: {
-    username: "remi-and-max",
     isPublic: true,
     isSelected: true,
     onChange: () => {},
@@ -15,12 +14,12 @@ const meta: Meta<typeof ProfileListingField> = {
 export default meta;
 type Story = StoryObj<typeof ProfileListingField>;
 
-// Checked, with the longest hint: the profile link plus the shipping address warning.
+// Checked, with the longest hint: who can see it plus the shipping address warning.
 export const ListedWithShippingAddress: Story = {
   args: { hasShippingAddress: true },
 };
 
-// No username yet, so a link to set up a profile replaces the checkbox.
-export const NoProfileYet: Story = {
-  args: { username: null },
+// Private registries only show to approved followers.
+export const Private: Story = {
+  args: { isPublic: false },
 };

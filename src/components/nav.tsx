@@ -1,5 +1,6 @@
 import { NavBar, type NavAccount } from "@/components/nav-bar";
 import { countFollowRequests } from "@/lib/follows";
+import { profilePath } from "@/lib/profile-link";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { getViewer } from "@/lib/viewer";
 
@@ -10,17 +11,16 @@ export async function Nav() {
 
   let account: NavAccount | null = null;
   if (viewer) {
-    const { data: profile } = await supabaseAdmin
-      .from("profiles")
-      .select("username, full_name")
-      .eq("id", viewer.id)
-      .single();
+    const [{ data: profile }, followRequestCount] = await Promise.all([
+      supabaseAdmin.from("profiles").select("public_id, full_name").eq("id", viewer.id).single(),
+      countFollowRequests(viewer.id),
+    ]);
 
     account = {
       name: profile?.full_name?.trim() || viewer.email || "Your account",
-      username: profile?.username ?? null,
+      profilePath: profile ? profilePath(profile) : "/dashboard/account",
       email: viewer.email ?? null,
-      followRequestCount: profile?.username ? await countFollowRequests(viewer.id) : 0,
+      followRequestCount,
     };
   }
 
