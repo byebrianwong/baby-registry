@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { LISTED_REGISTRY_COLUMNS, type ListedRegistry } from "@/lib/registry-listing";
 
@@ -49,14 +50,16 @@ export async function getBlockState(userId: string, otherId: string) {
   };
 }
 
-export async function countFollowRequests(userId: string): Promise<number> {
+// The top bar and the dashboard both show this count, so it's cached for the
+// request and counted once.
+export const countFollowRequests = cache(async (userId: string): Promise<number> => {
   const { count } = await supabaseAdmin
     .from("follows")
     .select("follower_id", { count: "exact", head: true })
     .eq("followee_id", userId)
     .eq("status", "pending");
   return count ?? 0;
-}
+});
 
 type JoinedProfile = PersonSummary | null;
 

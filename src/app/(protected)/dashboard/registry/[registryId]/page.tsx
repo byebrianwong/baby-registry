@@ -43,6 +43,33 @@ import { formatReservedUntil, isOpenReservation } from "@/lib/gifts";
 import { listEventsForRegistry } from "@/lib/events-server";
 import { RegistryEventsBanner } from "@/components/registry-events-banner";
 import { findSharedLink } from "@/lib/shared-link";
+import { getSessionUser } from "@/lib/viewer";
+
+type ServerClient = Awaited<ReturnType<typeof createClient>>;
+
+// Purchases of this registry's items and gift funds, newest first. Each query
+// joins to the registry it belongs to, so Postgres only looks at this
+// registry's purchases. Without that filter, it checks the purchases access
+// rule against every purchase in the table.
+async function loadRegistryPurchases(supabase: ServerClient, registryId: string) {
+  const [{ data: itemPurchases }, { data: fundPurchases }] = await Promise.all([
+    supabase
+      .from("purchases")
+      .select("*, registry_items!registry_item_id!inner(title, registry_id, price, is_parent_purchased)")
+      .eq("registry_items.registry_id", registryId),
+    supabase
+      .from("purchases")
+      .select("*, cash_funds!cash_fund_id!inner(title, registry_id)")
+      .eq("cash_funds.registry_id", registryId),
+  ]);
+  const itemPurchaseIds = new Set((itemPurchases || []).map((p) => p.id));
+  return [
+    ...(itemPurchases || []).map((p) => ({ ...p, cash_funds: null })),
+    ...(fundPurchases || [])
+      .filter((p) => !itemPurchaseIds.has(p.id))
+      .map((p) => ({ ...p, registry_items: null })),
+  ].sort((a, b) => (a.created_at < b.created_at ? 1 : a.created_at > b.created_at ? -1 : 0));
+}
 
 interface RegistryItem {
   id: string;
@@ -78,10 +105,8 @@ export default async function RegistryManagePage({
   const { highlight, tab, add, url: addUrl, title: addTitle } = await searchParams;
   // A product shared from a phone (/share): open the add item dialog on it.
   const sharedLink = add ? findSharedLink({ url: addUrl, title: addTitle }) : null;
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // The top bar looks up the same user, and the lookup is cached per request.
+  const [supabase, user] = await Promise.all([createClient(), getSessionUser()]);
 
   if (!user) {
     redirect("/login");
@@ -89,18 +114,19 @@ export default async function RegistryManagePage({
 
   // Check if user is a manager of this registry (falls back to owner_id if migration not run)
   let isOwner = false;
-  const { data: managerRecord, error: managerError } = await supabaseAdmin
-    .from("registry_managers")
-    .select("role")
-    .eq("registry_id", registryId)
-    .eq("user_id", user.id)
-    .single();
-
-  const { data: registry } = await supabase
-    .from("registries")
-    .select("*")
-    .eq("id", registryId)
-    .single();
+  const [{ data: managerRecord, error: managerError }, { data: registry }] = await Promise.all([
+    supabaseAdmin
+      .from("registry_managers")
+      .select("role")
+      .eq("registry_id", registryId)
+      .eq("user_id", user.id)
+      .single(),
+    supabase
+      .from("registries")
+      .select("*")
+      .eq("id", registryId)
+      .single(),
+  ]);
 
   if (!registry) {
     notFound();
@@ -117,7 +143,7 @@ export default async function RegistryManagePage({
     isOwner = true;
   }
 
-  const [{ data: categories }, { data: items }, { data: purchases }, { data: suggestions }, { data: cashFunds }, linkedEvents] =
+  const [{ data: categories }, { data: items }, purchases, { data: suggestions }, { data: cashFunds }, linkedEvents] =
     await Promise.all([
       supabase
         .from("categories")
@@ -129,10 +155,7 @@ export default async function RegistryManagePage({
         .select("*")
         .eq("registry_id", registryId)
         .order("sort_order"),
-      supabase
-        .from("purchases")
-        .select("*, registry_items!registry_item_id(title, registry_id, price, is_parent_purchased), cash_funds!cash_fund_id(title, registry_id)")
-        .order("created_at", { ascending: false }),
+      loadRegistryPurchases(supabase, registryId),
       supabase
         .from("suggestions")
         .select("*")
@@ -153,12 +176,7 @@ export default async function RegistryManagePage({
   const copy = copyForRegistry(registry);
   const showChecklist = copy.checklistAvailable;
 
-  // Filter purchases to this registry
-  const allPurchases = (purchases || []).filter((p: any) => {
-    if (p.registry_items?.registry_id === registryId) return true;
-    if (p.cash_funds?.registry_id === registryId) return true;
-    return false;
-  }).map((p: any) => ({
+  const allPurchases = purchases.map((p: any) => ({
     ...p,
     item_title: p.registry_items?.title || p.cash_funds?.title || "Unknown item",
   }));

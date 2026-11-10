@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase-admin";
+import { getSessionUser } from "@/lib/viewer";
 import { findSharedLink } from "@/lib/shared-link";
 import { SharePicker, addSharedLinkHref, type ShareRegistry } from "@/components/share-picker";
 
@@ -23,10 +24,8 @@ export default async function SharePage({ searchParams }: { searchParams: Promis
   const params = await searchParams;
   const sharedFields = { title: first(params.title), text: first(params.text), url: first(params.url) };
 
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // The top bar looks up the same user, and the lookup is cached per request.
+  const [supabase, user] = await Promise.all([createClient(), getSessionUser()]);
 
   // Guests who reserved a gift have an anonymous session but no registries.
   // Either way, sign in and come back here with what was shared.

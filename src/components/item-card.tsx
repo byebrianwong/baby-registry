@@ -95,9 +95,12 @@ export function ItemCard({ item, registryId, isOwner, categories = [], zipCode, 
           <div className={`relative size-[106px] shrink-0 ${isFulfilled && !item.is_parent_purchased ? "opacity-60" : ""}`}>
             {item.image_url ? (
               <div className="flex size-[106px] items-center justify-center rounded-[10px] bg-tertiary">
+                {/* Photos load as they near the screen (see item-image.tsx). */}
                 <img
                   src={item.image_url}
                   alt={item.title}
+                  loading="lazy"
+                  decoding="async"
                   className="size-[106px] rounded-[10px] object-cover"
                 />
               </div>
