@@ -9,9 +9,12 @@ export const geistSans = Geist({
   subsets: ["latin"],
 });
 
+// Only the invite link on registry settings uses it, so pages don't preload
+// it. It loads when that text shows.
 export const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+  preload: false,
 });
 
 // Headings and the wordmark (--font-display in src/styles/theme.css). The

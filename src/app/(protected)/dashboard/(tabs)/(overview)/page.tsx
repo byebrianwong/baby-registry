@@ -9,6 +9,7 @@ import { PandaMark } from "@/components/panda-mark";
 import { createClient } from "@/utils/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { countFollowRequests } from "@/lib/follows";
+import { getSessionUser } from "@/lib/viewer";
 
 type CardPurchase = { id: string; status: string; created_at: string; buyer_name: string };
 type CardItem = {
@@ -106,10 +107,9 @@ async function loadSharedRegistries(supabase: ServerClient, user: User) {
 
 
 export default async function DashboardPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // The top bar and the tabs look up the same user, and the lookup is cached
+  // per request.
+  const [supabase, user] = await Promise.all([createClient(), getSessionUser()]);
 
   if (!user) {
     redirect("/login");
