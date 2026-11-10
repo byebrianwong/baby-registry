@@ -673,7 +673,9 @@ export default function RegistrySettingsPage() {
         <CardContent className="space-y-6">
           {/* Current managers list */}
           <div className="space-y-2">
-            <h4 className="text-sm font-medium text-secondary">Current managers</h4>
+            {/* h2s, since the card titles above aren't headings: the page goes h1 to these. font-sans
+                and tracking-normal undo the display font that globals.css gives every h2. */}
+            <h2 className="font-sans text-sm font-medium tracking-normal text-secondary">Current managers</h2>
             <div className="space-y-2">
               {managers.map((m) => (
                 <div key={m.id} className="flex items-center justify-between rounded-md border px-3 py-2">
@@ -705,10 +707,10 @@ export default function RegistrySettingsPage() {
 
           {/* Invite by email */}
           <div className="space-y-2">
-            <h4 className="text-sm font-medium text-secondary flex items-center gap-1.5">
+            <h2 className="font-sans text-sm font-medium tracking-normal text-secondary flex items-center gap-1.5">
               <Mail className="h-4 w-4" />
               Invite by email
-            </h4>
+            </h2>
             <form onSubmit={handleInviteByEmail} className="flex gap-2">
               <div className="flex-1">
                 <Input
@@ -735,10 +737,10 @@ export default function RegistrySettingsPage() {
 
           {/* Generate invite link */}
           <div className="space-y-2">
-            <h4 className="text-sm font-medium text-secondary flex items-center gap-1.5">
+            <h2 className="font-sans text-sm font-medium tracking-normal text-secondary flex items-center gap-1.5">
               <LinkIcon className="h-4 w-4" />
               Generate invite link
-            </h4>
+            </h2>
             <div className="flex gap-2 items-end">
               <div>
                 <label htmlFor="invite-max-uses" className="text-xs text-tertiary">Max uses</label>
@@ -790,7 +792,7 @@ export default function RegistrySettingsPage() {
             <>
               <Separator />
               <div className="space-y-2">
-                <h4 className="text-sm font-medium text-secondary">Active invites</h4>
+                <h2 className="font-sans text-sm font-medium tracking-normal text-secondary">Active invites</h2>
                 <div className="space-y-2">
                   {invites.map((inv) => {
                     const expired = new Date(inv.expires_at) < new Date();
