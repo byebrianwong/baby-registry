@@ -19,7 +19,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { addRegistryItem, createCategory } from "@/lib/actions/registry";
-import { scrapeProductUrl } from "@/lib/actions/scrape";
+import { fetchProductDetails } from "@/lib/fetch-product";
 import { estimateTax } from "@/lib/actions/tax";
 import type { PersonalEventType, RegistryType } from "@/lib/types";
 import { copyFor } from "@/lib/registry-copy";
@@ -172,7 +172,9 @@ export function AddItemDialog({
     setScrapeStatus("");
     setScrapeIsError(false);
 
-    const result = await scrapeProductUrl(url);
+    const result = await fetchProductDetails(url, {
+      onReadingWithExtension: () => setScrapeStatus("Reading the page in a background tab with the Regibee extension…"),
+    });
 
     if (result.error) {
       setScrapeStatus(result.error);

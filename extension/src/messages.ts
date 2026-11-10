@@ -60,7 +60,9 @@ export type BackgroundRequest =
   | { type: "page-items"; store: StoreId; items: StoreItem[] }
   // From the connect content script on regibee.com.
   | { type: "connect-session"; session: ExtensionSession }
-  | { type: "connect-cancel" };
+  | { type: "connect-cancel" }
+  // From the connect content script, for the add and edit item dialogs.
+  | { type: "read-product"; url: string };
 
 export interface RegistriesResult {
   user: { name: string; email: string | null };
