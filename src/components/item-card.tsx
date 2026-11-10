@@ -10,6 +10,7 @@ import { UsedConditionTag } from "@/components/ui/used-condition-tag";
 import { toggleParentPurchased } from "@/lib/actions/registry";
 import { EditItemDialog } from "@/components/edit-item-dialog";
 import { GiftDetailModal, type Purchase } from "@/components/gift-detail-modal";
+import { isOpenReservation } from "@/lib/gifts";
 import type { RetailerRegistry, StoreId } from "@/lib/retailers";
 import { formatPrice } from "@/lib/money";
 
@@ -50,6 +51,12 @@ export function ItemCard({ item, registryId, isOwner, categories = [], zipCode, 
   const cardRef = useRef<HTMLDivElement>(null);
   const isHighlighted = highlightId === item.id;
   const isFulfilled = item.quantity_fulfilled >= item.quantity_needed;
+  // Released reservations stay in the list as cancelled. A gift that's only
+  // reserved shows as reserved until the guest says they bought it.
+  const activePurchases = (purchases || []).filter((p) => p.status !== "cancelled");
+  const givenPurchases = activePurchases.filter((p) => !isOpenReservation(p));
+  const onlyReserved = activePurchases.length > 0 && givenPurchases.length === 0;
+  const firstGiver = givenPurchases[0] ?? activePurchases[0];
   const remaining = item.quantity_needed - item.quantity_fulfilled;
   const coveredQuantity = item.is_parent_purchased
     ? (purchases || []).reduce((sum, p) => sum + (p.quantity || 0), 0)
@@ -113,15 +120,16 @@ export function ItemCard({ item, registryId, isOwner, categories = [], zipCode, 
                   <Tag variant="purchased-by-you" className="max-w-full overflow-hidden text-ellipsis block">Purchased by you</Tag>
                 )}
                 {isFulfilled && !item.is_parent_purchased && (
-                  purchases && purchases.length > 0 ? (
+                  activePurchases.length > 0 ? (
                     <Tag
-                      variant="gifted"
+                      variant={onlyReserved ? "reserved" : "gifted"}
                       className="cursor-pointer hover:opacity-80 max-w-full overflow-hidden text-ellipsis block"
                       onClick={(e) => { e.stopPropagation(); setGiftDetailOpen(true); }}
                     >
-                      {purchases.length > 1
-                        ? `Gifted by ${purchases[0].buyer_name} + ${purchases.length - 1} other${purchases.length > 2 ? "s" : ""}`
-                        : `Gifted by ${purchases[0].buyer_name}`}
+                      {`${onlyReserved ? "Reserved" : "Gifted"} by ${firstGiver.buyer_name}`}
+                      {activePurchases.length > 1
+                        ? ` + ${activePurchases.length - 1} other${activePurchases.length > 2 ? "s" : ""}`
+                        : ""}
                     </Tag>
                   ) : (
                     <Tag variant="gifted">Gifted</Tag>

@@ -9,13 +9,14 @@ import { ScrollToTop } from "@/components/scroll-to-top";
 import { SuggestItemDialog } from "@/components/suggest-item-dialog";
 import { DEMO_ME, demoFollowState, demoOk, demoProfilePath } from "@/lib/demo-people";
 import { findDemoRegistry } from "@/lib/demo-registries";
+import { GIFT_HOLD_DAYS, type MyItemGift } from "@/lib/gifts";
 import { copyForRegistry } from "@/lib/registry-copy";
 import { parseRetailerRegistries } from "@/lib/retailers";
 import { useDemoToday } from "../demo-today";
 import { DemoGuestShell } from "./demo-shell";
 import { DemoGuestHeader } from "./demo-guest-header";
 
-type MyGifts = { items?: Record<string, string>; funds?: Record<string, number> };
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 /** A demo registry's share page, as a guest sees it. Like src/app/r/[slug]/page.tsx. */
 export function DemoPublicRegistry({ slug }: { slug: string }) {
@@ -25,43 +26,93 @@ export function DemoPublicRegistry({ slug }: { slug: string }) {
   const [items, setItems] = useState(registry.items);
   const [funds, setFunds] = useState(registry.cashFunds);
   const [coverCounts, setCoverCounts] = useState<Record<string, number>>({});
-  // What this visitor gave, so the page marks it like the real one does.
-  const [myGifts, setMyGifts] = useState<MyGifts>({});
+  // What this visitor gave, so the page marks it like the real one does: their
+  // gift on each item, by item id, and what they sent each cash fund.
+  const [myItemGifts, setMyItemGifts] = useState<Record<string, MyItemGift>>({});
+  const [myFunds, setMyFunds] = useState<Record<string, number>>({});
 
   const isBaby = registry.registry_type === "baby";
   const copy = copyForRegistry(registry);
   const parentName = registry.honoree_names;
   const shippingAddress = registry.settings.shipping_address;
 
-  const markItem = (itemId: string) =>
-    setMyGifts((gifts) => ({ ...gifts, items: { ...gifts.items, [itemId]: "demo" } }));
+  const addToFulfilled = (itemId: string, change: number) =>
+    setItems((current) =>
+      current.map((i) =>
+        i.id === itemId ? { ...i, quantity_fulfilled: Math.max(0, i.quantity_fulfilled + change) } : i
+      )
+    );
+  const forgetGift = (itemId: string) =>
+    setMyItemGifts((gifts) => {
+      const next = { ...gifts };
+      delete next[itemId];
+      return next;
+    });
 
   // Like the real actions in src/lib/actions/registry.ts, minus the saving.
   const actions: GiftActions = {
-    reserve: async (formData) => {
-      const itemId = String(formData.get("itemId"));
-      const quantity = Number(formData.get("quantity")) || 1;
-      setItems((current) =>
-        current.map((i) => (i.id === itemId ? { ...i, quantity_fulfilled: i.quantity_fulfilled + quantity } : i)),
-      );
-      markItem(itemId);
-      // A guest sees the address once they've reserved something.
-      return { shippingAddress };
-    },
-    cover: async (formData) => {
-      const itemId = String(formData.get("itemId"));
-      const quantity = Number(formData.get("quantity")) || 1;
-      setCoverCounts((counts) => ({ ...counts, [itemId]: (counts[itemId] || 0) + quantity }));
-      markItem(itemId);
-      return undefined;
-    },
+    reserve: (itemId) => ({
+      reserve: async (formData) => {
+        const quantity = Number(formData.get("quantity")) || 1;
+        const bought = formData.get("alreadyBought") === "1";
+        const gift: MyItemGift = {
+          purchaseId: `demo-${itemId}`,
+          status: bought ? "purchased" : "reserved",
+          reservedUntil: bought ? null : new Date(Date.now() + GIFT_HOLD_DAYS * DAY_MS).toISOString(),
+          quantity,
+        };
+        addToFulfilled(itemId, quantity);
+        setMyItemGifts((gifts) => ({ ...gifts, [itemId]: gift }));
+        // A guest sees the address once they've reserved something.
+        return {
+          success: true,
+          purchaseId: gift.purchaseId,
+          status: gift.status,
+          reservedUntil: gift.reservedUntil,
+          shippingAddress,
+        };
+      },
+      confirm: async () => {
+        setMyItemGifts((gifts) => ({
+          ...gifts,
+          [itemId]: { ...gifts[itemId], status: "purchased", reservedUntil: null },
+        }));
+        return {};
+      },
+      release: async () => {
+        const gift = myItemGifts[itemId];
+        if (gift) addToFulfilled(itemId, -gift.quantity);
+        forgetGift(itemId);
+        return {};
+      },
+    }),
+    cover: (itemId) => ({
+      give: async (formData) => {
+        const quantity = Number(formData.get("quantity")) || 1;
+        const purchaseId = `demo-cover-${itemId}`;
+        setCoverCounts((counts) => ({ ...counts, [itemId]: (counts[itemId] || 0) + quantity }));
+        setMyItemGifts((gifts) => ({
+          ...gifts,
+          [itemId]: { purchaseId, status: "purchased", reservedUntil: null, quantity },
+        }));
+        return { success: true, purchaseId };
+      },
+      release: async () => {
+        const gift = myItemGifts[itemId];
+        if (gift) {
+          setCoverCounts((counts) => ({ ...counts, [itemId]: Math.max(0, (counts[itemId] || 0) - gift.quantity) }));
+        }
+        forgetGift(itemId);
+        return {};
+      },
+    }),
     contribute: async (formData) => {
       const fundId = String(formData.get("fundId"));
       const amount = Number(formData.get("amount")) || 0;
       setFunds((current) =>
         current.map((f) => (f.id === fundId ? { ...f, current_amount: f.current_amount + amount } : f)),
       );
-      setMyGifts((gifts) => ({ ...gifts, funds: { ...gifts.funds, [fundId]: (gifts.funds?.[fundId] || 0) + amount } }));
+      setMyFunds((given) => ({ ...given, [fundId]: (given[fundId] || 0) + amount }));
       return undefined;
     },
   };
@@ -111,14 +162,16 @@ export function DemoPublicRegistry({ slug }: { slug: string }) {
           paymentMethods={registry.settings.payment_methods}
           // The real page sends the address only once this visitor reserved
           // something. The reserve dialog gets it back from the action here.
-          shippingAddress={Object.keys(myGifts.items ?? {}).length > 0 ? shippingAddress : undefined}
-          myGifts={myGifts}
+          shippingAddress={Object.keys(myItemGifts).length > 0 ? shippingAddress : undefined}
+          myGifts={{ funds: myFunds }}
+          myItemGifts={myItemGifts}
           coverCounts={coverCounts}
           selfPurchasedLabel={copy.selfPurchasedLabel}
           coverFlavor={copy.coverItemFlavor(parentName)}
           linkedStores={isBaby ? parseRetailerRegistries(registry.settings).map((r) => r.store) : []}
           showStoreRegistries={isBaby}
           actions={actions}
+          demo
           suggestButton={
             <SuggestItemDialog
               registryId={registry.id}

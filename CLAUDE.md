@@ -19,7 +19,7 @@ Vercel holds these env vars for production, preview and development: `NEXT_PUBLI
 
 - Changes live in `supabase/migrations`. Nothing runs them on deploy. Someone runs each new file by hand.
 - Production has no migration history table, so the Supabase CLI can't tell which files have run. Look at the database before running a file.
-- Give a new file the next number after the highest one. Two files already share `009`.
+- Give a new file the next number after the highest one. Two files already share `009`, and two share `015`.
 - There's no staging database, so read a new file closely before running it on production. Use the SQL Editor in the Supabase dashboard, or the Supabase CLI (version 3 or later, `brew install supabase/tap/supabase`):
 
   ```bash
