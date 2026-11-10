@@ -59,7 +59,7 @@ interface Props {
   paymentMethods?: PaymentMethods;
   shippingAddress?: string;
   myGifts: { items?: Record<string, string>; funds?: Record<string, number> };
-  /** This visitor's own gifts on regular items, by item id. */
+  /** This visitor's own gifts, by item id. */
   myItemGifts?: Record<string, MyItemGift>;
   /** How many of each item other guests have reserved but not bought yet. */
   reservedCounts?: Record<string, number>;
@@ -461,10 +461,10 @@ function PublicItemCard({
     : undefined;
   const isFulfilled = item.quantity_fulfilled >= item.quantity_needed;
   const remaining = item.quantity_needed - item.quantity_fulfilled;
-  // Covers of items the owners bought go by the cookie alone; regular items
-  // by the gift the server matched to this visitor.
+  // Gifts go by what the server matched to this visitor. Covers saved before
+  // the cookie held purchase ids left "cover" in it, which still counts.
   const itemPurchased = item.is_parent_purchased
-    ? !!(myGifts.items && myGifts.items[item.id])
+    ? !!myItemGift || myGifts.items?.[item.id] === "cover"
     : myItemGift?.status === "purchased";
   const myReservation = !item.is_parent_purchased && myItemGift?.status === "reserved";
   const coveredQty = coverCounts[item.id] || 0;
@@ -562,19 +562,19 @@ function PublicItemCard({
         </div>
 
         {(item.is_parent_purchased
-          ? availableToGift > 0 || itemPurchased
+          ? availableToGift > 0 || !!myItemGift || openStep === "ended"
           : !isFulfilled || !!myItemGift || openStep === "ended") && (
           <div className="flex flex-wrap items-center justify-end gap-2">
             {item.is_parent_purchased ? (
+              // Pay first, then say so: the gift is saved as given at once.
               <CoverItemDialog
                 item={item}
                 availableToGift={availableToGift}
                 paymentMethods={paymentMethods}
                 parentName={parentName}
                 coverFlavor={coverFlavor}
-                alreadyPurchased={itemPurchased}
-                isCovered={coveredQty >= item.quantity_needed}
-                shippingAddress={shippingAddress}
+                gift={myItemGift}
+                initialStep={openStep}
               />
             ) : (
               // One way in: the dialog takes the guest through reserving,

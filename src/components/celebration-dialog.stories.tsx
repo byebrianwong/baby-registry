@@ -14,11 +14,12 @@ const meta: Meta<typeof CelebrationDialog> = {
 export default meta;
 type Story = StoryObj<typeof CelebrationDialog>;
 
-// After covering an item or contributing to a fund: where to send the money.
-export const ItemCoveredWithPayment: Story = {
+// After contributing to a fund: where to send the money.
+export const ContributionWithPayment: Story = {
   args: {
-    variant: "cover",
-    itemTitle: "UPPAbaby Vista V2 Stroller",
+    variant: "contribute",
+    itemTitle: "Nursery Furniture Fund",
+    amount: 50,
     paymentMethods: {
       venmo: "@remi-and-max",
       paypal: "max@example.com",

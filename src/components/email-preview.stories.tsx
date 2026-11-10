@@ -132,17 +132,20 @@ export const BuyerItemGiven: Story = {
   },
 };
 
+// Sent when a guest says they sent the money for an item the owners bought.
+// The gift counts at once, so the email has a way to undo it.
 export const BuyerItemCovered: Story = {
   args: {
     subject: 'Your gift is confirmed — "UPPAbaby Vista V2 Stroller"',
     html: itemCoveredBuyerHtml({
       buyerName: "Glinda",
       itemTitle: "UPPAbaby Vista V2 Stroller",
+      quantity: 1,
+      amount: 979.99,
       parentName: "Remi & Max",
       registryTitle: "Remi & Max's Baby Registry",
-      paymentMethods: { venmo: "@remi-and-max", paypal: "max@example.com" },
       registryUrl: "https://regibee.com/r/remi-and-max?email=glinda%40example.com&sig=a1b2c3d4e5f6a7b8",
-      shopUrl: "https://amazon.com/dp/B08XYZ",
+      undoUrl: `${sampleGiftLink}?step=release`,
     }),
   },
 };
@@ -204,13 +207,15 @@ export const OwnerItemGivenWelcomeBox: Story = {
 
 export const OwnerItemCovered: Story = {
   args: {
-    subject: 'Auntie Glinda is covering "UPPAbaby Vista V2 Stroller"',
+    subject: '🎉 Auntie Glinda sent you $25.98 for "Muslin Swaddle Blankets"',
     to: "max@example.com",
     html: itemCoveredOwnerHtml({
       ownerName: "Max",
       registryTitle: "Remi & Max's Baby Registry",
       buyerName: "Auntie Glinda",
-      itemTitle: "UPPAbaby Vista V2 Stroller",
+      itemTitle: "Muslin Swaddle Blankets",
+      quantity: 2,
+      amount: 25.98,
       message: "Happy to help with the big stuff!",
       dashboardLink: "https://regibee.com/dashboard/registry/abc?highlight=456",
     }),
