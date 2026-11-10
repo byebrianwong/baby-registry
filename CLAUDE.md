@@ -19,7 +19,9 @@ Vercel holds these env vars for production, preview and development: `NEXT_PUBLI
 
 - Changes live in `supabase/migrations`. Nothing runs them on deploy. Someone runs each new file by hand.
 - Production has no migration history table, so the Supabase CLI can't tell which files have run. Look at the database before running a file.
-- Give a new file the next number after the highest one. Two files already share `009`, and two share `015`.
+- Make a new file with `supabase migration new <name>`. It names the file with the current time in UTC, like `20261110113500_<name>.sql`, so two branches working at once won't pick the same name. It needs no login or link. Don't pick a number by hand.
+- The older files are numbered `001` to `017`. Two pairs share a number, `009` and `015`, from when each branch took the next number after the highest. Run files in name order: that order is right for both pairs, and timestamped files come after `017`.
+- The `Migration names` check (`.github/workflows/migrations.yml`) fails a pull request that adds another numbered file or reuses a version. `npm run check:migrations` runs the same check locally.
 - There's no staging database, so read a new file closely before running it on production. Use the SQL Editor in the Supabase dashboard, or the Supabase CLI (version 3 or later, `brew install supabase/tap/supabase`):
 
   ```bash
@@ -80,6 +82,7 @@ Vercel holds these env vars for production, preview and development: `NEXT_PUBLI
 
 - Run `npx tsc --noEmit` and `npm run build`.
 - If you changed components or stories, also run `npm run build-storybook`.
+- If you added a migration, also run `npm run check:migrations`.
 - If you changed `extension/`, `src/lib/retailers.ts` or `src/lib/extension.ts`, also run `npm run extension:build` and `npm run test:extension`. The tests skip when this computer has no saved store pages. See "Tests" in [extension/README.md](extension/README.md).
 - If you changed `mobile/`, `src/lib/retailers.ts`, `src/lib/demo-data.ts` or `extension/src/product-reader.ts`, also run `npm run lint` and `npm run check` in `mobile/`.
 - `npm run lint` fails right now. `eslint.config.mjs` imports `eslint-plugin-storybook`, which isn't in `package.json`.
