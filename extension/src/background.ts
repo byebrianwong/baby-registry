@@ -3,7 +3,9 @@
 
 import {
   CONNECT_PATH,
+  extensionCanReadLink,
   itemMatchKey,
+  parseReadProduct,
   type AddProductResponse,
   type AddResponse,
   type CheckResponse,
@@ -11,12 +13,14 @@ import {
   type ExtensionSession,
   type LinkResponse,
   type MeResponse,
+  type ReadProduct,
   type StoreItem,
   type UndoResponse,
 } from "@/lib/extension";
-import { extensionStoreForPage, storeItemKey, type StoreId } from "@/lib/retailers";
+import { classifyStoreLink, extensionStoreForPage, storeItemKey, type StoreId } from "@/lib/retailers";
 import { api, NotConnectedError } from "./api";
 import { REGIBEE_URL } from "./config";
+import { readProductPage, type ProductPage } from "./product-reader";
 import type {
   AutoImportResult,
   BackgroundRequest,
@@ -211,6 +215,82 @@ function isRegibeeSite(sender: chrome.runtime.MessageSender): boolean {
   }
 }
 
+// ── Reading a product link for the site ─────────────────────────────────
+// The add and edit item dialogs on regibee.com ask for this when the owner
+// pastes a link at a store that blocks the server's fetch, like Amazon. The
+// page opens in a background tab next to the owner's, the product reader
+// reads it there, and the tab closes again.
+
+// Store pages keep loading ads long after the product is on the page. Read
+// whatever is there by then.
+const READ_LOAD_TIMEOUT_MS = 15_000;
+/** Tabs opened to read a product. A store page in one doesn't count as a visit. */
+const readingTabs = new Set<number>();
+
+/** The tab once its page has loaded, or when time runs out, whichever comes first. */
+function waitForLoad(tabId: number, timeoutMs: number): Promise<chrome.tabs.Tab> {
+  return new Promise((resolve, reject) => {
+    let done = false;
+    const finish = (settle: () => void) => {
+      if (done) return;
+      done = true;
+      clearTimeout(timer);
+      chrome.tabs.onUpdated.removeListener(onUpdated);
+      chrome.tabs.onRemoved.removeListener(onRemoved);
+      settle();
+    };
+    const onUpdated = (id: number, info: chrome.tabs.OnUpdatedInfo, tab: chrome.tabs.Tab) => {
+      if (id === tabId && info.status === "complete") finish(() => resolve(tab));
+    };
+    const onRemoved = (id: number) => {
+      if (id === tabId) finish(() => reject(new Error("The tab closed before the page loaded.")));
+    };
+    const timer = setTimeout(() => finish(() => void chrome.tabs.get(tabId).then(resolve, reject)), timeoutMs);
+    chrome.tabs.onUpdated.addListener(onUpdated);
+    chrome.tabs.onRemoved.addListener(onRemoved);
+    // In case it finished before the listeners were in place.
+    void chrome.tabs.get(tabId).then((tab) => {
+      if (tab.status === "complete" && tab.url && tab.url !== "about:blank") finish(() => resolve(tab));
+    }, () => {});
+  });
+}
+
+let readingProduct = false;
+
+/** Opens a store product link in a background tab and reads the product. Null when it couldn't. */
+async function readProductLink(url: string, from: chrome.tabs.Tab | undefined): Promise<ReadProduct | null> {
+  if (!extensionCanReadLink(url)) throw new Error("The extension can't read that link.");
+  // One at a time: the dialog waits for each answer anyway.
+  if (readingProduct) throw new Error("The extension is already reading a page.");
+  readingProduct = true;
+  let tabId: number | undefined;
+  try {
+    const tab = await chrome.tabs.create({
+      url,
+      active: false,
+      // Right next to the owner's tab, so it's clear where it came from.
+      ...(from?.id !== undefined ? { windowId: from.windowId, index: from.index + 1 } : {}),
+    });
+    tabId = tab.id;
+    if (tabId === undefined) return null;
+    readingTabs.add(tabId);
+    const loaded = await waitForLoad(tabId, READ_LOAD_TIMEOUT_MS);
+    // A short link can lead anywhere, and a store can show a robot check
+    // instead. Read only the store's product pages.
+    const kind = classifyStoreLink(loaded.url)?.kind;
+    if (kind !== "plain" && kind !== "registry") return null;
+    const [injection] = await chrome.scripting.executeScript({ target: { tabId }, func: readProductPage });
+    const page = injection?.result as ProductPage | undefined;
+    return page?.isProduct ? parseReadProduct(page) : null;
+  } finally {
+    readingProduct = false;
+    if (tabId !== undefined) {
+      readingTabs.delete(tabId);
+      await chrome.tabs.remove(tabId).catch(() => {});
+    }
+  }
+}
+
 async function handle(request: BackgroundRequest, sender: chrome.runtime.MessageSender): Promise<unknown> {
   // Only this extension's own pages and content scripts can message it, but
   // check the content-script messages came from the pages they belong to.
@@ -273,6 +353,10 @@ async function handle(request: BackgroundRequest, sender: chrome.runtime.Message
       return result;
     }
     case "page-items": {
+      // A tab the extension opened to read a product link isn't the owner's visit.
+      if (sender.tab?.id !== undefined && readingTabs.has(sender.tab.id)) {
+        return { added: [], linked: [], registry: null } satisfies AutoImportResult;
+      }
       const store = extensionStoreForPage(sender.url);
       if (!store || store.id !== request.store) throw new Error("Not a store registry page");
       return onPageItems(store.id, request.items, sender.tab?.id);
@@ -286,6 +370,9 @@ async function handle(request: BackgroundRequest, sender: chrome.runtime.Message
         await chrome.tabs.remove(sender.tab.id);
       }
       return null;
+    case "read-product":
+      if (!isRegibeeSite(sender)) throw new Error("Not the Regibee site");
+      return readProductLink(request.url, sender.tab);
   }
 }
 
