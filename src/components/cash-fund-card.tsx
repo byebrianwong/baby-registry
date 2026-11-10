@@ -32,6 +32,9 @@ interface CashFundCardProps {
   registryId: string;
   highlightId?: string;
   purchases?: Purchase[];
+  /** Stand-ins for the server actions. The demo passes them. */
+  updateAction?: typeof updateCashFund;
+  deleteAction?: typeof deleteCashFund;
 }
 
 const currencySymbols: Record<string, string> = {
@@ -43,7 +46,14 @@ const currencySymbols: Record<string, string> = {
   AUD: "A$",
 };
 
-export function CashFundCard({ fund, registryId, highlightId, purchases }: CashFundCardProps) {
+export function CashFundCard({
+  fund,
+  registryId,
+  highlightId,
+  purchases,
+  updateAction = updateCashFund,
+  deleteAction = deleteCashFund,
+}: CashFundCardProps) {
   const [editOpen, setEditOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -67,7 +77,7 @@ export function CashFundCard({ fund, registryId, highlightId, purchases }: CashF
   const handleSubmit = async (formData: FormData) => {
     setLoading(true);
     setError("");
-    const result = await updateCashFund(fund.id, registryId, formData);
+    const result = await updateAction(fund.id, registryId, formData);
     if (result?.error) {
       setError(result.error);
     } else {
@@ -79,7 +89,7 @@ export function CashFundCard({ fund, registryId, highlightId, purchases }: CashF
   const handleDelete = async () => {
     if (!confirm(`Delete "${fund.title}"? This cannot be undone.`)) return;
     setDeleting(true);
-    const result = await deleteCashFund(fund.id, registryId);
+    const result = await deleteAction(fund.id, registryId);
     if (result?.error) {
       setError(result.error);
       setDeleting(false);

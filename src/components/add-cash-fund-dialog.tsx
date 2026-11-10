@@ -19,6 +19,8 @@ import { addCashFund } from "@/lib/actions/registry";
 
 interface AddCashFundDialogProps {
   registryId: string;
+  /** A stand-in for the server action. The demo passes one. */
+  action?: typeof addCashFund;
 }
 
 const currencySymbols: Record<string, string> = {
@@ -30,7 +32,7 @@ const currencySymbols: Record<string, string> = {
   AUD: "A$",
 };
 
-export function AddCashFundDialog({ registryId }: AddCashFundDialogProps) {
+export function AddCashFundDialog({ registryId, action = addCashFund }: AddCashFundDialogProps) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -39,7 +41,7 @@ export function AddCashFundDialog({ registryId }: AddCashFundDialogProps) {
   const handleSubmit = async (formData: FormData) => {
     setLoading(true);
     setError("");
-    const result = await addCashFund(registryId, formData);
+    const result = await action(registryId, formData);
     if (result?.error) {
       setError(result.error);
     } else {

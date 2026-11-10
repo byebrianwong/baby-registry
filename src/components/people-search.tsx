@@ -8,6 +8,7 @@ import {
   FollowToggle,
   WithdrawRequest,
   useFollow,
+  type FollowActions,
   type FollowToggleState,
 } from "@/components/follow-button";
 import { searchPeople, type SearchResponse, type SearchResult } from "@/lib/actions/follows";
@@ -29,11 +30,13 @@ function PersonCard({
   detail,
   error,
   action,
+  basePath,
 }: {
   person: SearchResult;
   detail: React.ReactNode;
   error?: string;
   action?: React.ReactNode;
+  basePath: string;
 }) {
   const name = displayName(person);
   return (
@@ -45,7 +48,7 @@ function PersonCard({
         {initialsFor(name)}
       </span>
       <span className="min-w-0 flex-1">
-        <Link href={profilePath(person)} className="block break-words font-medium text-primary hover:underline">
+        <Link href={`${basePath}${profilePath(person)}`} className="block break-words font-medium text-primary hover:underline">
           {name}
         </Link>
         <span className="mt-0.5 block text-sm text-tertiary">{detail}</span>
@@ -62,16 +65,28 @@ const DETAIL: Record<FollowToggleState, string> = {
   approved: "You can see their private registries",
 };
 
-function FollowablePerson({ person, state: initialState }: { person: SearchResult; state: FollowToggleState }) {
+function FollowablePerson({
+  person,
+  state: initialState,
+  basePath,
+  followActions,
+}: {
+  person: SearchResult;
+  state: FollowToggleState;
+  basePath: string;
+  followActions?: FollowActions;
+}) {
   const name = displayName(person);
   const { state, busy, error, toggle } = useFollow({
     publicId: person.public_id,
     name,
     state: initialState,
+    ...followActions,
   });
   return (
     <PersonCard
       person={person}
+      basePath={basePath}
       detail={
         state === "pending" ? (
           <>
@@ -96,9 +111,15 @@ function FollowablePerson({ person, state: initialState }: { person: SearchResul
 export function PeopleSearch({
   searchAction = searchPeople,
   inviteAction = sendFollowInvite,
+  followActions,
+  basePath = "",
 }: {
   searchAction?: typeof searchPeople;
   inviteAction?: typeof sendFollowInvite;
+  /** Stand-ins for the Follow buttons' server actions. The demo passes them. */
+  followActions?: FollowActions;
+  /** Put in front of profile links. The demo passes "/demo". */
+  basePath?: string;
 }) {
   const [query, setQuery] = useState("");
   const [response, setResponse] = useState<(SearchResponse & { query: string }) | null>(null);
@@ -225,9 +246,15 @@ export function PeopleSearch({
         <ul className="flex flex-col gap-3">
           {results.map((person) =>
             person.state === "self" ? (
-              <PersonCard key={person.public_id} person={person} detail="That's you" />
+              <PersonCard key={person.public_id} person={person} detail="That's you" basePath={basePath} />
             ) : (
-              <FollowablePerson key={person.public_id} person={person} state={person.state} />
+              <FollowablePerson
+                key={person.public_id}
+                person={person}
+                state={person.state}
+                basePath={basePath}
+                followActions={followActions}
+              />
             ),
           )}
         </ul>

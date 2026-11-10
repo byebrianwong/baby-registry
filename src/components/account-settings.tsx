@@ -75,6 +75,8 @@ export function AccountSettings({
   saveAction = saveProfile,
   listAction = setRegistryListed,
   follows,
+  followActions,
+  basePath = "",
 }: {
   profile: {
     public_id: string;
@@ -92,6 +94,13 @@ export function AccountSettings({
   };
   saveAction?: typeof saveProfile;
   listAction?: typeof setRegistryListed;
+  /** Stand-ins for the follow lists' server actions. The demo passes them. */
+  followActions?: Pick<
+    React.ComponentProps<typeof FollowLists>,
+    "approveAction" | "removeAction" | "cancelAction" | "blockAction" | "unblockAction"
+  >;
+  /** Put in front of every link. The demo passes "/demo". */
+  basePath?: string;
 }) {
   const [savedName, setSavedName] = useState(profile.full_name);
   const [saving, setSaving] = useState(false);
@@ -102,7 +111,7 @@ export function AccountSettings({
   const [emailRequests, setEmailRequests] = useState(profile.email_follow_requests ?? true);
 
   // The link has the name in it, so it follows the saved name.
-  const link = profilePath({ public_id: profile.public_id, full_name: savedName });
+  const link = `${basePath}${profilePath({ public_id: profile.public_id, full_name: savedName })}`;
 
   const handleSave = async (formData: FormData) => {
     setSaving(true);
@@ -123,7 +132,7 @@ export function AccountSettings({
     <div className="container mx-auto max-w-2xl px-4 py-8">
       <div className="flex items-center gap-2 mb-6">
         <Button variant="ghost" size="sm" asChild>
-          <Link href="/dashboard" aria-label="Back to dashboard">
+          <Link href={`${basePath}/dashboard`} aria-label="Back to dashboard">
             <ArrowLeft className="h-4 w-4" />
           </Link>
         </Button>
@@ -209,6 +218,8 @@ export function AccountSettings({
               followers={follows.followers}
               following={follows.following}
               blocked={follows.blocked}
+              basePath={basePath}
+              {...followActions}
             />
           </div>
         )}

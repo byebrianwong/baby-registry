@@ -9,12 +9,14 @@ export interface EventsOverviewProps {
   upcoming: (EventCardProps & { id: string })[];
   /** Before today, most recent first. */
   past: (EventCardProps & { id: string })[];
+  /** Put in front of the New Event link. The demo passes "/demo". */
+  basePath?: string;
 }
 
-export function NewEventButton() {
+export function NewEventButton({ basePath = "" }: { basePath?: string }) {
   return (
     <Button asChild>
-      <Link href="/dashboard/events/new">
+      <Link href={`${basePath}/dashboard/events/new`}>
         <span className="inline-flex items-center gap-1.5">
           <Plus className="h-4 w-4 shrink-0" />
           New Event
@@ -25,7 +27,7 @@ export function NewEventButton() {
 }
 
 /** The Events tab on the dashboard. Its page (dashboard/(tabs)/events) loads the events. */
-export function EventsOverview({ upcoming, past }: EventsOverviewProps) {
+export function EventsOverview({ upcoming, past, basePath = "" }: EventsOverviewProps) {
   const none = upcoming.length === 0 && past.length === 0;
 
   return (
@@ -36,7 +38,7 @@ export function EventsOverview({ upcoming, past }: EventsOverviewProps) {
           <h1 className="sr-only">Events</h1>
           <p className="text-tertiary">Send invitations and track RSVPs</p>
         </div>
-        <NewEventButton />
+        <NewEventButton basePath={basePath} />
       </div>
 
       {none ? (
@@ -51,7 +53,7 @@ export function EventsOverview({ upcoming, past }: EventsOverviewProps) {
               coming. Link your registry so guests know what to bring.
             </p>
             <div className="mt-6">
-              <NewEventButton />
+              <NewEventButton basePath={basePath} />
             </div>
           </CardContent>
         </Card>

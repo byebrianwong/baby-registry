@@ -10,6 +10,12 @@ export type FollowButtonState = "signed-out" | "none" | "pending" | "approved" |
 /** The states a signed-in viewer can change by clicking the button. */
 export type FollowToggleState = "none" | "pending" | "approved";
 
+/** Stand-ins for the follow server actions, for stories and the demo. */
+export interface FollowActions {
+  requestAction?: typeof requestFollow;
+  cancelAction?: typeof cancelFollow;
+}
+
 /**
  * Follow state for one person, and the click that changes it. FollowButton
  * uses it, and so does the people search, which lays out the hint itself.
@@ -109,6 +115,7 @@ export function FollowButton({
   returnTo,
   requestAction,
   cancelAction,
+  basePath = "",
 }: {
   /** The id from the person's profile link. */
   publicId: string;
@@ -119,6 +126,8 @@ export function FollowButton({
   returnTo: string;
   requestAction?: typeof requestFollow;
   cancelAction?: typeof cancelFollow;
+  /** Put in front of every link. The demo passes "/demo". */
+  basePath?: string;
 }) {
   const { state, busy, error, toggle } = useFollow({
     publicId,
@@ -147,7 +156,7 @@ export function FollowButton({
         </Button>
         <p className="text-xs text-tertiary">
           You blocked {name}.{" "}
-          <Link href="/dashboard/account#follows" className="font-medium text-brand-600 hover:underline">
+          <Link href={`${basePath}/dashboard/account#follows`} className="font-medium text-brand-600 hover:underline">
             Unblock
           </Link>
         </p>
