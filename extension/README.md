@@ -39,6 +39,32 @@ To load it in Chrome: open `chrome://extensions`, turn on Developer mode, click 
 
 The API routes and the Connect page have to be deployed before a build for regibee.com can connect.
 
+## Tests
+
+```bash
+npm run test:extension
+```
+
+This builds `extension/dist` and runs it in Playwright's Chromium, headless, on saved copies of real store pages. The first time, install that Chromium with `npx playwright install chromium`. The tests are in `extension/test/`.
+
+- **Registry pages.** The reader finds every item the page links with a registry link, and each item's link, name, price, picture and quantity match what was recorded from that page. The toolbar button counts the items that aren't on Regibee yet.
+- **Product pages.** The product reader reads the name, price and pictures, and keeps the address exactly, so a page opened from a store registry keeps its registry link. The popup's "Add to Regibee" form shows what it read.
+
+The tests never reach a store or Regibee. Each saved page is served at the address it was saved from, so the content scripts run on it as they do on the real site. No host name resolves, and every other request is refused. Calls to Regibee's API get made-up answers, so nothing touches the database.
+
+### The saved pages
+
+The pages hold the owner's real registries, so they stay on your computer, in `~/.regibee/extension-test-pages`, and never go in the repo. `REGIBEE_TEST_PAGES` points the tests at another folder. Without pages, the tests skip, which is why GitHub Actions doesn't run them. What the tests recorded from each page is in `expected/` in the same folder, and the files from failed tests are in `test-results/`. Both hold registry items too.
+
+The first set, saved on November 8, 2026: the Amazon "Your registry" page (30 items) and a Walmart registry page (23 items), an Amazon and a Walmart product page opened from those registries, and a Target product page.
+
+To save a page, or save it again after a store changes it:
+
+1. Open it in Chrome, signed in if it needs that.
+2. Open DevTools, paste all of [`test/save-page.js`](test/save-page.js) into the Console and press Enter. It downloads `<store>-<registry|product>.html`, named after the store and the kind of page.
+3. Move the file to the pages folder, replacing the old one.
+4. Run `npm run test:extension`. For a new page, the first run records what the extension reads from it in `expected/` and fails once, saying so. Check that file against the live page. For a page saved again, a failure shows what the extension now reads differently. When the differences are only the store's own changes, such as new prices or items, record them with `npm run test:extension -- --update-snapshots`.
+
 ## Stores
 
 Everything store-specific is in `src/lib/retailers.ts`: link rules, product IDs, which pages list the owner's items (`registryPage`), and whether someone has checked that the extension can read them (`verified`). The manifest's site access comes from the same list, so a store added there is picked up on the next build.

@@ -11,7 +11,8 @@
     "build-storybook": "storybook build",
     "chromatic": "npx chromatic",
     "extension:build": "node extension/build.mjs",
-    "extension:dev": "node extension/build.mjs --dev --watch"
+    "extension:dev": "node extension/build.mjs --dev --watch",
+    "test:extension": "npm run extension:build && playwright test --config extension/test/playwright.config.ts"
   },
   "dependencies": {
     "@react-stately/utils": "^3.11.0",
@@ -38,6 +39,7 @@
     "zipcodes": "^8.0.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.65.0",
     "@storybook/addon-a11y": "^10.2.10",
     "@storybook/nextjs": "^10.2.10",
     "@storybook/react": "^10.2.10",
