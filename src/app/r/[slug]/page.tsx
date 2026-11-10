@@ -1,3 +1,4 @@
+import { cache } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { cookies } from "next/headers";
@@ -51,17 +52,42 @@ interface CashFund {
   current_amount: number;
 }
 
+// The page and its metadata both need the registry, so it's read once per
+// request.
+const getRegistry = cache(async (slug: string) => {
+  const { data } = await supabaseAdmin.from("registries").select("*").eq("slug", slug).single();
+  return data;
+});
+
+// Who shared the registry and how the viewer relates to them. The owner stays
+// hidden from a viewer they've blocked.
+async function loadOwner(listedOnProfile: boolean, ownerId: string) {
+  if (!listedOnProfile) return { owner: null, ownerRelation: null };
+  const { data: ownerProfile } = await supabaseAdmin
+    .from("profiles")
+    .select("id, public_id, full_name")
+    .eq("id", ownerId)
+    .single();
+  if (!ownerProfile) return { owner: null, ownerRelation: null };
+  const ownerRelation = await getViewerRelation(ownerProfile.id);
+  if (ownerRelation.hidden) return { owner: null, ownerRelation };
+  return {
+    owner: {
+      publicId: ownerProfile.public_id as string,
+      path: profilePath(ownerProfile),
+      name: displayName(ownerProfile),
+    },
+    ownerRelation,
+  };
+}
+
 export async function generateMetadata({
   params,
 }: {
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const { data: registry } = await supabaseAdmin
-    .from("registries")
-    .select("title, description, is_public")
-    .eq("slug", slug)
-    .single();
+  const registry = await getRegistry(slug);
 
   if (!registry) return { title: "Registry Not Found" };
 
@@ -86,8 +112,8 @@ export default async function PublicRegistryPage({
   // slug in the URL. Anonymous database clients have no read access to these
   // tables (see supabase/migrations/009_restrict_registry_reads.sql), so the
   // full list of registries can't be pulled with the public anon key.
-  const [{ data: registry }, viewer] = await Promise.all([
-    supabaseAdmin.from("registries").select("*").eq("slug", slug).single(),
+  const [registry, viewer] = await Promise.all([
+    getRegistry(slug),
     // Only used for where the logo goes. Cached, so the follow check below
     // reuses it.
     getViewer(),
@@ -98,29 +124,11 @@ export default async function PublicRegistryPage({
   }
 
   // Only registries the owner chose to show on their profile say who owns them,
-  // so unlisted ones never point to a profile.
-  let owner: { publicId: string; path: string; name: string } | null = null;
-  let ownerRelation: Awaited<ReturnType<typeof getViewerRelation>> | null = null;
-  if (registry.listed_on_profile) {
-    const { data: ownerProfile } = await supabaseAdmin
-      .from("profiles")
-      .select("id, public_id, full_name")
-      .eq("id", registry.owner_id)
-      .single();
-    if (ownerProfile) {
-      ownerRelation = await getViewerRelation(ownerProfile.id);
-      if (!ownerRelation.hidden) {
-        owner = {
-          publicId: ownerProfile.public_id,
-          path: profilePath(ownerProfile),
-          name: displayName(ownerProfile),
-        };
-      }
-    }
-  }
-
-  const [{ data: categories }, { data: items }, { data: cashFunds }] =
+  // so unlisted ones never point to a profile. The owner lookups don't depend
+  // on the items, so both run at the same time.
+  const [{ owner, ownerRelation }, { data: categories }, { data: items }, { data: cashFunds }] =
     await Promise.all([
+      loadOwner(Boolean(registry.listed_on_profile), registry.owner_id),
       supabaseAdmin
         .from("categories")
         .select("*")
@@ -155,22 +163,6 @@ export default async function PublicRegistryPage({
     ? parseRetailerRegistries(registry.settings).map((r) => r.store)
     : [];
 
-  // Check which parent-purchased items have been covered and how many times
-  const parentPurchasedIds = allItems.filter((i) => i.is_parent_purchased).map((i) => i.id);
-  const coverCounts = new Map<string, number>();
-  if (parentPurchasedIds.length > 0) {
-    const { data: coverPurchases } = await supabaseAdmin
-      .from("purchases")
-      .select("registry_item_id, quantity")
-      .in("registry_item_id", parentPurchasedIds)
-      .neq("status", "cancelled");
-    for (const p of coverPurchases || []) {
-      if (p.registry_item_id) {
-        coverCounts.set(p.registry_item_id, (coverCounts.get(p.registry_item_id) || 0) + (p.quantity || 1));
-      }
-    }
-  }
-
   // Read guest purchase cookie
   const cookieStore = await cookies();
   const rawCookie = cookieStore.get("regibee_my_gifts")?.value;
@@ -187,7 +179,6 @@ export default async function PublicRegistryPage({
   const reservableItemIds = new Set(
     allItems.filter((i) => !i.is_parent_purchased).map((i) => i.id)
   );
-  let hasReservation = false;
 
   const claimedItemByPurchase = new Map<string, string>();
   for (const [itemId, purchaseId] of Object.entries(myGifts.items ?? {})) {
@@ -199,64 +190,79 @@ export default async function PublicRegistryPage({
       claimedItemByPurchase.set(purchaseId, itemId);
     }
   }
-  if (claimedItemByPurchase.size > 0) {
-    const { data: claimedPurchases } = await supabaseAdmin
-      .from("purchases")
-      .select("id, registry_item_id")
-      .in("id", [...claimedItemByPurchase.keys()])
-      .neq("status", "cancelled");
-    hasReservation = (claimedPurchases || []).some(
-      (p) => claimedItemByPurchase.get(p.id) === p.registry_item_id
-    );
-  }
 
-  // If the visitor arrived via a signed buyer link, look up their purchases
-  // for this specific registry and merge with cookie-based highlights.
+  // A visitor who arrived via a signed buyer link sees their purchases for
+  // this registry highlighted, along with the ones in their cookie.
+  let isVerifiedBuyer = false;
   if (buyerEmail && sig) {
     try {
-      if (verifyBuyerLink(buyerEmail, slug, sig)) {
-        const itemIds = allItems.map((i) => i.id);
-        const fundIds = allFunds.map((f) => f.id);
-
-        const queries = [];
-        if (itemIds.length > 0) {
-          queries.push(
-            supabaseAdmin
-              .from("purchases")
-              .select("registry_item_id, cash_fund_id, amount")
-              .eq("buyer_email", buyerEmail.toLowerCase())
-              .neq("status", "cancelled")
-              .in("registry_item_id", itemIds)
-          );
-        }
-        if (fundIds.length > 0) {
-          queries.push(
-            supabaseAdmin
-              .from("purchases")
-              .select("registry_item_id, cash_fund_id, amount")
-              .eq("buyer_email", buyerEmail.toLowerCase())
-              .neq("status", "cancelled")
-              .in("cash_fund_id", fundIds)
-          );
-        }
-
-        const results = await Promise.all(queries);
-        const allPurchases = results.flatMap((r) => r.data || []);
-
-        for (const p of allPurchases) {
-          if (p.registry_item_id) {
-            if (!myGifts.items) myGifts.items = {};
-            myGifts.items[p.registry_item_id] = "reserved";
-            if (reservableItemIds.has(p.registry_item_id)) hasReservation = true;
-          }
-          if (p.cash_fund_id && p.amount) {
-            if (!myGifts.funds) myGifts.funds = {};
-            myGifts.funds[p.cash_fund_id] = (myGifts.funds[p.cash_fund_id] || 0) + Number(p.amount);
-          }
-        }
-      }
+      isVerifiedBuyer = verifyBuyerLink(buyerEmail, slug, sig);
     } catch {
       // Invalid signature — ignore silently
+    }
+  }
+
+  type PurchaseRow = {
+    id?: string;
+    registry_item_id: string | null;
+    cash_fund_id?: string | null;
+    quantity?: number | null;
+    amount?: number | string | null;
+  };
+  const noRows = Promise.resolve({ data: [] as PurchaseRow[] });
+  const buyerPurchases = (column: "registry_item_id" | "cash_fund_id", ids: string[]) =>
+    isVerifiedBuyer && ids.length > 0
+      ? supabaseAdmin
+          .from("purchases")
+          .select("registry_item_id, cash_fund_id, amount")
+          .eq("buyer_email", buyerEmail!.toLowerCase())
+          .neq("status", "cancelled")
+          .in(column, ids)
+      : noRows;
+
+  // These lookups only need the items, so they run at the same time.
+  const parentPurchasedIds = allItems.filter((i) => i.is_parent_purchased).map((i) => i.id);
+  const [{ data: coverPurchases }, { data: claimedPurchases }, { data: buyerItemPurchases }, { data: buyerFundPurchases }] =
+    await Promise.all([
+      // How many times each parent-purchased item has been covered
+      parentPurchasedIds.length > 0
+        ? supabaseAdmin
+            .from("purchases")
+            .select("registry_item_id, quantity")
+            .in("registry_item_id", parentPurchasedIds)
+            .neq("status", "cancelled")
+        : noRows,
+      claimedItemByPurchase.size > 0
+        ? supabaseAdmin
+            .from("purchases")
+            .select("id, registry_item_id")
+            .in("id", [...claimedItemByPurchase.keys()])
+            .neq("status", "cancelled")
+        : noRows,
+      buyerPurchases("registry_item_id", allItems.map((i) => i.id)),
+      buyerPurchases("cash_fund_id", allFunds.map((f) => f.id)),
+    ]);
+
+  const coverCounts = new Map<string, number>();
+  for (const p of (coverPurchases || []) as PurchaseRow[]) {
+    if (p.registry_item_id) {
+      coverCounts.set(p.registry_item_id, (coverCounts.get(p.registry_item_id) || 0) + (p.quantity || 1));
+    }
+  }
+
+  let hasReservation = ((claimedPurchases || []) as PurchaseRow[]).some(
+    (p) => claimedItemByPurchase.get(p.id!) === p.registry_item_id
+  );
+
+  for (const p of [...(buyerItemPurchases || []), ...(buyerFundPurchases || [])] as PurchaseRow[]) {
+    if (p.registry_item_id) {
+      if (!myGifts.items) myGifts.items = {};
+      myGifts.items[p.registry_item_id] = "reserved";
+      if (reservableItemIds.has(p.registry_item_id)) hasReservation = true;
+    }
+    if (p.cash_fund_id && p.amount) {
+      if (!myGifts.funds) myGifts.funds = {};
+      myGifts.funds[p.cash_fund_id] = (myGifts.funds[p.cash_fund_id] || 0) + Number(p.amount);
     }
   }
 

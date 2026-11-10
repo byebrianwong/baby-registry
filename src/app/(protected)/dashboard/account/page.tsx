@@ -1,13 +1,11 @@
 import { redirect } from "next/navigation";
 import { AccountSettings, type AccountRegistry } from "@/components/account-settings";
 import { listFollows } from "@/lib/follows";
+import { getSessionUser } from "@/lib/viewer";
 import { createClient } from "@/utils/supabase/server";
 
 export default async function AccountPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const [supabase, user] = await Promise.all([createClient(), getSessionUser()]);
 
   if (!user) {
     redirect("/login");

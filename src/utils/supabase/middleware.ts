@@ -29,10 +29,13 @@ export async function updateSession(request: NextRequest) {
     }
   );
 
-  // Refresh the session - important for Server Components
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // Refresh the session - important for Server Components. getClaims checks
+  // the access token's signature with the project's public key, which the
+  // client fetches and keeps for 10 minutes, so a signed-in request doesn't
+  // wait on the auth server here. getUser would call it on every request.
+  // Pages still call getUser, once per request (src/lib/viewer.ts).
+  const { data } = await supabase.auth.getClaims();
+  const user = data?.claims ?? null;
 
   // Redirect unauthenticated users away from protected routes
   if (

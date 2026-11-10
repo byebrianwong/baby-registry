@@ -1,4 +1,3 @@
-import { createClient } from "@/utils/supabase/client";
 import { EVENT_IMAGES_BUCKET } from "@/lib/event-images";
 import { EXTENSIONS, shrinkPhoto, type PhotoUploadResult } from "@/lib/upload-registry-photo";
 
@@ -26,6 +25,9 @@ export async function uploadEventImage(eventId: string, file: File): Promise<Pho
     return { error: "That picture's format isn't supported. Choose a JPEG, PNG, WebP or GIF image." };
   }
 
+  // Loaded here rather than imported at the top, so pages with an upload
+  // button don't download the Supabase client until someone uploads.
+  const { createClient } = await import("@/utils/supabase/client");
   const supabase = createClient();
   const path = `${eventId}/${crypto.randomUUID()}.${extension}`;
   const { error } = await supabase.storage

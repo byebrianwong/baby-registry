@@ -69,9 +69,13 @@ export function ItemImage({
   if (imageUrl) {
     return (
       <div className={`relative flex ${sizeClass} shrink-0 items-center justify-center rounded-md bg-[#fdfdfd] ${className}`}>
+        {/* Registries can list hundreds of items, and store photos are often
+            large, so photos load as they near the screen. */}
         <img
           src={imageUrl}
           alt={title}
+          loading="lazy"
+          decoding="async"
           className={`${sizeClass} rounded-md object-cover`}
         />
       </div>

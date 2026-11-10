@@ -1,4 +1,3 @@
-import { createClient } from "@/utils/supabase/client";
 import { REGISTRY_PHOTOS_BUCKET } from "@/lib/registry-photos";
 
 export type PhotoUploadResult = { url: string } | { error: string };
@@ -52,6 +51,9 @@ export async function uploadRegistryPhoto(registryId: string, file: File): Promi
     return { error: "That photo's format isn't supported. Choose a JPEG, PNG or WebP image." };
   }
 
+  // Loaded here rather than imported at the top, so pages with an upload
+  // button don't download the Supabase client until someone uploads.
+  const { createClient } = await import("@/utils/supabase/client");
   const supabase = createClient();
   const path = `${registryId}/${crypto.randomUUID()}.${extension}`;
   const { error } = await supabase.storage
