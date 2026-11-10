@@ -176,7 +176,7 @@ export function itemCoveredBuyerHtml(opts: {
       { href: opts.registryUrl, label: "View Registry" },
       { href: opts.undoUrl, label: "Undo this gift" },
     ])}
-    <p style="color:#888;font-size:13px;">Didn't send it after all? Undo the gift so ${escapeHtml(opts.parentName)} isn't expecting it. You're receiving this because you gave a gift on a Regibee registry.</p>
+    <p style="color:#888;font-size:13px;">Didn't send it after all? Undo the gift, and it goes back on the list. You're receiving this because you gave a gift on a Regibee registry.</p>
   `;
 }
 
