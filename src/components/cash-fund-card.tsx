@@ -12,6 +12,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -175,7 +176,7 @@ export function CashFundCard({
                   <span className="relative inline-flex items-center">
                     <select
                       aria-label="Currency"
-                      className="appearance-none bg-transparent pr-5 text-primary outline-none cursor-pointer"
+                      className="appearance-none bg-transparent pr-5 text-primary outline-none cursor-pointer max-sm:-my-2.5 max-sm:py-2.5"
                       value={currency}
                       onChange={(e) => setCurrency(e.target.value)}
                     >
@@ -193,6 +194,7 @@ export function CashFundCard({
             >
               <InputBase
                 type="number"
+                inputMode="decimal"
                 step="0.01"
                 min={0}
                 placeholder="0.00"
@@ -207,7 +209,7 @@ export function CashFundCard({
 
             {error && <p className="text-sm text-error-primary">{error}</p>}
 
-            <div className="flex justify-end gap-2">
+            <DialogFooter sticky>
               <Button
                 type="button"
                 variant="destructive-outline"
@@ -229,7 +231,7 @@ export function CashFundCard({
               >
                 {loading ? "Saving..." : "Save changes"}
               </Button>
-            </div>
+            </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>

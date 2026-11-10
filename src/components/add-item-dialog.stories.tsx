@@ -36,3 +36,11 @@ export const Default: Story = {
     await screen.findByRole("dialog");
   },
 };
+
+// On a phone the dialog is a sheet from the bottom edge. The link field takes
+// the full width with Paste link and Fetch under it, and Cancel and Add item
+// stay in a bar at the bottom while the form scrolls.
+export const Phone: Story = {
+  ...Default,
+  globals: { viewport: { value: "mobile1" } },
+};

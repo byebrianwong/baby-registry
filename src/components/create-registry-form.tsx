@@ -571,7 +571,7 @@ export function CreateRegistryForm({
                           aria-pressed={selected}
                           onClick={() => chooseOccasion(option.value)}
                           className={cx(
-                            "cursor-pointer rounded-full border px-3 py-1.5 text-sm transition outline-none focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-1",
+                            "cursor-pointer rounded-full border px-3 py-1.5 text-sm transition outline-none focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-1 max-sm:min-h-11",
                             selected
                               ? "border-brand-600 bg-brand-600 text-white"
                               : "border-secondary text-secondary hover:border-primary",
@@ -668,11 +668,23 @@ export function CreateRegistryForm({
               So guests can send money for cash funds and things you&apos;ve already bought.
             </p>
             <div className="space-y-4">
-              <Input label="Venmo" name="venmo" placeholder="@your-venmo" value={venmo} onChange={setVenmo} />
+              <Input
+                label="Venmo"
+                name="venmo"
+                placeholder="@your-venmo"
+                autoComplete="off"
+                autoCorrect="off"
+                spellCheck="false"
+                value={venmo}
+                onChange={setVenmo}
+              />
               <Input
                 label="PayPal"
                 name="paypal"
                 placeholder="you@email.com or PayPal.me link"
+                autoComplete="off"
+                autoCorrect="off"
+                spellCheck="false"
                 value={paypal}
                 onChange={setPaypal}
               />
@@ -680,6 +692,9 @@ export function CreateRegistryForm({
                 label="Zelle"
                 name="zelle"
                 placeholder="you@email.com or phone number"
+                autoComplete="off"
+                autoCorrect="off"
+                spellCheck="false"
                 value={zelle}
                 onChange={setZelle}
               />

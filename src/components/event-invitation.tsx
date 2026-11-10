@@ -106,17 +106,17 @@ export function EventInvitation({ event, registry, calendar, children, basePath 
               <p className="font-medium text-primary">{formatEventDate(event.event_date)}</p>
               {time && <p>{time}</p>}
               {calendar && (
-                <p className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-sm">
+                <p className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-sm max-sm:gap-y-0">
                   <a
                     href={calendar.google}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 font-medium text-brand-600 hover:underline"
+                    className="inline-flex items-center gap-1 font-medium text-brand-600 hover:underline max-sm:min-h-11"
                   >
                     <CalendarPlus aria-hidden="true" className="size-3.5" />
                     Google Calendar
                   </a>
-                  <a href={calendar.ics} className="font-medium text-brand-600 hover:underline">
+                  <a href={calendar.ics} className="font-medium text-brand-600 hover:underline max-sm:inline-flex max-sm:min-h-11 max-sm:items-center">
                     Apple or Outlook (.ics)
                   </a>
                 </p>
@@ -132,7 +132,7 @@ export function EventInvitation({ event, registry, calendar, children, basePath 
                   href={map}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="mt-1 inline-block text-sm font-medium text-brand-600 hover:underline"
+                  className="mt-1 inline-block text-sm font-medium text-brand-600 hover:underline max-sm:mt-0 max-sm:inline-flex max-sm:min-h-11 max-sm:items-center"
                 >
                   Open in Maps
                 </a>

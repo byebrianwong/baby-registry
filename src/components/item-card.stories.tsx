@@ -89,3 +89,9 @@ export const ParentPurchased: Story = {
     },
   },
 };
+
+// On a phone the action buttons are at least 44px tall.
+export const Phone: Story = {
+  ...WithImage,
+  globals: { viewport: { value: "mobile1" } },
+};

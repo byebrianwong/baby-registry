@@ -10,6 +10,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -86,7 +87,7 @@ export function ReserveItemDialog({ item, parentName = "The Registry Owner", act
           <button
             type="button"
             onClick={() => setShowCelebration(true)}
-            className="text-xs font-medium text-brand-600 hover:underline"
+            className="text-xs font-medium text-brand-600 hover:underline max-sm:min-h-11 max-sm:px-2"
           >
             View details
           </button>
@@ -166,6 +167,8 @@ export function ReserveItemDialog({ item, parentName = "The Registry Owner", act
             label="Your Name"
             name="buyerName"
             placeholder="Alex Kim"
+            autoComplete="name"
+            enterKeyHint="next"
             isRequired
           />
           <Input
@@ -173,6 +176,8 @@ export function ReserveItemDialog({ item, parentName = "The Registry Owner", act
             name="buyerEmail"
             type="email"
             placeholder="alex@example.com"
+            autoComplete="email"
+            enterKeyHint="next"
             icon={Mail01}
             isRequired
           />
@@ -181,6 +186,7 @@ export function ReserveItemDialog({ item, parentName = "The Registry Owner", act
               label="Quantity"
               name="quantity"
               type="number"
+              inputMode="numeric"
               min={1}
               max={remaining}
               defaultValue="1"
@@ -196,7 +202,7 @@ export function ReserveItemDialog({ item, parentName = "The Registry Owner", act
 
           {error && <p className="text-sm text-error-primary">{error}</p>}
 
-          <div className="flex justify-end gap-2">
+          <DialogFooter sticky>
             <Button
               type="button"
               variant="outline"
@@ -207,7 +213,7 @@ export function ReserveItemDialog({ item, parentName = "The Registry Owner", act
             <Button type="submit" disabled={loading}>
               {loading ? "Reserving..." : "Mark as purchased"}
             </Button>
-          </div>
+          </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>

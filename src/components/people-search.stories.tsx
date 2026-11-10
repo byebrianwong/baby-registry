@@ -35,7 +35,7 @@ export const WithResults: Story = {
   play: async ({ canvas }) => {
     // fireEvent, not userEvent: userEvent.type fills in this input, but React
     // never sees the change, so the search doesn't run.
-    fireEvent.change(canvas.getByRole("textbox", { name: /find people/i }), {
+    fireEvent.change(canvas.getByRole("searchbox", { name: /find people/i }), {
       target: { value: "rem" },
     });
     await canvas.findByText("That's you");
@@ -45,7 +45,7 @@ export const WithResults: Story = {
 // An email address that finds nobody offers to send an invite.
 export const EmailNotFound: Story = {
   play: async ({ canvas }) => {
-    fireEvent.change(canvas.getByRole("textbox", { name: /find people/i }), {
+    fireEvent.change(canvas.getByRole("searchbox", { name: /find people/i }), {
       target: { value: "grandma@example.com" },
     });
     fireEvent.click(await canvas.findByRole("button", { name: "Look up" }));

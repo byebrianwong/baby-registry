@@ -10,6 +10,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -90,7 +91,7 @@ export function AddCashFundDialog({ registryId, action = addCashFund }: AddCashF
                 <span className="relative inline-flex items-center">
                   <select
                     aria-label="Currency"
-                    className="appearance-none bg-transparent pr-5 text-primary outline-none cursor-pointer"
+                    className="appearance-none bg-transparent pr-5 text-primary outline-none cursor-pointer max-sm:-my-2.5 max-sm:py-2.5"
                     value={currency}
                     onChange={(e) => setCurrency(e.target.value)}
                   >
@@ -108,6 +109,7 @@ export function AddCashFundDialog({ registryId, action = addCashFund }: AddCashF
           >
             <InputBase
               type="number"
+              inputMode="decimal"
               step="0.01"
               min={0}
               placeholder="0.00"
@@ -116,7 +118,7 @@ export function AddCashFundDialog({ registryId, action = addCashFund }: AddCashF
 
           {error && <p className="text-sm text-error-primary">{error}</p>}
 
-          <div className="flex justify-end gap-2">
+          <DialogFooter sticky>
             <Button
               type="button"
               variant="outline"
@@ -130,7 +132,7 @@ export function AddCashFundDialog({ registryId, action = addCashFund }: AddCashF
             >
               {loading ? "Creating..." : "Create fund"}
             </Button>
-          </div>
+          </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>

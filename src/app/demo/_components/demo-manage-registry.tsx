@@ -323,7 +323,7 @@ function DemoAddItemDialog({
                   <span className="relative inline-flex items-center">
                     <select
                       aria-label="Currency"
-                      className="appearance-none bg-transparent pr-5 text-primary outline-none cursor-pointer"
+                      className="appearance-none bg-transparent pr-5 text-primary outline-none cursor-pointer max-sm:-my-2.5 max-sm:py-2.5"
                       value={currency}
                       onChange={(e) => setCurrency(e.target.value)}
                     >
@@ -581,7 +581,7 @@ function DemoEditItemDialog({
                   <span className="relative inline-flex items-center">
                     <select
                       aria-label="Currency"
-                      className="appearance-none bg-transparent pr-5 text-primary outline-none cursor-pointer"
+                      className="appearance-none bg-transparent pr-5 text-primary outline-none cursor-pointer max-sm:-my-2.5 max-sm:py-2.5"
                       value={currency}
                       onChange={(e) => setCurrency(e.target.value)}
                     >

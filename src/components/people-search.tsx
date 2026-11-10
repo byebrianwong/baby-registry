@@ -185,6 +185,11 @@ export function PeopleSearch({
             <Input
               label="Find people"
               placeholder="Name or email address"
+              type="search"
+              enterKeyHint="search"
+              autoComplete="off"
+              autoCorrect="off"
+              spellCheck="false"
               value={query}
               onChange={handleChange}
               aria-describedby="people-search-hint"

@@ -41,6 +41,7 @@ import { copyForRegistry } from "@/lib/registry-copy";
 import { formatDollars, formatPrice } from "@/lib/money";
 import { listEventsForRegistry } from "@/lib/events-server";
 import { RegistryEventsBanner } from "@/components/registry-events-banner";
+import { findSharedLink } from "@/lib/shared-link";
 import { getSessionUser } from "@/lib/viewer";
 
 type ServerClient = Awaited<ReturnType<typeof createClient>>;
@@ -97,10 +98,12 @@ export default async function RegistryManagePage({
   searchParams,
 }: {
   params: Promise<{ registryId: string }>;
-  searchParams: Promise<{ highlight?: string; tab?: string }>;
+  searchParams: Promise<{ highlight?: string; tab?: string; add?: string; url?: string; title?: string }>;
 }) {
   const { registryId } = await params;
-  const { highlight, tab } = await searchParams;
+  const { highlight, tab, add, url: addUrl, title: addTitle } = await searchParams;
+  // A product shared from a phone (/share): open the add item dialog on it.
+  const sharedLink = add ? findSharedLink({ url: addUrl, title: addTitle }) : null;
   // The top bar looks up the same user, and the lookup is cached per request.
   const [supabase, user] = await Promise.all([createClient(), getSessionUser()]);
 
@@ -339,7 +342,7 @@ export default async function RegistryManagePage({
       </div>
 
       {/* Stats */}
-      <div className="mt-6 grid gap-4 md:grid-cols-4">
+      <div className="mt-6 grid grid-cols-2 gap-4 md:grid-cols-4">
         <Card>
           <CardContent className="p-4">
             <p className="text-sm text-tertiary">Total Items</p>
@@ -377,9 +380,9 @@ export default async function RegistryManagePage({
         suggestionCount={pendingSuggestionCount}
         itemsContent={
           <>
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
               <h2 className="text-xl font-semibold">Registry Items</h2>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 {showChecklist && (
                   <Button variant="outline" asChild>
                     <Link href={`/dashboard/registry/${registryId}/checklist`}>
@@ -395,7 +398,7 @@ export default async function RegistryManagePage({
                   </Button>
                 )}
                 <AddCashFundDialog registryId={registryId} />
-                <AddItemDialog registryId={registryId} categories={allCategories} zipCode={zipCode} registryType={registry.registry_type} eventType={registry.event_type} linkedRegistries={linkedRegistries} storesWithRegistryLinks={registryLinkStores} />
+                <AddItemDialog registryId={registryId} categories={allCategories} zipCode={zipCode} registryType={registry.registry_type} eventType={registry.event_type} linkedRegistries={linkedRegistries} storesWithRegistryLinks={registryLinkStores} openWithLink={sharedLink ?? undefined} />
               </div>
             </div>
 
@@ -549,11 +552,11 @@ export default async function RegistryManagePage({
                     >
                       <CardContent className="p-4">
                         <div className="flex flex-col gap-2">
-                          <div className="flex items-center gap-4">
-                            <span className="flex-1 min-w-0 text-sm font-medium text-secondary">
+                          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 sm:flex-nowrap">
+                            <span className="min-w-0 sm:flex-1 text-sm font-medium text-secondary">
                               {purchase.buyer_name}
                             </span>
-                            <div className="flex-1 min-w-0">
+                            <div className="min-w-0 sm:flex-1">
                               <span
                                 className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium ${
                                   tagType === "cancelled"
@@ -574,26 +577,26 @@ export default async function RegistryManagePage({
                                       : "Purchased by guest"}
                               </span>
                             </div>
-                            <div className="flex-1 min-w-0">
+                            <div className="min-w-0 sm:flex-1">
                               <span className="text-xs text-secondary">
                                 {purchase.cash_fund_id
                                   ? purchase.item_title
                                   : `Reserved ${purchase.quantity > 1 ? `${purchase.quantity}x ` : ""}${purchase.item_title}`}
                               </span>
                             </div>
-                            <div className="flex-1 min-w-0">
+                            <div className="min-w-0 sm:flex-1">
                               <span className="text-sm font-semibold text-secondary">
                                 {displayAmount != null
                                   ? formatPrice(Number(displayAmount))
                                   : ""}
                               </span>
                             </div>
-                            <div className="flex-1 min-w-0">
-                              <span className="text-xs text-secondary">
+                            <div className="min-w-0 sm:flex-1">
+                              <span className="text-xs break-all text-secondary">
                                 {purchase.buyer_email}
                               </span>
                             </div>
-                            <div className="flex-1 min-w-0 text-right">
+                            <div className="min-w-0 sm:flex-1 sm:text-right">
                               <span className="text-xs text-secondary">
                                 {new Date(purchase.created_at).toLocaleDateString("en-US", {
                                   month: "short",
