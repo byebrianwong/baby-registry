@@ -10,6 +10,7 @@ import { Separator } from "@/components/ui/separator";
 import { Tag } from "@/components/ui/tag";
 import { UsedConditionTag } from "@/components/ui/used-condition-tag";
 import { ReserveItemDialog, type OpenGift } from "@/components/reserve-item-dialog";
+import { ReservationBanner, type ReservationBannerEntry } from "@/components/reservation-banner";
 import { formatReservedUntil, type MyItemGift } from "@/lib/gifts";
 import { CoverItemDialog } from "@/components/cover-item-dialog";
 import { ContributeFundDialog } from "@/components/contribute-fund-dialog";
@@ -198,12 +199,33 @@ export function PublicRegistryGrid({
       normalizedQuery !== "" ||
       storeFilter !== "any");
 
+  // Reservations this visitor hasn't confirmed yet, for the banner.
+  const openReservations: ReservationBannerEntry[] = items
+    .filter((item) => !item.is_parent_purchased && myItemGifts[item.id]?.status === "reserved")
+    .map((item) => ({
+      item,
+      gift: myItemGifts[item.id],
+      storeName: classifyStoreLink(item.external_url)?.store.name,
+      registryStoreName: showStoreRegistries
+        ? registryStoreFor(item.external_url, linkedStores)?.name
+        : undefined,
+    }));
+
   return (
     <div className="flex gap-8 items-start">
       {navItems.length >= 1 && (
         <CategoryNav categories={navItems} suggestButton={suggestButton} />
       )}
       <div className="flex-1 min-w-0 space-y-10">
+        {/* Always rendered: it keeps a finished reservation's dialog open
+            after the page refreshes and the banner itself goes away. */}
+        <ReservationBanner
+          entries={openReservations}
+          parentName={parentName}
+          shippingAddress={shippingAddress}
+          className=""
+        />
+
         {/* Toolbar */}
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="relative flex-1 max-w-md">

@@ -18,7 +18,13 @@ import { getViewer, getViewerRelation } from "@/lib/viewer";
 import type { RegistryType } from "@/lib/types";
 import { Logo } from "@/components/logo";
 import { parseRetailerRegistries, type StoreId } from "@/lib/retailers";
-import { isGiftLinkStep, isOpenReservation, toMyItemGift, type MyItemGift } from "@/lib/gifts";
+import {
+  isExpiredReservation,
+  isGiftLinkStep,
+  isOpenReservation,
+  toMyItemGift,
+  type MyItemGift,
+} from "@/lib/gifts";
 import type { OpenGift } from "@/components/reserve-item-dialog";
 
 const PURCHASE_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
@@ -273,22 +279,34 @@ export default async function PublicRegistryPage({
   }
 
   // How many of each item are only reserved so far, not bought, so other
-  // guests see "Reserved by a guest" rather than "Gifted".
+  // guests see "Reserved by a guest" rather than "Gifted". A reservation that
+  // ran out stays in the database until the daily job releases it, so until
+  // then it's taken off the item's count here, and reserving the item
+  // releases it (reserveItem). Its own guest still sees it as theirs, so they
+  // can say they bought it.
   const reservedCounts: Record<string, number> = {};
+  const expiredCounts: Record<string, number> = {};
+  const myPurchaseIds = new Set(Object.values(myItemGifts).map((g) => g.purchaseId));
   const reservableIds = [...reservableItemIds];
   if (reservableIds.length > 0) {
     const { data: openReservations } = await supabaseAdmin
       .from("purchases")
-      .select("registry_item_id, quantity, status, reserved_until")
+      .select("id, registry_item_id, quantity, status, reserved_until")
       .in("registry_item_id", reservableIds)
       .eq("status", "reserved")
       .not("reserved_until", "is", null);
+    const now = Date.now();
     for (const p of openReservations || []) {
-      if (p.registry_item_id && isOpenReservation(p)) {
-        reservedCounts[p.registry_item_id] = (reservedCounts[p.registry_item_id] || 0) + (p.quantity || 1);
-      }
+      if (!p.registry_item_id || !isOpenReservation(p)) continue;
+      const counts = isExpiredReservation(p, now) && !myPurchaseIds.has(p.id) ? expiredCounts : reservedCounts;
+      counts[p.registry_item_id] = (counts[p.registry_item_id] || 0) + (p.quantity || 1);
     }
   }
+  const shownItems = allItems.map((i) =>
+    expiredCounts[i.id]
+      ? { ...i, quantity_fulfilled: Math.max(0, i.quantity_fulfilled - expiredCounts[i.id]) }
+      : i
+  );
 
   // A link from a guest's email opens the gift dialog at a step. The link
   // route has already put the gift in this browser's cookie.
@@ -301,8 +319,8 @@ export default async function PublicRegistryPage({
     ? (registry.settings as RegistrySettings | null)?.shipping_address
     : undefined;
 
-  const totalItems = allItems.length;
-  const fulfilledItems = allItems.filter(
+  const totalItems = shownItems.length;
+  const fulfilledItems = shownItems.filter(
     (i) => i.quantity_fulfilled >= i.quantity_needed
   ).length;
   const progress = totalItems > 0 ? (fulfilledItems / totalItems) * 100 : 0;
@@ -421,7 +439,7 @@ export default async function PublicRegistryPage({
           </div>
         ) : (
           <PublicRegistryGrid
-            items={allItems}
+            items={shownItems}
             categories={allCategories}
             cashFunds={allFunds}
             parentName={parentName}

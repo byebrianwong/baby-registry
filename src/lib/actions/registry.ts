@@ -29,7 +29,12 @@ import { isUuid } from "@/lib/extension";
 import { parseStorePerksState, storePerksSettings } from "@/lib/store-perks";
 import { MY_GIFTS_COOKIE, MY_GIFTS_COOKIE_OPTIONS, withGift } from "@/lib/my-gifts-cookie";
 import { GIFT_HOLD_DAYS, isOpenReservation } from "@/lib/gifts";
-import { sendGiftConfirmedEmails, sendReservationEmail } from "@/lib/gift-reservations-server";
+import {
+  releaseExpiredOnItem,
+  sendGiftConfirmedEmails,
+  sendReservationEmail,
+  sendReservationEndedEmails,
+} from "@/lib/gift-reservations-server";
 import crypto from "crypto";
 
 async function addToMyGiftsCookie(
@@ -506,6 +511,13 @@ export async function reserveItem(formData: FormData): Promise<ReserveItemResult
     await supabase.auth.signInAnonymously();
   }
 
+  // The daily job releases reservations that ran out, but the registry page
+  // already shows those items as available, so free them up now.
+  const released = await releaseExpiredOnItem(itemId).catch((err) => {
+    console.error("[gifts] Failed to release expired reservations:", err);
+    return [] as string[];
+  });
+
   const { data: purchaseId, error } = await supabase.rpc("reserve_registry_item", {
     p_item_id: itemId,
     p_quantity: quantity,
@@ -516,6 +528,10 @@ export async function reserveItem(formData: FormData): Promise<ReserveItemResult
   });
 
   if (error || !purchaseId) {
+    if (released.length > 0) after(() => sendReservationEndedEmails(released));
+    if (error?.message.startsWith("Not enough quantity")) {
+      return { error: "Another guest just reserved this. Pick another gift, or check back in a couple of days." };
+    }
     return { error: error?.message ?? "Couldn't reserve this gift. Try again." };
   }
 
@@ -546,6 +562,7 @@ export async function reserveItem(formData: FormData): Promise<ReserveItemResult
     try {
       if (alreadyBought) await sendGiftConfirmedEmails(purchaseId);
       else await sendReservationEmail(purchaseId);
+      await sendReservationEndedEmails(released);
     } catch (err) {
       console.error("[email] Failed to send reserve emails:", err);
     }

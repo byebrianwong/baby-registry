@@ -37,6 +37,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { ReserveItemDialog, type GiftActions } from "@/components/reserve-item-dialog";
+import { ReservationBanner } from "@/components/reservation-banner";
 import { GIFT_HOLD_DAYS, formatReservedUntil, type MyItemGift } from "@/lib/gifts";
 import { classifyStoreLink } from "@/lib/retailers";
 import { CoverItemDialog } from "@/components/cover-item-dialog";
@@ -494,6 +495,19 @@ export default function DemoPage() {
         <div className="flex gap-8 items-start">
           {navItems.length > 1 && <CategoryNav categories={navItems} suggestButton={<DemoSuggestItemDialog />} />}
           <div className="flex-1 min-w-0 space-y-10">
+          <ReservationBanner
+            entries={items
+              .filter((item) => demoGifts[item.id]?.status === "reserved")
+              .map((item) => ({
+                item,
+                gift: demoGifts[item.id],
+                storeName: classifyStoreLink(item.external_url)?.store.name,
+                actions: demoGiftActions(item.id),
+              }))}
+            parentName={DEMO_PARENT_NAME}
+            shippingAddress={DEMO_SHIPPING_ADDRESS}
+            className=""
+          />
           {/* Toolbar: search + price + sort */}
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="relative flex-1 max-w-md">

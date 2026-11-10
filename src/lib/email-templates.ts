@@ -41,6 +41,12 @@ function textLinks(links: { href?: string; label: string }[]): string {
   return html ? `<p style="margin: 16px 0;">${html}</p>` : "";
 }
 
+function registryStoreLine(parentName: string, storeName?: string): string {
+  return storeName
+    ? `<p>It's on ${escapeHtml(parentName)}'s ${escapeHtml(storeName)} registry, so buy it there and it counts toward the registry. ${escapeHtml(storeName)} has their address.</p>`
+    : "";
+}
+
 function addressBlock(shippingAddress?: string): string {
   return shippingAddress
     ? `<p><strong>Ship to:</strong><br/>${escapeHtml(shippingAddress).replace(/\n/g, "<br/>")}</p>`
@@ -56,6 +62,8 @@ export function itemReservedBuyerHtml(opts: {
   registryTitle: string;
   holdDays: number;
   shippingAddress?: string;
+  /** Set when the item is on the owners' own store registry, which has their address. */
+  registryStoreName?: string;
   shopUrl?: string;
   storeName?: string;
   confirmUrl: string;
@@ -67,6 +75,7 @@ export function itemReservedBuyerHtml(opts: {
   return `
     <p>Hi ${escapeHtml(opts.buyerName)},</p>
     <p>You reserved <strong>${escapeHtml(opts.itemTitle)}</strong>${qtyText} on <em>${escapeHtml(opts.registryTitle)}</em>. It's held for you for ${opts.holdDays} days, so nobody else buys it.</p>
+    ${registryStoreLine(opts.parentName, opts.registryStoreName)}
     ${addressBlock(opts.shippingAddress)}
     ${opts.shopUrl ? `<p style="margin: 24px 0 16px;">${buttonLink(opts.shopUrl, buyLabel)}</p>` : ""}
     <p>When you've bought it, tell ${escapeHtml(opts.parentName)} so they know it's from you.</p>
@@ -78,26 +87,28 @@ export function itemReservedBuyerHtml(opts: {
   `;
 }
 
-/** Sent before a guest's reservation runs out. */
+/** Sent once, the day before a guest's reservation runs out. */
 export function itemReservationReminderBuyerHtml(opts: {
   buyerName: string;
   itemTitle: string;
   parentName: string;
   registryTitle: string;
-  /** Whole days left, rounded up. 1 means it ends within a day. */
-  daysLeft: number;
+  /** Hours left, rounded. */
+  hoursLeft: number;
   shippingAddress?: string;
+  registryStoreName?: string;
   shopUrl?: string;
   storeName?: string;
   confirmUrl: string;
   releaseUrl: string;
 }): string {
-  const when = opts.daysLeft <= 1 ? "ends tomorrow" : `ends in ${opts.daysLeft} days`;
   const buyLabel = opts.storeName ? `Buy at ${opts.storeName}` : "Buy it";
+  const hours = opts.hoursLeft === 1 ? "about an hour" : `about ${opts.hoursLeft} hours`;
 
   return `
     <p>Hi ${escapeHtml(opts.buyerName)},</p>
-    <p>Your reservation of <strong>${escapeHtml(opts.itemTitle)}</strong> on <em>${escapeHtml(opts.registryTitle)}</em> ${when}. After that, it goes back on the list for other guests.</p>
+    <p>Your reservation of <strong>${escapeHtml(opts.itemTitle)}</strong> on <em>${escapeHtml(opts.registryTitle)}</em> ends in ${hours}. After that, it goes back on the list for other guests.</p>
+    ${registryStoreLine(opts.parentName, opts.registryStoreName)}
     ${addressBlock(opts.shippingAddress)}
     ${opts.shopUrl ? `<p style="margin: 24px 0 16px;">${buttonLink(opts.shopUrl, buyLabel)}</p>` : ""}
     <p>Already bought it? Tell ${escapeHtml(opts.parentName)} so they know it's from you.</p>

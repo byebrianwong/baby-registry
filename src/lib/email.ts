@@ -200,10 +200,7 @@ export async function remindItemReservation(
     await getResend().emails.send({
       from: FROM,
       to: TEST_RECIPIENT_OVERRIDE || opts.buyerEmail,
-      subject:
-        opts.daysLeft <= 1
-          ? `Last day to finish your gift: "${opts.itemTitle}"`
-          : `${opts.daysLeft} days left to finish your gift: "${opts.itemTitle}"`,
+      subject: `Your reservation of "${opts.itemTitle}" ends soon`,
       html: itemReservationReminderBuyerHtml(opts),
     });
   } catch (err) {
