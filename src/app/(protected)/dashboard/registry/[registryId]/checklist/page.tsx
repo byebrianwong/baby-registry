@@ -251,13 +251,13 @@ export default function ChecklistPage() {
           />
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <div className="flex gap-0.5 rounded-lg bg-secondary_alt ring-1 ring-inset ring-secondary">
             {(["all", "essential", "not-added"] as FilterMode[]).map((mode) => (
               <button
                 key={mode}
                 onClick={() => setFilter(mode)}
-                className={`px-3 py-2 text-sm font-semibold rounded-md whitespace-nowrap transition duration-100 ease-linear ${
+                className={`px-3 py-2 text-sm font-semibold rounded-md whitespace-nowrap transition duration-100 ease-linear max-sm:min-h-11 ${
                   filter === mode
                     ? "bg-primary_alt text-secondary shadow-xs ring-1 ring-primary ring-inset"
                     : "text-quaternary hover:text-secondary"
@@ -310,8 +310,8 @@ export default function ChecklistPage() {
                   <ChevronRight className="h-4 w-4 shrink-0" />
                 )}
                 <Icon className="h-5 w-5 text-brand-600 shrink-0" />
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                     <span className="font-medium">{category.name}</span>
                     <Badge variant="secondary" className="text-xs">
                       {catAddedCount}/{category.items.length}
@@ -330,7 +330,7 @@ export default function ChecklistPage() {
                       ? (catAddedCount / category.items.length) * 100
                       : 0
                   }
-                  className="w-20"
+                  className="w-20 max-sm:w-12"
                 />
               </button>
 
@@ -347,7 +347,8 @@ export default function ChecklistPage() {
                       return (
                         <div
                           key={item.name}
-                          className={`flex items-center gap-3 py-3 ${
+                          // On phones the buttons go under the item, so the name keeps the width.
+                          className={`flex items-center gap-3 py-3 max-sm:flex-col max-sm:items-stretch ${
                             isCompleted ? "opacity-50" : ""
                           }`}
                         >
@@ -382,12 +383,12 @@ export default function ChecklistPage() {
                           </div>
 
                           {isAdded ? (
-                            <Badge variant="secondary" className="shrink-0">
+                            <Badge variant="secondary" className="shrink-0 max-sm:self-start">
                               <Check className="h-3 w-3 mr-1" />
                               Added
                             </Badge>
                           ) : isDismissed ? (
-                            <div className="flex items-center gap-2 shrink-0">
+                            <div className="flex flex-wrap items-center gap-2 shrink-0">
                               <Badge variant="secondary" className="shrink-0">
                                 <Check className="h-3 w-3 mr-1" />
                                 Manually mark as registered
@@ -395,13 +396,13 @@ export default function ChecklistPage() {
                               <button
                                 onClick={() => handleToggleDismissed(item)}
                                 disabled={isDismissing}
-                                className="text-xs text-tertiary hover:text-secondary transition-colors"
+                                className="text-xs text-tertiary hover:text-secondary transition-colors max-sm:min-h-11 max-sm:px-3"
                               >
                                 Undo
                               </button>
                             </div>
                           ) : (
-                            <div className="flex items-center gap-4 shrink-0">
+                            <div className="flex items-center gap-4 shrink-0 max-sm:flex-wrap max-sm:justify-end max-sm:gap-2">
                               <Button
                                 size="sm"
                                 variant="ghost"

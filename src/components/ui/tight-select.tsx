@@ -23,7 +23,7 @@ export function TightSelect<T extends string>({
 }) {
   const current = options.find((o) => o.value === value)?.label ?? "";
   return (
-    <span className="relative inline-flex items-center rounded-md border border-primary bg-primary py-1.5 pl-3 pr-8 text-sm focus-within:ring-2 focus-within:ring-brand-500 focus-within:border-brand-500">
+    <span className="relative inline-flex items-center rounded-md border border-primary bg-primary py-1.5 pl-3 pr-8 text-sm focus-within:ring-2 focus-within:ring-brand-500 focus-within:border-brand-500 max-sm:min-h-11">
       <span className="pointer-events-none whitespace-nowrap">{current}</span>
       <ChevronDown className="pointer-events-none absolute right-2.5 h-4 w-4 text-tertiary" />
       <select
@@ -32,7 +32,9 @@ export function TightSelect<T extends string>({
         onChange={(e: ChangeEvent<HTMLSelectElement>) =>
           onChange(e.target.value as T)
         }
-        className="absolute inset-0 cursor-pointer appearance-none bg-transparent text-transparent opacity-0 focus:outline-none"
+        // The select is invisible, but iOS zooms in on focus when its text is
+        // under 16px.
+        className="absolute inset-0 cursor-pointer appearance-none bg-transparent text-transparent opacity-0 focus:outline-none max-sm:text-md"
       >
         {options.map((o) => (
           <option key={o.value} value={o.value}>

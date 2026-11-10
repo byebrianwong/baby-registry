@@ -63,6 +63,8 @@ function LoginForm() {
               label="Email"
               type="email"
               placeholder="you@example.com"
+              autoComplete="email"
+              enterKeyHint="next"
               value={email}
               onChange={(val) => setEmail(val)}
               isRequired
@@ -71,12 +73,14 @@ function LoginForm() {
               <Input
                 label="Password"
                 type="password"
+                autoComplete="current-password"
+                enterKeyHint="go"
                 value={password}
                 onChange={(val) => setPassword(val)}
                 isRequired
               />
               <div className="mt-1 text-right">
-                <Link href="/forgot-password" className="text-sm text-brand-600 underline-offset-4 hover:underline">
+                <Link href="/forgot-password" className="text-sm text-brand-600 underline-offset-4 hover:underline max-sm:inline-block max-sm:py-2.5">
                   Forgot password?
                 </Link>
               </div>

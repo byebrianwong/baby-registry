@@ -199,7 +199,7 @@ function DemoSuggestItemDialog() {
                       <span className="relative inline-flex items-center">
                         <select
                           aria-label="Currency"
-                          className="appearance-none bg-transparent pr-5 text-primary outline-none cursor-pointer"
+                          className="appearance-none bg-transparent pr-5 text-primary outline-none cursor-pointer max-sm:-my-2.5 max-sm:py-2.5"
                           value={currency}
                           onChange={(e) => setCurrency(e.target.value)}
                         >
@@ -466,7 +466,9 @@ export default function DemoPage() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search items"
-                className="w-full rounded-md border border-primary bg-primary py-2 pl-9 pr-3 text-sm placeholder:text-tertiary focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+                aria-label="Search items"
+                enterKeyHint="search"
+                className="w-full rounded-md border border-primary bg-primary py-2 pl-9 pr-3 text-sm placeholder:text-tertiary focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 max-sm:py-2.5 max-sm:text-md"
               />
             </div>
             <div className="flex items-center gap-2">

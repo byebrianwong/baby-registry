@@ -439,8 +439,8 @@ export default function RegistrySettingsPage() {
             <div className="space-y-2">
               <span className="text-sm font-medium text-secondary">Visibility</span>
               <p className="text-xs text-tertiary">Anyone with the share link can open your registry either way. This controls search engines, and who sees it on your profile.</p>
-              <div className="flex items-center gap-4">
-                <label className="flex items-center gap-2">
+              <div className="flex items-center gap-4 max-sm:flex-col max-sm:items-stretch max-sm:gap-1">
+                <label className="flex items-center gap-2 max-sm:min-h-11">
                   <input
                     type="radio"
                     name="isPublic"
@@ -450,7 +450,7 @@ export default function RegistrySettingsPage() {
                   />
                   <span className="text-sm">Public — searchable by search engines</span>
                 </label>
-                <label className="flex items-center gap-2">
+                <label className="flex items-center gap-2 max-sm:min-h-11">
                   <input
                     type="radio"
                     name="isPublic"
@@ -475,17 +475,18 @@ export default function RegistrySettingsPage() {
             <div className="space-y-1">
               <span className="text-sm font-medium text-secondary">Share URL</span>
               <div className="flex items-center gap-4">
-                <p className="text-sm text-tertiary font-mono">
+                <p className="min-w-0 break-all text-sm text-tertiary font-mono">
                   /r/{registry.slug}
                 </p>
                 <button
                   type="button"
+                  aria-label="Copy share link"
                   onClick={() => {
                     navigator.clipboard.writeText(`${window.location.origin}/r/${registry.slug}`);
                     setSlugCopied(true);
                     setTimeout(() => setSlugCopied(false), 2000);
                   }}
-                  className="text-tertiary hover:text-secondary transition-colors"
+                  className="shrink-0 text-tertiary hover:text-secondary transition-colors max-sm:-my-3 max-sm:inline-flex max-sm:min-h-11 max-sm:min-w-11 max-sm:items-center max-sm:justify-center"
                 >
                   {slugCopied ? (
                     <span className="inline-flex items-center gap-1 text-sm">
@@ -535,6 +536,8 @@ export default function RegistrySettingsPage() {
               label="Zip Code"
               name="zipCode"
               placeholder="e.g., 90210"
+              inputMode="numeric"
+              autoComplete="postal-code"
               defaultValue={registry.settings?.zip_code || ""}
             />
 
@@ -576,6 +579,9 @@ export default function RegistrySettingsPage() {
               label="Venmo"
               name="venmo"
               placeholder="@your-venmo"
+              autoComplete="off"
+              autoCorrect="off"
+              spellCheck="false"
               defaultValue={pm?.venmo || ""}
             />
 
@@ -583,6 +589,9 @@ export default function RegistrySettingsPage() {
               label="PayPal"
               name="paypal"
               placeholder="you@email.com or PayPal.me link"
+              autoComplete="off"
+              autoCorrect="off"
+              spellCheck="false"
               defaultValue={pm?.paypal || ""}
             />
 
@@ -590,6 +599,9 @@ export default function RegistrySettingsPage() {
               label="Zelle"
               name="zelle"
               placeholder="you@email.com or phone number"
+              autoComplete="off"
+              autoCorrect="off"
+              spellCheck="false"
               defaultValue={pm?.zelle || ""}
             />
 
@@ -691,7 +703,8 @@ export default function RegistrySettingsPage() {
                       variant="ghost"
                       size="sm"
                       onClick={() => handleRemoveManager(m.id)}
-                      className="text-error-primary hover:text-error-primary shrink-0"
+                      aria-label={`Remove ${m.name}`}
+                      className="text-error-primary hover:text-error-primary shrink-0 max-sm:min-w-11"
                     >
                       <X className="h-4 w-4" />
                     </Button>
@@ -746,7 +759,7 @@ export default function RegistrySettingsPage() {
                   id="invite-max-uses"
                   value={maxUses}
                   onChange={(e) => setMaxUses(e.target.value)}
-                  className="block w-full rounded-md border px-3 py-2 text-sm bg-transparent"
+                  className="block w-full rounded-md border px-3 py-2 text-sm bg-transparent max-sm:py-2.5 max-sm:text-md"
                 >
                   <option value="1">1 use</option>
                   <option value="5">5 uses</option>
@@ -768,12 +781,13 @@ export default function RegistrySettingsPage() {
                 <code className="text-xs break-all flex-1">{generatedLink}</code>
                 <button
                   type="button"
+                  aria-label="Copy invite link"
                   onClick={() => {
                     navigator.clipboard.writeText(generatedLink);
                     setLinkCopied(true);
                     setTimeout(() => setLinkCopied(false), 2000);
                   }}
-                  className="text-tertiary hover:text-secondary transition-colors shrink-0"
+                  className="text-tertiary hover:text-secondary transition-colors shrink-0 max-sm:-my-3 max-sm:inline-flex max-sm:min-h-11 max-sm:min-w-11 max-sm:items-center max-sm:justify-center"
                 >
                   {linkCopied ? (
                     <Check className="h-4 w-4" />

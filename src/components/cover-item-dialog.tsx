@@ -10,6 +10,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -46,6 +47,9 @@ export function CoverItemDialog({ item, availableToGift, paymentMethods, parentN
   const [success, setSuccess] = useState(alreadyPurchased ?? false);
   const [showCelebration, setShowCelebration] = useState(false);
   const [quantity, setQuantity] = useState(1);
+  // What's in the quantity field while the guest types. It can be empty for a
+  // moment; `quantity` stays a whole number in range.
+  const [quantityText, setQuantityText] = useState("1");
 
   const maxQuantity = availableToGift ?? item.quantity_needed;
   const showQuantityInput = item.quantity_needed > 1;
@@ -86,7 +90,7 @@ export function CoverItemDialog({ item, availableToGift, paymentMethods, parentN
           <button
             type="button"
             onClick={() => setShowCelebration(true)}
-            className="text-xs font-medium text-brand-600 hover:underline"
+            className="text-xs font-medium text-brand-600 hover:underline max-sm:min-h-11 max-sm:px-2"
           >
             View details
           </button>
@@ -133,6 +137,8 @@ export function CoverItemDialog({ item, availableToGift, paymentMethods, parentN
             label="Your Name"
             name="buyerName"
             placeholder="Alex Kim"
+            autoComplete="name"
+            enterKeyHint="next"
             isRequired
           />
           <Input
@@ -140,6 +146,8 @@ export function CoverItemDialog({ item, availableToGift, paymentMethods, parentN
             name="buyerEmail"
             type="email"
             placeholder="alex@example.com"
+            autoComplete="email"
+            enterKeyHint="next"
             icon={Mail01}
             isRequired
           />
@@ -148,13 +156,17 @@ export function CoverItemDialog({ item, availableToGift, paymentMethods, parentN
               label="Quantity"
               name="quantity"
               type="number"
+              inputMode="numeric"
               min={1}
               max={maxQuantity}
-              value={String(quantity)}
+              value={quantityText}
               onChange={(v) => {
-                const n = Math.max(1, Math.min(maxQuantity, Number(v) || 1));
-                setQuantity(n);
+                // Clearing the field to type a new number mustn't put 1 back,
+                // or typing 3 gives 13.
+                setQuantityText(v);
+                if (v !== "") setQuantity(Math.max(1, Math.min(maxQuantity, Math.floor(Number(v)) || 1)));
               }}
+              onBlur={() => setQuantityText(String(quantity))}
               hint={`${maxQuantity} of ${item.quantity_needed} available to gift`}
             />
           )}
@@ -167,7 +179,7 @@ export function CoverItemDialog({ item, availableToGift, paymentMethods, parentN
 
           {error && <p className="text-sm text-error-primary">{error}</p>}
 
-          <div className="flex justify-end gap-2">
+          <DialogFooter sticky>
             <Button
               type="button"
               variant="outline"
@@ -178,7 +190,7 @@ export function CoverItemDialog({ item, availableToGift, paymentMethods, parentN
             <Button type="submit" disabled={loading}>
               {loading ? "Sending..." : "Mark as covered and gifted"}
             </Button>
-          </div>
+          </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>

@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Plus, Loader2, ChevronDown } from "lucide-react";
-import { Link01 } from "@untitledui/icons";
+import { Clipboard, Link01 } from "@untitledui/icons";
 import { Button } from "@/components/ui/button";
 import { Input, InputBase } from "@/components/base/input/input";
 import { InputGroup, InputPrefix } from "@/components/base/input/input-group";
@@ -14,6 +14,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -23,7 +24,8 @@ import { fetchProductDetails } from "@/lib/fetch-product";
 import { estimateTax } from "@/lib/actions/tax";
 import type { PersonalEventType, RegistryType } from "@/lib/types";
 import { copyFor } from "@/lib/registry-copy";
-import type { RetailerRegistry, StoreId } from "@/lib/retailers";
+import { detectStore, type RetailerRegistry, type StoreId } from "@/lib/retailers";
+import { findSharedLink, nameFromProductUrl } from "@/lib/shared-link";
 import { StoreLinkNotice } from "@/components/store-link-notice";
 import { ItemImageField } from "@/components/item-image-field";
 import { uploadRegistryPhoto } from "@/lib/upload-registry-photo";
@@ -52,6 +54,11 @@ interface AddItemDialogProps {
   linkedRegistries?: RetailerRegistry[];
   /** Stores that other items on this registry have registry links from. */
   storesWithRegistryLinks?: StoreId[];
+  /**
+   * Open on load with this link, and its product name when known, filled in,
+   * then read the link. For links shared to the site from a phone (/share).
+   */
+  openWithLink?: { url: string; title?: string };
 }
 
 const currencySymbols: Record<string, string> = {
@@ -73,10 +80,11 @@ export function AddItemDialog({
   trigger,
   linkedRegistries,
   storesWithRegistryLinks,
+  openWithLink,
 }: AddItemDialogProps) {
   const copy = copyFor({ registryType, eventType });
   const isBaby = registryType === "baby";
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(Boolean(openWithLink));
   const [loading, setLoading] = useState(false);
   const [scraping, setScraping] = useState(false);
   const [scrapeStatus, setScrapeStatus] = useState<string>("");
@@ -86,7 +94,7 @@ export function AddItemDialog({
   const [openToUsed, setOpenToUsed] = useState(false);
   const [taxInfo, setTaxInfo] = useState<{ original: string; rate: number } | null>(null);
   const [currency, setCurrency] = useState("USD");
-  const [title, setTitle] = useState(defaultValues?.title || "");
+  const [title, setTitle] = useState(openWithLink?.title || defaultValues?.title || "");
   const [price, setPrice] = useState(defaultValues?.price ? parseFloat(defaultValues.price).toFixed(2) : "");
   const [imageUrl, setImageUrl] = useState("");
   const [imageCandidates, setImageCandidates] = useState<string[]>([]);
@@ -98,9 +106,27 @@ export function AddItemDialog({
   const [creatingCategory, setCreatingCategory] = useState(false);
   const [categoryError, setCategoryError] = useState("");
 
-  const [externalUrl, setExternalUrl] = useState("");
+  const [externalUrl, setExternalUrl] = useState(openWithLink?.url || "");
 
   const urlRef = useRef<HTMLInputElement>(null);
+  const titleRef = useRef<HTMLInputElement>(null);
+  const priceRef = useRef<HTMLInputElement>(null);
+  const readSharedLink = useRef(false);
+
+  // Reading the clipboard needs a secure page and a browser that allows it.
+  // Only the open dialog asks, so this never runs during server rendering.
+  const canPaste = typeof navigator !== "undefined" && typeof navigator.clipboard?.readText === "function";
+
+  // A link shared from a phone: read it once the dialog is open, and take the
+  // share's query off the address so a reload doesn't open the dialog again.
+  useEffect(() => {
+    if (!openWithLink || readSharedLink.current) return;
+    readSharedLink.current = true;
+    window.history.replaceState(null, "", window.location.pathname);
+    handleScrape(openWithLink.url, { knownTitle: openWithLink.title });
+    // Runs once, for the link the page opened with.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const normalizeUrl = (url: string) => {
     if (!url) return url;
@@ -158,9 +184,16 @@ export function AddItemDialog({
     return undefined;
   };
 
-  const handleScrape = async (rawUrl: string) => {
+  /**
+   * Reads the link and fills in what the owner hasn't. `knownTitle` is a name
+   * set in the same tap, before state has caught up. `fromTap` is true when the
+   * owner tapped Paste or Fetch rather than leaving the field, so it's fine to
+   * move focus to what's left to fill in.
+   */
+  const handleScrape = async (rawUrl: string, options: { knownTitle?: string; fromTap?: boolean } = {}) => {
     if (!rawUrl || scraping) return;
-    const url = normalizeUrl(rawUrl);
+    const url = normalizeUrl(rawUrl.trim());
+    const currentTitle = options.knownTitle || title;
 
     try {
       new URL(url);
@@ -177,11 +210,24 @@ export function AddItemDialog({
     });
 
     if (result.error) {
-      setScrapeStatus(result.error);
+      // Some stores, Amazon above all, block the server from reading their
+      // pages. That's no dead end: keep the link and whatever the owner has,
+      // take a name from the link when it has one, and let them finish.
+      const store = detectStore(url)?.name ?? "this link";
+      const guessedTitle = currentTitle ? undefined : nameFromProductUrl(url);
+      if (guessedTitle) setTitle(guessedTitle);
+      setScrapeStatus(
+        guessedTitle
+          ? `We couldn't read the details from ${store}, so we took the name from the link. Check it and fill in the rest.`
+          : currentTitle
+            ? `We couldn't read the details from ${store}. Your link and name are kept, so fill in the rest by hand.`
+            : `We couldn't read the details from ${store}. Your link is kept, so add the name and the rest by hand.`,
+      );
       setScrapeIsError(true);
+      if (options.fromTap) (currentTitle || guessedTitle ? priceRef : titleRef).current?.focus();
     } else {
       let filled: string[] = [];
-      if (result.title && !title) {
+      if (result.title && !currentTitle) {
         setTitle(result.title);
         filled.push("title");
       }
@@ -208,7 +254,7 @@ export function AddItemDialog({
           filled.push(candidates.length > 1 ? `image (${candidates.length} options)` : "image");
         }
       }
-      const titleForCategory = result.title || title;
+      const titleForCategory = result.title || currentTitle;
       if (titleForCategory && !categoryId) {
         const inferred = inferCategory(titleForCategory);
         if (inferred) {
@@ -226,6 +272,46 @@ export function AddItemDialog({
     setScraping(false);
   };
 
+  const handlePaste = async () => {
+    let text: string;
+    try {
+      text = await navigator.clipboard.readText();
+    } catch {
+      // The browser refused, or the owner said no. Leave them the field to
+      // paste into themselves.
+      urlRef.current?.focus();
+      return;
+    }
+    const shared = findSharedLink({ text });
+    if (!shared) {
+      setScrapeStatus("There's no link on your clipboard. Copy the product's link, then tap Paste.");
+      setScrapeIsError(true);
+      return;
+    }
+    setExternalUrl(shared.url);
+    const knownTitle = title || shared.title;
+    if (!title && shared.title) setTitle(shared.title);
+    handleScrape(shared.url, { knownTitle, fromTap: true });
+  };
+
+  // Back to a clean form, so reopening the dialog starts fresh.
+  const resetForm = () => {
+    setScrapeStatus("");
+    setScrapeIsError(false);
+    setParentPurchased(false);
+    setOpenToUsed(false);
+    setTaxInfo(null);
+    setCurrency("USD");
+    setTitle(defaultValues?.title || "");
+    setPrice(defaultValues?.price ? parseFloat(defaultValues.price).toFixed(2) : "");
+    setImageUrl("");
+    setImageCandidates([]);
+    setBrokenCandidates(new Set());
+    setCategoryId(defaultValues?.categoryId);
+    setExternalUrl("");
+    setError("");
+  };
+
   const handleSubmit = async (formData: FormData) => {
     setLoading(true);
     setError("");
@@ -240,28 +326,14 @@ export function AddItemDialog({
     if (result?.error) {
       setError(result.error);
     } else {
-      // Reset all state before closing so reopening shows a clean form
-      setScrapeStatus("");
-      setScrapeIsError(false);
-      setParentPurchased(false);
-      setOpenToUsed(false);
-      setTaxInfo(null);
-      setCurrency("USD");
-      setTitle(defaultValues?.title || "");
-      setPrice(defaultValues?.price ? parseFloat(defaultValues.price).toFixed(2) : "");
-      setImageUrl("");
-      setImageCandidates([]);
-      setBrokenCandidates(new Set());
-      setCategoryId(defaultValues?.categoryId);
-      setExternalUrl("");
-      setError("");
+      resetForm();
       setOpen(false);
     }
     setLoading(false);
   };
 
   return (
-    <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setScrapeStatus(""); setScrapeIsError(false); setParentPurchased(false); setOpenToUsed(false); setTaxInfo(null); setCurrency("USD"); setTitle(defaultValues?.title || ""); setPrice(defaultValues?.price ? parseFloat(defaultValues.price).toFixed(2) : ""); setImageUrl(""); setImageCandidates([]); setBrokenCandidates(new Set()); setCategoryId(defaultValues?.categoryId); setExternalUrl(""); setError(""); } }}>
+    <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) resetForm(); }}>
       <DialogTrigger asChild>
         {trigger || (
           <Button>
@@ -293,31 +365,65 @@ export function AddItemDialog({
             <p className="text-xs text-tertiary pl-8">
               Target, Amazon, Etsy, or a small shop — we&apos;ll pull the name, price, and image.
             </p>
-            <div className="flex items-stretch gap-2 pl-8">
+            {/* On phones the field takes the full width, with the buttons
+                below it sharing a row. */}
+            <div className="flex items-stretch gap-2 pl-8 max-sm:flex-col max-sm:pl-0">
               <Input
                 ref={urlRef}
                 name="externalUrl"
+                aria-label="Product link"
                 placeholder="https://www.target.com/..."
+                value={externalUrl}
                 onChange={setExternalUrl}
                 onBlur={(e) => handleScrape((e.target as HTMLInputElement).value)}
+                onKeyDown={(e) => {
+                  // Enter reads the link instead of submitting the half-filled form.
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    handleScrape(externalUrl, { fromTap: true });
+                  }
+                }}
+                inputMode="url"
+                autoComplete="off"
+                autoCorrect="off"
+                spellCheck="false"
+                enterKeyHint="go"
                 className="flex-1"
               />
-              <Button
-                type="button"
-                disabled={scraping}
-                onClick={() => {
-                  if (urlRef.current?.value) handleScrape(urlRef.current.value);
-                }}
-              >
-                <span className="inline-flex items-center gap-1.5">
-                  {scraping ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Link01 className="h-4 w-4" />
-                  )}
-                  {scraping ? "Fetching…" : "Fetch"}
-                </span>
-              </Button>
+              <div className="flex gap-2 max-sm:*:flex-1">
+                {/* Pasting into a field is fiddly on a phone, so offer a button
+                    on touch screens and narrow windows. */}
+                {canPaste && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={scraping}
+                    onClick={handlePaste}
+                    className="hidden max-sm:inline-flex pointer-coarse:inline-flex"
+                  >
+                    <span className="inline-flex items-center gap-1.5">
+                      <Clipboard className="h-4 w-4" />
+                      Paste link
+                    </span>
+                  </Button>
+                )}
+                <Button
+                  type="button"
+                  disabled={scraping}
+                  onClick={() => {
+                    if (externalUrl) handleScrape(externalUrl, { fromTap: true });
+                  }}
+                >
+                  <span className="inline-flex items-center gap-1.5">
+                    {scraping ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Link01 className="h-4 w-4" />
+                    )}
+                    {scraping ? "Fetching…" : "Fetch"}
+                  </span>
+                </Button>
+              </div>
             </div>
             {linkedRegistries && (
               <StoreLinkNotice
@@ -329,29 +435,32 @@ export function AddItemDialog({
               />
             )}
             {scrapeStatus && (
-              <p className={`text-xs pl-8 ${scrapeIsError ? "text-error-primary" : "text-brand-600"}`}>{scrapeStatus}</p>
+              <p role="status" className={`text-xs pl-8 max-sm:pl-0 ${scrapeIsError ? "text-warning-primary" : "text-brand-600"}`}>{scrapeStatus}</p>
             )}
           </div>
 
           {/* Step 2 — details */}
-          <div className="flex items-center gap-2 pt-1">
+          <div className="flex flex-wrap items-center gap-x-2 pt-1">
             <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-secondary text-xs font-semibold text-tertiary">
               2
             </span>
             <span className="text-sm font-semibold text-primary">
               Confirm the details
             </span>
-            <span className="ml-auto text-xs text-tertiary">
+            <span className="ml-auto text-xs text-tertiary max-sm:ml-0">
               or fill in manually
             </span>
           </div>
 
           <Input
+            ref={titleRef}
             label="Item Name"
             name="title"
             placeholder={isBaby ? "e.g., Convertible Crib" : "e.g., Wireless Headphones"}
             value={title}
             onChange={setTitle}
+            autoComplete="off"
+            enterKeyHint="next"
             isRequired
           />
 
@@ -366,13 +475,14 @@ export function AddItemDialog({
             {addingCategory ? (
               <div className="space-y-1.5">
                 <Label>New category</Label>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <Input
                     name="newCategoryName"
                     placeholder="e.g., Kitchen"
                     value={newCategoryName}
                     onChange={setNewCategoryName}
-                    className="flex-1"
+                    autoComplete="off"
+                    className="flex-1 max-sm:basis-full"
                   />
                   <Button
                     type="button"
@@ -436,7 +546,7 @@ export function AddItemDialog({
                 <button
                   type="button"
                   onClick={() => setAddingCategory(true)}
-                  className="text-xs font-medium text-brand-600 hover:underline"
+                  className="text-xs font-medium text-brand-600 hover:underline max-sm:min-h-11 max-sm:pr-3"
                 >
                   + Create category
                 </button>
@@ -495,7 +605,9 @@ export function AddItemDialog({
             )}
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          {/* On phones the price gets most of the row: its $ and currency
+              picker leave little room to type otherwise. */}
+          <div className="grid grid-cols-[minmax(0,1fr)_6rem] gap-4 sm:grid-cols-2">
             <InputGroup
               label="Price (optional)"
               name="price"
@@ -507,7 +619,7 @@ export function AddItemDialog({
                   <span className="relative inline-flex items-center">
                     <select
                       aria-label="Currency"
-                      className="appearance-none bg-transparent pr-5 text-primary outline-none cursor-pointer"
+                      className="appearance-none bg-transparent pr-5 text-primary outline-none cursor-pointer max-sm:-my-2.5 max-sm:py-2.5"
                       value={currency}
                       onChange={(e) => setCurrency(e.target.value)}
                     >
@@ -524,10 +636,13 @@ export function AddItemDialog({
               }
             >
               <InputBase
+                ref={priceRef}
                 type="number"
+                inputMode="decimal"
                 step="0.01"
                 min={0}
                 placeholder="0.00"
+                enterKeyHint="next"
                 onBlur={handlePriceBlur}
               />
             </InputGroup>
@@ -535,6 +650,7 @@ export function AddItemDialog({
               label="Quantity"
               name="quantityNeeded"
               type="number"
+              inputMode="numeric"
               min={1}
               defaultValue={defaultValues?.quantityNeeded || "1"}
             />
@@ -587,7 +703,7 @@ export function AddItemDialog({
 
           {error && <p className="text-sm text-error-primary">{error}</p>}
 
-          <div className="flex justify-end gap-2">
+          <DialogFooter sticky>
             <Button
               type="button"
               variant="outline"
@@ -598,7 +714,7 @@ export function AddItemDialog({
             <Button type="submit" disabled={loading}>
               {loading ? "Adding..." : "Add item"}
             </Button>
-          </div>
+          </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>

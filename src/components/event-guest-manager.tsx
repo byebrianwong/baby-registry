@@ -333,7 +333,7 @@ export function EventGuestManager({
               setPasting(!pasting);
               setAddError("");
             }}
-            className="cursor-pointer text-sm font-medium text-brand-600 hover:underline"
+            className="cursor-pointer text-sm font-medium text-brand-600 hover:underline max-sm:-my-3 max-sm:min-h-11"
           >
             {pasting ? "Add one at a time" : "Paste a list"}
           </button>
@@ -345,6 +345,8 @@ export function EventGuestManager({
               value={pasted}
               onChange={setPasted}
               rows={6}
+              autoCorrect="off"
+              spellCheck="false"
               placeholder={"Glinda Upland, glinda@example.com\nElphaba Thropp <elphie@example.com>\nNessa Thropp"}
               hint="One guest per line: a name and an email address. Copy them from a spreadsheet or your contacts."
             />
@@ -366,12 +368,23 @@ export function EventGuestManager({
           </div>
         ) : (
           <form onSubmit={handleAddOne} className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-end">
-            <Input label="Name" value={name} onChange={setName} className="sm:flex-1" maxLength={100} />
+            {/* A guest's details, not the owner's, so no autofill. */}
+            <Input
+              label="Name"
+              value={name}
+              onChange={setName}
+              autoComplete="off"
+              enterKeyHint="next"
+              className="sm:flex-1"
+              maxLength={100}
+            />
             <Input
               label="Email (optional)"
               type="email"
               value={email}
               onChange={setEmail}
+              autoComplete="off"
+              enterKeyHint="done"
               className="sm:flex-1"
             />
             <Button type="submit" disabled={adding} className="h-10">
@@ -422,7 +435,7 @@ export function EventGuestManager({
                   aria-pressed={filter === value}
                   onClick={() => setFilter(value)}
                   className={cx(
-                    "cursor-pointer rounded-full border px-3 py-1 text-sm font-medium transition outline-none focus-visible:ring-2 focus-visible:ring-brand-600",
+                    "cursor-pointer rounded-full border px-3 py-1 text-sm font-medium transition outline-none focus-visible:ring-2 focus-visible:ring-brand-600 max-sm:min-h-11",
                     filter === value
                       ? "border-brand-600 bg-brand-600 text-white"
                       : "border-secondary text-secondary hover:border-primary",
@@ -673,7 +686,7 @@ function GuestDialog({
 
           <div className="flex flex-wrap items-center justify-between gap-2">
             {confirmRemove ? (
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <span className="text-sm text-secondary">Remove {guest.name}?</span>
                 <Button variant="destructive" size="sm" onClick={remove} disabled={busy !== null}>
                   {busy === "remove" ? "Removing…" : "Remove"}

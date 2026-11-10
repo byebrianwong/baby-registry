@@ -55,7 +55,7 @@ function buttonVariants({
     untitledStyles.common.root,
     untitledStyles.sizes[utSize!].root,
     untitledStyles.colors[utColor!].root,
-    isIconSize && "aspect-square p-0",
+    isIconSize && "aspect-square p-0 max-sm:min-w-11",
     sizeOverrides[size],
     className,
   )
@@ -100,7 +100,7 @@ function Button({
           size={utSize}
           isDisabled={disabled}
           className={cn(
-            isIconSize && "aspect-square p-0",
+            isIconSize && "aspect-square p-0 max-sm:min-w-11",
             sizeOverrides[size],
             className,
           )}
@@ -131,7 +131,7 @@ function Button({
       isDisabled={disabled}
       type={type}
       className={cn(
-        isIconSize && "aspect-square p-0",
+        isIconSize && "aspect-square p-0 max-sm:min-w-11",
         sizeOverrides[size],
         className,
       )}

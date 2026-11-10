@@ -14,6 +14,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -255,6 +256,19 @@ export function EditItemDialog({
                 value={externalUrl}
                 onChange={setExternalUrl}
                 onBlur={(e) => handleScrape((e.target as HTMLInputElement).value)}
+                onKeyDown={(e) => {
+                  // Enter reads the link instead of saving the form.
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    handleScrape(externalUrl);
+                  }
+                }}
+                aria-label="Product URL"
+                inputMode="url"
+                autoComplete="off"
+                autoCorrect="off"
+                spellCheck="false"
+                enterKeyHint="go"
                 className="flex-1"
               />
               <Button
@@ -307,13 +321,14 @@ export function EditItemDialog({
             {addingCategory ? (
               <div className="space-y-1.5">
                 <Label>New category</Label>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <Input
                     name="newCategoryName"
                     placeholder="e.g., Kitchen"
                     value={newCategoryName}
                     onChange={setNewCategoryName}
-                    className="flex-1"
+                    autoComplete="off"
+                    className="flex-1 max-sm:basis-full"
                   />
                   <Button
                     type="button"
@@ -377,7 +392,7 @@ export function EditItemDialog({
                 <button
                   type="button"
                   onClick={() => setAddingCategory(true)}
-                  className="text-xs font-medium text-brand-600 hover:underline"
+                  className="text-xs font-medium text-brand-600 hover:underline max-sm:min-h-11 max-sm:pr-3"
                 >
                   + Create category
                 </button>
@@ -393,7 +408,8 @@ export function EditItemDialog({
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          {/* On phones the price gets most of the row, as in the add dialog. */}
+          <div className="grid grid-cols-[minmax(0,1fr)_6rem] gap-4 sm:grid-cols-2">
             <InputGroup
               label="Price (optional)"
               name="price"
@@ -405,7 +421,7 @@ export function EditItemDialog({
                   <span className="relative inline-flex items-center">
                     <select
                       aria-label="Currency"
-                      className="appearance-none bg-transparent pr-5 text-primary outline-none cursor-pointer"
+                      className="appearance-none bg-transparent pr-5 text-primary outline-none cursor-pointer max-sm:-my-2.5 max-sm:py-2.5"
                       value={currency}
                       onChange={(e) => setCurrency(e.target.value)}
                     >
@@ -423,6 +439,7 @@ export function EditItemDialog({
             >
               <InputBase
                 type="number"
+                inputMode="decimal"
                 step="0.01"
                 min={0}
                 placeholder="0.00"
@@ -433,6 +450,7 @@ export function EditItemDialog({
               label="Quantity"
               name="quantityNeeded"
               type="number"
+              inputMode="numeric"
               min={1}
               defaultValue={item.quantity_needed.toString()}
             />
@@ -484,7 +502,18 @@ export function EditItemDialog({
 
           {error && <p className="text-sm text-error-primary">{error}</p>}
 
-          <div className="flex justify-end gap-2">
+          {/* Three buttons don't fit a phone's sticky bar, so on phones
+              Remove item sits above it, at the end of the form. */}
+          <Button
+            type="button"
+            variant="destructive-outline"
+            onClick={handleDelete}
+            disabled={deleting}
+            className="w-full sm:hidden"
+          >
+            {deleting ? "Removing..." : "Remove item"}
+          </Button>
+          <DialogFooter sticky>
             <Button
               type="button"
               variant="outline"
@@ -497,13 +526,14 @@ export function EditItemDialog({
               variant="destructive-outline"
               onClick={handleDelete}
               disabled={deleting}
+              className="max-sm:hidden"
             >
               {deleting ? "Removing..." : "Remove item"}
             </Button>
             <Button type="submit" disabled={loading}>
               {loading ? "Saving..." : "Save changes"}
             </Button>
-          </div>
+          </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>

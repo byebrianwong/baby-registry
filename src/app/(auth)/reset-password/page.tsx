@@ -62,6 +62,8 @@ export default function ResetPasswordPage() {
             <Input
               label="New password"
               type="password"
+              autoComplete="new-password"
+              enterKeyHint="next"
               value={password}
               onChange={(val) => setPassword(val)}
               isRequired
@@ -69,6 +71,8 @@ export default function ResetPasswordPage() {
             <Input
               label="Confirm password"
               type="password"
+              autoComplete="new-password"
+              enterKeyHint="go"
               value={confirmPassword}
               onChange={(val) => setConfirmPassword(val)}
               isRequired
