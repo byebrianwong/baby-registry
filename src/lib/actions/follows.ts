@@ -205,28 +205,42 @@ export type SearchResponse = {
 const MIN_SEARCH_LENGTH = 3;
 const MAX_SEARCH_RESULTS = 10;
 const MAX_EMAIL_SEARCHES_PER_HOUR = 30;
+// Name searches run as you type, so this is higher than the email cap.
+const MAX_NAME_SEARCHES_PER_HOUR = 100;
 const HOUR_MS = 60 * 60 * 1000;
 
 type FoundProfile = { id: string; public_id: string; full_name: string | null };
 
-// The profile behind an exact email address, if its owner lets people find
-// them that way. Counts against the searcher's hourly limit either way.
-async function findByEmail(searcherId: string, email: string) {
+// Logs one search in `table` and says whether the searcher was still under
+// `max` for the last hour. A search over the cap isn't logged. If the count
+// fails (say the table doesn't exist yet), the search is allowed.
+async function underHourlyLimit(
+  table: "email_searches" | "name_searches",
+  searcherId: string,
+  max: number,
+) {
   const since = new Date(Date.now() - HOUR_MS).toISOString();
   const { count } = await supabaseAdmin
-    .from("email_searches")
+    .from(table)
     .select("searcher_id", { count: "exact", head: true })
     .eq("searcher_id", searcherId)
     .gte("searched_at", since);
-  if ((count ?? 0) >= MAX_EMAIL_SEARCHES_PER_HOUR) {
-    return { error: "You've looked up a lot of email addresses. Try again in an hour." };
-  }
+  if ((count ?? 0) >= max) return false;
 
   // Only the last hour counts, so older rows can go.
   await Promise.all([
-    supabaseAdmin.from("email_searches").insert({ searcher_id: searcherId }),
-    supabaseAdmin.from("email_searches").delete().eq("searcher_id", searcherId).lt("searched_at", since),
+    supabaseAdmin.from(table).insert({ searcher_id: searcherId }),
+    supabaseAdmin.from(table).delete().eq("searcher_id", searcherId).lt("searched_at", since),
   ]);
+  return true;
+}
+
+// The profile behind an exact email address, if its owner lets people find
+// them that way. Counts against the searcher's hourly limit either way.
+async function findByEmail(searcherId: string, email: string) {
+  if (!(await underHourlyLimit("email_searches", searcherId, MAX_EMAIL_SEARCHES_PER_HOUR))) {
+    return { error: "You've looked up a lot of email addresses. Try again in an hour." };
+  }
 
   const { data: accountId } = await supabaseAdmin.rpc("account_id_for_email", { p_email: email });
   if (!accountId) return { people: [] as FoundProfile[] };
@@ -240,7 +254,10 @@ async function findByEmail(searcherId: string, email: string) {
   return { people: data ? [data as FoundProfile] : [] };
 }
 
-async function findByName(rawQuery: string) {
+// Findable profiles whose name contains the query. Each search that reaches
+// the database counts against the searcher's hourly limit, so one account
+// can't list everyone by trying name after name.
+async function findByName(searcherId: string, rawQuery: string) {
   // Keep letters, numbers, spaces, hyphens, apostrophes and periods. The Data
   // API treats * and % as wildcards in a like filter, so anything else could
   // turn a search into "list everyone".
@@ -248,7 +265,11 @@ async function findByName(rawQuery: string) {
     .replace(/[^\p{L}\p{N}\s'.-]/gu, "")
     .trim()
     .slice(0, 60);
-  if (query.length < MIN_SEARCH_LENGTH) return [];
+  if (query.length < MIN_SEARCH_LENGTH) return { people: [] as FoundProfile[] };
+
+  if (!(await underHourlyLimit("name_searches", searcherId, MAX_NAME_SEARCHES_PER_HOUR))) {
+    return { error: "You've searched a lot in the last hour. Try again later." };
+  }
 
   const { data } = await supabaseAdmin
     .from("profiles")
@@ -256,7 +277,7 @@ async function findByName(rawQuery: string) {
     .eq("discoverable", true)
     .ilike("full_name", `%${query}%`)
     .limit(MAX_SEARCH_RESULTS);
-  return (data || []) as FoundProfile[];
+  return { people: (data || []) as FoundProfile[] };
 }
 
 export async function searchPeople(rawQuery: string): Promise<SearchResponse> {
@@ -266,14 +287,12 @@ export async function searchPeople(rawQuery: string): Promise<SearchResponse> {
   const trimmed = (rawQuery || "").trim();
   const kind = looksLikeEmail(trimmed) ? "email" : "name";
 
-  let found: FoundProfile[];
-  if (kind === "email") {
-    const byEmail = await findByEmail(user.id, normalizeEmail(trimmed));
-    if ("error" in byEmail) return { results: [], kind, error: byEmail.error };
-    found = byEmail.people;
-  } else {
-    found = await findByName(trimmed);
-  }
+  const search =
+    kind === "email"
+      ? await findByEmail(user.id, normalizeEmail(trimmed))
+      : await findByName(user.id, trimmed);
+  if ("error" in search) return { results: [], kind, error: search.error };
+  const found = search.people;
 
   // Searchers see themselves too, under the same rules as everyone else, so
   // finding yourself shows that other people can find you.
