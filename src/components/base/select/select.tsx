@@ -49,7 +49,7 @@ interface SelectValueProps {
 }
 
 export const sizes = {
-    sm: { root: "py-2 px-3", shortcut: "pr-2.5" },
+    sm: { root: "py-2 px-3 max-sm:py-2.5", shortcut: "pr-2.5" },
     md: { root: "py-2.5 px-3.5", shortcut: "pr-3" },
 };
 

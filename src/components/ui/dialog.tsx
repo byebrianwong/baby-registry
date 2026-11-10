@@ -131,6 +131,11 @@ function DialogClose({
 
 // ---- DialogContent ----
 
+// On phones (below `sm`) a dialog is a sheet that slides up from the bottom
+// edge and spans the full width. A long one fills the screen up to a strip of
+// backdrop at the top, which still closes it on tap, and scrolls inside. The
+// bottom padding clears the iPhone home indicator. DialogFooter's `sticky`
+// option relies on these paddings.
 function DialogContent({
   className,
   children,
@@ -148,7 +153,7 @@ function DialogContent({
       isDismissable
       className={(state) =>
         cn(
-          "fixed inset-0 z-50 flex min-h-dvh w-full items-end justify-center overflow-y-auto bg-overlay/70 px-4 pt-4 pb-[clamp(16px,8vh,64px)] outline-hidden backdrop-blur-[6px] sm:items-center sm:justify-center sm:p-8",
+          "fixed inset-0 z-50 flex min-h-dvh w-full items-end justify-center overflow-y-auto bg-overlay/70 pt-8 outline-hidden backdrop-blur-[6px] sm:items-center sm:justify-center sm:p-8",
           state.isEntering && "duration-300 ease-out animate-in fade-in",
           state.isExiting && "duration-200 ease-in animate-out fade-out"
         )
@@ -157,11 +162,11 @@ function DialogContent({
       <AriaModal
         className={(state) =>
           cn(
-            "max-h-full w-full max-w-[calc(100%-2rem)] outline-hidden max-sm:overflow-y-auto max-sm:rounded-2xl sm:max-w-lg",
+            "max-h-full w-full outline-hidden sm:max-w-lg",
             state.isEntering &&
-              "duration-300 ease-out animate-in zoom-in-95",
+              "duration-300 ease-out animate-in max-sm:slide-in-from-bottom sm:zoom-in-95",
             state.isExiting &&
-              "duration-200 ease-in animate-out zoom-out-95"
+              "duration-200 ease-in animate-out max-sm:slide-out-to-bottom sm:zoom-out-95"
           )
         }
       >
@@ -169,6 +174,7 @@ function DialogContent({
           data-slot="dialog-content"
           className={cn(
             "bg-primary relative grid gap-4 rounded-2xl border border-secondary p-6 shadow-lg outline-none",
+            "max-sm:max-h-[calc(100dvh-2rem)] max-sm:overflow-y-auto max-sm:overscroll-contain max-sm:rounded-b-none max-sm:border-x-0 max-sm:border-b-0 max-sm:px-4 max-sm:pb-[calc(1rem+env(safe-area-inset-bottom))]",
             className
           )}
         >
@@ -204,16 +210,28 @@ function DialogHeader({ className, ...props }: React.ComponentProps<"div">) {
 function DialogFooter({
   className,
   showCloseButton = false,
+  sticky = false,
   children,
   ...props
 }: React.ComponentProps<"div"> & {
   showCloseButton?: boolean
+  /**
+   * On phones, keep the buttons in a bar pinned to the bottom of the sheet
+   * while the form above scrolls, with the buttons sharing the width. Put the
+   * footer last in the dialog, or last in a form that is. The negative
+   * margins match DialogContent's phone padding.
+   */
+  sticky?: boolean
 }) {
   return (
     <div
       data-slot="dialog-footer"
       className={cn(
         "flex flex-col-reverse gap-2 sm:flex-row sm:justify-end",
+        sticky &&
+          // Sticky offsets count from inside the sheet's padding, so the bar
+          // sits a padding's height below that to reach the bottom edge.
+          "max-sm:sticky max-sm:-bottom-[calc(1rem+env(safe-area-inset-bottom))] max-sm:z-10 max-sm:-mx-4 max-sm:-mb-[calc(1rem+env(safe-area-inset-bottom))] max-sm:flex-row max-sm:border-t max-sm:border-secondary max-sm:bg-primary max-sm:px-4 max-sm:pt-3 max-sm:pb-[calc(1rem+env(safe-area-inset-bottom))] max-sm:*:flex-1",
         className
       )}
       {...props}

@@ -26,6 +26,8 @@ export const styles = sortCx({
         sm: {
             root: [
                 "gap-1 rounded-full px-3.5 py-2 text-sm font-semibold before:rounded-full data-icon-only:p-2",
+                // Phones: at least 44px to tap.
+                "max-sm:min-h-11 max-sm:data-icon-only:min-w-11",
                 "in-data-input-wrapper:px-3.5 in-data-input-wrapper:py-2.5 in-data-input-wrapper:data-icon-only:p-2.5",
             ].join(" "),
             linkRoot: "gap-1",
@@ -33,6 +35,7 @@ export const styles = sortCx({
         md: {
             root: [
                 "gap-1 rounded-full px-4 py-2.5 text-sm font-semibold before:rounded-full data-icon-only:p-2.5",
+                "max-sm:min-h-11 max-sm:data-icon-only:min-w-11",
                 "in-data-input-wrapper:gap-1.5 in-data-input-wrapper:px-4 in-data-input-wrapper:text-md in-data-input-wrapper:data-icon-only:p-3",
             ].join(" "),
             linkRoot: "gap-1",
@@ -77,7 +80,7 @@ export const styles = sortCx({
         },
         "link-gray": {
             root: [
-                "justify-normal rounded p-0! text-tertiary hover:text-tertiary_hover",
+                "justify-normal rounded p-0! max-sm:min-h-0 max-sm:data-icon-only:min-w-0 text-tertiary hover:text-tertiary_hover",
                 // Inner text underline
                 "*:data-text:underline *:data-text:decoration-transparent *:data-text:underline-offset-2 hover:*:data-text:decoration-current",
                 // Icon styles
@@ -86,7 +89,7 @@ export const styles = sortCx({
         },
         "link-color": {
             root: [
-                "justify-normal rounded p-0! text-brand-secondary hover:text-brand-secondary_hover",
+                "justify-normal rounded p-0! max-sm:min-h-0 max-sm:data-icon-only:min-w-0 text-brand-secondary hover:text-brand-secondary_hover",
                 // Inner text underline
                 "*:data-text:underline *:data-text:decoration-transparent *:data-text:underline-offset-2 hover:*:data-text:decoration-current",
                 // Icon styles
@@ -122,7 +125,7 @@ export const styles = sortCx({
         },
         "link-destructive": {
             root: [
-                "justify-normal rounded p-0! text-error-primary outline-error hover:text-error-primary_hover",
+                "justify-normal rounded p-0! max-sm:min-h-0 max-sm:data-icon-only:min-w-0 text-error-primary outline-error hover:text-error-primary_hover",
                 // Inner text underline
                 "*:data-text:underline *:data-text:decoration-transparent *:data-text:underline-offset-2 hover:*:data-text:decoration-current",
                 // Icon styles

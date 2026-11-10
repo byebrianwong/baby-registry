@@ -14,6 +14,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -129,6 +130,11 @@ export function SuggestItemDialog({ registryId, categories = [], action }: Sugge
                     aria-label="Product URL (optional)"
                     placeholder="https://www.example.com"
                     onChange={setExternalUrl}
+                    inputMode="url"
+                    autoComplete="off"
+                    autoCorrect="off"
+                    spellCheck="false"
+                    enterKeyHint="next"
                     className="flex-1"
                   />
                   {/* Lets the guest check the link before sending it. Disabled until the field holds a web address. */}
@@ -158,7 +164,8 @@ export function SuggestItemDialog({ registryId, categories = [], action }: Sugge
                 </Select>
               )}
 
-              <div className="grid grid-cols-2 gap-4">
+              {/* On phones the price gets most of the row, so there's room to type. */}
+              <div className="grid grid-cols-[minmax(0,1fr)_6rem] gap-4 sm:grid-cols-2">
                 <InputGroup
                   label="Estimated price (optional)"
                   prefix={currencySymbols[currency] || "$"}
@@ -167,7 +174,7 @@ export function SuggestItemDialog({ registryId, categories = [], action }: Sugge
                       <span className="relative inline-flex items-center">
                         <select
                           aria-label="Currency"
-                          className="appearance-none bg-transparent pr-5 text-primary outline-none cursor-pointer"
+                          className="appearance-none bg-transparent pr-5 text-primary outline-none cursor-pointer max-sm:-my-2.5 max-sm:py-2.5"
                           name="currency"
                           value={currency}
                           onChange={(e) => setCurrency(e.target.value)}
@@ -187,6 +194,7 @@ export function SuggestItemDialog({ registryId, categories = [], action }: Sugge
                   <InputBase
                     name="price"
                     type="number"
+                    inputMode="decimal"
                     step="0.01"
                     min={0}
                     placeholder="0.00"
@@ -196,6 +204,7 @@ export function SuggestItemDialog({ registryId, categories = [], action }: Sugge
                   label="Quantity"
                   name="quantity"
                   type="number"
+                  inputMode="numeric"
                   min={1}
                   defaultValue="1"
                 />
@@ -212,6 +221,8 @@ export function SuggestItemDialog({ registryId, categories = [], action }: Sugge
                 label="Your Name"
                 name="suggestedByName"
                 placeholder="Alex Kim"
+                autoComplete="name"
+                enterKeyHint="next"
                 isRequired
               />
               <Input
@@ -219,13 +230,15 @@ export function SuggestItemDialog({ registryId, categories = [], action }: Sugge
                 name="suggestedByEmail"
                 type="email"
                 placeholder="alex@example.com"
+                autoComplete="email"
+                enterKeyHint="done"
                 icon={Mail01}
                 isRequired
               />
 
               {error && <p className="text-sm text-error-primary">{error}</p>}
 
-              <div className="flex justify-end gap-2">
+              <DialogFooter sticky>
                 <Button
                   type="button"
                   variant="outline"
@@ -236,7 +249,7 @@ export function SuggestItemDialog({ registryId, categories = [], action }: Sugge
                 <Button type="submit" disabled={loading}>
                   {loading ? "Submitting..." : "Suggest item"}
                 </Button>
-              </div>
+              </DialogFooter>
             </form>
           </>
         )}

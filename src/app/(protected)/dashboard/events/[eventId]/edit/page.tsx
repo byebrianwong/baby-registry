@@ -28,7 +28,7 @@ export default async function EditEventPage({ params }: { params: Promise<{ even
     <div className="container mx-auto max-w-2xl px-4 py-8">
       <Link
         href={`/dashboard/events/${event.id}`}
-        className="inline-flex items-center gap-1.5 text-sm font-medium text-tertiary hover:text-primary"
+        className="inline-flex items-center gap-1.5 text-sm font-medium text-tertiary hover:text-primary max-sm:min-h-11"
       >
         <ArrowLeft className="size-4" />
         {event.title}

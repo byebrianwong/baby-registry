@@ -107,6 +107,8 @@ function SignupForm() {
               label="Full Name"
               type="text"
               placeholder="Remi & Max Porter"
+              autoComplete="name"
+              enterKeyHint="next"
               value={fullName}
               onChange={(val) => setFullName(val)}
               isRequired
@@ -115,6 +117,8 @@ function SignupForm() {
               label="Email"
               type="email"
               placeholder="you@example.com"
+              autoComplete="email"
+              enterKeyHint="next"
               value={email}
               onChange={(val) => setEmail(val)}
               isRequired
@@ -123,6 +127,8 @@ function SignupForm() {
               label="Password"
               type="password"
               placeholder="At least 6 characters"
+              autoComplete="new-password"
+              enterKeyHint="go"
               value={password}
               onChange={(val) => setPassword(val)}
               isRequired

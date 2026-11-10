@@ -108,6 +108,26 @@ export function SuggestionInbox({
           </nav>
 
           <div className="flex-1 min-w-0 space-y-3">
+            {/* Phones don't have room for the side list, so the filters
+                are a row of chips instead. */}
+            <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 scrollbar-hide md:hidden">
+              {FILTERS.map((f) => (
+                <button
+                  key={f.value}
+                  type="button"
+                  aria-pressed={filter === f.value}
+                  onClick={() => setFilter(f.value)}
+                  className={`inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-full px-4 text-sm whitespace-nowrap ring-1 ring-inset transition-colors ${
+                    filter === f.value
+                      ? "bg-active font-medium text-secondary ring-primary"
+                      : "text-tertiary ring-secondary"
+                  }`}
+                >
+                  {f.label}
+                  <span className="text-xs text-tertiary">{counts[f.value]}</span>
+                </button>
+              ))}
+            </div>
             {filtered.length === 0 ? (
               <Card>
                 <CardContent className="flex flex-col items-center justify-center py-12">
@@ -121,8 +141,8 @@ export function SuggestionInbox({
                 <Card key={suggestion.id} className="py-0">
                   <CardContent className="p-4">
                     <div className="flex flex-col gap-2">
-                      <div className="flex items-center gap-2.5">
-                        <span className="flex-1 min-w-0 text-base font-semibold text-secondary">
+                      <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
+                        <span className="flex-1 min-w-0 text-base font-semibold text-secondary max-sm:basis-full">
                           {suggestion.title}
                         </span>
                         <span
@@ -143,10 +163,10 @@ export function SuggestionInbox({
                           {formatPrice(suggestion.price)}
                         </p>
                       )}
-                      <div className="flex items-center gap-2.5 text-xs text-secondary">
+                      <div className="flex flex-wrap items-center gap-x-2.5 text-xs text-secondary">
                         <span>Suggested by {suggestion.suggested_by_name}</span>
                         {suggestion.suggested_by_email && (
-                          <span>{suggestion.suggested_by_email}</span>
+                          <span className="break-all">{suggestion.suggested_by_email}</span>
                         )}
                       </div>
                       {suggestion.notes && (
@@ -154,7 +174,7 @@ export function SuggestionInbox({
                           &ldquo;{suggestion.notes}&rdquo;
                         </p>
                       )}
-                      <div className="flex items-center justify-between pt-2">
+                      <div className="flex flex-wrap items-center justify-between gap-2 pt-2">
                         {suggestion.external_url ? (
                           <Button variant="outline" size="sm" asChild>
                             <a

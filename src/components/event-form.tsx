@@ -220,7 +220,7 @@ export function EventForm({
               aria-pressed={eventType === option.value}
               onClick={() => setEventType(option.value)}
               className={cx(
-                "cursor-pointer rounded-full border px-3.5 py-1.5 text-sm font-medium transition outline-none focus-visible:ring-2 focus-visible:ring-brand-600",
+                "cursor-pointer rounded-full border px-3.5 py-1.5 text-sm font-medium transition outline-none focus-visible:ring-2 focus-visible:ring-brand-600 max-sm:min-h-11",
                 eventType === option.value
                   ? "border-brand-600 bg-brand-600 text-white"
                   : "border-secondary text-secondary hover:border-primary",
@@ -410,7 +410,9 @@ export function EventForm({
         </p>
       )}
 
-      <div className="flex flex-wrap gap-2">
+      {/* On phones the buttons stay in a bar at the bottom of the screen,
+          so saving doesn't mean scrolling past every section first. */}
+      <div className="flex flex-wrap gap-2 max-sm:sticky max-sm:bottom-0 max-sm:z-10 max-sm:-mx-4 max-sm:flex-nowrap max-sm:border-t max-sm:border-secondary max-sm:bg-primary max-sm:px-4 max-sm:pt-3 max-sm:pb-[calc(0.75rem+env(safe-area-inset-bottom))] max-sm:*:flex-1">
         <Button type="submit" disabled={saving}>
           <span className="inline-flex items-center gap-1.5">
             {saving && <Loader2 className="size-4 animate-spin" />}

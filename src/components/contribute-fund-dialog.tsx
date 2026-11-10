@@ -12,6 +12,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -102,7 +103,7 @@ export function ContributeFundDialog({
           <button
             type="button"
             onClick={() => setShowCelebration(true)}
-            className="text-xs font-medium text-brand-600 hover:underline"
+            className="text-xs font-medium text-brand-600 hover:underline max-sm:min-h-11 max-sm:px-2"
           >
             View details
           </button>
@@ -166,7 +167,7 @@ export function ContributeFundDialog({
                 <span className="relative inline-flex items-center">
                   <select
                     aria-label="Currency"
-                    className="appearance-none bg-transparent pr-5 text-primary outline-none cursor-pointer"
+                    className="appearance-none bg-transparent pr-5 text-primary outline-none cursor-pointer max-sm:-my-2.5 max-sm:py-2.5"
                     name="currency"
                     value={currency}
                     onChange={(e) => setCurrency(e.target.value)}
@@ -186,6 +187,7 @@ export function ContributeFundDialog({
             <InputBase
               name="amount"
               type="number"
+              inputMode="decimal"
               step="0.01"
               min={1}
               max={remaining ?? undefined}
@@ -196,6 +198,8 @@ export function ContributeFundDialog({
             label="Your Name"
             name="buyerName"
             placeholder="Alex Kim"
+            autoComplete="name"
+            enterKeyHint="next"
             isRequired
           />
           <Input
@@ -203,6 +207,8 @@ export function ContributeFundDialog({
             name="buyerEmail"
             type="email"
             placeholder="alex@example.com"
+            autoComplete="email"
+            enterKeyHint="next"
             icon={Mail01}
             isRequired
           />
@@ -215,7 +221,7 @@ export function ContributeFundDialog({
 
           {error && <p className="text-sm text-error-primary">{error}</p>}
 
-          <div className="flex justify-end gap-2">
+          <DialogFooter sticky>
             <Button
               type="button"
               variant="outline"
@@ -226,7 +232,7 @@ export function ContributeFundDialog({
             <Button type="submit" disabled={loading}>
               {loading ? "Contributing..." : "Contribute"}
             </Button>
-          </div>
+          </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>
