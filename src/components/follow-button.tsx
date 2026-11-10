@@ -75,6 +75,33 @@ export function FollowToggle({
   );
 }
 
+/**
+ * Goes after the "waiting for approval" hint, because nothing on the
+ * Requested button says that clicking it withdraws the request. It runs the
+ * same toggle, so it asks first too.
+ */
+export function WithdrawRequest({
+  name,
+  busy,
+  onClick,
+}: {
+  name: string;
+  busy: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={busy}
+      aria-label={`Withdraw your request to follow ${name}`}
+      className="cursor-pointer font-medium text-brand-600 hover:underline disabled:cursor-default disabled:opacity-50"
+    >
+      Withdraw
+    </button>
+  );
+}
+
 export function FollowButton({
   publicId,
   name,
@@ -137,7 +164,15 @@ export function FollowButton({
   return (
     <div className="flex flex-col items-center gap-1">
       <FollowToggle state={state} busy={busy} onClick={toggle} />
-      <p className="text-xs text-tertiary">{hint}</p>
+      <p className="text-xs text-tertiary">
+        {hint}
+        {state === "pending" && (
+          <>
+            {" "}
+            <WithdrawRequest name={name} busy={busy} onClick={toggle} />
+          </>
+        )}
+      </p>
       {error && <p className="text-xs text-error-primary">{error}</p>}
     </div>
   );

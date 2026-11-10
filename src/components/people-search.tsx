@@ -4,7 +4,12 @@ import { useRef, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/base/input/input";
-import { FollowToggle, useFollow, type FollowToggleState } from "@/components/follow-button";
+import {
+  FollowToggle,
+  WithdrawRequest,
+  useFollow,
+  type FollowToggleState,
+} from "@/components/follow-button";
 import { searchPeople, type SearchResponse, type SearchResult } from "@/lib/actions/follows";
 import { sendFollowInvite } from "@/lib/actions/follow-invites";
 import { looksLikeEmail } from "@/lib/email-address";
@@ -26,7 +31,7 @@ function PersonCard({
   action,
 }: {
   person: SearchResult;
-  detail: string;
+  detail: React.ReactNode;
   error?: string;
   action?: React.ReactNode;
 }) {
@@ -58,15 +63,24 @@ const DETAIL: Record<FollowToggleState, string> = {
 };
 
 function FollowablePerson({ person, state: initialState }: { person: SearchResult; state: FollowToggleState }) {
+  const name = displayName(person);
   const { state, busy, error, toggle } = useFollow({
     publicId: person.public_id,
-    name: displayName(person),
+    name,
     state: initialState,
   });
   return (
     <PersonCard
       person={person}
-      detail={DETAIL[state]}
+      detail={
+        state === "pending" ? (
+          <>
+            {DETAIL.pending} · <WithdrawRequest name={name} busy={busy} onClick={toggle} />
+          </>
+        ) : (
+          DETAIL[state]
+        )
+      }
       error={error}
       action={<FollowToggle state={state} busy={busy} onClick={toggle} />}
     />
