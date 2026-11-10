@@ -4,6 +4,8 @@
 
 import { useMutation, useQuery, useQueryClient, type QueryClient } from "@tanstack/react-query";
 
+import { isOpenReservation } from "@shared/gifts";
+
 import { useSession } from "@/lib/auth";
 import { demo, isDemo } from "@/lib/demo";
 import { supabase } from "@/lib/supabase";
@@ -29,7 +31,7 @@ export const keys = {
 const REGISTRY_FIELDS =
   "id, owner_id, title, slug, event_date, is_public, description, photo_url, registry_type, event_type, honoree_names, created_at";
 
-const CARD_FIELDS = `${REGISTRY_FIELDS}, registry_items(id, quantity_needed, quantity_fulfilled, price, purchases(id, status, created_at, buyer_name))`;
+const CARD_FIELDS = `${REGISTRY_FIELDS}, registry_items(id, quantity_needed, quantity_fulfilled, price, purchases(id, status, reserved_until, created_at, buyer_name))`;
 
 type CardRow = Registry & {
   registry_items:
@@ -38,7 +40,7 @@ type CardRow = Registry & {
         quantity_needed: number;
         quantity_fulfilled: number;
         price: number | null;
-        purchases: { id: string; status: string; created_at: string; buyer_name: string }[] | null;
+        purchases: { id: string; status: string; reserved_until: string | null; created_at: string; buyer_name: string }[] | null;
       }[]
     | null;
 };
@@ -57,7 +59,9 @@ function summarize(row: CardRow, role: "owner" | "manager"): RegistrySummary {
     fulfilledCount: items.filter((i) => i.quantity_fulfilled >= i.quantity_needed).length,
     // Summed the same way as the website's dashboard card, so the two agree.
     totalValue: items.reduce((sum, i) => sum + (i.price ?? 0), 0),
-    recentGifts: gifts.slice(0, 3).map((g) => ({ id: g.id, buyer_name: g.buyer_name, created_at: g.created_at })),
+    recentGifts: gifts
+      .slice(0, 3)
+      .map((g) => ({ id: g.id, buyer_name: g.buyer_name, created_at: g.created_at, held: isOpenReservation(g) })),
   };
 }
 
@@ -150,7 +154,7 @@ type GiftRow = Omit<Gift, "for_title" | "kind"> & {
 };
 
 const GIFT_FIELDS =
-  "id, buyer_name, buyer_email, quantity, amount, status, message, created_at, registry_item_id, cash_fund_id";
+  "id, buyer_name, buyer_email, quantity, amount, status, reserved_until, message, created_at, registry_item_id, cash_fund_id";
 
 async function fetchGifts(registryId: string): Promise<Gift[]> {
   if (isDemo()) return demo.gifts(registryId);
