@@ -1,10 +1,53 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { screen } from "storybook/test";
-import { ReserveItemDialog } from "./reserve-item-dialog";
+import { ReserveItemDialog, type GiftActions } from "./reserve-item-dialog";
+import type { MyItemGift } from "@/lib/gifts";
 
-const mockAction = async () => {
-  await new Promise((r) => setTimeout(r, 800));
-  return undefined;
+// A fixed end date keeps the snapshots the same from day to day. Noon UTC
+// shows the same date in any time zone the snapshot browser uses.
+const RESERVED_UNTIL = "2026-11-15T12:00:00Z";
+const ADDRESS = "123 Main St\nApt 4B\nSan Francisco, CA 94102";
+
+const mockActions: GiftActions = {
+  reserve: async (formData) => {
+    await new Promise((r) => setTimeout(r, 400));
+    const bought = formData.get("alreadyBought") === "1";
+    return {
+      success: true,
+      purchaseId: "p1",
+      status: bought ? "purchased" : "reserved",
+      reservedUntil: bought ? null : RESERVED_UNTIL,
+      shippingAddress: ADDRESS,
+    };
+  },
+  confirm: async () => ({}),
+  release: async () => ({}),
+};
+
+const soundMachine = {
+  id: "1",
+  title: "Hatch Rest+ Sound Machine",
+  price: 69.99,
+  quantity_needed: 1,
+  quantity_fulfilled: 0,
+  external_url: "https://www.amazon.com/dp/B07WFXGNGB",
+};
+
+// On the owners' own Amazon registry.
+const wrap = {
+  id: "3",
+  title: "Solly Baby Wrap",
+  price: 74,
+  quantity_needed: 1,
+  quantity_fulfilled: 0,
+  external_url: "https://www.amazon.com/dp/B0EXAMPLE?colid=EXAMPLE&coliid=EXAMPLE&psc=1",
+};
+
+const reserved: MyItemGift = {
+  purchaseId: "p1",
+  status: "reserved",
+  reservedUntil: RESERVED_UNTIL,
+  quantity: 1,
 };
 
 const meta: Meta<typeof ReserveItemDialog> = {
@@ -12,53 +55,39 @@ const meta: Meta<typeof ReserveItemDialog> = {
   component: ReserveItemDialog,
   parameters: { layout: "centered" },
   args: {
-    action: mockAction,
+    actions: mockActions,
     parentName: "Remi & Max",
+    storeName: "Amazon",
   },
 };
 export default meta;
 type Story = StoryObj<typeof ReserveItemDialog>;
 
-// The dialog starts closed. Open it so the snapshot shows what's inside.
-const openDialog: Story["play"] = async ({ canvas, userEvent }) => {
-  await userEvent.click(canvas.getByRole("button", { name: /gift this/i }));
-  await screen.findByRole("dialog");
+// The dialog starts closed. Open it from the card's button so the snapshot
+// shows what's inside.
+const openWith =
+  (name: RegExp): Story["play"] =>
+  async ({ canvas, userEvent }) => {
+    await userEvent.click(canvas.getByRole("button", { name }));
+    await screen.findByRole("dialog");
+  };
+
+// Your details and one button. Reserving holds the item for 2 days and shows
+// the address. "See it" opens the store page.
+export const Reserve: Story = {
+  args: { item: soundMachine },
+  play: openWith(/gift this/i),
 };
 
-// Has a store link, so the dialog shows a "Purchase from" button.
-export const SingleQuantity: Story = {
-  args: {
-    item: {
-      id: "1",
-      title: "Hatch Rest+ Sound Machine",
-      price: 69.99,
-      quantity_needed: 1,
-      quantity_fulfilled: 0,
-      external_url: "https://www.amazon.com/dp/B07WFXGNGB",
-    },
-  },
-  play: openDialog,
+// On the owners' store registry, the one button also opens the store, which
+// has their address.
+export const ReserveOnStoreRegistry: Story = {
+  args: { item: wrap, registryStoreName: "Amazon" },
+  play: openWith(/gift this/i),
 };
 
-// The owner linked their Amazon registry, so the dialog explains how to buy
-// there so the gift counts toward it.
-export const OnStoreRegistry: Story = {
-  args: {
-    item: {
-      id: "3",
-      title: "Solly Baby Wrap",
-      price: 74,
-      quantity_needed: 1,
-      quantity_fulfilled: 0,
-      external_url: "https://www.amazon.com/dp/B0EXAMPLE?colid=EXAMPLE&coliid=EXAMPLE&psc=1",
-    },
-    registryStoreName: "Amazon",
-  },
-  play: openDialog,
-};
-
-// Needs more than one, so the dialog adds a quantity field. No store link.
-export const MultiQuantity: Story = {
+// Needs more than one, so the form adds a quantity field. No store link.
+export const ReserveMultiQuantity: Story = {
   args: {
     item: {
       id: "2",
@@ -67,21 +96,70 @@ export const MultiQuantity: Story = {
       quantity_needed: 4,
       quantity_fulfilled: 1,
     },
+    storeName: undefined,
   },
-  play: openDialog,
+  play: openWith(/gift this/i),
 };
 
-// What the giver sees after reserving: the button turns into "Reserved".
-export const SuccessState: Story = {
+// The guest bought it before coming to the registry.
+export const AlreadyBought: Story = {
+  args: { item: soundMachine },
+  play: async (context) => {
+    await openWith(/gift this/i)!(context);
+    await context.userEvent.click(screen.getByRole("button", { name: /already bought it/i }));
+  },
+};
+
+// After reserving, or from the card's Finish gift: the address, and one
+// button that copies it and opens the store.
+export const Buy: Story = {
+  args: { item: soundMachine, gift: reserved, shippingAddress: ADDRESS },
+  play: openWith(/finish gift/i),
+};
+
+// On the owners' store registry there's no address to copy.
+export const BuyOnStoreRegistry: Story = {
+  args: { item: wrap, registryStoreName: "Amazon", gift: reserved, shippingAddress: ADDRESS },
+  play: openWith(/finish gift/i),
+};
+
+// Coming back from the store tab, or from "I bought it" in the email.
+export const Confirm: Story = {
+  args: { item: soundMachine, gift: reserved, initialStep: "confirm" },
+  play: async () => {
+    await screen.findByRole("dialog");
+  },
+};
+
+// "Not yet": the reservation stays until its end date.
+export const NotYet: Story = {
+  args: { item: soundMachine, gift: reserved, initialStep: "confirm" },
+  play: async ({ userEvent }) => {
+    await screen.findByRole("dialog");
+    await userEvent.click(screen.getByRole("button", { name: /not yet/i }));
+  },
+};
+
+// The card's Release button, or "I'm not getting it".
+export const Release: Story = {
+  args: { item: soundMachine, gift: reserved },
+  play: openWith(/^release$/i),
+};
+
+// After confirming, the card offers the gift's details, with a way to undo it.
+export const GiftDetails: Story = {
   args: {
-    item: {
-      id: "1",
-      title: "Hatch Rest+ Sound Machine",
-      price: 69.99,
-      quantity_needed: 1,
-      quantity_fulfilled: 0,
-    },
-    alreadyPurchased: true,
-    shippingAddress: "123 Main St\nApt 4B\nSan Francisco, CA 94102",
+    item: { ...soundMachine, quantity_fulfilled: 1 },
+    gift: { ...reserved, status: "purchased", reservedUntil: null },
+    shippingAddress: ADDRESS,
+  },
+  play: openWith(/view your gift/i),
+};
+
+// From an email link after the reservation ran out.
+export const Ended: Story = {
+  args: { item: soundMachine, initialStep: "ended" },
+  play: async () => {
+    await screen.findByRole("dialog");
   },
 };

@@ -39,6 +39,7 @@ import { CashFundCard } from "@/components/cash-fund-card";
 import { PandaMark } from "@/components/panda-mark";
 import { copyForRegistry } from "@/lib/registry-copy";
 import { formatDollars, formatPrice } from "@/lib/money";
+import { formatReservedUntil, isOpenReservation } from "@/lib/gifts";
 import { listEventsForRegistry } from "@/lib/events-server";
 import { RegistryEventsBanner } from "@/components/registry-events-banner";
 import { findSharedLink } from "@/lib/shared-link";
@@ -518,7 +519,7 @@ export default async function RegistryManagePage({
             <div className="mb-6">
               <h2 className="text-xl font-semibold">Gift Activity</h2>
               <p className="text-sm text-tertiary">
-                See who has reserved items and contributed to funds
+                See who has reserved or bought items and contributed to funds
               </p>
             </div>
 
@@ -535,13 +536,16 @@ export default async function RegistryManagePage({
                 {allPurchases.map((purchase: any) => {
                   const isCancelled = purchase.status === "cancelled";
                   const isParentPurchased = purchase.registry_items?.is_parent_purchased ?? false;
+                  const isReserved = isOpenReservation(purchase);
                   const tagType = isCancelled
                     ? "cancelled"
                     : purchase.cash_fund_id
                       ? "contribution"
                       : isParentPurchased
                         ? "covered"
-                        : "purchased";
+                        : isReserved
+                          ? "reserved"
+                          : "purchased";
                   const displayAmount = purchase.cash_fund_id
                     ? purchase.amount
                     : purchase.registry_items?.price;
@@ -565,7 +569,9 @@ export default async function RegistryManagePage({
                                       ? "bg-mint-500 border-mint-500 text-primary"
                                       : tagType === "covered"
                                         ? "bg-mint-200 border-mint-200 text-primary"
-                                        : "bg-sunshine-100 border-sunshine-100 text-primary"
+                                        : tagType === "reserved"
+                                          ? "bg-sunshine-50 border-sunshine-200 text-primary"
+                                          : "bg-sunshine-100 border-sunshine-100 text-primary"
                                 }`}
                               >
                                 {tagType === "cancelled"
@@ -574,14 +580,18 @@ export default async function RegistryManagePage({
                                     ? "Contribution"
                                     : tagType === "covered"
                                       ? "Covered by guest"
-                                      : "Purchased by guest"}
+                                      : tagType === "reserved"
+                                        ? "Reserved by guest"
+                                        : "Purchased by guest"}
                               </span>
                             </div>
                             <div className="min-w-0 sm:flex-1">
                               <span className="text-xs text-secondary">
                                 {purchase.cash_fund_id
                                   ? purchase.item_title
-                                  : `Reserved ${purchase.quantity > 1 ? `${purchase.quantity}x ` : ""}${purchase.item_title}`}
+                                  : `${purchase.quantity > 1 ? `${purchase.quantity}x ` : ""}${purchase.item_title}${
+                                      isReserved ? ` · until ${formatReservedUntil(purchase.reserved_until, "short")}` : ""
+                                    }`}
                               </span>
                             </div>
                             <div className="min-w-0 sm:flex-1">

@@ -4,6 +4,7 @@
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { notifyCompletionDiscounts } from "@/lib/email";
 import { getStore, parseRetailerRegistries, registryStoreFor } from "@/lib/retailers";
+import { isOpenReservation } from "@/lib/gifts";
 import {
   addDays,
   buildStorePerks,
@@ -21,9 +22,10 @@ export interface UnlockedWelcomeBox {
 }
 
 /**
- * Called after a guest reserves an item. If that's the first gift from a store
- * registry whose welcome box needs a gift, returns the box so the owner's email
- * can mention it. Returns null when the owner turned perk emails off.
+ * Called after a guest says they bought an item. If that's the first gift from
+ * a store registry whose welcome box needs a gift, returns the box so the
+ * owner's email can mention it. Reservations still waiting to be bought don't
+ * count yet. Returns null when the owner turned perk emails off.
  */
 export async function welcomeBoxUnlockedBy(itemId: string): Promise<UnlockedWelcomeBox | null> {
   const { data: item } = await supabaseAdmin
@@ -50,11 +52,12 @@ export async function welcomeBoxUnlockedBy(itemId: string): Promise<UnlockedWelc
   const allItems = (items ?? []) as PerkItem[];
   const { data: purchases } = await supabaseAdmin
     .from("purchases")
-    .select("registry_item_id, status")
+    .select("registry_item_id, status, reserved_until")
     .in(
       "registry_item_id",
       allItems.map((i) => i.id)
     );
+  const givenPurchases = (purchases ?? []).filter((p) => !isOpenReservation(p));
 
   const linkedRegistries = parseRetailerRegistries(registry.settings);
   const thisItem = allItems.find((i) => i.id === itemId);
@@ -67,7 +70,7 @@ export async function welcomeBoxUnlockedBy(itemId: string): Promise<UnlockedWelc
 
   const rows = buildStorePerks({
     items: allItems,
-    purchases: purchases ?? [],
+    purchases: givenPurchases,
     linkedRegistries,
     dueDate: registry.event_date,
     today: new Date().toISOString().slice(0, 10),

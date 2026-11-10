@@ -3,9 +3,12 @@ import { supabaseAdmin } from "./supabase-admin";
 import { formatPrice } from "./money";
 import {
   itemReservedBuyerHtml,
+  itemReservationReminderBuyerHtml,
+  itemReservationEndedBuyerHtml,
+  itemGivenBuyerHtml,
   itemCoveredBuyerHtml,
   cashFundContributionBuyerHtml,
-  itemReservedOwnerHtml,
+  itemGivenOwnerHtml,
   itemCoveredOwnerHtml,
   cashFundContributionOwnerHtml,
   newSuggestionOwnerHtml,
@@ -173,39 +176,74 @@ async function getRegistryInfoForBuyer(opts: {
   };
 }
 
-export async function confirmItemReserved(opts: {
-  buyerEmail: string;
-  buyerName: string;
-  itemTitle: string;
-  quantity: number;
-  parentName: string;
-  registryTitle: string;
-  shippingAddress?: string;
-  registryUrl?: string;
-  shopUrl?: string;
-}) {
+type ReservationEmailOpts = Parameters<typeof itemReservedBuyerHtml>[0] & { buyerEmail: string };
+
+/** Tells a guest their reservation is held, with the address and links to finish. */
+export async function confirmItemReserved(opts: ReservationEmailOpts) {
+  try {
+    await getResend().emails.send({
+      from: FROM,
+      to: TEST_RECIPIENT_OVERRIDE || opts.buyerEmail,
+      subject: `You reserved "${opts.itemTitle}". It's held for ${opts.holdDays} days`,
+      html: itemReservedBuyerHtml(opts),
+    });
+  } catch (err) {
+    console.error("[email] Failed to send buyer item reserved email:", err);
+  }
+}
+
+/** Reminds a guest that their reservation runs out soon. */
+export async function remindItemReservation(
+  opts: Parameters<typeof itemReservationReminderBuyerHtml>[0] & { buyerEmail: string }
+) {
+  try {
+    await getResend().emails.send({
+      from: FROM,
+      to: TEST_RECIPIENT_OVERRIDE || opts.buyerEmail,
+      subject: `Your reservation of "${opts.itemTitle}" ends soon`,
+      html: itemReservationReminderBuyerHtml(opts),
+    });
+  } catch (err) {
+    console.error("[email] Failed to send reservation reminder:", err);
+  }
+}
+
+/** Tells a guest their reservation ran out and the item went back on the list. */
+export async function notifyItemReservationEnded(
+  opts: Parameters<typeof itemReservationEndedBuyerHtml>[0] & { buyerEmail: string }
+) {
+  try {
+    await getResend().emails.send({
+      from: FROM,
+      to: TEST_RECIPIENT_OVERRIDE || opts.buyerEmail,
+      subject: `Your reservation of "${opts.itemTitle}" ended`,
+      html: itemReservationEndedBuyerHtml(opts),
+    });
+  } catch (err) {
+    console.error("[email] Failed to send reservation ended email:", err);
+  }
+}
+
+/** Thanks a guest once they say they bought the item. */
+export async function confirmItemGiven(
+  opts: Parameters<typeof itemGivenBuyerHtml>[0] & { buyerEmail: string }
+) {
   try {
     await getResend().emails.send({
       from: FROM,
       to: TEST_RECIPIENT_OVERRIDE || opts.buyerEmail,
       subject: `Your gift is confirmed — "${opts.itemTitle}"`,
-      html: itemReservedBuyerHtml(opts),
+      html: itemGivenBuyerHtml(opts),
     });
   } catch (err) {
-    console.error("[email] Failed to send buyer item reserved confirmation:", err);
+    console.error("[email] Failed to send buyer gift confirmation:", err);
   }
 }
 
-export async function confirmItemCovered(opts: {
-  buyerEmail: string;
-  buyerName: string;
-  itemTitle: string;
-  parentName: string;
-  registryTitle: string;
-  paymentMethods?: { venmo?: string; paypal?: string; zelle?: string };
-  registryUrl?: string;
-  shopUrl?: string;
-}) {
+/** Thanks a guest for sending the money for an item the owners bought, with a link to undo it. */
+export async function confirmItemCovered(
+  opts: Parameters<typeof itemCoveredBuyerHtml>[0] & { buyerEmail: string }
+) {
   try {
     await getResend().emails.send({
       from: FROM,
@@ -242,7 +280,8 @@ export async function confirmCashFundContribution(opts: {
 
 export { getRegistryInfoForBuyer };
 
-export async function notifyItemReserved(opts: {
+/** Tells the owners and managers that a guest bought an item. */
+export async function notifyItemGiven(opts: {
   itemId: string;
   itemTitle: string;
   buyerName: string;
@@ -269,8 +308,8 @@ export async function notifyItemReserved(opts: {
         getResend().emails.send({
           from: FROM,
           to: TEST_RECIPIENT_OVERRIDE || m.email,
-          subject: `🎁 ${opts.buyerName} reserved "${opts.itemTitle}"`,
-          html: itemReservedOwnerHtml({
+          subject: `🎁 ${opts.buyerName} bought "${opts.itemTitle}"`,
+          html: itemGivenOwnerHtml({
             ownerName: m.name,
             registryTitle: m.registryTitle,
             buyerName: opts.buyerName,
@@ -284,7 +323,7 @@ export async function notifyItemReserved(opts: {
       )
     );
   } catch (err) {
-    console.error("[email] Failed to send item reserved notification:", err);
+    console.error("[email] Failed to send item given notification:", err);
   }
 }
 
@@ -362,10 +401,14 @@ export async function notifyCashFundContribution(opts: {
   }
 }
 
+/** Tells the owners and managers that a guest sent them the money for an item they bought. */
 export async function notifyItemCovered(opts: {
   itemId: string;
   itemTitle: string;
   buyerName: string;
+  quantity: number;
+  /** Price times quantity. Null when the item has no price. */
+  amount: number | null;
   message?: string | null;
 }) {
   try {
@@ -374,18 +417,21 @@ export async function notifyItemCovered(opts: {
 
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
     const dashboardLink = `${siteUrl}/dashboard/registry/${managers[0].registryId}?highlight=${opts.itemId}`;
+    const sent = opts.amount != null ? formatPrice(opts.amount) : "money";
 
     await Promise.all(
       managers.map((m) =>
         getResend().emails.send({
           from: FROM,
           to: TEST_RECIPIENT_OVERRIDE || m.email,
-          subject: `🎉 ${opts.buyerName} is covering "${opts.itemTitle}"`,
+          subject: `🎉 ${opts.buyerName} sent you ${sent} for "${opts.itemTitle}"`,
           html: itemCoveredOwnerHtml({
             ownerName: m.name,
             registryTitle: m.registryTitle,
             buyerName: opts.buyerName,
             itemTitle: opts.itemTitle,
+            quantity: opts.quantity,
+            amount: opts.amount,
             message: opts.message,
             dashboardLink,
           }),

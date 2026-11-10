@@ -17,6 +17,14 @@ import { getViewer, getViewerRelation } from "@/lib/viewer";
 import type { RegistryType } from "@/lib/types";
 import { Logo } from "@/components/logo";
 import { parseRetailerRegistries, type StoreId } from "@/lib/retailers";
+import {
+  isExpiredReservation,
+  isGiftLinkStep,
+  isOpenReservation,
+  toMyItemGift,
+  type MyItemGift,
+} from "@/lib/gifts";
+import type { OpenGift } from "@/components/reserve-item-dialog";
 
 const PURCHASE_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
@@ -101,10 +109,10 @@ export default async function PublicRegistryPage({
   searchParams,
 }: {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ email?: string; sig?: string }>;
+  searchParams: Promise<{ email?: string; sig?: string; gift?: string; step?: string }>;
 }) {
   const { slug } = await params;
-  const { email: buyerEmail, sig } = await searchParams;
+  const { email: buyerEmail, sig, gift: giftParam, step: stepParam } = await searchParams;
 
   // Registry data is read with the service-role client, always filtered by the
   // slug in the URL. Anonymous database clients have no read access to these
@@ -177,11 +185,16 @@ export default async function PublicRegistryPage({
   const reservableItemIds = new Set(
     allItems.filter((i) => !i.is_parent_purchased).map((i) => i.id)
   );
+  const allItemIds = new Set(allItems.map((i) => i.id));
+  // This visitor's own gifts, by item id. Covers of items the owners bought
+  // are here too, so the guest can see and undo them, but they never reveal
+  // the address: nothing ships.
+  const myItemGifts: Record<string, MyItemGift> = {};
 
   const claimedItemByPurchase = new Map<string, string>();
   for (const [itemId, purchaseId] of Object.entries(myGifts.items ?? {})) {
     if (
-      reservableItemIds.has(itemId) &&
+      allItemIds.has(itemId) &&
       typeof purchaseId === "string" &&
       PURCHASE_ID_PATTERN.test(purchaseId)
     ) {
@@ -201,18 +214,21 @@ export default async function PublicRegistryPage({
   }
 
   type PurchaseRow = {
-    id?: string;
+    id: string;
     registry_item_id: string | null;
     cash_fund_id?: string | null;
     quantity?: number | null;
     amount?: number | string | null;
+    status: string;
+    reserved_until?: string | null;
   };
+  type CoverRow = { registry_item_id: string | null; quantity: number | null };
   const noRows = Promise.resolve({ data: [] as PurchaseRow[] });
   const buyerPurchases = (column: "registry_item_id" | "cash_fund_id", ids: string[]) =>
     isVerifiedBuyer && ids.length > 0
       ? supabaseAdmin
           .from("purchases")
-          .select("registry_item_id, cash_fund_id, amount")
+          .select("id, registry_item_id, cash_fund_id, amount, status, reserved_until, quantity")
           .eq("buyer_email", buyerEmail!.toLowerCase())
           .neq("status", "cancelled")
           .in(column, ids)
@@ -220,43 +236,65 @@ export default async function PublicRegistryPage({
 
   // These lookups only need the items, so they run at the same time.
   const parentPurchasedIds = allItems.filter((i) => i.is_parent_purchased).map((i) => i.id);
-  const [{ data: coverPurchases }, { data: claimedPurchases }, { data: buyerItemPurchases }, { data: buyerFundPurchases }] =
-    await Promise.all([
-      // How many times each parent-purchased item has been covered
-      parentPurchasedIds.length > 0
-        ? supabaseAdmin
-            .from("purchases")
-            .select("registry_item_id, quantity")
-            .in("registry_item_id", parentPurchasedIds)
-            .neq("status", "cancelled")
-        : noRows,
-      claimedItemByPurchase.size > 0
-        ? supabaseAdmin
-            .from("purchases")
-            .select("id, registry_item_id")
-            .in("id", [...claimedItemByPurchase.keys()])
-            .neq("status", "cancelled")
-        : noRows,
-      buyerPurchases("registry_item_id", allItems.map((i) => i.id)),
-      buyerPurchases("cash_fund_id", allFunds.map((f) => f.id)),
-    ]);
+  const reservableIds = [...reservableItemIds];
+  const [
+    { data: coverPurchases },
+    { data: claimedPurchases },
+    { data: buyerItemPurchases },
+    { data: buyerFundPurchases },
+    { data: openReservations },
+  ] = await Promise.all([
+    // How many times each parent-purchased item has been covered
+    parentPurchasedIds.length > 0
+      ? supabaseAdmin
+          .from("purchases")
+          .select("registry_item_id, quantity")
+          .in("registry_item_id", parentPurchasedIds)
+          .neq("status", "cancelled")
+      : noRows,
+    claimedItemByPurchase.size > 0
+      ? supabaseAdmin
+          .from("purchases")
+          .select("id, registry_item_id, status, reserved_until, quantity")
+          .in("id", [...claimedItemByPurchase.keys()])
+          .neq("status", "cancelled")
+      : noRows,
+    buyerPurchases("registry_item_id", allItems.map((i) => i.id)),
+    buyerPurchases("cash_fund_id", allFunds.map((f) => f.id)),
+    // Reservations still on hold, for the counts below
+    reservableIds.length > 0
+      ? supabaseAdmin
+          .from("purchases")
+          .select("id, registry_item_id, quantity, status, reserved_until")
+          .in("registry_item_id", reservableIds)
+          .eq("status", "reserved")
+          .not("reserved_until", "is", null)
+      : noRows,
+  ]);
 
   const coverCounts = new Map<string, number>();
-  for (const p of (coverPurchases || []) as PurchaseRow[]) {
+  for (const p of (coverPurchases || []) as CoverRow[]) {
     if (p.registry_item_id) {
       coverCounts.set(p.registry_item_id, (coverCounts.get(p.registry_item_id) || 0) + (p.quantity || 1));
     }
   }
 
-  let hasReservation = ((claimedPurchases || []) as PurchaseRow[]).some(
-    (p) => claimedItemByPurchase.get(p.id!) === p.registry_item_id
-  );
+  let hasReservation = false;
+  for (const p of (claimedPurchases || []) as PurchaseRow[]) {
+    if (p.registry_item_id && claimedItemByPurchase.get(p.id) === p.registry_item_id) {
+      if (reservableItemIds.has(p.registry_item_id)) hasReservation = true;
+      myItemGifts[p.registry_item_id] = toMyItemGift(p);
+    }
+  }
 
   for (const p of [...(buyerItemPurchases || []), ...(buyerFundPurchases || [])] as PurchaseRow[]) {
     if (p.registry_item_id) {
       if (!myGifts.items) myGifts.items = {};
       myGifts.items[p.registry_item_id] = "reserved";
       if (reservableItemIds.has(p.registry_item_id)) hasReservation = true;
+      // The signed link proves this visitor is the buyer, so their
+      // purchase ids can go to the page for them to finish or release.
+      if (!myItemGifts[p.registry_item_id]) myItemGifts[p.registry_item_id] = toMyItemGift(p);
     }
     if (p.cash_fund_id && p.amount) {
       if (!myGifts.funds) myGifts.funds = {};
@@ -264,12 +302,40 @@ export default async function PublicRegistryPage({
     }
   }
 
+  // How many of each item are only reserved so far, not bought, so other
+  // guests see "Reserved by a guest" rather than "Gifted". A reservation that
+  // ran out stays in the database until the daily job releases it, so until
+  // then it's taken off the item's count here, and reserving the item
+  // releases it (reserveItem). Its own guest still sees it as theirs, so they
+  // can say they bought it.
+  const reservedCounts: Record<string, number> = {};
+  const expiredCounts: Record<string, number> = {};
+  const myPurchaseIds = new Set(Object.values(myItemGifts).map((g) => g.purchaseId));
+  const now = Date.now();
+  for (const p of (openReservations || []) as PurchaseRow[]) {
+    if (!p.registry_item_id || !isOpenReservation(p)) continue;
+    const counts = isExpiredReservation(p, now) && !myPurchaseIds.has(p.id) ? expiredCounts : reservedCounts;
+    counts[p.registry_item_id] = (counts[p.registry_item_id] || 0) + (p.quantity || 1);
+  }
+  const shownItems = allItems.map((i) =>
+    expiredCounts[i.id]
+      ? { ...i, quantity_fulfilled: Math.max(0, i.quantity_fulfilled - expiredCounts[i.id]) }
+      : i
+  );
+
+  // A link from a guest's email opens the gift dialog at a step. The link
+  // route has already put the gift in this browser's cookie.
+  const openGift: OpenGift | undefined =
+    giftParam && allItemIds.has(giftParam) && (isGiftLinkStep(stepParam) || stepParam === "ended")
+      ? { itemId: giftParam, step: stepParam }
+      : undefined;
+
   const shippingAddress = hasReservation
     ? (registry.settings as RegistrySettings | null)?.shipping_address
     : undefined;
 
-  const totalItems = allItems.length;
-  const fulfilledItems = allItems.filter(
+  const totalItems = shownItems.length;
+  const fulfilledItems = shownItems.filter(
     (i) => i.quantity_fulfilled >= i.quantity_needed
   ).length;
 
@@ -321,13 +387,16 @@ export default async function PublicRegistryPage({
           </div>
         ) : (
           <PublicRegistryGrid
-            items={allItems}
+            items={shownItems}
             categories={allCategories}
             cashFunds={allFunds}
             parentName={parentName}
             paymentMethods={paymentMethods}
             shippingAddress={shippingAddress}
             myGifts={myGifts}
+            myItemGifts={myItemGifts}
+            reservedCounts={reservedCounts}
+            openGift={openGift}
             coverCounts={coverCountsObj}
             selfPurchasedLabel={copy.selfPurchasedLabel}
             coverFlavor={copy.coverItemFlavor(parentName)}
