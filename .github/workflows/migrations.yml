@@ -1,0 +1,26 @@
+name: Migrations
+
+# Checks the file names in supabase/migrations: no two files share a version,
+# and new ones have the timestamp names `supabase migration new` gives them.
+# See supabase/check-migrations.mjs. A pull_request run tests the PR merged
+# with main, so it also catches a version that main took in the meantime.
+on:
+  pull_request:
+    paths:
+      - supabase/migrations/**
+      - supabase/check-migrations.mjs
+      - .github/workflows/migrations.yml
+  push:
+    branches: [main]
+    paths:
+      - supabase/migrations/**
+      - supabase/check-migrations.mjs
+      - .github/workflows/migrations.yml
+
+jobs:
+  names:
+    name: Migration names
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - run: node supabase/check-migrations.mjs

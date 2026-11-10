@@ -12,7 +12,8 @@
     "chromatic": "npx chromatic",
     "extension:build": "node extension/build.mjs",
     "extension:dev": "node extension/build.mjs --dev --watch",
-    "test:extension": "npm run extension:build && playwright test --config extension/test/playwright.config.ts"
+    "test:extension": "npm run extension:build && playwright test --config extension/test/playwright.config.ts",
+    "check:migrations": "node supabase/check-migrations.mjs"
   },
   "dependencies": {
     "@react-stately/utils": "^3.11.0",
