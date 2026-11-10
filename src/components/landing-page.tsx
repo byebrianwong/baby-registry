@@ -2,6 +2,11 @@ import Link from "next/link";
 import { ArrowRight, Baby, Cake, Gift, Link2, PartyPopper, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
+// Underlined as well as colored, since they sit inside a line of text. Each
+// link stays on one line, so a phone wraps between them instead of inside one.
+const demoLinkClass =
+  "rounded-sm font-medium whitespace-nowrap text-brand-600 underline underline-offset-4 outline-focus-ring hover:text-brand-700 focus-visible:outline-2 focus-visible:outline-offset-2";
+
 function DashboardButton({ className }: { className?: string }) {
   return (
     <Button size="lg" className={className} asChild>
@@ -18,7 +23,8 @@ function DashboardButton({ className }: { className?: string }) {
 // The nav is passed in because the real one is a server component, which
 // Storybook can't render; stories pass the presentational NavBar instead.
 // Signed-in people already have an account, so instead of sign-up and demo
-// buttons they get one way back to their dashboard.
+// buttons they get one button back to their dashboard. The demos stay a line
+// of text links under it, for showing someone how Regibee works.
 export function LandingPage({ signedIn, nav }: { signedIn: boolean; nav: React.ReactNode }) {
   return (
     <div className="min-h-screen flex flex-col">
@@ -71,6 +77,18 @@ export function LandingPage({ signedIn, nav }: { signedIn: boolean; nav: React.R
               </>
             )}
           </div>
+          {signedIn && (
+            <p className="mt-4 text-sm text-tertiary">
+              Or see the demos:{" "}
+              <Link href="/demo/dashboard" className={demoLinkClass}>
+                Owner dashboard
+              </Link>
+              {" · "}
+              <Link href="/demo" className={demoLinkClass}>
+                Gift giver view
+              </Link>
+            </p>
+          )}
           {/* Each occasion gets its own tint from the palette. */}
           <div className="mt-10 flex flex-wrap items-center justify-center gap-3 text-sm font-medium">
             <span className="inline-flex items-center gap-1.5 rounded-full bg-blush-100 px-3 py-1 text-blush-700">

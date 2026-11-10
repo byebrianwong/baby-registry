@@ -22,7 +22,7 @@ type Story = StoryObj<typeof LandingPage>;
 export const Default: Story = {};
 
 // Signed-in people get one button back to their dashboard instead of the
-// sign-up and demo buttons.
+// sign-up and demo buttons, with text links to the demos under it.
 export const SignedIn: Story = {
   args: {
     signedIn: true,
