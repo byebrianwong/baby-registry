@@ -93,6 +93,13 @@ test("a guest list saved as a group fills an event and runs next year's exchange
   const { data: exclusions } = await db.from("exchange_exclusions").select("guest_a, guest_b").eq("event_id", thisYearId);
   expect(exclusions).toEqual([{ guest_a: [newId.Ann, newId.Ben].sort()[0], guest_b: [newId.Ann, newId.Ben].sort()[1] }]);
 
+  // Back on the group's page, this year's exchange is open, not started twice.
+  await page.goto(`/dashboard/groups/${groupId}`);
+  await page.getByRole("link", { name: "Open this year's exchange" }).click();
+  await page.waitForURL(`**/dashboard/events/${thisYearId}`);
+  const { count: exchanges } = await db.from("events").select("id", { count: "exact", head: true }).eq("group_id", groupId);
+  expect(exchanges).toBe(2);
+
   // Everyone joins, the host draws, and nobody gets last year's person.
   await db.from("event_guests").update({ in_exchange: true }).eq("event_id", thisYearId);
   await page.reload();

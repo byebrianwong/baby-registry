@@ -67,3 +67,29 @@ export const AfterLastYearsExchange: Story = {
 
 /** Nobody added yet, so there's no exchange to start. */
 export const Empty: Story = { args: { members: [] } };
+
+/** This year's exchange is made but names aren't drawn yet, so the button opens it. */
+export const ExchangeUnderway: Story = {
+  args: {
+    events: [
+      {
+        id: "event-2026",
+        slug: "the-chens-gift-exchange-p8q2",
+        title: "The Chens gift exchange",
+        event_date: "2026-12-19",
+        created_at: "2026-11-01T10:00:00Z",
+        hasExchange: true,
+        drawn: false,
+      },
+      {
+        id: "event-2025",
+        slug: "the-chens-gift-exchange-k2m9",
+        title: "The Chens gift exchange",
+        event_date: "2025-12-20",
+        created_at: "2025-11-01T10:00:00Z",
+        hasExchange: true,
+        drawn: true,
+      },
+    ],
+  },
+};

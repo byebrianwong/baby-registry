@@ -67,7 +67,9 @@ export function GroupManager({ group, members, events, sharedLists, actions: ove
 
   const pastePreview = useMemo(() => parseGuestList(pasted), [pasted]);
   const exchanges = events.filter((e) => e.hasExchange);
-  const lastExchange = exchanges[0];
+  // Newest first. One that hasn't drawn names yet is this year's.
+  const current = exchanges[0] && !exchanges[0].drawn ? exchanges[0] : null;
+  const lastExchange = exchanges.find((e) => e.drawn);
 
   const run = async <T extends ActionResult>(key: string, action: () => Promise<T>): Promise<T | null> => {
     setBusy(key);
@@ -298,11 +300,13 @@ export function GroupManager({ group, members, events, sharedLists, actions: ove
                 <div className="min-w-0">
                   <p className="font-medium text-primary">Gift exchange</p>
                   <p className="text-sm text-tertiary">
-                    {lastExchange
-                      ? "Starts a new exchange with everyone in the group. It keeps last time's budget and pairs who shouldn't draw each other, and nobody draws the same person as last time."
-                      : "Makes an event with everyone in the group as guests and a Secret Santa draw. Set the date and budget next."}
+                    {current
+                      ? "This year's exchange is started. Add people from its guest list, and draw names when everyone's in."
+                      : lastExchange
+                        ? "Starts a new exchange with everyone in the group. It keeps last time's budget and pairs who shouldn't draw each other, and nobody draws the same person as last time."
+                        : "Makes an event with everyone in the group as guests and a Secret Santa draw. Set the date and budget next."}
                   </p>
-                  {lastExchange && (
+                  {!current && lastExchange && (
                     <p className="mt-1 text-sm">
                       Last time:{" "}
                       <Link href={`/dashboard/events/${lastExchange.id}`} className="font-medium text-brand-600 hover:underline">
@@ -315,9 +319,15 @@ export function GroupManager({ group, members, events, sharedLists, actions: ove
                   )}
                 </div>
               </div>
-              <Button onClick={startExchange} disabled={busy !== null || members.length === 0}>
-                {busy === "exchange" ? "Starting…" : lastExchange ? "Start this year's exchange" : "Start a gift exchange"}
-              </Button>
+              {current ? (
+                <Button asChild>
+                  <Link href={`/dashboard/events/${current.id}`}>Open this year&apos;s exchange</Link>
+                </Button>
+              ) : (
+                <Button onClick={startExchange} disabled={busy !== null || members.length === 0}>
+                  {busy === "exchange" ? "Starting…" : lastExchange ? "Start this year's exchange" : "Start a gift exchange"}
+                </Button>
+              )}
             </CardContent>
           </Card>
 

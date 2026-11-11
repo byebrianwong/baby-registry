@@ -9,6 +9,7 @@ import {
   listGroupEvents,
   listGroupRegistries,
 } from "@/lib/groups-server";
+import { getEventForManager } from "@/lib/events-server";
 import { getViewer } from "@/lib/viewer";
 
 export const metadata: Metadata = { title: "Group | Regibee" };
@@ -22,11 +23,15 @@ export default async function GroupPage({ params }: { params: Promise<{ groupId:
   const group = await getGroupForOwner(groupId, viewer.id);
   if (!group) notFound();
 
-  const [members, events, sharedLists] = await Promise.all([
+  const [members, groupEvents, sharedLists] = await Promise.all([
     getGroupMembers(group.id),
     listGroupEvents(group.id),
     listGroupRegistries(group.id),
   ]);
+  // Only events this person still hosts. A co-host who was removed doesn't
+  // keep seeing the event here.
+  const hosted = await Promise.all(groupEvents.map((e) => getEventForManager(e.id, viewer.id)));
+  const events = groupEvents.filter((_, index) => hosted[index] !== null);
 
   return (
     <div className="container mx-auto px-4 py-8">

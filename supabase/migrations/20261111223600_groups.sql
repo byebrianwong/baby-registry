@@ -70,7 +70,8 @@ create unique index group_members_group_email_key
   where email is not null;
 
 -- Finds the groups an account is in by its email, for the Following page.
-create index idx_group_members_email on public.group_members(lower(email)) where email is not null;
+-- The server stores emails lowercased, so this matches lookups as they're made.
+create index idx_group_members_email on public.group_members(email) where email is not null;
 
 alter table public.group_members enable row level security;
 revoke all on public.group_members from anon, authenticated;
@@ -88,6 +89,7 @@ create table public.registry_groups (
 );
 
 create index idx_registry_groups_group_id on public.registry_groups(group_id);
+create index idx_registry_groups_shared_by on public.registry_groups(shared_by) where shared_by is not null;
 
 alter table public.registry_groups enable row level security;
 revoke all on public.registry_groups from anon, authenticated;

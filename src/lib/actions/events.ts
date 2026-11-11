@@ -1064,6 +1064,13 @@ async function copyEventForNextYear(
   ownerId: string,
   opts: { guests?: Person[]; groupId?: string | null } = {},
 ): Promise<Result<{ id: string }>> {
+  // The copy keeps its group only when its new owner owns that group.
+  const groupId =
+    opts.groupId !== undefined
+      ? opts.groupId
+      : old.group_id && (await getGroupForOwner(old.group_id, ownerId))
+        ? old.group_id
+        : null;
   const { data: copy, error } = await supabaseAdmin
     .from("events")
     .insert({
@@ -1087,7 +1094,7 @@ async function copyEventForNextYear(
       gift_note: old.gift_note,
       ask_kids: old.ask_kids,
       repeated_from: old.id,
-      group_id: opts.groupId === undefined ? (old.group_id ?? null) : opts.groupId,
+      group_id: groupId,
     })
     .select("id, slug")
     .single();
@@ -1191,7 +1198,9 @@ export async function saveGuestListAsGroup(eventId: string, name: string): Promi
     guests.map((g) => ({ name: g.name, email: g.email })),
   );
   if (created.error !== null) return { error: created.error };
-  if (!access.event.group_id) {
+  // The event remembers the group only when its owner made it, so a
+  // co-host's group never gets a hold on someone else's event.
+  if (!access.event.group_id && access.event.owner_id === access.user.id) {
     await supabaseAdmin.from("events").update({ group_id: created.id }).eq("id", eventId);
   }
   revalidateEvent(access.event);
@@ -1219,7 +1228,7 @@ export async function inviteGroupToEvent(
     );
     if (error) return { error: "The guests weren't added. Try again." };
   }
-  if (!access.event.group_id) {
+  if (!access.event.group_id && access.event.owner_id === access.user.id) {
     await supabaseAdmin.from("events").update({ group_id: groupId }).eq("id", eventId);
   }
   revalidateEvent(access.event);
@@ -1242,14 +1251,20 @@ export async function startGroupExchange(groupId: string): Promise<Result<{ id: 
   const members = await getGroupMembers(groupId);
   if (members.length === 0) return { error: "Add people to the group first." };
 
-  const last = (await listGroupEvents(groupId)).find((e) => e.hasExchange);
+  // The group's newest exchange that this person still hosts. One that
+  // hasn't drawn names yet is this year's: open it instead of starting another.
+  let last: EventDetails | null = null;
+  for (const candidate of (await listGroupEvents(groupId)).filter((e) => e.hasExchange)) {
+    const found = await getEventForManager(candidate.id, user.id);
+    if (!found) continue;
+    if (!candidate.drawn) return { error: null, id: candidate.id };
+    last = found.event;
+    break;
+  }
   if (last) {
-    const { data: old } = await supabaseAdmin.from("events").select("*").eq("id", last.id).single();
-    if (old) {
-      const copied = await copyEventForNextYear(old as EventDetails, user.id, { guests: members, groupId });
-      if (copied.error === null) revalidatePath(`/dashboard/groups/${groupId}`);
-      return copied;
-    }
+    const copied = await copyEventForNextYear(last, user.id, { guests: members, groupId });
+    if (copied.error === null) revalidatePath(`/dashboard/groups/${groupId}`);
+    return copied;
   }
 
   const title = `${group.name} gift exchange`.slice(0, 120);

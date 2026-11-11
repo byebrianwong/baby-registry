@@ -19,7 +19,8 @@ export default async function FollowingPage() {
 
   const [feed, shared] = await Promise.all([
     listFollowingFeed(user.id),
-    listRegistriesSharedWithViewer({ id: user.id, email: user.email }),
+    // An email counts for group membership only once it's confirmed.
+    listRegistriesSharedWithViewer({ id: user.id, email: user.email_confirmed_at ? user.email : null }),
   ]);
 
   return (
