@@ -14,6 +14,8 @@ import {
   View,
 } from "react-native";
 
+import { formatReservedUntil, isOpenReservation } from "@shared/gifts";
+
 import { Icon } from "@/components/icon";
 import { ItemRow, type ItemActions } from "@/components/item-row";
 import {
@@ -388,12 +390,20 @@ function Stat({ label, value }: { label: string; value: string }) {
   );
 }
 
+/**
+ * What a guest did, as the website's owner page says it: an open hold is
+ * reserved until its date, and every other gift was given, including the ones
+ * saved before holds existed (src/lib/gifts.ts).
+ */
 function GiftRow({ gift, onPress }: { gift: Gift; onPress: () => void }) {
   const theme = useTheme();
+  const item = `${gift.for_title}${gift.quantity > 1 ? ` ×${gift.quantity}` : ""}`;
   const what =
     gift.kind === "fund"
       ? `gave${gift.amount ? ` ${formatPrice(gift.amount)}` : ""} to ${gift.for_title}`
-      : `${gift.status === "purchased" ? "bought" : "reserved"} ${gift.for_title}${gift.quantity > 1 ? ` ×${gift.quantity}` : ""}`;
+      : isOpenReservation(gift)
+        ? `reserved ${item} until ${formatReservedUntil(gift.reserved_until!, "short")}`
+        : `bought ${item}`;
   return (
     <Pressable
       accessibilityRole="button"
@@ -432,16 +442,17 @@ function giftActions(gift: Gift, cancel: (gift: Gift) => void) {
     buttons.push({ text: `Email ${gift.buyer_name.split(" ")[0]}`, onPress: () => Linking.openURL(`mailto:${gift.buyer_email}`) });
   }
   if (gift.kind === "item") {
+    const what = isOpenReservation(gift) ? "reservation" : "gift";
     buttons.push({
-      text: "Cancel this reservation",
+      text: `Cancel this ${what}`,
       style: "destructive",
       onPress: () =>
         Alert.alert(
-          "Cancel this reservation?",
+          `Cancel this ${what}?`,
           `The item goes back on your registry so someone else can give it. ${gift.buyer_name} isn't told.`,
           [
             { text: "Keep it", style: "cancel" },
-            { text: "Cancel reservation", style: "destructive", onPress: () => cancel(gift) },
+            { text: `Cancel ${what}`, style: "destructive", onPress: () => cancel(gift) },
           ]
         ),
     });

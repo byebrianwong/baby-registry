@@ -1,13 +1,10 @@
 import { redirect } from "next/navigation";
 import { FollowingFeed } from "@/components/following-feed";
 import { listFollowingFeed } from "@/lib/follows";
-import { createClient } from "@/utils/supabase/server";
+import { getSessionUser } from "@/lib/viewer";
 
 export default async function FollowingPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getSessionUser();
 
   if (!user) {
     redirect("/login");

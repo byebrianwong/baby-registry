@@ -98,7 +98,7 @@ cp .env.local.example .env.local
 
 4. Run the database migrations:
    - Go to **SQL Editor** in your Supabase Dashboard
-   - Run every file in `supabase/migrations` in order, starting with `001_initial_schema.sql`. Two files start with `009`; run `009_registry_types.sql` first.
+   - Run every file in `supabase/migrations` in name order, the way `ls` lists them, starting with `001_initial_schema.sql`. Two files start with `009` and two with `015`; name order runs each pair in the right order. Files after `017` are named by the time they were made, like `20261110113500_<name>.sql`, so they come after the numbered ones.
    - For each file, paste its contents in and click **Run**
    - You should see "Success. No rows returned" — that means it worked
 

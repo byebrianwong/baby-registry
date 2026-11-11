@@ -5,6 +5,9 @@
 // forgotten gift goes back on the list soon. A daily job sends one reminder
 // and releases reservations that ran out (src/lib/gift-reservations-server.ts).
 // See supabase/migrations/015_gift_reservations.sql.
+//
+// The mobile app uses this file too, through its @shared/* path, so it can't
+// import anything.
 
 /** How long a reservation holds an item before it goes back on the list. */
 export const GIFT_HOLD_DAYS = 2;

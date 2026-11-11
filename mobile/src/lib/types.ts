@@ -65,6 +65,12 @@ export interface Gift {
   quantity: number;
   amount: number | null;
   status: PurchaseStatus;
+  /**
+   * When a guest's hold on the item runs out, while they still have to buy it.
+   * Null for gifts given before holds existed, which count as given. Read it
+   * with isOpenReservation (src/lib/gifts.ts).
+   */
+  reserved_until: string | null;
   message: string | null;
   created_at: string;
   registry_item_id: string | null;
@@ -90,7 +96,8 @@ export interface RegistrySummary extends Registry {
   itemCount: number;
   fulfilledCount: number;
   totalValue: number;
-  recentGifts: { id: string; buyer_name: string; created_at: string }[];
+  /** `held` is true while the guest's reservation waits for them to buy it. */
+  recentGifts: { id: string; buyer_name: string; created_at: string; held: boolean }[];
 }
 
 export interface RegistryDetail {

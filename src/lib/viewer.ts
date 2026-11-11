@@ -3,13 +3,21 @@ import type { FollowButtonState } from "@/components/follow-button";
 import { getBlockState, getFollowStatus } from "@/lib/follows";
 import { createClient } from "@/utils/supabase/server";
 
-// The signed-in account looking at a page. Guests have anonymous sessions, so
-// they count as signed out here.
-export const getViewer = cache(async () => {
+// Whoever's session this request carries, guests' anonymous sessions
+// included. getUser asks Supabase's auth server each time, so pages, layouts
+// and the top bar share this one call per request instead of making their own.
+export const getSessionUser = cache(async () => {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
+  return user;
+});
+
+// The signed-in account looking at a page. Guests have anonymous sessions, so
+// they count as signed out here.
+export const getViewer = cache(async () => {
+  const user = await getSessionUser();
   return user && !user.is_anonymous ? user : null;
 });
 

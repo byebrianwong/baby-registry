@@ -21,7 +21,7 @@ The website still does events, following, profile settings, co-managers, cash fu
 
 - It signs in to the same Supabase project as the website, with email and password, and reads and writes the tables directly as the signed-in user. The access rules (RLS) apply exactly as on the website. It only has the public anon key. See "Keys and access rules" in the root [CLAUDE.md](../CLAUDE.md).
 - `src/lib/data.ts` holds every query and change, written to match the website's server actions in `src/lib/actions/registry.ts`. Change one, check the other.
-- The store link rules (`src/lib/retailers.ts`) and the demo data (`src/lib/demo-data.ts`) come straight from the website, through the `@shared/*` path. `metro.config.js` lets Metro read that folder. Only files without imports can be shared this way.
+- The store link rules (`src/lib/retailers.ts`), the demo data (`src/lib/demo-data.ts`) and the gift hold rules (`src/lib/gifts.ts`) come straight from the website, through the `@shared/*` path. `metro.config.js` lets Metro read that folder. Only files without imports can be shared this way.
 - The product reader is built from the extension's source into `src/generated/product-reader.json` by `npm run product-reader`. Run it after changing `extension/src/product-reader.ts`. `npm run check` fails when it's out of date.
 - Sharing uses [`expo-share-intent`](https://github.com/achorein/expo-share-intent). On iPhone its share extension opens the app (the extension has no screen of its own), and `src/app/+native-intent.ts` sends that link to the share screen. On Android the app is a share target for text. `plugins/with-share-extension-label.js` keeps the share sheet label "Regibee".
 

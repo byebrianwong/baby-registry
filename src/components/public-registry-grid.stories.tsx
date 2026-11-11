@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { PublicRegistryGrid } from "./public-registry-grid";
+import { SuggestItemDialog } from "./suggest-item-dialog";
 
 const base = {
   image_url: null,
@@ -21,12 +22,18 @@ const meta: Meta<typeof PublicRegistryGrid> = {
 export default meta;
 type Story = StoryObj<typeof PublicRegistryGrid>;
 
+// The stories never send a suggestion.
+const suggestButton = (categories: { id: string; name: string }[]) => (
+  <SuggestItemDialog registryId="registry-1" categories={categories} action={async () => undefined} />
+);
+
 // Items from several stores, using each store's real link shapes with
 // made-up ids. The Amazon, Target and Walmart links are registry links, so
 // their gift dialogs explain how to buy there, whether or not the owner has
 // linked that store in settings (only Amazon and Target are linked here). The
 // Etsy item's dialog stays as before. The store filter appears because items
-// come from more than one store.
+// come from more than one store. On wide screens, "Suggest an item" sits in
+// the category sidebar.
 export const ItemsFromStores: Story = {
   args: {
     parentName: "Remi & Max",
@@ -34,7 +41,7 @@ export const ItemsFromStores: Story = {
     cashFunds: [],
     myGifts: {},
     coverCounts: {},
-    suggestButton: null,
+    suggestButton: suggestButton([{ id: "nursery", name: "Nursery" }]),
     linkedStores: ["amazon", "target"],
     showStoreRegistries: true,
     items: [
@@ -184,8 +191,20 @@ export const CoverStates: Story = {
 };
 
 // What a guest sees after opening a texted link: a 16px search box, so iOS
-// doesn't zoom in, and 44px filters and buttons.
+// doesn't zoom in, and 44px filters and buttons. The categories hide behind
+// the floating list button, so "Suggest an item" moves up under the filters.
 export const Phone: Story = {
   ...ItemsFromStores,
   globals: { viewport: { value: "mobile1" } },
+};
+
+// A registry with no categories, items or funds yet. Guests can still
+// suggest something.
+export const NoItemsYet: Story = {
+  args: {
+    ...ItemsFromStores.args,
+    categories: [],
+    items: [],
+    suggestButton: suggestButton([]),
+  },
 };

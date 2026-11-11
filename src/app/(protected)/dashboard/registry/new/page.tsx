@@ -1,12 +1,9 @@
 import { redirect } from "next/navigation";
 import { CreateRegistryForm } from "@/components/create-registry-form";
-import { createClient } from "@/utils/supabase/server";
+import { getSessionUser } from "@/lib/viewer";
 
 export default async function NewRegistryPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getSessionUser();
 
   if (!user) {
     redirect("/login");
