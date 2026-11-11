@@ -376,7 +376,7 @@ export default async function RegistryManagePage({
       <Separator className="my-8" />
 
       <RegistryTabs
-        totalItems={totalItems}
+        totalItems={totalItems + allFunds.length}
         purchaseCount={allPurchases.length}
         suggestionCount={pendingSuggestionCount}
         itemsContent={
@@ -409,7 +409,7 @@ export default async function RegistryManagePage({
               </div>
             )}
 
-            {totalItems === 0 ? (
+            {totalItems === 0 && allFunds.length === 0 ? (
               <Card>
                 <CardContent className="flex flex-col items-center justify-center py-12">
                   <PandaMark className="mb-4 h-20 w-auto" />
