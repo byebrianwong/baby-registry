@@ -199,7 +199,7 @@ export function StoreRegistriesCard({
                 }}
                 className="min-w-0 flex-1"
               />
-              <Button type="submit" disabled={saving} className="shrink-0">
+              <Button type="submit" disabled={saving} className="h-10 shrink-0">
                 <span className="inline-flex items-center gap-1.5">
                   <LinkIcon className="h-4 w-4 shrink-0" aria-hidden="true" />
                   {saving ? "Saving…" : "Link"}
