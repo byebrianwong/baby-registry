@@ -438,7 +438,8 @@ function GiftRow({ gift, onPress }: { gift: Gift; onPress: () => void }) {
 
 function giftActions(gift: Gift, cancel: (gift: Gift) => void) {
   const buttons: Parameters<typeof Alert.alert>[2] = [];
-  if (gift.buyer_email) {
+  // No email for a Secret Santa's gift: the owners don't get to know who it is.
+  if (gift.buyer_email && !gift.hide_giver) {
     buttons.push({ text: `Email ${gift.buyer_name.split(" ")[0]}`, onPress: () => Linking.openURL(`mailto:${gift.buyer_email}`) });
   }
   if (gift.kind === "item") {

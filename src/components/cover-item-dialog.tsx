@@ -23,7 +23,8 @@ import {
   type CoverItemResult,
 } from "@/lib/actions/registry";
 import { paymentNote } from "@/lib/payment-links";
-import type { MyItemGift } from "@/lib/gifts";
+import { SECRET_GIVER_NAME, type MyItemGift } from "@/lib/gifts";
+import { useGuestPrefill } from "@/components/guest-prefill-context";
 import type { PaymentMethods } from "@/lib/types";
 import { formatPrice } from "@/lib/money";
 
@@ -84,6 +85,10 @@ export function CoverItemDialog({
   demo,
 }: CoverItemDialogProps) {
   const act: CoverActions = { ...SERVER_ACTIONS, ...actions };
+  // A guest from an event invitation: their name and email start filled in.
+  const prefill = useGuestPrefill();
+  // Who the owners see the gift is from.
+  const fromWhom = prefill?.secretGiver ? SECRET_GIVER_NAME : "you";
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState<Step>(giftProp ? "details" : "pay");
   const [gift, setGift] = useState<MyItemGift | null>(giftProp);
@@ -271,7 +276,7 @@ export function CoverItemDialog({
 
         <section className="space-y-4" aria-labelledby="cover-tell-heading">
           <h3 id="cover-tell-heading" className="text-sm font-semibold text-primary">
-            2. Tell {parentName} it&apos;s from you
+            2. Tell {parentName} it&apos;s from {fromWhom}
           </h3>
           <Input
             label="Your Name"
@@ -279,6 +284,7 @@ export function CoverItemDialog({
             placeholder="Alex Kim"
             autoComplete="name"
             enterKeyHint="next"
+            defaultValue={prefill?.name || undefined}
             isRequired
           />
           <Input
@@ -289,6 +295,7 @@ export function CoverItemDialog({
             autoComplete="email"
             enterKeyHint="next"
             icon={Mail01}
+            defaultValue={prefill?.email || undefined}
             isRequired
             hint="We'll email you a copy, with a link to undo it if you need to."
           />
@@ -311,8 +318,10 @@ export function CoverItemDialog({
         />
         <DialogTitle className="text-xl font-bold text-primary">Thank you!</DialogTitle>
         <p className="text-secondary">
-          {parentName} will see you sent {sentLabel(giftAmount)} for the {item.title}. We emailed you a
-          copy. ❤️
+          {prefill?.secretGiver
+            ? `${parentName} will see ${SECRET_GIVER_NAME} sent ${sentLabel(giftAmount)} for the ${item.title}.`
+            : `${parentName} will see you sent ${sentLabel(giftAmount)} for the ${item.title}.`}{" "}
+          We emailed you a copy. ❤️
         </p>
         <Button onClick={close}>Done</Button>
       </div>
@@ -324,7 +333,7 @@ export function CoverItemDialog({
           <DialogTitle>Your gift</DialogTitle>
           <DialogDescription>
             You sent {sentLabel(giftAmount)} for the {item.title}
-            {gift && gift.quantity > 1 ? ` (×${gift.quantity})` : ""}. {parentName} can see it&apos;s from you.
+            {gift && gift.quantity > 1 ? ` (×${gift.quantity})` : ""}. {parentName} can see it&apos;s from {fromWhom}.
           </DialogDescription>
         </DialogHeader>
         <div className="flex items-center justify-between gap-2">

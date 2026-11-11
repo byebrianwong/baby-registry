@@ -2,7 +2,10 @@ import { cache } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { cookies } from "next/headers";
+import { Gift } from "lucide-react";
 import { supabaseAdmin } from "@/lib/supabase-admin";
+import { readEventGuestCookie } from "@/lib/event-guest-cookie";
+import { isUuid } from "@/lib/extension";
 import { verifyBuyerLink } from "@/lib/buyer-link";
 import type { PaymentMethods, RegistrySettings } from "@/lib/types";
 import type { Metadata } from "next";
@@ -19,6 +22,7 @@ import type { RegistryType } from "@/lib/types";
 import { Logo } from "@/components/logo";
 import { parseRetailerRegistries, type StoreId } from "@/lib/retailers";
 import {
+  SECRET_GIVER_NAME,
   isExpiredReservation,
   isGiftLinkStep,
   isOpenReservation,
@@ -26,6 +30,7 @@ import {
   type MyItemGift,
 } from "@/lib/gifts";
 import type { OpenGift } from "@/components/reserve-item-dialog";
+import { GuestPrefillProvider, type GuestPrefill } from "@/components/guest-prefill-context";
 
 const PURCHASE_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
@@ -88,6 +93,38 @@ async function loadOwner(listedOnProfile: boolean, ownerId: string) {
   };
 }
 
+// A guest who came from a gift link on their event invitation (the event
+// guest cookie). When their event links this registry, or they're the Secret
+// Santa of its owner, the gift forms start with their name and email. A
+// Secret Santa also sees a notice that the owners won't see their name.
+async function loadGuestPrefill(
+  registryId: string
+): Promise<{ prefill: GuestPrefill | null; santaFor: string | null }> {
+  const none = { prefill: null, santaFor: null };
+  try {
+    const guest = await readEventGuestCookie();
+    if (!guest) return none;
+    const isSanta = guest.santa?.registryId === registryId;
+    if (!isSanta) {
+      if (!isUuid(guest.eventId)) return none;
+      const { data: link } = await supabaseAdmin
+        .from("event_registries")
+        .select("event_id")
+        .eq("event_id", guest.eventId)
+        .eq("registry_id", registryId)
+        .maybeSingle();
+      if (!link) return none;
+    }
+    return {
+      prefill: { name: guest.name, email: guest.email, secretGiver: isSanta },
+      santaFor: isSanta ? guest.santa?.gifteeName || null : null,
+    };
+  } catch (err) {
+    console.error("[registry] Failed to read the event guest cookie:", err);
+    return none;
+  }
+}
+
 export async function generateMetadata({
   params,
 }: {
@@ -133,24 +170,30 @@ export default async function PublicRegistryPage({
   // Only registries the owner chose to show on their profile say who owns them,
   // so unlisted ones never point to a profile. The owner lookups don't depend
   // on the items, so both run at the same time.
-  const [{ owner, ownerRelation }, { data: categories }, { data: items }, { data: cashFunds }] =
-    await Promise.all([
-      loadOwner(Boolean(registry.listed_on_profile), registry.owner_id),
-      supabaseAdmin
-        .from("categories")
-        .select("*")
-        .eq("registry_id", registry.id)
-        .order("sort_order"),
-      supabaseAdmin
-        .from("registry_items")
-        .select("*")
-        .eq("registry_id", registry.id)
-        .order("sort_order"),
-      supabaseAdmin
-        .from("cash_funds")
-        .select("*")
-        .eq("registry_id", registry.id),
-    ]);
+  const [
+    { owner, ownerRelation },
+    { data: categories },
+    { data: items },
+    { data: cashFunds },
+    { prefill: guestPrefill, santaFor },
+  ] = await Promise.all([
+    loadOwner(Boolean(registry.listed_on_profile), registry.owner_id),
+    supabaseAdmin
+      .from("categories")
+      .select("*")
+      .eq("registry_id", registry.id)
+      .order("sort_order"),
+    supabaseAdmin
+      .from("registry_items")
+      .select("*")
+      .eq("registry_id", registry.id)
+      .order("sort_order"),
+    supabaseAdmin
+      .from("cash_funds")
+      .select("*")
+      .eq("registry_id", registry.id),
+    loadGuestPrefill(registry.id),
+  ]);
 
   const allItems = (items || []) as RegistryItem[];
   const allCategories = (categories || []) as Category[];
@@ -383,29 +426,43 @@ export default async function PublicRegistryPage({
       {/* Items. With no items or funds yet, the grid says so and still offers
           "Suggest an item". */}
       <main className="container mx-auto px-4 py-8">
-        <PublicRegistryGrid
-          items={shownItems}
-          categories={allCategories}
-          cashFunds={allFunds}
-          parentName={parentName}
-          paymentMethods={paymentMethods}
-          shippingAddress={shippingAddress}
-          myGifts={myGifts}
-          myItemGifts={myItemGifts}
-          reservedCounts={reservedCounts}
-          openGift={openGift}
-          coverCounts={coverCountsObj}
-          selfPurchasedLabel={copy.selfPurchasedLabel}
-          coverFlavor={copy.coverItemFlavor(parentName)}
-          linkedStores={linkedStores}
-          showStoreRegistries={isBabyRegistry}
-          suggestButton={
-            <SuggestItemDialog
-              registryId={registry.id}
-              categories={allCategories.map((c) => ({ id: c.id, name: c.name }))}
-            />
-          }
-        />
+        {santaFor && (
+          <div className="mb-6 flex items-start gap-3 rounded-2xl border border-sunshine-200 bg-sunshine-50 p-4">
+            <Gift className="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
+            <div className="min-w-0">
+              <p className="font-semibold text-primary">You&apos;re {santaFor}&apos;s Secret Santa.</p>
+              <p className="text-sm text-secondary">
+                If you reserve a gift here, {santaFor} sees &ldquo;{SECRET_GIVER_NAME}&rdquo; instead of your
+                name.
+              </p>
+            </div>
+          </div>
+        )}
+        <GuestPrefillProvider value={guestPrefill}>
+          <PublicRegistryGrid
+            items={shownItems}
+            categories={allCategories}
+            cashFunds={allFunds}
+            parentName={parentName}
+            paymentMethods={paymentMethods}
+            shippingAddress={shippingAddress}
+            myGifts={myGifts}
+            myItemGifts={myItemGifts}
+            reservedCounts={reservedCounts}
+            openGift={openGift}
+            coverCounts={coverCountsObj}
+            selfPurchasedLabel={copy.selfPurchasedLabel}
+            coverFlavor={copy.coverItemFlavor(parentName)}
+            linkedStores={linkedStores}
+            showStoreRegistries={isBabyRegistry}
+            suggestButton={
+              <SuggestItemDialog
+                registryId={registry.id}
+                categories={allCategories.map((c) => ({ id: c.id, name: c.name }))}
+              />
+            }
+          />
+        </GuestPrefillProvider>
       </main>
 
       <PoweredByFooter />

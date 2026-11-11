@@ -412,7 +412,13 @@ export interface EventEmailDetails {
   mapUrl?: string | null;
   imageUrl?: string | null;
   rsvpBy?: string | null;
+  /** The registries the event links. */
+  registries?: { title: string; url: string }[];
+  /** @deprecated One registry, from before events could link several. */
   registry?: { title: string; url: string } | null;
+  /** "No gifts, please", as the host wrote it. */
+  giftNote?: string | null;
+  exchange?: { budget?: string | null; drawBy?: string | null; mailed: boolean } | null;
 }
 
 const BUTTON_STYLE =
@@ -444,8 +450,22 @@ function eventFactsBlock(event: EventEmailDetails): string {
 }
 
 function registryLine(event: EventEmailDetails): string {
-  if (!event.registry) return "";
-  return `<p>Gift registry: <a href="${escapeHtml(event.registry.url)}" style="color:#004659;">${escapeHtml(event.registry.title)}</a></p>`;
+  const registries = event.registries ?? (event.registry ? [event.registry] : []);
+  const links = registries
+    .map((r) => `<a href="${escapeHtml(r.url)}" style="color:#004659;">${escapeHtml(r.title)}</a>`)
+    .join(" · ");
+  const lines: string[] = [];
+  if (event.giftNote) lines.push(`<p>${multiline(event.giftNote)}</p>`);
+  if (links) lines.push(`<p>${registries.length === 1 ? "Gift registry" : "Gift registries"}: ${links}</p>`);
+  return lines.join("");
+}
+
+function exchangeLine(event: EventEmailDetails): string {
+  if (!event.exchange) return "";
+  const budget = event.exchange.budget ? `, about ${escapeHtml(event.exchange.budget)}` : "";
+  const when = event.exchange.drawBy ? ` Names are drawn by ${escapeHtml(event.exchange.drawBy)}.` : "";
+  const how = event.exchange.mailed ? " Gifts are mailed." : "";
+  return `<p><strong>Gift exchange:</strong> everyone who joins draws one name and gives that person a gift${budget}.${when}${how} Join when you RSVP.</p>`;
 }
 
 /**
@@ -489,6 +509,7 @@ export function eventInvitationHtml(opts: {
       <p style="margin:24px 0 8px;"><a href="${escapeHtml(opts.rsvpUrl)}" style="${BUTTON_STYLE}">RSVP</a></p>
       ${rsvpBy}
       ${registryLine(event)}
+      ${exchangeLine(event)}
       <p style="color:#888;font-size:13px;">This link is just for you, so you can change your answer later. Or copy it: ${escapeHtml(opts.rsvpUrl)}</p>
       <p style="color:#888;font-size:13px;">You're getting this because ${escapeHtml(opts.hostName)} added you to the guest list for ${escapeHtml(event.title)} on Regibee. Reply to this email to reach them.</p>
     </div>
@@ -510,8 +531,16 @@ export function rsvpGuestConfirmationHtml(opts: {
   /** The guest's own link, to change the answer. */
   rsvpUrl: string;
   calendarUrl?: string | null;
+  /** Whether the guest is in the event's gift exchange. */
+  inExchange?: boolean;
 }): string {
   const { event } = opts;
+  const exchange =
+    event.exchange && opts.inExchange
+      ? `<p><strong>You're in the gift exchange.</strong> ${
+          event.exchange.drawBy ? `Names are drawn by ${escapeHtml(event.exchange.drawBy)}, and` : "When names are drawn,"
+        } we'll email you who you're giving to.</p>`
+      : "";
   const party =
     opts.status !== "no" && opts.partySize > 1 ? ` (${opts.partySize} people)` : "";
   const thanks =
@@ -530,6 +559,7 @@ export function rsvpGuestConfirmationHtml(opts: {
     <p><strong>${RSVP_PHRASES[opts.status]}${party}</strong> to <em>${escapeHtml(event.title)}</em>. ${thanks}</p>
     ${opts.status !== "no" ? eventFactsBlock(event) : ""}
     ${calendar}
+    ${exchange}
     ${registryLine(event)}
     <p style="margin:16px 0;"><a href="${escapeHtml(opts.rsvpUrl)}" style="color:#004659;">See the invitation or change your RSVP</a></p>
     <p style="color:#888;font-size:13px;">You're getting this because you replied to an invitation on Regibee.</p>

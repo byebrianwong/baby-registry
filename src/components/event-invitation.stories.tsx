@@ -1,8 +1,14 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { expect, fn, userEvent, within } from "storybook/test";
-import { EventInvitation } from "./event-invitation";
+import { EventInvitation, type InvitationRegistry } from "./event-invitation";
 import { RsvpForm } from "./rsvp-form";
-import { sampleEvent, sampleRegistry } from "@/lib/event-sample-data";
+import {
+  sampleEvent,
+  sampleExchange,
+  sampleExchangeEvent,
+  sampleLinkedRegistries,
+  sampleRegistry,
+} from "@/lib/event-sample-data";
 
 // The public event page (src/app/e/[slug]/page.tsx) without its header and
 // footer. The page reads the event on the server, which Storybook can't render.
@@ -92,6 +98,96 @@ export const InviteOnly: Story = {
         token={null}
         openRsvp={false}
         maxPartySize={2}
+        passed={false}
+        submitAction={submitAction}
+      />
+    </EventInvitation>
+  ),
+};
+
+// The pictures are the landing page's drawings, so the story needs no network.
+const [mainRegistry, bookRegistry] = sampleLinkedRegistries;
+const linkedRegistries: InvitationRegistry[] = [
+  {
+    ...mainRegistry,
+    itemsLeft: 23,
+    items: [
+      { id: "i1", title: "Glass Baby Bottles, 4 Pack", image_url: "/hero/bottle.svg", price: 34.99 },
+      { id: "i2", title: "Organic Cotton Bibs", image_url: "/hero/bib.svg", price: 18 },
+      { id: "i3", title: "Newborn Sock Set", image_url: "/hero/socks.svg", price: 12.5 },
+      { id: "i4", title: "Panda Lovey", image_url: "/hero/panda.svg", price: 24 },
+    ],
+  },
+  {
+    ...bookRegistry,
+    itemsLeft: 1,
+    // No picture, so a gift icon stands in. And no price.
+    items: [{ id: "i5", title: "Goodnight Moon (Board Book)", image_url: null, price: null }],
+  },
+];
+
+/**
+ * The shower links two registries and shows a few gifts each still needs.
+ * The host added a gift note. This guest already replied.
+ */
+export const WithRegistriesAndGiftNote: Story = {
+  args: {
+    event: {
+      ...sampleEvent,
+      image_url: null,
+      gift_note: "Gifts are optional. If you'd like to bring something, here's what Remi & Max still need.",
+    },
+    registry: null,
+    registries: linkedRegistries,
+    eventSlug: sampleEvent.slug,
+    guestToken: "token-g1",
+  },
+  render: (args) => (
+    <EventInvitation {...args}>
+      <RsvpForm
+        slug={sampleEvent.slug}
+        guest={{ name: "Glinda", status: "yes", partySize: 2, note: null }}
+        token="token-g1"
+        openRsvp
+        maxPartySize={2}
+        passed={false}
+        submitAction={submitAction}
+      />
+    </EventInvitation>
+  ),
+};
+
+/**
+ * A holiday party with a gift exchange, before names are drawn. This guest
+ * replied, said how many kids are coming and joined the exchange.
+ */
+export const WithGiftExchange: Story = {
+  args: {
+    event: sampleExchangeEvent,
+    registry: null,
+    exchange: sampleExchange,
+    eventSlug: sampleExchangeEvent.slug,
+    guestToken: "token-g1",
+  },
+  render: (args) => (
+    <EventInvitation {...args}>
+      <RsvpForm
+        slug={sampleExchangeEvent.slug}
+        guest={{
+          name: "Glinda",
+          status: "yes",
+          partySize: 3,
+          kidsCount: 2,
+          note: "We'll bring dumplings!",
+          inExchange: true,
+          wishlistUrl: "https://regibee.com/r/glindas-wishlist-8h3m",
+          giftIdeas: "Anything pink and sparkly",
+        }}
+        token="token-g1"
+        openRsvp
+        maxPartySize={sampleExchangeEvent.max_party_size}
+        askKids
+        exchange={{ mailed: false, drawn: false }}
         passed={false}
         submitAction={submitAction}
       />

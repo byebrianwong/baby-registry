@@ -7,7 +7,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { formatPrice } from "@/lib/money";
-import { formatReservedUntil, isOpenReservation } from "@/lib/gifts";
+import { formatReservedUntil, giverNameForOwner, isOpenReservation } from "@/lib/gifts";
 
 export interface Purchase {
   id: string;
@@ -23,6 +23,8 @@ export interface Purchase {
   registry_item_id: string | null;
   cash_fund_id: string | null;
   registry_items?: { is_parent_purchased?: boolean; price?: number | null } | null;
+  /** A Secret Santa's gift: shown as "Secret Santa", with no email. */
+  hide_giver?: boolean | null;
 }
 
 function getTagStyle(purchase: Purchase) {
@@ -83,7 +85,7 @@ export function GiftDetailModal({ open, onOpenChange, itemTitle, purchases }: Gi
                 className={`rounded-lg border p-3 space-y-2 ${purchase.status === "cancelled" ? "opacity-50" : ""}`}
               >
                 <div className="flex items-center justify-between gap-2">
-                  <span className="text-sm font-medium">{purchase.buyer_name}</span>
+                  <span className="text-sm font-medium">{giverNameForOwner(purchase)}</span>
                   <span
                     className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium ${tag.className}`}
                   >
@@ -94,7 +96,9 @@ export function GiftDetailModal({ open, onOpenChange, itemTitle, purchases }: Gi
                   {displayAmount != null && (
                     <span className="font-semibold text-sm">{formatPrice(Number(displayAmount))}</span>
                   )}
-                  {purchase.buyer_email && <span className="break-all">{purchase.buyer_email}</span>}
+                  {purchase.buyer_email && !purchase.hide_giver && (
+                    <span className="break-all">{purchase.buyer_email}</span>
+                  )}
                   <span>
                     {new Date(purchase.created_at).toLocaleDateString("en-US", {
                       month: "short",

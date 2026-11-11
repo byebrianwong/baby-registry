@@ -87,6 +87,11 @@ export interface Gift {
   /** The item's or fund's title. */
   for_title: string;
   kind: "item" | "fund";
+  /**
+   * A Secret Santa's gift. data.ts already swaps the name for "Secret Santa"
+   * and removes the email, so owners never see who gave it.
+   */
+  hide_giver?: boolean;
 }
 
 /** The lowest used condition an owner will accept, as the website offers them (src/lib/extension.ts). */

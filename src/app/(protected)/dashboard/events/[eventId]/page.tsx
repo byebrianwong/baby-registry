@@ -6,13 +6,27 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { CopyLinkButton } from "@/components/copy-link-button";
 import { EventGuestManager } from "@/components/event-guest-manager";
+import { EventCoHosts } from "@/components/event-co-hosts";
+import { ExchangeManager } from "@/components/exchange-manager";
+import { PlanAgainButton } from "@/components/plan-again-button";
 import {
   eventTheme,
   eventTypeLabel,
+  exchangeStatus,
   formatEventDate,
   formatEventTime,
+  guestForHost,
 } from "@/lib/events";
-import { getEventForManager, getEventGuests, getLinkedRegistry } from "@/lib/events-server";
+import {
+  getEventForManager,
+  getEventGuests,
+  getEventHosts,
+  getEventRegistries,
+  getExchangeExclusions,
+  getGiftExchange,
+  getHostInvites,
+  listOtherEventsForCopy,
+} from "@/lib/events-server";
 import { getViewer } from "@/lib/viewer";
 import { cx } from "@/lib/utils/cx";
 import { DeleteEventButton } from "./delete-event-button";
@@ -34,7 +48,20 @@ export default async function ManageEventPage({
   if (!found) notFound();
   const { event, isOwner } = found;
 
-  const [guests, registry] = await Promise.all([getEventGuests(event.id), getLinkedRegistry(event.registry_id)]);
+  const [allGuests, registries, exchange, exclusions, hosts, invites, copySources] = await Promise.all([
+    getEventGuests(event.id),
+    getEventRegistries(event.id),
+    getGiftExchange(event.id),
+    getExchangeExclusions(event.id),
+    getEventHosts(event),
+    getHostInvites(event.id),
+    listOtherEventsForCopy(viewer.id, event.id),
+  ]);
+  // Worked out before the guests are trimmed for the host, since it needs the pairs.
+  const status = exchange ? exchangeStatus(allGuests, exchange) : null;
+  // The host never sees who drew whom, or the wishlists and addresses guests
+  // were told only their Secret Santa sees.
+  const guests = allGuests.map(guestForHost);
   const theme = eventTheme(event.event_type);
   const time = formatEventTime(event);
   const publicPath = `/e/${event.slug}`;
@@ -96,13 +123,28 @@ export default async function ManageEventPage({
       )}
 
       <div className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">
-        <EventGuestManager
-          eventId={event.id}
-          eventSlug={event.slug}
-          guests={guests}
-          maxPartySize={event.max_party_size}
-          replyToEmail={viewer.email ?? null}
-        />
+        <div className="flex min-w-0 flex-col gap-6">
+          {exchange && status && (
+            <ExchangeManager
+              eventId={event.id}
+              exchange={exchange}
+              status={status}
+              guests={guests}
+              exclusions={exclusions}
+              editHref={`/dashboard/events/${event.id}/edit`}
+            />
+          )}
+          <EventGuestManager
+            eventId={event.id}
+            eventSlug={event.slug}
+            guests={guests}
+            maxPartySize={event.max_party_size}
+            replyToEmail={viewer.email ?? null}
+            askKids={event.ask_kids}
+            hasExchange={Boolean(exchange)}
+            copySources={copySources}
+          />
+        </div>
 
         <aside className="flex flex-col gap-4">
           <Card className="gap-0 overflow-hidden py-0">
@@ -136,30 +178,39 @@ export default async function ManageEventPage({
                 <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-brand-50">
                   <Gift aria-hidden="true" className="size-4.5 text-brand-600" />
                 </span>
-                <div className="min-w-0">
-                  <p className="font-medium text-primary">Gift registry</p>
-                  {registry ? (
-                    <a
-                      href={`/r/${registry.slug}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-sm text-brand-600 hover:underline"
-                    >
-                      {registry.title}
-                    </a>
+                <div className="flex min-w-0 flex-col gap-1">
+                  <p className="font-medium text-primary">Gifts</p>
+                  {registries.length > 0 ? (
+                    <ul className="flex flex-col gap-0.5">
+                      {registries.map((registry) => (
+                        <li key={registry.id} className="text-sm">
+                          <a
+                            href={`/r/${registry.slug}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-brand-600 hover:underline"
+                          >
+                            {registry.title}
+                          </a>
+                          {registry.honoree && <span className="text-tertiary"> · {registry.honoree}</span>}
+                        </li>
+                      ))}
+                    </ul>
                   ) : (
-                    <p className="text-sm text-tertiary">
-                      None linked.{" "}
-                      <Link href={`/dashboard/events/${event.id}/edit`} className="text-brand-600 hover:underline">
-                        Link one
-                      </Link>{" "}
-                      so guests know what to bring.
-                    </p>
+                    <p className="text-sm text-tertiary">No registry linked.</p>
                   )}
+                  {event.gift_note && <p className="text-sm whitespace-pre-line text-secondary">{event.gift_note}</p>}
+                  <Link href={`/dashboard/events/${event.id}/edit`} className="text-sm font-medium text-brand-600 hover:underline">
+                    {registries.length > 0 || event.gift_note ? "Change gifts" : "Link a registry or add a gift note"}
+                  </Link>
                 </div>
               </div>
             </CardContent>
           </Card>
+
+          <EventCoHosts eventId={event.id} hosts={hosts} invites={invites} viewerId={viewer.id} />
+
+          <PlanAgainButton eventId={event.id} />
 
           {isOwner && <DeleteEventButton eventId={event.id} guestCount={guests.length} />}
         </aside>

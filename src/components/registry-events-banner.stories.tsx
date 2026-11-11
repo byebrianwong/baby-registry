@@ -26,6 +26,23 @@ export const AllStates: Story = {
           { id: "e3", title: "Sip and See", event_date: null, event_type: "other" },
         ]}
       />
+      {/* One event the owner hosts, and one a coworker hosts that links this
+          registry. The owner can't manage the second, so its link opens the
+          guest page and it has an Unlink button. */}
+      <RegistryEventsBanner
+        {...args}
+        events={[
+          { id: "e4", title: "Dana's Baby Shower", event_date: "2026-12-05", event_type: "baby_shower" },
+          {
+            id: "e5",
+            slug: "office-baby-shower-x7c2",
+            title: "Office Baby Shower",
+            event_date: "2026-11-20",
+            event_type: "baby_shower",
+            canManage: false,
+          },
+        ]}
+      />
     </div>
   ),
 };

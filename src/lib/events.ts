@@ -7,13 +7,20 @@ import type { OccasionTheme } from "@/lib/occasion-theme";
 
 export const EVENT_TYPES = [
   "baby_shower",
+  "sip_and_see",
   "bridal_shower",
   "wedding",
   "engagement",
+  "bachelor",
   "birthday",
+  "kids_birthday",
   "christmas",
+  "gift_exchange",
+  "holiday",
   "housewarming",
   "graduation",
+  "retirement",
+  "gathering",
   "other",
 ] as const;
 
@@ -24,6 +31,10 @@ export type RsvpStatus = "pending" | "yes" | "no" | "maybe";
 export interface EventDetails {
   id: string;
   owner_id: string;
+  /**
+   * The one registry the old code linked. Kept until that code is gone; links
+   * now live in event_registries (see getEventRegistries).
+   */
   registry_id: string | null;
   slug: string;
   event_type: EventType;
@@ -45,6 +56,12 @@ export interface EventDetails {
   max_party_size: number;
   open_rsvp: boolean;
   email_host_on_rsvp: boolean;
+  /** Shown with the gifts: "No gifts, please", "A book instead of a card". */
+  gift_note: string | null;
+  /** The RSVP asks how many of the party are kids. */
+  ask_kids: boolean;
+  /** The event this was copied from with "Plan it again". */
+  repeated_from: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -57,15 +74,24 @@ export interface EventGuest {
   token: string;
   rsvp_status: RsvpStatus;
   party_size: number;
+  /** Of party_size, how many are kids. Only asked when the event asks. */
+  kids_count: number;
   rsvp_note: string | null;
   responded_at: string | null;
   invited_at: string | null;
   reminded_at: string | null;
   added_by_guest: boolean;
+  /** Joined the gift exchange. */
+  in_exchange: boolean;
+  wishlist_url: string | null;
+  gift_ideas: string | null;
+  shipping_address: string | null;
+  /** The guest this one drew in the gift exchange. Only they see it. */
+  giftee_id: string | null;
   created_at: string;
 }
 
-/** The registry an event links to, as its page shows it. */
+/** A registry an event links to, as its page shows it. */
 export interface LinkedRegistry {
   title: string;
   slug: string;
@@ -77,17 +103,91 @@ export const MAX_GUESTS_PER_EVENT = 300;
 /** Most people one RSVP can count. Matches the check on events.max_party_size. */
 export const MAX_PARTY_SIZE_LIMIT = 20;
 
-export const EVENT_TYPE_OPTIONS: { value: EventType; label: string; titlePlaceholder: string }[] = [
-  { value: "baby_shower", label: "Baby shower", titlePlaceholder: "Remi's Baby Shower" },
+export interface EventTypeOption {
+  value: EventType;
+  label: string;
+  titlePlaceholder: string;
+  /** What a new event of this type starts with. The host can change all of it. */
+  defaults?: {
+    giftNote?: string;
+    askKids?: boolean;
+    exchange?: boolean;
+  };
+}
+
+// The order is the order of the buttons on the event form: the most common
+// first, then the rest roughly by family.
+export const EVENT_TYPE_OPTIONS: EventTypeOption[] = [
+  {
+    value: "baby_shower",
+    label: "Baby shower",
+    titlePlaceholder: "Remi's Baby Shower",
+  },
+  { value: "birthday", label: "Birthday", titlePlaceholder: "Max Turns 30" },
+  {
+    value: "kids_birthday",
+    label: "Kid's birthday",
+    titlePlaceholder: "Jordan's 6th Birthday",
+    defaults: { askKids: true },
+  },
+  {
+    value: "gift_exchange",
+    label: "Gift exchange",
+    titlePlaceholder: "Chen Family Secret Santa",
+    defaults: { exchange: true },
+  },
+  { value: "christmas", label: "Christmas", titlePlaceholder: "The Chens' Christmas Party" },
   { value: "bridal_shower", label: "Bridal shower", titlePlaceholder: "Sam's Bridal Shower" },
   { value: "wedding", label: "Wedding", titlePlaceholder: "Alex & Sam's Wedding" },
   { value: "engagement", label: "Engagement party", titlePlaceholder: "Alex & Sam Are Engaged!" },
-  { value: "birthday", label: "Birthday", titlePlaceholder: "Max Turns 30" },
-  { value: "christmas", label: "Christmas", titlePlaceholder: "The Chens' Christmas Party" },
+  { value: "bachelor", label: "Bachelor or bachelorette", titlePlaceholder: "Sam's Last Weekend Out" },
+  { value: "sip_and_see", label: "Sip and see", titlePlaceholder: "Come Meet Baby Remi" },
   { value: "housewarming", label: "Housewarming", titlePlaceholder: "Come See Our New Place" },
   { value: "graduation", label: "Graduation", titlePlaceholder: "Jordan's Graduation Party" },
+  { value: "retirement", label: "Retirement", titlePlaceholder: "Linda's Retirement Lunch" },
+  { value: "holiday", label: "Other holiday", titlePlaceholder: "Lunar New Year Dinner" },
+  { value: "gathering", label: "Get-together", titlePlaceholder: "Game Night" },
   { value: "other", label: "Something else", titlePlaceholder: "Summer Get-Together" },
 ];
+
+/** Ready-made gift notes the host can pick and then edit. */
+export const GIFT_NOTE_PRESETS: { label: string; text: string }[] = [
+  { label: "No gifts", text: "No gifts, please. Your company is the best present." },
+  { label: "Book instead of a card", text: "Instead of a card, bring a favorite children's book with a note inside." },
+  { label: "$5 party", text: "It's a fiver party: if you'd like to give something, put $5 in a card." },
+  { label: "Bring a wrapped gift", text: "Bring one wrapped gift, around $25, for the gift swap." },
+  { label: "In lieu of gifts", text: "In lieu of gifts, please consider a donation to a cause you care about." },
+];
+
+/** Longest gift note. Matches the check on events.gift_note. */
+export const MAX_GIFT_NOTE_LENGTH = 500;
+
+// ── Gift exchanges ───────────────────────────────────────────
+
+export interface GiftExchange {
+  event_id: string;
+  /** As the host wrote it: "$25", "$20 to $30". */
+  budget: string | null;
+  /** YYYY-MM-DD: the day the host plans to draw names. */
+  draw_by: string | null;
+  /** No get-together: gifts are mailed, so everyone gives a shipping address. */
+  mailed: boolean;
+  drawn_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/** What a guest sees about the person they drew. */
+export interface ExchangeGiftee {
+  name: string;
+  wishlistUrl: string | null;
+  /** When the wishlist is a Regibee registry, its title. */
+  wishlistTitle: string | null;
+  giftIdeas: string | null;
+  shippingAddress: string | null;
+}
+
+export const MIN_EXCHANGE_PARTICIPANTS = 3;
 
 export function isEventType(value: unknown): value is EventType {
   return typeof value === "string" && (EVENT_TYPES as readonly string[]).includes(value);
@@ -106,9 +206,9 @@ const MINT: OccasionTheme = { bg: "bg-mint-100", icon: "text-mint-800", text: "t
 const TEAL: OccasionTheme = { bg: "bg-brand-100", icon: "text-brand-600", text: "text-brand-700" };
 
 export function eventTheme(type: EventType): OccasionTheme {
-  if (type === "baby_shower" || type === "bridal_shower") return BLUSH;
-  if (type === "birthday") return SUNSHINE;
-  if (type === "christmas") return MINT;
+  if (type === "baby_shower" || type === "bridal_shower" || type === "sip_and_see") return BLUSH;
+  if (type === "birthday" || type === "kids_birthday") return SUNSHINE;
+  if (type === "christmas" || type === "gift_exchange" || type === "holiday") return MINT;
   return TEAL;
 }
 
@@ -423,3 +523,56 @@ export const COMMON_TIME_ZONES: { value: string; label: string }[] = [
   { value: "America/Anchorage", label: "Alaska" },
   { value: "Pacific/Honolulu", label: "Hawaii" },
 ];
+
+// ── What hosts see ───────────────────────────────────────────
+
+/**
+ * A guest as the host's pages get them. The host never learns who drew
+ * whom, and guests are told only their Secret Santa sees their wishlist,
+ * ideas and address. So those are blanked before the page gets the guest.
+ * The wishlist and ideas become "added" when the guest gave them, so the
+ * host can see who still needs to.
+ */
+export function guestForHost(guest: EventGuest): EventGuest {
+  return {
+    ...guest,
+    giftee_id: null,
+    shipping_address: guest.shipping_address ? "added" : null,
+    wishlist_url: guest.wishlist_url ? "added" : null,
+    gift_ideas: guest.gift_ideas ? "added" : null,
+  };
+}
+
+/** How a gift exchange stands, for the host, without saying who drew whom. */
+export interface ExchangeStatus {
+  participants: number;
+  /** Participants who added a wishlist or gift ideas. */
+  withWishlist: number;
+  /** Participants with no email, who need their link texted to them. */
+  withoutEmail: number;
+  /** For a mailed exchange: participants with no shipping address. */
+  withoutAddress: number;
+  /**
+   * After a draw, someone joined or left, so not everyone gives and receives
+   * exactly once. The host should draw again.
+   */
+  stale: boolean;
+}
+
+export function exchangeStatus(guests: EventGuest[], exchange: Pick<GiftExchange, "drawn_at" | "mailed">): ExchangeStatus {
+  const participants = guests.filter((g) => g.in_exchange);
+  const ids = new Set(participants.map((g) => g.id));
+  const receivers = new Set(participants.map((g) => g.giftee_id).filter((id): id is string => Boolean(id)));
+  const stale =
+    Boolean(exchange.drawn_at) &&
+    (participants.some((g) => !g.giftee_id || !ids.has(g.giftee_id)) ||
+      participants.some((g) => !receivers.has(g.id)) ||
+      guests.some((g) => !g.in_exchange && g.giftee_id));
+  return {
+    participants: participants.length,
+    withWishlist: participants.filter((g) => g.wishlist_url || g.gift_ideas).length,
+    withoutEmail: participants.filter((g) => !g.email).length,
+    withoutAddress: exchange.mailed ? participants.filter((g) => !g.shipping_address).length : 0,
+    stale,
+  };
+}

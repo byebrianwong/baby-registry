@@ -1,6 +1,7 @@
 import { getMailer, sendEmail } from "./mailer";
 import { supabaseAdmin } from "./supabase-admin";
 import { formatPrice } from "./money";
+import { SECRET_GIVER_NAME } from "./gifts";
 import {
   itemReservedBuyerHtml,
   itemReservationReminderBuyerHtml,
@@ -28,6 +29,7 @@ import {
   googleCalendarUrl,
   mapsUrl,
   type EventDetails,
+  type GiftExchange,
   type LinkedRegistry,
 } from "./events";
 
@@ -277,6 +279,8 @@ export async function notifyItemGiven(opts: {
   itemId: string;
   itemTitle: string;
   buyerName: string;
+  /** A Secret Santa's gift: the owners see "Secret Santa", not the name. */
+  hideGiver?: boolean;
   quantity: number;
   message?: string | null;
   /** Set when this gift may have unlocked a store's welcome box. */
@@ -285,6 +289,8 @@ export async function notifyItemGiven(opts: {
   try {
     const managers = await getRegistryManagerEmails({ itemId: opts.itemId });
     if (!managers) return;
+
+    const buyerName = opts.hideGiver ? SECRET_GIVER_NAME : opts.buyerName;
 
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
     const dashboardLink = `${siteUrl}/dashboard/registry/${managers[0].registryId}?highlight=${opts.itemId}`;
@@ -300,11 +306,11 @@ export async function notifyItemGiven(opts: {
         sendEmail({
           from: FROM,
           to: TEST_RECIPIENT_OVERRIDE || m.email,
-          subject: `🎁 ${opts.buyerName} bought "${opts.itemTitle}"`,
+          subject: `🎁 ${buyerName} bought "${opts.itemTitle}"`,
           html: itemGivenOwnerHtml({
             ownerName: m.name,
             registryTitle: m.registryTitle,
-            buyerName: opts.buyerName,
+            buyerName,
             itemTitle: opts.itemTitle,
             quantity: opts.quantity,
             message: opts.message,
@@ -359,12 +365,16 @@ export async function notifyCashFundContribution(opts: {
   fundId: string;
   fundTitle: string;
   buyerName: string;
+  /** A Secret Santa's gift: the owners see "Secret Santa", not the name. */
+  hideGiver?: boolean;
   amount: number;
   message?: string | null;
 }) {
   try {
     const managers = await getRegistryManagerEmails({ fundId: opts.fundId });
     if (!managers) return;
+
+    const buyerName = opts.hideGiver ? SECRET_GIVER_NAME : opts.buyerName;
 
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
     const dashboardLink = `${siteUrl}/dashboard/registry/${managers[0].registryId}?highlight=${opts.fundId}`;
@@ -375,11 +385,11 @@ export async function notifyCashFundContribution(opts: {
         sendEmail({
           from: FROM,
           to: TEST_RECIPIENT_OVERRIDE || m.email,
-          subject: `💵 ${opts.buyerName} contributed ${formatted} to "${opts.fundTitle}"`,
+          subject: `💵 ${buyerName} contributed ${formatted} to "${opts.fundTitle}"`,
           html: cashFundContributionOwnerHtml({
             ownerName: m.name,
             registryTitle: m.registryTitle,
-            buyerName: opts.buyerName,
+            buyerName,
             fundTitle: opts.fundTitle,
             amount: opts.amount,
             message: opts.message,
@@ -398,6 +408,8 @@ export async function notifyItemCovered(opts: {
   itemId: string;
   itemTitle: string;
   buyerName: string;
+  /** A Secret Santa's gift: the owners see "Secret Santa", not the name. */
+  hideGiver?: boolean;
   quantity: number;
   /** Price times quantity. Null when the item has no price. */
   amount: number | null;
@@ -406,6 +418,8 @@ export async function notifyItemCovered(opts: {
   try {
     const managers = await getRegistryManagerEmails({ itemId: opts.itemId });
     if (!managers) return;
+
+    const buyerName = opts.hideGiver ? SECRET_GIVER_NAME : opts.buyerName;
 
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
     const dashboardLink = `${siteUrl}/dashboard/registry/${managers[0].registryId}?highlight=${opts.itemId}`;
@@ -416,11 +430,11 @@ export async function notifyItemCovered(opts: {
         sendEmail({
           from: FROM,
           to: TEST_RECIPIENT_OVERRIDE || m.email,
-          subject: `🎉 ${opts.buyerName} sent you ${sent} for "${opts.itemTitle}"`,
+          subject: `🎉 ${buyerName} sent you ${sent} for "${opts.itemTitle}"`,
           html: itemCoveredOwnerHtml({
             ownerName: m.name,
             registryTitle: m.registryTitle,
-            buyerName: opts.buyerName,
+            buyerName,
             itemTitle: opts.itemTitle,
             quantity: opts.quantity,
             amount: opts.amount,
@@ -584,7 +598,11 @@ export function guestRsvpUrl(slug: string, token: string): string {
 }
 
 /** What the event emails say about an event. */
-export function eventEmailDetails(event: EventDetails, registry: LinkedRegistry | null): EventEmailDetails {
+export function eventEmailDetails(
+  event: EventDetails,
+  registries: LinkedRegistry[],
+  exchange: Pick<GiftExchange, "budget" | "draw_by" | "mailed" | "drawn_at"> | null = null,
+): EventEmailDetails {
   return {
     title: event.title,
     hostedBy: event.hosted_by,
@@ -595,7 +613,15 @@ export function eventEmailDetails(event: EventDetails, registry: LinkedRegistry 
     mapUrl: mapsUrl(event),
     imageUrl: event.image_url,
     rsvpBy: event.rsvp_by ? formatEventDate(event.rsvp_by) : null,
-    registry: registry ? { title: registry.title, url: `${siteUrl()}/r/${registry.slug}` } : null,
+    registries: registries.map((r) => ({ title: r.title, url: `${siteUrl()}/r/${r.slug}` })),
+    giftNote: event.gift_note,
+    exchange: exchange
+      ? {
+          budget: exchange.budget,
+          drawBy: exchange.draw_by ? formatEventDate(exchange.draw_by) : null,
+          mailed: exchange.mailed,
+        }
+      : null,
   };
 }
 
@@ -616,13 +642,14 @@ const BATCH_SIZE = 100;
  */
 export async function sendEventInvitations(opts: {
   event: EventDetails;
-  registry: LinkedRegistry | null;
+  registries: LinkedRegistry[];
+  exchange?: GiftExchange | null;
   hostName: string;
   replyTo: string | null;
   guests: { name: string; email: string; token: string }[];
   reminder?: boolean;
 }): Promise<{ sentTokens: string[]; error: string | null }> {
-  const details = eventEmailDetails(opts.event, opts.registry);
+  const details = eventEmailDetails(opts.event, opts.registries, opts.exchange);
   const subject = opts.reminder
     ? `Reminder: will you be at ${opts.event.title}?`
     : `You're invited: ${opts.event.title}`;
@@ -664,7 +691,10 @@ export async function sendEventInvitations(opts: {
 /** Confirms a guest's RSVP, with their link to change it. */
 export async function confirmRsvpToGuest(opts: {
   event: EventDetails;
-  registry: LinkedRegistry | null;
+  registries: LinkedRegistry[];
+  exchange?: GiftExchange | null;
+  /** Whether the guest is in the gift exchange after this RSVP. */
+  inExchange?: boolean;
   guest: { name: string; email: string; token: string };
   status: "yes" | "no" | "maybe";
   partySize: number;
@@ -683,9 +713,10 @@ export async function confirmRsvpToGuest(opts: {
         guestName: opts.guest.name,
         status: opts.status,
         partySize: opts.partySize,
-        event: eventEmailDetails(opts.event, opts.registry),
+        event: eventEmailDetails(opts.event, opts.registries, opts.exchange),
         rsvpUrl: guestRsvpUrl(opts.event.slug, opts.guest.token),
         calendarUrl: googleCalendarUrl(opts.event, eventUrl),
+        inExchange: opts.inExchange,
       }),
     });
   } catch (err) {

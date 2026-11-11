@@ -47,10 +47,27 @@ function storeNameFor(url: string | null): string | undefined {
 async function loadGift(purchaseId: string) {
   const { data: purchase } = await supabaseAdmin
     .from("purchases")
-    .select("id, registry_item_id, buyer_name, buyer_email, quantity, message, status, reserved_until, reminders_sent")
+    .select(
+      "id, registry_item_id, buyer_name, buyer_email, quantity, message, status, reserved_until, reminders_sent, hide_giver"
+    )
     .eq("id", purchaseId)
     .single();
   if (!purchase?.registry_item_id) return null;
+
+  // A Secret Santa's row says "Secret Santa" with no email, so the list's
+  // owners can't read who it was. Their real name and email are kept apart,
+  // and every email this file sends to the giver needs them.
+  if (purchase.hide_giver) {
+    const { data: secret } = await supabaseAdmin
+      .from("secret_givers")
+      .select("buyer_name, buyer_email")
+      .eq("purchase_id", purchaseId)
+      .maybeSingle();
+    if (secret) {
+      purchase.buyer_name = secret.buyer_name;
+      purchase.buyer_email = secret.buyer_email;
+    }
+  }
 
   const { data: item } = await supabaseAdmin
     .from("registry_items")
@@ -116,7 +133,11 @@ export async function sendReservationEmail(purchaseId: string) {
   });
 }
 
-/** Sent once a guest says they bought the item: to the owners, and to the guest. */
+/**
+ * Sent once a guest says they bought the item: to the owners, and to the
+ * guest. For a Secret Santa's gift, the owners' email says "Secret Santa"
+ * instead of the giver's name. The guest's own email is unchanged.
+ */
 export async function sendGiftConfirmedEmails(purchaseId: string) {
   const gift = await loadGift(purchaseId);
   if (!gift) return;
@@ -133,6 +154,7 @@ export async function sendGiftConfirmedEmails(purchaseId: string) {
       itemId: item.id,
       itemTitle: item.title,
       buyerName: purchase.buyer_name,
+      hideGiver: !!purchase.hide_giver,
       quantity: purchase.quantity,
       message: purchase.message,
       welcomeBox,
@@ -167,7 +189,9 @@ async function sendReservationEndedEmail(purchaseId: string) {
 
 /**
  * Sent when a guest sends the owners money for an item they bought
- * themselves: to the owners, and to the guest with a link to undo it.
+ * themselves: to the owners, and to the guest with a link to undo it. For a
+ * Secret Santa's gift, the owners' email says "Secret Santa" instead of the
+ * giver's name.
  */
 export async function sendCoverGiftEmails(purchaseId: string) {
   const gift = await loadGift(purchaseId);
@@ -180,6 +204,7 @@ export async function sendCoverGiftEmails(purchaseId: string) {
       itemId: item.id,
       itemTitle: item.title,
       buyerName: purchase.buyer_name,
+      hideGiver: !!purchase.hide_giver,
       quantity: purchase.quantity,
       amount,
       message: purchase.message,

@@ -6,8 +6,9 @@ import { Logo } from "@/components/logo";
 import { EventInvitation } from "@/components/event-invitation";
 import { RsvpForm } from "@/components/rsvp-form";
 import { PoweredByFooter } from "@/components/site-footer";
+import { SecretSantaCard } from "@/components/secret-santa-card";
 import { supabaseAdmin } from "@/lib/supabase-admin";
-import { getLinkedRegistry } from "@/lib/events-server";
+import { getEventRegistries, getGifteeFor, getGiftExchange, registrySlugFromLink } from "@/lib/events-server";
 import {
   eventHasPassed,
   formatEventDate,
@@ -64,18 +65,43 @@ export default async function PublicEventPage({
   const [event, viewer] = await Promise.all([getEvent(slug), getViewer()]);
   if (!event) notFound();
 
-  const [registry, guestResult] = await Promise.all([
-    getLinkedRegistry(event.registry_id),
+  const [registries, exchange, guestResult] = await Promise.all([
+    getEventRegistries(event.id, { withItems: true }),
+    getGiftExchange(event.id),
     token
       ? supabaseAdmin
           .from("event_guests")
-          .select("name, rsvp_status, party_size, rsvp_note, token")
+          .select(
+            "name, rsvp_status, party_size, kids_count, rsvp_note, token, in_exchange, wishlist_url, gift_ideas, shipping_address, giftee_id",
+          )
           .eq("event_id", event.id)
           .eq("token", token)
           .maybeSingle()
       : Promise.resolve({ data: null }),
   ]);
-  const guest = guestResult.data as Pick<EventGuest, "name" | "rsvp_status" | "party_size" | "rsvp_note" | "token"> | null;
+  const guest = guestResult.data as Pick<
+    EventGuest,
+    | "name"
+    | "rsvp_status"
+    | "party_size"
+    | "kids_count"
+    | "rsvp_note"
+    | "token"
+    | "in_exchange"
+    | "wishlist_url"
+    | "gift_ideas"
+    | "shipping_address"
+    | "giftee_id"
+  > | null;
+
+  // Who this guest drew, once names are drawn. Only their own link shows it.
+  const giftee = exchange?.drawn_at && guest ? await getGifteeFor(event.id, guest.giftee_id) : null;
+  const gifteeWishlistSlug = giftee?.wishlistUrl ? registrySlugFromLink(giftee.wishlistUrl) : null;
+  const gifteeWishlistHref = giftee?.wishlistUrl
+    ? giftee.wishlistTitle && gifteeWishlistSlug && guest
+      ? `/e/${event.slug}/gifts?g=${encodeURIComponent(guest.token)}&to=${encodeURIComponent(gifteeWishlistSlug)}`
+      : giftee.wishlistUrl
+    : null;
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
   const eventUrl = `${siteUrl}/e/${event.slug}`;
@@ -97,9 +123,20 @@ export default async function PublicEventPage({
       <main className="container mx-auto px-4 py-8 sm:py-12">
         <EventInvitation
           event={event}
-          registry={registry}
+          registries={registries}
+          exchange={exchange}
+          eventSlug={event.slug}
+          guestToken={guest?.token ?? null}
           calendar={google ? { google, ics: `/e/${event.slug}/calendar` } : null}
         >
+          {giftee && exchange && (
+            <SecretSantaCard
+              giftee={giftee}
+              budget={exchange.budget}
+              mailed={exchange.mailed}
+              wishlistHref={gifteeWishlistHref}
+            />
+          )}
           {token && !guest && (
             <p className="rounded-xl bg-sunshine-50 p-4 text-sm text-sunshine-900">
               This RSVP link isn&apos;t on the guest list anymore. Ask the host for a new one.
@@ -114,12 +151,19 @@ export default async function PublicEventPage({
                     name: guest.name,
                     status: guest.rsvp_status,
                     partySize: guest.party_size,
+                    kidsCount: guest.kids_count,
                     note: guest.rsvp_note,
+                    inExchange: guest.in_exchange,
+                    wishlistUrl: guest.wishlist_url,
+                    giftIdeas: guest.gift_ideas,
+                    shippingAddress: guest.shipping_address,
                   }
                 : null
             }
-            openRsvp={event.open_rsvp}
+            openRsvp={event.open_rsvp && !(exchange?.drawn_at && exchange.mailed)}
             maxPartySize={event.max_party_size}
+            askKids={event.ask_kids}
+            exchange={exchange ? { mailed: exchange.mailed, drawn: Boolean(exchange.drawn_at) } : null}
             passed={eventHasPassed(event, yesterday)}
           />
         </EventInvitation>
