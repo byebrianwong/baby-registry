@@ -82,3 +82,88 @@ export async function runReservationJob(page: Page): Promise<{ released: number;
   expect(response.status()).toBe(200);
   return response.json();
 }
+
+/** A confirmed account with a password, for tests that sign in. */
+export async function createAccount(fullName: string) {
+  const email = uniqueEmail(fullName.split(" ")[0].toLowerCase());
+  const password = `pw-${randomUUID()}`;
+  const { data, error } = await db.auth.admin.createUser({
+    email,
+    password,
+    email_confirm: true,
+    user_metadata: { full_name: fullName },
+  });
+  if (error || !data.user) throw error ?? new Error("No user");
+  return { id: data.user.id, email, password, name: fullName };
+}
+
+/** Signs in from the login page. */
+export async function signIn(page: Page, account: { email: string; password: string }) {
+  await page.goto("/login");
+  await page.getByLabel("Email").fill(account.email);
+  await page.getByLabel("Password").fill(account.password);
+  await page.getByRole("button", { name: "Sign In" }).click();
+  await page.waitForURL(/\/dashboard/);
+}
+
+/** A personal wishlist with one item, owned by the given account. */
+export async function createWishlist(ownerId: string, opts: { settings?: Record<string, unknown> } = {}) {
+  const id = uniqueId();
+  const { data: registry, error } = await db
+    .from("registries")
+    .insert({
+      owner_id: ownerId,
+      title: `Christmas Wishlist ${id}`,
+      slug: `e2e-wish-${id}`,
+      is_public: true,
+      registry_type: "personal",
+      event_type: "christmas",
+      honoree_names: "Maya",
+      settings: { shipping_address: SHIPPING_ADDRESS, ...opts.settings },
+    })
+    .select("id, slug, title, settings")
+    .single();
+  if (error) throw error;
+  const { data: item, error: itemError } = await db
+    .from("registry_items")
+    .insert({ registry_id: registry.id, title: `Wool Scarf ${id}`, price: 40, quantity_needed: 1 })
+    .select("id, title")
+    .single();
+  if (itemError) throw itemError;
+  return { registry, item };
+}
+
+/**
+ * A Secret Santa event hosted by the given account, with these guests on its
+ * list. Each guest comes back with their personal RSVP link.
+ */
+export async function createExchangeEvent(
+  hostId: string,
+  guests: { name: string; email: string | null }[],
+) {
+  const id = uniqueId();
+  const { data: event, error } = await db
+    .from("events")
+    .insert({ owner_id: hostId, slug: `e2e-santa-${id}`, event_type: "christmas", title: `Family Secret Santa ${id}` })
+    .select("id, slug, title")
+    .single();
+  if (error) throw error;
+  const { error: exchangeError } = await db.from("gift_exchanges").insert({ event_id: event.id, budget: "$25" });
+  if (exchangeError) throw exchangeError;
+  const rows = guests.map((g) => ({ event_id: event.id, name: g.name, email: g.email, token: randomUUID().replace(/-/g, "") }));
+  const { data: saved, error: guestError } = await db.from("event_guests").insert(rows).select("id, name, token");
+  if (guestError) throw guestError;
+  return {
+    event,
+    guests: saved.map((g) => ({ ...g, rsvpPath: `/e/${event.slug}?g=${g.token}` })),
+  };
+}
+
+/** RSVPs yes from a guest's personal link, joins the exchange and adds a wishlist link. */
+export async function joinExchange(page: Page, rsvpPath: string, wishlistUrl: string) {
+  await page.goto(rsvpPath);
+  await page.getByRole("button", { name: "Going" }).click();
+  await page.getByLabel("Your wishlist (optional)").fill(wishlistUrl);
+  await page.getByRole("button", { name: "Send RSVP" }).click();
+  await expect(page.getByText("You're in the gift exchange.")).toBeVisible();
+}

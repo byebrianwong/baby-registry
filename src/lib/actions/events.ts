@@ -33,6 +33,8 @@ import {
   type RsvpStatus,
 } from "@/lib/events";
 import { drawNames, orderedPair, type Pair } from "@/lib/gift-exchange";
+import { settingsAfterJoiningExchange } from "@/lib/gifts";
+import { getSessionUser } from "@/lib/viewer";
 import { confirmRsvpToGuest, notifyHostOfRsvp, sendEventInvitations } from "@/lib/email";
 import { notifyRegistryLinked, sendCoHostInvite, sendExchangeAssignments } from "@/lib/event-email";
 
@@ -711,6 +713,40 @@ function siteUrl() {
 }
 
 /**
+ * When a guest adds their own Regibee wishlist to a gift exchange, the list
+ * starts hiding what's been reserved from them, so their gifts stay a
+ * surprise (settingsAfterJoiningExchange in src/lib/gifts.ts says which lists
+ * qualify). It's their own list when the account they're signed in with, or
+ * the email on their RSVP, is the list owner's. Anyone else's list is left
+ * alone, since a share link can be pasted by anyone.
+ */
+async function hideReservationsOnOwnWishlist(wishlistUrl: string | null, guestEmail: string | null) {
+  if (!wishlistUrl?.startsWith(`${siteUrl()}/r/`)) return;
+  const slug = registrySlugFromLink(wishlistUrl);
+  if (!slug) return;
+  const { data: registry } = await supabaseAdmin
+    .from("registries")
+    .select("id, owner_id, registry_type, settings")
+    .eq("slug", slug)
+    .maybeSingle();
+  if (!registry) return;
+  const settings = settingsAfterJoiningExchange(registry);
+  if (!settings) return;
+
+  const viewer = await getSessionUser();
+  let isOwner = viewer?.id === registry.owner_id;
+  if (!isOwner && guestEmail) {
+    const { data } = await supabaseAdmin.auth.admin.getUserById(registry.owner_id);
+    isOwner = data.user?.email?.toLowerCase() === guestEmail.toLowerCase();
+  }
+  if (!isOwner) return;
+
+  await supabaseAdmin.from("registries").update({ settings }).eq("id", registry.id);
+  revalidatePath("/dashboard");
+  revalidatePath(`/dashboard/registry/${registry.id}`);
+}
+
+/**
  * A guest's RSVP. Needs no account: a guest with a personal link is found by
  * its token, and anyone else can add themselves when the host left open RSVPs
  * on. Returns the guest's token, so the page can show their own link.
@@ -826,6 +862,12 @@ export async function submitRsvp(input: RsvpInput): Promise<Result<{ token: stri
     if (error || !data) return { error: "Your RSVP wasn't saved. Try again." };
     guest = data;
     newGuest = true;
+  }
+
+  if (guest.in_exchange && typeof response.wishlist_url === "string") {
+    await hideReservationsOnOwnWishlist(response.wishlist_url, guest.email).catch((err) =>
+      console.error("[events] Failed to hide reservations on a wishlist:", err),
+    );
   }
 
   after(async () => {

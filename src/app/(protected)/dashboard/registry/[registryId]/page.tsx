@@ -39,7 +39,16 @@ import { CashFundCard } from "@/components/cash-fund-card";
 import { PandaMark } from "@/components/panda-mark";
 import { copyForRegistry } from "@/lib/registry-copy";
 import { formatDollars, formatPrice } from "@/lib/money";
-import { formatReservedUntil, isOpenReservation, maskGiverForOwner } from "@/lib/gifts";
+import {
+  formatReservedUntil,
+  fundAsUnpledged,
+  isOpenReservation,
+  itemAsUnreserved,
+  maskGiverForOwner,
+  readReservationPrivacy,
+  reservationsHiddenFrom,
+} from "@/lib/gifts";
+import { ReservationsHiddenNotice } from "@/components/reservations-hidden-notice";
 import { listEventsForRegistry } from "@/lib/events-server";
 import { RegistryEventsBanner } from "@/components/registry-events-banner";
 import { findSharedLink } from "@/lib/shared-link";
@@ -169,7 +178,16 @@ export default async function RegistryManagePage({
       listEventsForRegistry(registryId, user.id),
     ]);
 
-  const allItems = (items || []) as RegistryItem[];
+  // The owner can hide what's been reserved from themselves (src/lib/gifts.ts).
+  // Then the page shows every item as not yet reserved, no pledges and no gift
+  // activity. Co-managers still see it all.
+  const hideReservations = reservationsHiddenFrom(registry, user.id);
+  const turnedOnByExchange = readReservationPrivacy(registry.settings).hide_reservations_source === "exchange";
+  const settingsHref = `/dashboard/registry/${registryId}/settings`;
+
+  const allItems = ((items || []) as RegistryItem[]).map((item) =>
+    hideReservations ? itemAsUnreserved(item) : item
+  );
   const allCategories = (categories || []) as Category[];
   const dismissedChecklistItems = (registry.settings as Record<string, unknown> | null)?.checklist_dismissed as string[] | undefined;
   const checklistProgress = getChecklistProgress(allItems.map((i) => i.title), dismissedChecklistItems);
@@ -179,7 +197,7 @@ export default async function RegistryManagePage({
   // A Secret Santa's gift shows "Secret Santa" with no email. It's masked
   // here, on the server, so the giver's name and email never reach the
   // browser in the page data, including the item and fund cards below.
-  const allPurchases = purchases.map((p: any) => ({
+  const allPurchases = (hideReservations ? [] : purchases).map((p: any) => ({
     ...maskGiverForOwner(p),
     item_title: p.registry_items?.title || p.cash_funds?.title || "Unknown item",
   }));
@@ -250,13 +268,15 @@ export default async function RegistryManagePage({
       count: uncategorizedItems.length,
     });
   }
-  const allFunds = (cashFunds || []) as {
-    id: string;
-    title: string;
-    description: string | null;
-    goal_amount: number | null;
-    current_amount: number;
-  }[];
+  const allFunds = (
+    (cashFunds || []) as {
+      id: string;
+      title: string;
+      description: string | null;
+      goal_amount: number | null;
+      current_amount: number;
+    }[]
+  ).map((fund) => (hideReservations ? fundAsUnpledged(fund) : fund));
   if (allFunds.length > 0) {
     navItems.unshift({
       id: "gift-funds",
@@ -339,6 +359,14 @@ export default async function RegistryManagePage({
           </Button>
         </div>
       </div>
+
+      {hideReservations && (
+        <ReservationsHiddenNotice
+          className="mt-6"
+          settingsHref={settingsHref}
+          turnedOnByExchange={turnedOnByExchange}
+        />
+      )}
 
       {/* Events that link to this registry, and a way to plan one. */}
       <div className="mt-6">
@@ -526,7 +554,9 @@ export default async function RegistryManagePage({
               </p>
             </div>
 
-            {allPurchases.length === 0 ? (
+            {hideReservations ? (
+              <ReservationsHiddenNotice settingsHref={settingsHref} turnedOnByExchange={turnedOnByExchange} />
+            ) : allPurchases.length === 0 ? (
               <Card>
                 <CardContent className="flex flex-col items-center justify-center py-12">
                   <p className="text-tertiary">

@@ -4,7 +4,14 @@
 
 import { useMutation, useQuery, useQueryClient, type QueryClient } from "@tanstack/react-query";
 
-import { giverNameForOwner, isOpenReservation, maskGiverForOwner } from "@shared/gifts";
+import {
+  fundAsUnpledged,
+  giverNameForOwner,
+  isOpenReservation,
+  itemAsUnreserved,
+  maskGiverForOwner,
+  reservationsHiddenFrom,
+} from "@shared/gifts";
 
 import { useSession } from "@/lib/auth";
 import { demo, isDemo } from "@/lib/demo";
@@ -29,9 +36,9 @@ export const keys = {
 };
 
 const REGISTRY_FIELDS =
-  "id, owner_id, title, slug, event_date, is_public, description, photo_url, registry_type, event_type, honoree_names, created_at";
+  "id, owner_id, title, slug, event_date, is_public, description, photo_url, registry_type, event_type, honoree_names, settings, created_at";
 
-const CARD_FIELDS = `${REGISTRY_FIELDS}, registry_items(id, quantity_needed, quantity_fulfilled, price, purchases(id, status, reserved_until, created_at, buyer_name, hide_giver))`;
+const CARD_FIELDS = `${REGISTRY_FIELDS}, registry_items(id, quantity_needed, quantity_fulfilled, is_parent_purchased, price, purchases(id, status, reserved_until, created_at, buyer_name, hide_giver))`;
 
 type CardRow = Registry & {
   registry_items:
@@ -39,6 +46,7 @@ type CardRow = Registry & {
         id: string;
         quantity_needed: number;
         quantity_fulfilled: number;
+        is_parent_purchased: boolean;
         price: number | null;
         purchases:
           | {
@@ -54,9 +62,13 @@ type CardRow = Registry & {
     | null;
 };
 
-function summarize(row: CardRow, role: "owner" | "manager"): RegistrySummary {
-  const items = row.registry_items ?? [];
-  const gifts = items
+// An owner who hides what's been reserved from themselves sees nothing
+// reserved, pledged or given, as on the website (src/lib/gifts.ts).
+// Co-managers see it all.
+function summarize(row: CardRow, role: "owner" | "manager", userId: string): RegistrySummary {
+  const hidden = reservationsHiddenFrom(row, userId);
+  const items = (row.registry_items ?? []).map((item) => (hidden ? itemAsUnreserved(item) : item));
+  const gifts = (hidden ? [] : items)
     .flatMap((item) => item.purchases ?? [])
     .filter((p) => p.status !== "cancelled")
     .sort((a, b) => b.created_at.localeCompare(a.created_at));
@@ -72,6 +84,7 @@ function summarize(row: CardRow, role: "owner" | "manager"): RegistrySummary {
       .slice(0, 3)
       // A Secret Santa's gift shows as "Secret Santa", as on the website.
       .map((g) => ({ id: g.id, buyer_name: giverNameForOwner(g), created_at: g.created_at, held: isOpenReservation(g) })),
+    reservationsHidden: hidden,
   };
 }
 
@@ -96,8 +109,8 @@ async function fetchRegistries(userId: string): Promise<RegistrySummary[]> {
   }
 
   return [
-    ...((owned.data ?? []) as unknown as CardRow[]).map((row) => summarize(row, "owner")),
-    ...shared.filter((row) => row.owner_id !== userId).map((row) => summarize(row, "manager")),
+    ...((owned.data ?? []) as unknown as CardRow[]).map((row) => summarize(row, "owner", userId)),
+    ...shared.filter((row) => row.owner_id !== userId).map((row) => summarize(row, "manager", userId)),
   ];
 }
 
@@ -141,13 +154,15 @@ async function fetchRegistry(id: string, userId: string): Promise<RegistryDetail
   if (items.error) throw items.error;
 
   const row = registry.data as Registry;
+  const hidden = reservationsHiddenFrom(row, userId);
   return {
     registry: row,
     role: row.owner_id === userId ? "owner" : "manager",
     categories: (categories.data ?? []) as Category[],
-    items: (items.data ?? []) as Item[],
-    funds: (funds.data ?? []) as CashFund[],
+    items: ((items.data ?? []) as Item[]).map((item) => (hidden ? { ...itemAsUnreserved(item), purchases: [] } : item)),
+    funds: ((funds.data ?? []) as CashFund[]).map((fund) => (hidden ? fundAsUnpledged(fund) : fund)),
     pendingSuggestions: suggestions.count ?? 0,
+    reservationsHidden: hidden,
   };
 }
 
@@ -168,10 +183,11 @@ type GiftRow = Omit<Gift, "for_title" | "kind"> & {
 const GIFT_FIELDS =
   "id, buyer_name, buyer_email, quantity, amount, status, reserved_until, message, created_at, registry_item_id, cash_fund_id, hide_giver";
 
-async function fetchGifts(registryId: string): Promise<Gift[]> {
+async function fetchGifts(registryId: string, userId: string): Promise<Gift[]> {
   if (isDemo()) return demo.gifts(registryId);
   // Gifts point at an item or a cash fund. Each query keeps only the ones on this registry.
-  const [forItems, forFunds] = await Promise.all([
+  const [registry, forItems, forFunds] = await Promise.all([
+    supabase.from("registries").select("owner_id, settings").eq("id", registryId).single(),
     supabase
       .from("purchases")
       .select(`${GIFT_FIELDS}, registry_items!registry_item_id!inner(title, registry_id)`)
@@ -183,8 +199,11 @@ async function fetchGifts(registryId: string): Promise<Gift[]> {
       .eq("cash_funds.registry_id", registryId)
       .order("created_at", { ascending: false }),
   ]);
+  if (registry.error) throw registry.error;
   if (forItems.error) throw forItems.error;
   if (forFunds.error) throw forFunds.error;
+  // An owner who hides what's been reserved from themselves sees no gifts.
+  if (reservationsHiddenFrom(registry.data, userId)) return [];
 
   const gifts: Gift[] = [
     ...((forItems.data ?? []) as unknown as GiftRow[]).map((row) => toGift(row, "item")),
@@ -206,10 +225,11 @@ function toGift(row: GiftRow, kind: "item" | "fund"): Gift {
 }
 
 export function useGifts(registryId: string | undefined) {
+  const { userId } = useSession();
   return useQuery({
     queryKey: keys.gifts(registryId ?? ""),
-    queryFn: () => fetchGifts(registryId!),
-    enabled: Boolean(registryId),
+    queryFn: () => fetchGifts(registryId!, userId),
+    enabled: Boolean(registryId && userId),
   });
 }
 

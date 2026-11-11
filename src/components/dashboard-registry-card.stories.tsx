@@ -90,3 +90,19 @@ export const SharedNoDate: Story = {
     badge: "Manager",
   },
 };
+
+// The owner hid what's been reserved from themselves, as Regibee does for a
+// wishlist in a gift exchange. The card says so instead of showing progress.
+export const ReservationsHidden: Story = {
+  args: {
+    title: "Maya's Christmas wishlist",
+    registryType: "personal",
+    eventType: "christmas",
+    eventDate: "2026-12-25",
+    totalItems: 8,
+    fulfilledItems: 0,
+    totalValue: 420,
+    recentActivity: [],
+    reservationsHidden: true,
+  },
+};

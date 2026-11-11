@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ExternalLink, PartyPopper, Users } from "lucide-react";
+import { ExternalLink, EyeOff, PartyPopper, Users } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -32,6 +32,11 @@ export interface DashboardRegistryCardProps {
   recentActivity: RegistryActivity[];
   manageHref: string;
   publicHref: string;
+  /**
+   * The owner hid what's been reserved from themselves. The card says so
+   * instead of showing progress. Pass zero fulfilled items and no activity.
+   */
+  reservationsHidden?: boolean;
   /** Shown next to the title, like "Manager" for shared registries. */
   badge?: string;
   /**
@@ -73,6 +78,7 @@ export function DashboardRegistryCard({
   recentActivity,
   manageHref,
   publicHref,
+  reservationsHidden = false,
   badge,
   headingLevel = 2,
 }: DashboardRegistryCardProps) {
@@ -125,22 +131,29 @@ export function DashboardRegistryCard({
           )}
         </div>
 
-        <div>
-          <div className="mb-1 flex justify-between text-sm">
-            <span>
-              {fulfilledItems} of {totalItems} items fulfilled
-            </span>
-            {allDone ? (
-              <span className="inline-flex items-center gap-1 font-medium text-mint-800">
-                <PartyPopper aria-hidden="true" className="h-3.5 w-3.5" />
-                All done
+        {reservationsHidden ? (
+          <p className="flex items-center gap-2 text-sm text-tertiary">
+            <EyeOff aria-hidden="true" className="h-4 w-4 shrink-0" />
+            What&apos;s been reserved is hidden from you
+          </p>
+        ) : (
+          <div>
+            <div className="mb-1 flex justify-between text-sm">
+              <span>
+                {fulfilledItems} of {totalItems} items fulfilled
               </span>
-            ) : (
-              <span className="text-tertiary">{Math.round(progress)}%</span>
-            )}
+              {allDone ? (
+                <span className="inline-flex items-center gap-1 font-medium text-mint-800">
+                  <PartyPopper aria-hidden="true" className="h-3.5 w-3.5" />
+                  All done
+                </span>
+              ) : (
+                <span className="text-tertiary">{Math.round(progress)}%</span>
+              )}
+            </div>
+            <Progress value={progress} aria-label={`Items fulfilled for ${title}`} />
           </div>
-          <Progress value={progress} aria-label={`Items fulfilled for ${title}`} />
-        </div>
+        )}
 
         <div className="flex justify-between text-sm text-tertiary">
           <span>{totalItems} items</span>

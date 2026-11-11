@@ -84,6 +84,97 @@ export function maskGiverForOwner<T extends GiverLike & { buyer_email?: string |
   };
 }
 
+// ── Hiding what's been reserved from a list's owner ─────────────────────
+//
+// A list's owner can choose not to see what people reserved or pledged, so
+// their gifts stay a surprise. It's off by default. Regibee turns it on for a
+// personal wishlist when its owner adds it to a gift exchange. Guests and
+// co-managers still see everything, so nobody buys the same thing twice.
+//
+// The exception, copied from Giftster: a list kept for a child. The parent
+// who keeps it needs to see what's been reserved, so the setting never
+// applies to it.
+//
+// This only changes what the owner's own pages, app screens and emails show.
+// The owner can still read the rows. It keeps a surprise, it isn't a lock.
+
+/** The reservation settings in registries.settings. */
+export interface ReservationPrivacy {
+  /** "Hide what's been reserved from me". Missing means never chosen. */
+  hide_reservations?: boolean;
+  /** "owner" when the owner chose it, "exchange" when Regibee turned it on. */
+  hide_reservations_source?: "owner" | "exchange";
+  /** "I keep this list for my child". The owner always sees reservations. */
+  for_child?: boolean;
+}
+
+/** The reservation settings from a registry's settings, whatever shape they're in. */
+export function readReservationPrivacy(settings: unknown): ReservationPrivacy {
+  const raw = (settings && typeof settings === "object" ? settings : {}) as Record<string, unknown>;
+  return {
+    hide_reservations: typeof raw.hide_reservations === "boolean" ? raw.hide_reservations : undefined,
+    hide_reservations_source:
+      raw.hide_reservations_source === "owner" || raw.hide_reservations_source === "exchange"
+        ? raw.hide_reservations_source
+        : undefined,
+    for_child: raw.for_child === true,
+  };
+}
+
+/** True when the list hides what's been reserved from its owner. */
+export function hidesReservations(settings: unknown): boolean {
+  const privacy = readReservationPrivacy(settings);
+  return privacy.hide_reservations === true && !privacy.for_child;
+}
+
+/**
+ * True when this person shouldn't see what's been reserved on this list: the
+ * list hides it, and they're its owner. Co-managers and guests still see it.
+ */
+export function reservationsHiddenFrom(
+  registry: { owner_id: string; settings?: unknown },
+  viewerId: string | null | undefined,
+): boolean {
+  return Boolean(viewerId) && registry.owner_id === viewerId && hidesReservations(registry.settings);
+}
+
+/**
+ * An item as its owner sees it with reservations hidden: nothing reserved.
+ * An item the owner marked as bought themselves stays bought, since that was
+ * their own doing.
+ */
+export function itemAsUnreserved<T extends { quantity_fulfilled: number; is_parent_purchased?: boolean | null }>(
+  item: T,
+): T {
+  return item.is_parent_purchased ? item : { ...item, quantity_fulfilled: 0 };
+}
+
+/** A cash fund as its owner sees it with reservations hidden: nothing pledged. */
+export function fundAsUnpledged<T extends { current_amount: number }>(fund: T): T {
+  return { ...fund, current_amount: 0 };
+}
+
+/**
+ * A list's settings after its owner added it to a gift exchange as their
+ * wishlist, or null when nothing changes. Hiding turns on for a personal
+ * wishlist whose owner never chose either way and doesn't keep it for a child.
+ * Registries such as a baby registry keep showing what's been reserved, since
+ * their owners need it for thank-you notes.
+ */
+export function settingsAfterJoiningExchange(registry: {
+  registry_type: string | null;
+  settings: unknown;
+}): Record<string, unknown> | null {
+  if (registry.registry_type !== "personal") return null;
+  const privacy = readReservationPrivacy(registry.settings);
+  if (privacy.hide_reservations !== undefined || privacy.for_child) return null;
+  const settings = (registry.settings && typeof registry.settings === "object" ? registry.settings : {}) as Record<
+    string,
+    unknown
+  >;
+  return { ...settings, hide_reservations: true, hide_reservations_source: "exchange" };
+}
+
 /** Steps a gift link can open the gift dialog at. */
 export const GIFT_LINK_STEPS = ["buy", "confirm", "release"] as const;
 export type GiftLinkStep = (typeof GIFT_LINK_STEPS)[number];
