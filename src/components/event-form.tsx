@@ -3,21 +3,24 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ImagePlus, Loader2, Trash2 } from "lucide-react";
+import { Gift, ImagePlus, Loader2, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/base/input/input";
 import { TextArea } from "@/components/base/textarea/textarea";
 import { NativeSelect } from "@/components/base/select/select-native";
 import { Checkbox } from "@/components/base/checkbox/checkbox";
-import { createEvent, setEventImage, updateEvent } from "@/lib/actions/events";
+import { createEvent, lookupRegistryLink, setEventImage, updateEvent } from "@/lib/actions/events";
 import { uploadEventImage } from "@/lib/upload-event-image";
 import type { PhotoUploadResult } from "@/lib/upload-registry-photo";
 import {
   COMMON_TIME_ZONES,
   EVENT_TYPE_OPTIONS,
+  GIFT_NOTE_PRESETS,
+  MAX_GIFT_NOTE_LENGTH,
   MAX_PARTY_SIZE_LIMIT,
   type EventDetails,
   type EventType,
+  type GiftExchange,
 } from "@/lib/events";
 import { cx } from "@/lib/utils/cx";
 
@@ -39,7 +42,23 @@ type Values = Pick<
   | "open_rsvp"
   | "email_host_on_rsvp"
   | "registry_id"
+  | "gift_note"
+  | "ask_kids"
 >;
+
+/** A registry on the form's list of links. */
+export interface FormRegistry {
+  id: string;
+  title: string;
+  /** Whose list it is, when it isn't the host's: "Remi & Max". */
+  honoree?: string | null;
+  /** Set for a registry added by pasting its link, which is how the server checks it. */
+  link?: string;
+}
+
+type LookupAction = (
+  link: string,
+) => Promise<{ error: string } | { error: null; registry: { id: string; title: string; honoree: string | null } }>;
 
 type ActionResult = { error: string | null };
 
@@ -47,11 +66,14 @@ export interface EventFormProps {
   /** The event being edited. Without it, the form makes a new one. */
   eventId?: string;
   initial?: Partial<Values>;
-  /** Registries the person manages, to link the event to. */
+  /** Registries the person manages, to pick from. */
   registries: { id: string; title: string }[];
-  /** Only the event's owner can change the registry link. */
-  canChangeRegistry?: boolean;
+  /** The registries the event links now, in order. */
+  linkedRegistries?: FormRegistry[];
+  /** The event's gift exchange, when it has one. */
+  exchange?: Pick<GiftExchange, "budget" | "draw_by" | "mailed" | "drawn_at"> | null;
   createAction?: (formData: FormData) => Promise<ActionResult & { id?: string }>;
+  lookupAction?: LookupAction;
   updateAction?: (eventId: string, formData: FormData) => Promise<ActionResult>;
   setImageAction?: (eventId: string, url: string | null) => Promise<ActionResult>;
   uploadImage?: (eventId: string, file: File) => Promise<PhotoUploadResult>;
@@ -72,8 +94,10 @@ export function EventForm({
   eventId,
   initial = {},
   registries,
-  canChangeRegistry = true,
+  linkedRegistries,
+  exchange = null,
   createAction = createEvent,
+  lookupAction = lookupRegistryLink,
   updateAction = updateEvent,
   setImageAction = setEventImage,
   uploadImage = uploadEventImage,
@@ -94,7 +118,28 @@ export function EventForm({
   const [maxPartySize, setMaxPartySize] = useState(String(initial.max_party_size ?? 2));
   const [openRsvp, setOpenRsvp] = useState(initial.open_rsvp ?? true);
   const [emailHost, setEmailHost] = useState(initial.email_host_on_rsvp ?? true);
-  const [registryId, setRegistryId] = useState(initial.registry_id ?? "");
+  const [askKids, setAskKids] = useState(initial.ask_kids ?? false);
+  const [giftNote, setGiftNote] = useState(initial.gift_note ?? "");
+
+  // Linked registries. "Plan an event" on a registry's page starts with that one.
+  const [linked, setLinked] = useState<FormRegistry[]>(() => {
+    if (linkedRegistries) return linkedRegistries;
+    const start = registries.find((r) => r.id === initial.registry_id);
+    return start ? [{ id: start.id, title: start.title }] : [];
+  });
+  const [pasted, setPasted] = useState("");
+  const [lookingUp, setLookingUp] = useState(false);
+  const [linkError, setLinkError] = useState("");
+
+  // The gift exchange.
+  const [exchangeOn, setExchangeOn] = useState(Boolean(exchange));
+  const [budget, setBudget] = useState(exchange?.budget ?? "");
+  const [drawBy, setDrawBy] = useState(exchange?.draw_by ?? "");
+  const [mailed, setMailed] = useState(exchange?.mailed ?? false);
+  const drawn = Boolean(exchange?.drawn_at);
+  // Choosing an occasion on a new event sets its defaults, but never undoes
+  // a choice the host made themselves.
+  const [touched, setTouched] = useState({ exchange: false, askKids: false });
 
   // The picture: the saved one, or a new file waiting to upload on save.
   const [imageUrl, setImageUrl] = useState<string | null>(initial.image_url ?? null);
@@ -130,6 +175,32 @@ export function EventForm({
 
   const typeOption = EVENT_TYPE_OPTIONS.find((o) => o.value === eventType) ?? EVENT_TYPE_OPTIONS[0];
   const shownImage = preview ?? imageUrl;
+  const pickable = registries.filter((r) => !linked.some((l) => l.id === r.id));
+
+  const chooseType = (type: EventType) => {
+    setEventType(type);
+    if (editing) return;
+    const defaults = EVENT_TYPE_OPTIONS.find((o) => o.value === type)?.defaults ?? {};
+    if (!touched.exchange) setExchangeOn(Boolean(defaults.exchange));
+    if (!touched.askKids) setAskKids(Boolean(defaults.askKids));
+  };
+
+  const addPastedLink = async () => {
+    const link = pasted.trim();
+    if (!link) return;
+    setLookingUp(true);
+    setLinkError("");
+    const result = await lookupAction(link);
+    setLookingUp(false);
+    if (result.error !== null) {
+      setLinkError(result.error);
+      return;
+    }
+    if (!linked.some((l) => l.id === result.registry.id)) {
+      setLinked([...linked, { ...result.registry, link }]);
+    }
+    setPasted("");
+  };
 
   const pickImage = (file: File | undefined) => {
     if (!file) return;
@@ -157,7 +228,13 @@ export function EventForm({
     data.set("maxPartySize", maxPartySize);
     data.set("openRsvp", String(openRsvp));
     data.set("emailHostOnRsvp", String(emailHost));
-    data.set("registryId", registryId);
+    data.set("askKids", String(askKids));
+    data.set("giftNote", giftNote);
+    data.set("registryLinks", JSON.stringify(linked.map((r) => (r.link ? { link: r.link } : { id: r.id }))));
+    data.set("exchangeEnabled", String(exchangeOn));
+    data.set("exchangeBudget", budget);
+    data.set("exchangeDrawBy", drawBy);
+    data.set("exchangeMailed", String(mailed));
     return data;
   };
 
@@ -218,7 +295,7 @@ export function EventForm({
               key={option.value}
               type="button"
               aria-pressed={eventType === option.value}
-              onClick={() => setEventType(option.value)}
+              onClick={() => chooseType(option.value)}
               className={cx(
                 "cursor-pointer rounded-full border px-3.5 py-1.5 text-sm font-medium transition outline-none focus-visible:ring-2 focus-visible:ring-brand-600 max-sm:min-h-11",
                 eventType === option.value
@@ -377,30 +454,176 @@ export function EventForm({
           hint="They're added to your guest list. Turn this off to take RSVPs only from guests you invite."
         />
         <Checkbox
+          isSelected={askKids}
+          onChange={(value) => {
+            setAskKids(value);
+            setTouched((t) => ({ ...t, askKids: true }));
+          }}
+          label={<span className="font-normal">Ask how many kids are coming</span>}
+          hint="Guests say how many of their party are kids, and you see both counts."
+        />
+        <Checkbox
           isSelected={emailHost}
           onChange={setEmailHost}
           label={<span className="font-normal">Email me when someone RSVPs</span>}
         />
       </Section>
 
-      <Section title="Gift registry" description="The event page links guests to it.">
-        {registries.length > 0 ? (
-          <NativeSelect
-            aria-label="Gift registry"
-            value={registryId}
-            disabled={!canChangeRegistry}
-            onChange={(e) => setRegistryId(e.target.value)}
-            options={[{ value: "", label: "No registry" }, ...registries.map((r) => ({ value: r.id, label: r.title }))]}
-            hint={canChangeRegistry ? undefined : "Only the person who made this event can change its registry."}
+      <Section title="Gifts" description="What guests see about gifts, under the details on the invitation.">
+        <div className="flex flex-col gap-3">
+          <div>
+            <p className="text-sm font-medium text-secondary">Registries and wishlists</p>
+            <p className="text-sm text-tertiary">
+              Link yours, or someone else&apos;s with its link, like the parents&apos; registry for a baby shower.
+              They get an email saying you linked it. Linking doesn&apos;t let you change their registry.
+            </p>
+          </div>
+          {linked.length > 0 && (
+            <ul className="flex flex-col gap-2">
+              {linked.map((registry) => (
+                <li
+                  key={registry.id}
+                  className="flex items-center justify-between gap-3 rounded-lg border border-secondary px-3 py-2"
+                >
+                  <span className="flex min-w-0 items-center gap-2">
+                    <Gift aria-hidden="true" className="size-4 shrink-0 text-brand-600" />
+                    <span className="min-w-0">
+                      <span className="block truncate font-medium text-primary">{registry.title}</span>
+                      {registry.honoree && <span className="block truncate text-sm text-tertiary">{registry.honoree}</span>}
+                    </span>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setLinked(linked.filter((l) => l.id !== registry.id))}
+                    aria-label={`Unlink ${registry.title}`}
+                    className="flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-md text-tertiary hover:bg-secondary hover:text-primary max-sm:size-11"
+                  >
+                    <X aria-hidden="true" className="size-4" />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+          {pickable.length > 0 && (
+            <NativeSelect
+              aria-label="Add one of your registries"
+              value=""
+              onChange={(e) => {
+                const picked = registries.find((r) => r.id === e.target.value);
+                if (picked) setLinked([...linked, { id: picked.id, title: picked.title }]);
+              }}
+              options={[
+                { value: "", label: linked.length > 0 ? "Add another of your registries…" : "Add one of your registries…" },
+                ...pickable.map((r) => ({ value: r.id, label: r.title })),
+              ]}
+            />
+          )}
+          <div className="flex items-end gap-2">
+            <div className="min-w-0 flex-1">
+              <Input
+                label="Or paste a registry link"
+                value={pasted}
+                onChange={(value) => {
+                  setPasted(value);
+                  setLinkError("");
+                }}
+                placeholder="regibee.com/r/remi-and-max-1a2b"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    void addPastedLink();
+                  }
+                }}
+              />
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              className="h-10 shrink-0"
+              onClick={addPastedLink}
+              disabled={lookingUp || !pasted.trim()}
+            >
+              {lookingUp ? "Finding…" : "Link"}
+            </Button>
+          </div>
+          {linkError && (
+            <p role="alert" className="text-sm text-error-primary">
+              {linkError}
+            </p>
+          )}
+          {registries.length === 0 && linked.length === 0 && (
+            <p className="text-sm text-tertiary">
+              Don&apos;t have a registry yet?{" "}
+              <Link href="/dashboard/registry/new" className="font-medium text-brand-600 hover:underline">
+                Create one
+              </Link>{" "}
+              and link it here later.
+            </p>
+          )}
+        </div>
+
+        <div className="flex flex-col gap-2">
+          <p className="text-sm font-medium text-secondary">Gift note (optional)</p>
+          <div role="group" aria-label="Ready-made gift notes" className="flex flex-wrap gap-2">
+            {GIFT_NOTE_PRESETS.map((preset) => (
+              <button
+                key={preset.label}
+                type="button"
+                onClick={() => setGiftNote(preset.text)}
+                className="cursor-pointer rounded-full border border-secondary px-3 py-1 text-sm text-secondary transition hover:border-primary max-sm:min-h-11"
+              >
+                {preset.label}
+              </button>
+            ))}
+          </div>
+          <TextArea
+            aria-label="Gift note"
+            value={giftNote}
+            onChange={setGiftNote}
+            maxLength={MAX_GIFT_NOTE_LENGTH}
+            rows={2}
+            placeholder="Instead of a card, bring a favorite children's book with a note inside."
           />
-        ) : (
-          <p className="text-sm text-tertiary">
-            You don&apos;t have a registry yet.{" "}
-            <Link href="/dashboard/registry/new" className="font-medium text-brand-600 hover:underline">
-              Create one
-            </Link>{" "}
-            and link it here later.
-          </p>
+        </div>
+      </Section>
+
+      <Section
+        title="Gift exchange"
+        description="Draw names, so everyone gives one gift and gets one. Good for Secret Santa with family, friends or coworkers."
+      >
+        <Checkbox
+          isSelected={exchangeOn}
+          isDisabled={drawn}
+          onChange={(value) => {
+            setExchangeOn(value);
+            setTouched((t) => ({ ...t, exchange: true }));
+          }}
+          label={<span className="font-normal">Draw names for a gift exchange</span>}
+          hint={
+            drawn
+              ? "Names have been drawn. To turn the exchange off, undo the draw on the event's page first."
+              : "Guests join when they RSVP and add a wishlist or gift ideas. You draw names on the event's page."
+          }
+        />
+        {exchangeOn && (
+          <>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Input label="Budget (optional)" value={budget} onChange={setBudget} maxLength={40} placeholder="$25" />
+              <Input
+                label="Draw names by (optional)"
+                type="date"
+                value={drawBy}
+                onChange={setDrawBy}
+                hint="Guests see this, so they know when to join by."
+              />
+            </div>
+            <Checkbox
+              isSelected={mailed}
+              onChange={setMailed}
+              label={<span className="font-normal">There&apos;s no get-together: gifts are mailed</span>}
+              hint="Guests answer “I'm in” instead of RSVPing, and give a shipping address that only the person who draws them sees."
+            />
+          </>
         )}
       </Section>
 

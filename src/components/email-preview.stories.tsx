@@ -21,6 +21,8 @@ import {
   confirmSignupHtml,
   resetPasswordHtml,
 } from "@/lib/email-templates";
+import { coHostInviteHtml, exchangeAssignmentHtml, registryLinkedHtml } from "@/lib/event-email-templates";
+import { sampleLinkedRegistries } from "@/lib/event-sample-data";
 
 const meta: Meta<typeof EmailPreview> = {
   title: "Email Templates",
@@ -301,6 +303,17 @@ const sampleEventEmail = {
   registry: { title: "Remi & Max's Baby Registry", url: "https://regibee.com/r/remi-and-max-baby" },
 };
 
+// The same shower, linking two registries, with a gift note and a gift
+// exchange. The invitation and the guest's confirmation use it, so they show
+// every gift line.
+const sampleEventEmailWithGifts = {
+  ...sampleEventEmail,
+  registry: null,
+  registries: sampleLinkedRegistries.map((r) => ({ title: r.title, url: `https://regibee.com/r/${r.slug}` })),
+  giftNote: "Gifts are optional. If you'd like to bring something, here's what Remi & Max still need.",
+  exchange: { budget: "$15", drawBy: "Saturday, March 7, 2026", mailed: false },
+};
+
 // The reminder only changes the subject and the first line, so it has no story.
 export const EventInvitation: Story = {
   args: {
@@ -309,7 +322,7 @@ export const EventInvitation: Story = {
     html: eventInvitationHtml({
       guestName: "Glinda",
       hostName: "Aunt Linda & Grandma Jo",
-      event: sampleEventEmail,
+      event: sampleEventEmailWithGifts,
       message:
         "Join us for tea, cake and games as we celebrate Remi and the baby on the way! Bring a favorite children's book instead of a card.",
       rsvpUrl: "https://regibee.com/e/remis-baby-shower-k3m9q2xa?g=Qm9vayBmb3IgYSBiYWJ5",
@@ -324,9 +337,10 @@ export const RsvpGuestConfirmation: Story = {
       guestName: "Glinda",
       status: "yes",
       partySize: 2,
-      event: sampleEventEmail,
+      event: sampleEventEmailWithGifts,
       rsvpUrl: "https://regibee.com/e/remis-baby-shower-k3m9q2xa?g=Qm9vayBmb3IgYSBiYWJ5",
       calendarUrl: "https://calendar.google.com/calendar/render?action=TEMPLATE",
+      inExchange: true,
     }),
   },
 };
@@ -345,6 +359,58 @@ export const RsvpHostNotification: Story = {
       attending: 14,
       pending: 6,
       manageUrl: "https://regibee.com/dashboard/events/abc",
+    }),
+  },
+};
+
+// Sent to a registry's owners when someone who doesn't manage it links it to
+// their event.
+export const RegistryLinked: Story = {
+  args: {
+    subject: "Linda Upland linked your registry to Remi's Baby Shower",
+    to: "max@example.com",
+    html: registryLinkedHtml({
+      ownerName: "Max",
+      linkedByName: "Linda Upland",
+      registryTitle: "Baby Remi's Bookshelf",
+      eventTitle: "Remi's Baby Shower",
+      eventDate: "Saturday, March 14, 2026",
+      eventUrl: "https://regibee.com/e/remis-baby-shower-k3m9q2xa",
+      registryDashboardUrl: "https://regibee.com/dashboard/registry/abc",
+    }),
+  },
+};
+
+export const CoHostInvite: Story = {
+  args: {
+    subject: "Linda Upland asked you to co-host Remi's Baby Shower",
+    to: "jo@example.com",
+    html: coHostInviteHtml({
+      inviterName: "Linda Upland",
+      eventTitle: "Remi's Baby Shower",
+      inviteUrl: "https://regibee.com/host-invite/abc123token",
+    }),
+  },
+};
+
+// Sent to each person in a gift exchange when the host draws names. This one
+// has a Regibee wishlist and gift ideas. A mailed exchange adds the address.
+export const ExchangeAssignment: Story = {
+  args: {
+    subject: "Your Secret Santa name for Holiday Gift Swap",
+    from: '"Aunt Linda via Regibee" <notifications@regibee.com>',
+    to: "boq@example.com",
+    html: exchangeAssignmentHtml({
+      giverName: "Boq",
+      gifteeName: "Elphaba",
+      eventTitle: "Holiday Gift Swap",
+      hostName: "Aunt Linda",
+      budget: "$25",
+      eventDate: "Saturday, December 19, 2026",
+      mailed: false,
+      wishlist: { url: "https://regibee.com/r/elphabas-wishlist-3k9d", title: "Elphaba's Wishlist" },
+      giftIdeas: "Books about animals, green tea, a sturdy umbrella",
+      pageUrl: "https://regibee.com/e/holiday-gift-swap-p4w8n2rt?g=token-g5",
     }),
   },
 };

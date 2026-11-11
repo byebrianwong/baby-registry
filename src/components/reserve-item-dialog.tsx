@@ -24,10 +24,12 @@ import {
 import { formatPrice } from "@/lib/money";
 import {
   GIFT_HOLD_DAYS,
+  SECRET_GIVER_NAME,
   formatReservedUntil,
   type GiftLinkStep,
   type MyItemGift,
 } from "@/lib/gifts";
+import { useGuestPrefill } from "@/components/guest-prefill-context";
 
 // Giving an item: the guest fills in their details and presses one button,
 // Reserve and buy. That holds the item for GIFT_HOLD_DAYS. On the owners' own
@@ -157,6 +159,10 @@ export function ReserveItemDialog({
   renderTrigger,
 }: ReserveItemDialogProps) {
   const act: GiftActions = { ...SERVER_ACTIONS, ...actions };
+  // A guest from an event invitation: their name and email start filled in.
+  const prefill = useGuestPrefill();
+  // Who the owners see the gift is from.
+  const fromWhom = prefill?.secretGiver ? SECRET_GIVER_NAME : "you";
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState<Step>("reserve");
   const [gift, setGift] = useState<MyItemGift | null>(giftProp);
@@ -423,7 +429,7 @@ export function ReserveItemDialog({
           <DialogHeader className="pr-8">
             <DialogTitle>Tell {parentName} you bought it</DialogTitle>
             <DialogDescription>
-              They&apos;ll see it&apos;s from you, and nobody else will buy it. No account required.
+              They&apos;ll see it&apos;s from {fromWhom}, and nobody else will buy it. No account required.
             </DialogDescription>
           </DialogHeader>
         )}
@@ -433,6 +439,7 @@ export function ReserveItemDialog({
           placeholder="Alex Kim"
           autoComplete="name"
           enterKeyHint="next"
+          defaultValue={prefill?.name || undefined}
           isRequired
         />
         <Input
@@ -443,6 +450,7 @@ export function ReserveItemDialog({
           autoComplete="email"
           enterKeyHint="next"
           icon={Mail01}
+          defaultValue={prefill?.email || undefined}
           isRequired
         />
         {item.quantity_needed > 1 && (
@@ -515,7 +523,9 @@ export function ReserveItemDialog({
             </DialogDescription>
           ) : !address ? (
             <DialogDescription>
-              This registry has no shipping address yet. Ask {parentName} where to send it.
+              {prefill?.secretGiver
+                ? "This registry has no shipping address yet. Bring it to the gift exchange, or ask the host where to send it."
+                : `This registry has no shipping address yet. Ask ${parentName} where to send it.`}
             </DialogDescription>
           ) : null}
         </DialogHeader>
@@ -567,7 +577,7 @@ export function ReserveItemDialog({
         <DialogHeader className="pr-8">
           <DialogTitle>Did you buy the {item.title}?</DialogTitle>
           <DialogDescription>
-            Tell us so nobody else buys it. {parentName} will see it&apos;s from you.
+            Tell us so nobody else buys it. {parentName} will see it&apos;s from {fromWhom}.
           </DialogDescription>
         </DialogHeader>
         {errorLine}
@@ -615,7 +625,7 @@ export function ReserveItemDialog({
         />
         <DialogTitle className="text-xl font-bold text-primary">Thank you!</DialogTitle>
         <p className="text-secondary">
-          {parentName} will see the {item.title} is from you. We emailed you a copy. ❤️
+          {parentName} will see the {item.title} is from {fromWhom}. We emailed you a copy. ❤️
         </p>
         <Button onClick={close}>Done</Button>
       </div>
@@ -651,7 +661,7 @@ export function ReserveItemDialog({
           <DialogTitle>Your gift</DialogTitle>
           <DialogDescription>
             You&apos;re giving the {item.title}
-            {gift && gift.quantity > 1 ? ` (×${gift.quantity})` : ""}. {parentName} can see it&apos;s from you.
+            {gift && gift.quantity > 1 ? ` (×${gift.quantity})` : ""}. {parentName} can see it&apos;s from {fromWhom}.
           </DialogDescription>
         </DialogHeader>
         {address && !registryStoreName && <ShipTo address={address} />}

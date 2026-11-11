@@ -39,7 +39,7 @@ import { CashFundCard } from "@/components/cash-fund-card";
 import { PandaMark } from "@/components/panda-mark";
 import { copyForRegistry } from "@/lib/registry-copy";
 import { formatDollars, formatPrice } from "@/lib/money";
-import { formatReservedUntil, isOpenReservation } from "@/lib/gifts";
+import { formatReservedUntil, isOpenReservation, maskGiverForOwner } from "@/lib/gifts";
 import { listEventsForRegistry } from "@/lib/events-server";
 import { RegistryEventsBanner } from "@/components/registry-events-banner";
 import { findSharedLink } from "@/lib/shared-link";
@@ -166,7 +166,7 @@ export default async function RegistryManagePage({
         .select("*")
         .eq("registry_id", registryId)
         .order("created_at"),
-      listEventsForRegistry(registryId),
+      listEventsForRegistry(registryId, user.id),
     ]);
 
   const allItems = (items || []) as RegistryItem[];
@@ -176,8 +176,11 @@ export default async function RegistryManagePage({
   const copy = copyForRegistry(registry);
   const showChecklist = copy.checklistAvailable;
 
+  // A Secret Santa's gift shows "Secret Santa" with no email. It's masked
+  // here, on the server, so the giver's name and email never reach the
+  // browser in the page data, including the item and fund cards below.
   const allPurchases = purchases.map((p: any) => ({
-    ...p,
+    ...maskGiverForOwner(p),
     item_title: p.registry_items?.title || p.cash_funds?.title || "Unknown item",
   }));
 

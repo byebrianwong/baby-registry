@@ -47,6 +47,12 @@ function useDemoGuests(initial: EventGuest[]) {
           rsvp_status: "pending" as const,
           party_size: 1,
           rsvp_note: null,
+          kids_count: 0,
+          in_exchange: false,
+          wishlist_url: null,
+          gift_ideas: null,
+          shipping_address: null,
+          giftee_id: null,
           responded_at: null,
           invited_at: null,
           reminded_at: null,
@@ -103,6 +109,8 @@ function useDemoGuests(initial: EventGuest[]) {
       setGuests((current) => current.filter((g) => g.id !== guestId));
       return ok;
     },
+    // The demo shows no other events to copy from, so this never runs.
+    copyGuests: async () => ({ ...ok, added: 0, alreadyListed: 0 }),
   };
 
   return { guests, actions };

@@ -26,7 +26,8 @@ import {
 import { isUuid } from "@/lib/extension";
 import { parseStorePerksState, storePerksSettings } from "@/lib/store-perks";
 import { MY_GIFTS_COOKIE, MY_GIFTS_COOKIE_OPTIONS, withGift } from "@/lib/my-gifts-cookie";
-import { GIFT_HOLD_DAYS, isOpenReservation } from "@/lib/gifts";
+import { readEventGuestCookie } from "@/lib/event-guest-cookie";
+import { GIFT_HOLD_DAYS, isOpenReservation, SECRET_GIVER_NAME } from "@/lib/gifts";
 import {
   releaseExpiredOnItem,
   sendCoverGiftEmails,
@@ -44,6 +45,88 @@ async function addToMyGiftsCookie(
   const cookieStore = await cookies();
   const raw = cookieStore.get(MY_GIFTS_COOKIE)?.value;
   cookieStore.set(MY_GIFTS_COOKIE, withGift(raw, key, id, value), MY_GIFTS_COOKIE_OPTIONS);
+}
+
+/**
+ * Records which event guest gave a gift, when the guest came from a gift link
+ * on their invitation (the event guest cookie, src/lib/event-guest-cookie.ts).
+ *
+ * - On the list of the person the guest drew in a gift exchange, the gift is
+ *   a Secret Santa's: hide_giver is set, so the list's owners see "Secret
+ *   Santa" instead of the giver's name and email.
+ * - On another list the guest's event links, only the event guest is saved.
+ * - Anywhere else, nothing changes.
+ *
+ * Call it once the purchase exists and before any owner emails go out, since
+ * those read hide_giver. Returns whether the giver is hidden. A failure is
+ * logged and never fails the gift.
+ */
+async function recordEventGuestOnGift(
+  purchaseId: string,
+  target: { itemId: string } | { fundId: string }
+): Promise<{ hideGiver: boolean }> {
+  try {
+    const guest = await readEventGuestCookie();
+    if (!guest || !isUuid(guest.eventId) || !isUuid(guest.guestId)) return { hideGiver: false };
+
+    const { data: owner } =
+      "itemId" in target
+        ? await supabaseAdmin.from("registry_items").select("registry_id").eq("id", target.itemId).single()
+        : await supabaseAdmin.from("cash_funds").select("registry_id").eq("id", target.fundId).single();
+    const registryId = owner?.registry_id as string | undefined;
+    if (!registryId) return { hideGiver: false };
+
+    let hideGiver = false;
+    if (guest.santa?.registryId === registryId) {
+      hideGiver = true;
+    } else {
+      const { data: link } = await supabaseAdmin
+        .from("event_registries")
+        .select("event_id")
+        .eq("event_id", guest.eventId)
+        .eq("registry_id", registryId)
+        .maybeSingle();
+      if (!link) return { hideGiver: false };
+    }
+
+    if (hideGiver) {
+      // The list's owners can read their purchases with the anon key, so the
+      // row itself says "Secret Santa". The real name and email move to a
+      // table only the server reads, for the giver's own emails.
+      const { data: real } = await supabaseAdmin
+        .from("purchases")
+        .select("buyer_name, buyer_email")
+        .eq("id", purchaseId)
+        .single();
+      const { error: saveError } = await supabaseAdmin.from("secret_givers").upsert({
+        purchase_id: purchaseId,
+        buyer_name: real?.buyer_name ?? guest.name,
+        buyer_email: real?.buyer_email ?? guest.email,
+      });
+      if (saveError) {
+        console.error("[gifts] Failed to save a Secret Santa's details:", saveError);
+        // Keep the name on the gift rather than lose who gave it. The pages
+        // and emails still show "Secret Santa", because hide_giver is set.
+        await supabaseAdmin.from("purchases").update({ event_guest_id: guest.guestId, hide_giver: true }).eq("id", purchaseId);
+        return { hideGiver };
+      }
+    }
+    const { error } = await supabaseAdmin
+      .from("purchases")
+      .update(
+        hideGiver
+          ? { event_guest_id: guest.guestId, hide_giver: true, buyer_name: SECRET_GIVER_NAME, buyer_email: null }
+          : { event_guest_id: guest.guestId },
+      )
+      .eq("id", purchaseId);
+    if (error) console.error("[gifts] Failed to record the event guest on a gift:", error);
+    // Even if saving failed, report the Secret Santa, so an email sent from
+    // here doesn't name them.
+    return { hideGiver };
+  } catch (err) {
+    console.error("[gifts] Failed to record the event guest on a gift:", err);
+    return { hideGiver: false };
+  }
 }
 
 function generateSlug(title: string): string {
@@ -533,6 +616,9 @@ export async function reserveItem(formData: FormData): Promise<ReserveItemResult
     }
     return { error: error?.message ?? "Couldn't reserve this gift. Try again." };
   }
+
+  // Before the emails below, which read hide_giver to decide what owners see.
+  await recordEventGuestOnGift(purchaseId, { itemId });
 
   if (alreadyBought) {
     const { error: confirmError } = await supabaseAdmin.rpc("confirm_registry_gift", {
@@ -1155,6 +1241,11 @@ export async function contributeToCashFund(formData: FormData) {
     return { error: error.message };
   }
 
+  // Before the owners' email below, which leaves out a Secret Santa's name.
+  const { hideGiver } = data
+    ? await recordEventGuestOnGift(data as string, { fundId })
+    : { hideGiver: false };
+
   await addToMyGiftsCookie("funds", fundId, amount);
 
   // Send email notifications after the response
@@ -1174,6 +1265,7 @@ export async function contributeToCashFund(formData: FormData) {
           fundId,
           fundTitle: fund.title,
           buyerName,
+          hideGiver,
           amount,
           message: message || null,
         });
@@ -1316,6 +1408,9 @@ export async function coverParentPurchasedItem(formData: FormData): Promise<Cove
   if (error || !purchaseId) {
     return { error: error?.message ?? "Couldn't save this gift. Try again." };
   }
+
+  // Before the emails below, which read hide_giver to decide what owners see.
+  await recordEventGuestOnGift(purchaseId, { itemId });
 
   // cover_parent_item saves the gift as 'reserved', which for a gift with no
   // end date already counts as given. Mark it purchased so its status says so.

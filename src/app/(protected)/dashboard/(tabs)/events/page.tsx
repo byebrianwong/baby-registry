@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { EventsOverview, type EventsOverviewProps } from "@/components/events-overview";
-import { formatEventTime, summarizeRsvps } from "@/lib/events";
-import { listEventsForUser } from "@/lib/events-server";
+import { formatEventTime, formatShortEventDate, summarizeRsvps } from "@/lib/events";
+import { listEventsForUser, listLinkedEventsForUser } from "@/lib/events-server";
 import { getViewer } from "@/lib/viewer";
 
 export default async function EventsPage() {
@@ -9,7 +9,7 @@ export default async function EventsPage() {
   const viewer = await getViewer();
   if (!viewer) redirect("/login");
 
-  const events = await listEventsForUser(viewer.id);
+  const [events, linkedEvents] = await Promise.all([listEventsForUser(viewer.id), listLinkedEventsForUser(viewer.id)]);
   // YYYY-MM-DD in UTC, like the other dashboard tabs.
   const today = new Date().toISOString().slice(0, 10);
 
@@ -36,5 +36,15 @@ export default async function EventsPage() {
   // better most recent first.
   past.reverse();
 
-  return <EventsOverview upcoming={upcoming} past={past} />;
+  const linked = linkedEvents
+    .filter((event) => !event.event_date || event.event_date >= today)
+    .map((event) => ({
+      id: event.id,
+      title: event.title,
+      dateText: event.event_date ? formatShortEventDate(event.event_date) : null,
+      registryTitles: event.registryTitles,
+      href: `/e/${event.slug}`,
+    }));
+
+  return <EventsOverview upcoming={upcoming} past={past} linked={linked} />;
 }

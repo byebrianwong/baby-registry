@@ -53,6 +53,37 @@ export function toMyItemGift(p: PurchaseLike & { id: string; quantity?: number |
   };
 }
 
+/**
+ * The name a list's owners and managers see on a Secret Santa's gift, instead
+ * of the giver's name. The purchase has hide_giver set. The giver still sees
+ * their own name and gets their own emails.
+ */
+export const SECRET_GIVER_NAME = "Secret Santa";
+
+interface GiverLike {
+  buyer_name: string;
+  hide_giver?: boolean | null;
+}
+
+/** The giver's name as the list's owners and managers may see it. */
+export function giverNameForOwner(p: GiverLike): string {
+  return p.hide_giver ? SECRET_GIVER_NAME : p.buyer_name;
+}
+
+/**
+ * A purchase as the list's owners and managers may see it. For a Secret
+ * Santa's gift, the name becomes SECRET_GIVER_NAME and the email is removed.
+ * The message stays. Other purchases come back unchanged.
+ */
+export function maskGiverForOwner<T extends GiverLike & { buyer_email?: string | null }>(p: T): T {
+  if (!p.hide_giver) return p;
+  return {
+    ...p,
+    buyer_name: SECRET_GIVER_NAME,
+    ...("buyer_email" in p ? { buyer_email: null } : {}),
+  };
+}
+
 /** Steps a gift link can open the gift dialog at. */
 export const GIFT_LINK_STEPS = ["buy", "confirm", "release"] as const;
 export type GiftLinkStep = (typeof GIFT_LINK_STEPS)[number];

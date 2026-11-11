@@ -1,4 +1,4 @@
-import { CalendarDays, CalendarPlus, Clock, Gift, MapPin, PartyPopper } from "lucide-react";
+import { CalendarDays, CalendarPlus, Clock, Gift, MapPin, PartyPopper, Shuffle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   eventTheme,
@@ -7,8 +7,10 @@ import {
   formatEventTime,
   mapsUrl,
   type EventDetails,
+  type GiftExchange,
   type LinkedRegistry,
 } from "@/lib/events";
+import { formatPrice } from "@/lib/money";
 import { cx } from "@/lib/utils/cx";
 
 export type InvitationEvent = Pick<
@@ -25,11 +27,33 @@ export type InvitationEvent = Pick<
   | "message"
   | "image_url"
   | "rsvp_by"
->;
+> &
+  Partial<Pick<EventDetails, "gift_note">>;
+
+/** A registry linked to the event, as the invitation shows it. */
+export interface InvitationRegistry extends LinkedRegistry {
+  /** Whose list it is: "Remi & Max". */
+  honoree?: string | null;
+  /** A few gifts still needed, shown as a row of pictures. */
+  items?: { id: string; title: string; image_url: string | null; price: number | null }[];
+  /** How many items still need a giver. */
+  itemsLeft?: number;
+}
 
 export interface EventInvitationProps {
   event: InvitationEvent;
-  registry: LinkedRegistry | null;
+  /** The registries the event links, in order. */
+  registries?: InvitationRegistry[];
+  /** @deprecated One registry, from before events could link several. Use registries. */
+  registry?: LinkedRegistry | null;
+  /** The event's gift exchange, when it has one. */
+  exchange?: Pick<GiftExchange, "budget" | "draw_by" | "mailed" | "drawn_at"> | null;
+  /**
+   * The event's slug and the guest's RSVP token. With both, gift links go
+   * through the event, which tells the registry who the guest is.
+   */
+  eventSlug?: string;
+  guestToken?: string | null;
   /** Add-to-calendar links, when the event has a date. */
   calendar?: { google: string; ics: string } | null;
   /** The RSVP form, under the details. */
@@ -54,7 +78,22 @@ function DetailRow({ icon: Icon, children }: { icon: typeof CalendarDays; childr
  * the registry, and the RSVP form below. The public event page and the host's
  * preview both use it.
  */
-export function EventInvitation({ event, registry, calendar, children, basePath = "" }: EventInvitationProps) {
+export function EventInvitation({
+  event,
+  registries: registryList,
+  registry,
+  exchange = null,
+  eventSlug,
+  guestToken,
+  calendar,
+  children,
+  basePath = "",
+}: EventInvitationProps) {
+  const registries: InvitationRegistry[] = registryList ?? (registry ? [registry] : []);
+  const giftHref = (slug: string) =>
+    guestToken && eventSlug && !basePath
+      ? `/e/${eventSlug}/gifts?g=${encodeURIComponent(guestToken)}&to=${encodeURIComponent(slug)}`
+      : `${basePath}/r/${slug}`;
   const theme = eventTheme(event.event_type);
   const time = formatEventTime(event);
   const map = mapsUrl(event);
@@ -150,21 +189,93 @@ export function EventInvitation({ event, registry, calendar, children, basePath 
           <p className="text-lg leading-relaxed whitespace-pre-line text-secondary">{event.message}</p>
         )}
 
-        {registry && (
-          <div className="flex flex-col gap-3 rounded-2xl bg-brand-50 p-4 sm:flex-row sm:items-center sm:justify-between">
+        {(registries.length > 0 || event.gift_note) && (
+          <section aria-labelledby="gifts-heading" className="flex flex-col gap-4 rounded-2xl bg-brand-50 p-4">
             <div className="flex items-start gap-3">
               <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary">
                 <Gift aria-hidden="true" className="size-4.5 text-brand-600" />
               </span>
-              <div>
-                <p className="font-medium text-primary">Gift registry</p>
-                <p className="text-sm text-tertiary">{registry.title}</p>
+              <div className="min-w-0 pt-1">
+                <h2 id="gifts-heading" className="font-medium text-primary">
+                  Gifts
+                </h2>
+                {event.gift_note && <p className="mt-1 whitespace-pre-line text-secondary">{event.gift_note}</p>}
               </div>
             </div>
-            <Button variant="outline" size="sm" className="shrink-0" asChild>
-              <a href={`${basePath}/r/${registry.slug}`}>View registry</a>
-            </Button>
-          </div>
+            {registries.map((linked) => (
+              <div key={linked.slug} className="flex flex-col gap-3 rounded-xl bg-primary p-3">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="min-w-0">
+                    <p className="font-medium text-primary">{linked.title}</p>
+                    {(linked.honoree || linked.itemsLeft !== undefined) && (
+                      <p className="text-sm text-tertiary">
+                        {[
+                          linked.honoree ? `${linked.honoree}'s registry` : null,
+                          linked.itemsLeft !== undefined
+                            ? linked.itemsLeft === 0
+                              ? "Every gift is taken"
+                              : `${linked.itemsLeft} ${linked.itemsLeft === 1 ? "gift" : "gifts"} still needed`
+                            : null,
+                        ]
+                          .filter(Boolean)
+                          .join(" · ")}
+                      </p>
+                    )}
+                  </div>
+                  <Button variant="outline" size="sm" className="shrink-0" asChild>
+                    <a href={giftHref(linked.slug)}>View registry</a>
+                  </Button>
+                </div>
+                {linked.items && linked.items.length > 0 && (
+                  <ul className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                    {linked.items.map((item) => (
+                      <li key={item.id}>
+                        <a href={giftHref(linked.slug)} className="group flex flex-col gap-1">
+                          <span className="flex aspect-square items-center justify-center overflow-hidden rounded-lg bg-secondary">
+                            {item.image_url ? (
+                              // eslint-disable-next-line @next/next/no-img-element -- product pictures from any store
+                              <img src={item.image_url} alt="" className="size-full object-contain p-1.5" />
+                            ) : (
+                              <Gift aria-hidden="true" className="size-6 text-quaternary" />
+                            )}
+                          </span>
+                          <span className="line-clamp-2 text-xs font-medium text-secondary group-hover:text-primary">
+                            {item.title}
+                          </span>
+                          {item.price !== null && <span className="text-xs text-tertiary">{formatPrice(item.price)}</span>}
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            ))}
+          </section>
+        )}
+
+        {exchange && (
+          <section aria-labelledby="exchange-heading" className="flex items-start gap-3 rounded-2xl bg-mint-50 p-4">
+            <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary">
+              <Shuffle aria-hidden="true" className="size-4.5 text-mint-800" />
+            </span>
+            <div className="min-w-0 pt-1">
+              <h2 id="exchange-heading" className="font-medium text-primary">
+                Gift exchange
+              </h2>
+              <p className="mt-1 text-secondary">
+                Everyone who joins draws one name and gives that person a gift
+                {exchange.budget ? `, about ${exchange.budget}` : ""}. Nobody knows who drew them.
+              </p>
+              <p className="mt-1 text-sm text-tertiary">
+                {exchange.drawn_at
+                  ? "Names have been drawn."
+                  : exchange.draw_by
+                    ? `Names are drawn by ${formatEventDate(exchange.draw_by)}.`
+                    : "Names are drawn once everyone's in."}{" "}
+                {exchange.mailed ? "Gifts are mailed, so you'll add a shipping address." : "Bring your gift to the party."}
+              </p>
+            </div>
+          </section>
         )}
 
         {children}

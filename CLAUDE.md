@@ -90,6 +90,7 @@ Vercel holds these env vars for production, preview and development: `NEXT_PUBLI
 - Run `npx tsc --noEmit` and `npm run build`.
 - If you changed components or stories, also run `npm run build-storybook`.
 - If you added a migration, also run `npm run check:migrations`.
+- `npm test` runs the unit tests in `src/lib/*.test.ts` with Node's own test runner (the gift exchange name draw, so far). Run it if you changed `src/lib/gift-exchange.ts`.
 - If you changed a flow the end-to-end tests cover, emails, `supabase/migrations` or `e2e/`, also run `npm run test:e2e`. After adding a migration, run `npm run e2e:db` first.
 - If you changed `extension/`, `src/lib/retailers.ts` or `src/lib/extension.ts`, also run `npm run extension:build` and `npm run test:extension`. The tests skip when this computer has no saved store pages. See "Tests" in [extension/README.md](extension/README.md).
 - If you changed `mobile/`, `src/lib/retailers.ts`, `src/lib/demo-data.ts`, `src/lib/gifts.ts` or `extension/src/product-reader.ts`, also run `npm run lint` and `npm run check` in `mobile/`.

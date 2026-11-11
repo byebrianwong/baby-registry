@@ -20,6 +20,7 @@ import { updateCashFund, deleteCashFund } from "@/lib/actions/registry";
 import { Tag } from "@/components/ui/tag";
 import { GiftDetailModal, type Purchase } from "@/components/gift-detail-modal";
 import { formatDollars, formatPrice } from "@/lib/money";
+import { giverNameForOwner } from "@/lib/gifts";
 
 interface CashFundCardProps {
   fund: {
@@ -116,8 +117,8 @@ export function CashFundCard({
                 onClick={(e) => { e.stopPropagation(); setGiftDetailOpen(true); }}
               >
                 {purchases.length > 1
-                  ? `${purchases[0].buyer_name} + ${purchases.length - 1} other${purchases.length > 2 ? "s" : ""} contributed`
-                  : `${purchases[0].buyer_name} contributed`}
+                  ? `${giverNameForOwner(purchases[0])} + ${purchases.length - 1} other${purchases.length > 2 ? "s" : ""} contributed`
+                  : `${giverNameForOwner(purchases[0])} contributed`}
               </Tag>
             )}
           </div>

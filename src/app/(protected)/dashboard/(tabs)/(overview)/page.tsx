@@ -10,8 +10,9 @@ import { createClient } from "@/utils/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { countFollowRequests } from "@/lib/follows";
 import { getSessionUser } from "@/lib/viewer";
+import { giverNameForOwner } from "@/lib/gifts";
 
-type CardPurchase = { id: string; status: string; created_at: string; buyer_name: string };
+type CardPurchase = { id: string; status: string; created_at: string; buyer_name: string; hide_giver?: boolean | null };
 type CardItem = {
   quantity_needed: number;
   quantity_fulfilled: number;
@@ -52,7 +53,7 @@ function RegistryCard({
       totalItems={items.length}
       fulfilledItems={items.filter((item) => item.quantity_fulfilled >= item.quantity_needed).length}
       totalValue={items.reduce((sum, item) => sum + (item.price || 0), 0)}
-      recentActivity={recentPurchases.map((p) => ({ id: p.id, name: p.buyer_name, action: "reserved an item" }))}
+      recentActivity={recentPurchases.map((p) => ({ id: p.id, name: giverNameForOwner(p), action: "reserved an item" }))}
       manageHref={`/dashboard/registry/${registry.id}`}
       publicHref={`/r/${registry.slug}`}
       badge={badge}
@@ -66,7 +67,7 @@ type ServerClient = Awaited<ReturnType<typeof createClient>>;
 // What each registry card needs: the registry, its items, and their purchases.
 const REGISTRY_CARD_FIELDS = `
   *,
-  registry_items(id, quantity_needed, quantity_fulfilled, price, purchases(id, status, created_at, buyer_name))
+  registry_items(id, quantity_needed, quantity_fulfilled, price, purchases(id, status, created_at, buyer_name, hide_giver))
 `;
 
 // Registries the user helps manage but doesn't own. Pending email invites are

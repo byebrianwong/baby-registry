@@ -1,7 +1,8 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { expect, fn, screen, userEvent, within } from "storybook/test";
 import { EventGuestManager } from "./event-guest-manager";
-import { sampleEvent, sampleGuests } from "@/lib/event-sample-data";
+import { guestForHost } from "@/lib/events";
+import { sampleEvent, sampleExchangeEvent, sampleExchangeGuests, sampleGuests } from "@/lib/event-sample-data";
 
 const ok = fn(async () => ({ error: null }));
 
@@ -23,6 +24,7 @@ const meta: Meta<typeof EventGuestManager> = {
       setRsvp: ok,
       updateGuest: ok,
       removeGuest: ok,
+      copyGuests: fn(async () => ({ error: null, added: 3, alreadyListed: 1 })),
     },
   },
   decorators: [
@@ -60,5 +62,26 @@ export const EditingGuest: Story = {
     // In the document, not "visible": the dialog fades in, and Chromatic
     // snapshots the end of the fade.
     await expect(dialog.getByText(/token-g1/)).toBeInTheDocument();
+  },
+};
+
+/**
+ * The holiday party: it asks how many kids are coming and has a gift
+ * exchange, so the list shows kids and who's in the exchange. The host can
+ * also copy guests from their other events.
+ */
+export const KidsAndGiftExchange: Story = {
+  args: {
+    eventId: sampleExchangeEvent.id,
+    eventSlug: sampleExchangeEvent.slug,
+    // As the host's page gets them: wishlists hidden, who drew whom left out.
+    guests: sampleExchangeGuests.map(guestForHost),
+    maxPartySize: sampleExchangeEvent.max_party_size,
+    askKids: true,
+    hasExchange: true,
+    copySources: [
+      { id: sampleEvent.id, title: sampleEvent.title, guestCount: sampleGuests.length },
+      { id: "00000000-0000-4000-8000-000000000005", title: "Max Turns 30", guestCount: 1 },
+    ],
   },
 };
