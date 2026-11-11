@@ -399,7 +399,7 @@ export function AddItemDialog({
                     variant="outline"
                     disabled={scraping}
                     onClick={handlePaste}
-                    className="hidden max-sm:inline-flex pointer-coarse:inline-flex"
+                    className="hidden h-10 max-sm:inline-flex pointer-coarse:inline-flex"
                   >
                     <span className="inline-flex items-center gap-1.5">
                       <Clipboard className="h-4 w-4" />
@@ -413,6 +413,7 @@ export function AddItemDialog({
                   onClick={() => {
                     if (externalUrl) handleScrape(externalUrl, { fromTap: true });
                   }}
+                  className="h-10"
                 >
                   <span className="inline-flex items-center gap-1.5">
                     {scraping ? (

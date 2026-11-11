@@ -19,6 +19,9 @@ export const styles = sortCx({
             "disabled:*:data-icon:text-fg-disabled_subtle",
             // Same as `icon` but for SSR icons that cannot be passed to the client as functions.
             "*:data-icon:pointer-events-none *:data-icon:size-5 *:data-icon:shrink-0 *:data-icon:transition-inherit-all",
+            // Many buttons wrap an icon and label in an `inline-flex` span. Its baseline is the bottom of the
+            // icon, so on the default baseline it rides up and makes the button taller. Align it to the top.
+            "[&>[data-text]>.inline-flex]:align-top",
         ].join(" "),
         icon: "pointer-events-none size-5 shrink-0 transition-inherit-all",
     },
