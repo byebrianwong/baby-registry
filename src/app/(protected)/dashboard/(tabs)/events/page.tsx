@@ -3,13 +3,19 @@ import { EventsOverview, type EventsOverviewProps } from "@/components/events-ov
 import { formatEventTime, formatShortEventDate, summarizeRsvps } from "@/lib/events";
 import { listEventsForUser, listLinkedEventsForUser } from "@/lib/events-server";
 import { getViewer } from "@/lib/viewer";
+import { GroupsSection } from "@/components/groups-section";
+import { listGroupsForOwner } from "@/lib/groups-server";
 
 export default async function EventsPage() {
   // Guests (anonymous sessions) don't have events. Cached, so the tabs reuse it.
   const viewer = await getViewer();
   if (!viewer) redirect("/login");
 
-  const [events, linkedEvents] = await Promise.all([listEventsForUser(viewer.id), listLinkedEventsForUser(viewer.id)]);
+  const [events, linkedEvents, groups] = await Promise.all([
+    listEventsForUser(viewer.id),
+    listLinkedEventsForUser(viewer.id),
+    listGroupsForOwner(viewer.id),
+  ]);
   // YYYY-MM-DD in UTC, like the other dashboard tabs.
   const today = new Date().toISOString().slice(0, 10);
 
@@ -46,5 +52,12 @@ export default async function EventsPage() {
       href: `/e/${event.slug}`,
     }));
 
-  return <EventsOverview upcoming={upcoming} past={past} linked={linked} />;
+  return (
+    <>
+      <EventsOverview upcoming={upcoming} past={past} linked={linked} />
+      <div className="container mx-auto px-4 pb-8">
+        <GroupsSection groups={groups} />
+      </div>
+    </>
+  );
 }

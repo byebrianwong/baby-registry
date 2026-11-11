@@ -111,6 +111,9 @@ function useDemoGuests(initial: EventGuest[]) {
     },
     // The demo shows no other events to copy from, so this never runs.
     copyGuests: async () => ({ ...ok, added: 0, alreadyListed: 0 }),
+    // The demo has no groups to invite, and doesn't save new ones.
+    inviteGroup: async () => ({ ...ok, added: 0, alreadyListed: 0 }),
+    saveAsGroup: async () => ({ error: "Groups aren't saved in the demo. Sign up to keep this guest list." }),
   };
 
   return { guests, actions };

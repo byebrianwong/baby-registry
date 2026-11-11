@@ -25,7 +25,10 @@ const meta: Meta<typeof EventGuestManager> = {
       updateGuest: ok,
       removeGuest: ok,
       copyGuests: fn(async () => ({ error: null, added: 3, alreadyListed: 1 })),
+      inviteGroup: fn(async () => ({ error: null, added: 4, alreadyListed: 2 })),
+      saveAsGroup: fn(async () => ({ error: null, groupId: "group-1" })),
     },
+    eventTitle: sampleEvent.title,
   },
   decorators: [
     (Story) => (
@@ -83,5 +86,21 @@ export const KidsAndGiftExchange: Story = {
       { id: sampleEvent.id, title: sampleEvent.title, guestCount: sampleGuests.length },
       { id: "00000000-0000-4000-8000-000000000005", title: "Max Turns 30", guestCount: 1 },
     ],
+    groups: [
+      { id: "group-1", name: "The Chens", memberCount: 6 },
+      { id: "group-2", name: "Book club", memberCount: 1 },
+    ],
+  },
+};
+
+/** "Save as a group" names a group made of everyone on the list. */
+export const SavingAsGroup: Story = {
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByRole("button", { name: "Save as a group" }));
+    const dialog = within(await screen.findByRole("dialog"));
+    // In the document, not "visible": the dialog fades in, and Chromatic
+    // snapshots the end of the fade.
+    await expect(dialog.getByLabelText("Group name")).toHaveValue(sampleEvent.title);
   },
 };

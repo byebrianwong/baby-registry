@@ -62,6 +62,8 @@ export interface EventDetails {
   ask_kids: boolean;
   /** The event this was copied from with "Plan it again". */
   repeated_from: string | null;
+  /** The group its guests came from (src/lib/groups.ts), or null. */
+  group_id?: string | null;
   created_at: string;
   updated_at: string;
 }

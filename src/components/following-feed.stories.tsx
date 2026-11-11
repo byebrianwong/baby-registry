@@ -40,3 +40,24 @@ export const WithRegistries: Story = {};
 export const NotFollowingAnyone: Story = {
   args: { people: [], registries: [] },
 };
+
+// Someone who follows nobody yet, in a family group where Grandma shared her
+// private wishlist. The shared list shows first, with the group's name.
+export const SharedWithYourGroups: Story = {
+  args: {
+    people: [],
+    registries: [],
+    shared: [
+      {
+        slug: "grandma-rose-xmas",
+        title: "Grandma Rose's Christmas wishlist",
+        event_date: "2026-12-25",
+        registry_type: "personal",
+        event_type: "christmas",
+        is_public: false,
+        owner: { public_id: "r4s8t2vw6y", full_name: "Rose Chen" },
+        groupNames: ["The Chens"],
+      },
+    ],
+  },
+};

@@ -36,6 +36,7 @@ import { PhotoUploadButton } from "@/components/photo-upload-button";
 import { RegistryAvatar, monogramFor } from "@/components/registry-avatar";
 import { uploadRegistryPhoto } from "@/lib/upload-registry-photo";
 import { ReservationPrivacyCard } from "@/components/reservation-privacy-card";
+import { RegistryGroupsCard } from "@/components/registry-groups-card";
 import { readReservationPrivacy } from "@/lib/gifts";
 
 interface Manager {
@@ -522,6 +523,12 @@ export default function RegistrySettingsPage() {
             privacy={readReservationPrivacy(registry.settings)}
           />
           <Separator className="my-8" />
+          {isOwner && hasProfile && (
+            <>
+              <RegistryGroupsCard registryId={registryId} />
+              <Separator className="my-8" />
+            </>
+          )}
         </>
       )}
 

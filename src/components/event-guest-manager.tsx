@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Bell, Check, Copy, Download, Loader2, Mail, Pencil, Send, Trash2, UserPlus } from "lucide-react";
+import { Bell, Check, Copy, Download, Loader2, Mail, Pencil, Send, Trash2, UserPlus, Users } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -19,7 +19,9 @@ import {
 import {
   addEventGuests,
   copyGuestsFromEvent,
+  inviteGroupToEvent,
   removeEventGuest,
+  saveGuestListAsGroup,
   sendEventInvites,
   sendEventReminders,
   setGuestRsvp,
@@ -35,6 +37,7 @@ import {
   type RsvpStatus,
 } from "@/lib/events";
 import { initialsFor } from "@/lib/initials";
+import { memberCountLabel, type GroupSummary } from "@/lib/groups";
 import { cx } from "@/lib/utils/cx";
 
 type ActionResult = { error: string | null };
@@ -50,6 +53,8 @@ export interface GuestManagerActions {
     eventId: string,
     sourceEventId: string,
   ) => Promise<ActionResult & { added?: number; alreadyListed?: number }>;
+  inviteGroup: (eventId: string, groupId: string) => Promise<ActionResult & { added?: number; alreadyListed?: number }>;
+  saveAsGroup: (eventId: string, name: string) => Promise<ActionResult & { groupId?: string }>;
 }
 
 const DEFAULT_ACTIONS: GuestManagerActions = {
@@ -60,6 +65,8 @@ const DEFAULT_ACTIONS: GuestManagerActions = {
   updateGuest: updateEventGuest,
   removeGuest: removeEventGuest,
   copyGuests: copyGuestsFromEvent,
+  inviteGroup: inviteGroupToEvent,
+  saveAsGroup: saveGuestListAsGroup,
 };
 
 export interface EventGuestManagerProps {
@@ -80,6 +87,10 @@ export interface EventGuestManagerProps {
   hasExchange?: boolean;
   /** Other events the host can copy guests from. */
   copySources?: { id: string; title: string; guestCount: number }[];
+  /** The host's groups, to invite all at once (src/lib/groups.ts). */
+  groups?: GroupSummary[];
+  /** The name "Save as a group" suggests: the event's title. */
+  eventTitle?: string;
 }
 
 type Filter = "all" | RsvpStatus;
@@ -158,6 +169,8 @@ export function EventGuestManager({
   askKids = false,
   hasExchange = false,
   copySources = [],
+  groups = [],
+  eventTitle = "",
 }: EventGuestManagerProps) {
   const router = useRouter();
   const actions = { ...DEFAULT_ACTIONS, ...actionOverrides };
@@ -172,6 +185,7 @@ export function EventGuestManager({
   const [confirming, setConfirming] = useState<"invite" | "remind" | null>(null);
   const [sending, setSending] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [savingGroup, setSavingGroup] = useState(false);
 
   const now = Date.now();
   // Matches sendEventInvites: guests who already replied, including people
@@ -262,6 +276,24 @@ export function EventGuestManager({
     setAdding(true);
     setAddError("");
     const result = await actions.copyGuests(eventId, sourceEventId);
+    setAdding(false);
+    if (result.error) {
+      setAddError(result.error);
+      return;
+    }
+    const added = result.added ?? 0;
+    const skipped = result.alreadyListed ?? 0;
+    toast.success(
+      `${added === 1 ? "Added 1 guest" : `Added ${added} guests`}${skipped ? `. ${skipped} already on the list.` : ""}`,
+    );
+    router.refresh();
+  };
+
+  const inviteGroup = async (groupId: string) => {
+    if (!groupId) return;
+    setAdding(true);
+    setAddError("");
+    const result = await actions.inviteGroup(eventId, groupId);
     setAdding(false);
     if (result.error) {
       setAddError(result.error);
@@ -449,6 +481,23 @@ export function EventGuestManager({
             </Button>
           </form>
         )}
+        {groups.length > 0 && (
+          <div className="mt-3 border-t border-secondary pt-3">
+            <NativeSelect
+              aria-label="Invite a group"
+              value=""
+              disabled={adding}
+              onChange={(e) => inviteGroup(e.target.value)}
+              options={[
+                { value: "", label: "Invite a group…" },
+                ...groups.map((group) => ({
+                  value: group.id,
+                  label: `${group.name} (${memberCountLabel(group.memberCount)})`,
+                })),
+              ]}
+            />
+          </div>
+        )}
         {copySources.length > 0 && (
           <div className="mt-3 border-t border-secondary pt-3">
             <NativeSelect
@@ -486,12 +535,20 @@ export function EventGuestManager({
             Guest list
           </h2>
           {guests.length > 0 && (
-            <Button variant="outline" size="sm" onClick={() => downloadCsv(guests, { askKids, hasExchange })}>
-              <span className="inline-flex items-center gap-1.5">
-                <Download className="size-4" />
-                Download CSV
-              </span>
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              <Button variant="outline" size="sm" onClick={() => setSavingGroup(true)}>
+                <span className="inline-flex items-center gap-1.5">
+                  <Users className="size-4" />
+                  Save as a group
+                </span>
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => downloadCsv(guests, { askKids, hasExchange })}>
+                <span className="inline-flex items-center gap-1.5">
+                  <Download className="size-4" />
+                  Download CSV
+                </span>
+              </Button>
+            </div>
           )}
         </div>
 
@@ -604,7 +661,92 @@ export function EventGuestManager({
           onSaved={() => router.refresh()}
         />
       )}
+
+      {savingGroup && (
+        <SaveGroupDialog
+          eventId={eventId}
+          defaultName={eventTitle}
+          guestCount={guests.length}
+          basePath={basePath}
+          saveAsGroup={actions.saveAsGroup}
+          onClose={() => setSavingGroup(false)}
+          onSaved={(groupId) => {
+            setSavingGroup(false);
+            router.push(`${basePath}/dashboard/groups/${groupId}`);
+          }}
+        />
+      )}
     </div>
+  );
+}
+
+/**
+ * "Save as a group": names a new group made of everyone on the guest list.
+ * The group keeps the list for next time (src/lib/groups.ts).
+ */
+function SaveGroupDialog({
+  eventId,
+  defaultName,
+  guestCount,
+  saveAsGroup,
+  onClose,
+  onSaved,
+}: {
+  eventId: string;
+  defaultName: string;
+  guestCount: number;
+  basePath: string;
+  saveAsGroup: GuestManagerActions["saveAsGroup"];
+  onClose: () => void;
+  onSaved: (groupId: string) => void;
+}) {
+  const [name, setName] = useState(defaultName);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+
+  const save = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setBusy(true);
+    setError("");
+    const result = await saveAsGroup(eventId, name);
+    setBusy(false);
+    if (result.error || !result.groupId) {
+      setError(result.error ?? "The group wasn't made. Try again.");
+      return;
+    }
+    toast.success(`Saved “${name.trim()}” as a group`);
+    onSaved(result.groupId);
+  };
+
+  return (
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Save as a group</DialogTitle>
+          <DialogDescription>
+            Keep these {guestCount === 1 ? "1 guest" : `${guestCount} guests`} as a group, like &ldquo;The Chens&rdquo; or
+            &ldquo;Book club&rdquo;. Invite the whole group to your next event, run a gift exchange with it, or share a
+            wishlist with it.
+          </DialogDescription>
+        </DialogHeader>
+        <form onSubmit={save} className="flex flex-col gap-4">
+          <Input label="Group name" value={name} onChange={setName} maxLength={80} autoFocus />
+          {error && (
+            <p role="alert" className="text-sm text-error-primary">
+              {error}
+            </p>
+          )}
+          <div className="flex justify-end gap-2">
+            <Button type="button" variant="outline" onClick={onClose} disabled={busy}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={busy}>
+              {busy ? "Saving…" : "Save group"}
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }
 
