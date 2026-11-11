@@ -94,16 +94,19 @@ export default async function ProfilePage({
   }
 
   // Private registries are only for the owner, approved followers, and
-  // people in a group the owner shared that registry with.
+  // people in a group the owner shared that registry with (by a confirmed
+  // email). Someone who blocked the owner doesn't get the group's lists.
   const seesAllPrivate = isOwnProfile || followState === "approved";
-  const viewer = seesAllPrivate ? null : await getViewer();
+  const viewer = seesAllPrivate || followState === "blocked" ? null : await getViewer();
   const [{ data: listed }, sharedSlugs] = await Promise.all([
     supabaseAdmin
       .from("registries")
       .select(LISTED_REGISTRY_COLUMNS)
       .eq("owner_id", profile.id)
       .eq("listed_on_profile", true),
-    viewer ? sharedRegistrySlugsFrom(profile.id, viewer) : Promise.resolve(new Set<string>()),
+    viewer
+      ? sharedRegistrySlugsFrom(profile.id, { id: viewer.id, email: viewer.email_confirmed_at ? viewer.email : null })
+      : Promise.resolve(new Set<string>()),
   ]);
   const registries = ((listed || []) as ListedRegistry[]).filter(
     (registry) => seesAllPrivate || registry.is_public || sharedSlugs.has(registry.slug),
