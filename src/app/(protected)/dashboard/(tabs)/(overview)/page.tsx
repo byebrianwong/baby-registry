@@ -80,8 +80,10 @@ async function loadSharedRegistries(supabase: ServerClient, user: User) {
       .eq("email", user.email)
       .gt("expires_at", new Date().toISOString());
 
+    // With the user's own session: the function adds auth.uid() and ignores
+    // p_user_id, so the service-role client would add nobody.
     for (const invite of pendingInvites || []) {
-      await supabaseAdmin.rpc("accept_registry_invite", {
+      await supabase.rpc("accept_registry_invite", {
         p_token: invite.token,
         p_user_id: user.id,
       });

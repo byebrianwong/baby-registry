@@ -66,6 +66,7 @@ A gift registry app built with Next.js, Supabase, and Tailwind CSS. It started a
 - **Styling:** Tailwind CSS v4 + shadcn/ui
 - **Email:** Resend
 - **Visual tests:** Storybook + Chromatic
+- **End-to-end tests:** Playwright, against local Supabase with a Mailpit inbox ([e2e/README.md](e2e/README.md))
 - **Deployment:** Vercel
 
 ## Getting Started
@@ -238,5 +239,7 @@ Fourteen tables, all with Row Level Security turned on:
 | `NEXT_PUBLIC_SITE_URL` | Client + Server | The site's address, used in links in emails. Defaults to `http://localhost:3000` |
 | `RESEND_API_KEY` | Server only | Resend key for notification emails |
 | `RESEND_TEST_RECIPIENT` | Server only | Optional. Sends every email to this address instead, for testing |
+| `CRON_SECRET` | Server only | Needed by the two daily jobs in `vercel.json`. Vercel Cron sends it, and without it the jobs don't run: no reservation reminders, no releasing reservations that ran out, no completion discount emails |
+| `EMAIL_TRANSPORT`, `MAILPIT_URL` | Server only | End-to-end tests only. `mailpit` sends every email to the local Mailpit inbox instead of Resend. See [e2e/README.md](e2e/README.md) |
 
 For how the live site, database and visual tests are run, see [CLAUDE.md](CLAUDE.md).

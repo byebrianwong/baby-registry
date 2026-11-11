@@ -71,6 +71,8 @@ function build(): Store {
     registry_id: "demo",
     minimum_condition: (item.minimum_condition ?? null) as Item["minimum_condition"],
     created_at: new Date().toISOString(),
+    // demo.registry fills these in from the gifts.
+    purchases: [],
   }));
   const titles = new Map<string, string>([
     ...items.map((i) => [i.id, i.title] as const),
@@ -153,13 +155,31 @@ export const demo = {
       .reverse();
   },
   registry(id: string): RegistryDetail {
-    return detailFor(id);
+    const detail = detailFor(id);
+    // Read from the gifts each time, so cancelling a gift shows on its item too.
+    const gifts = [...(current().gifts.get(id) ?? [])].sort((a, b) => b.created_at.localeCompare(a.created_at));
+    return {
+      ...detail,
+      items: detail.items.map((item) => ({
+        ...item,
+        purchases: gifts
+          .filter((g) => g.registry_item_id === item.id)
+          .map(({ id, status, reserved_until, buyer_name, quantity }) => ({ id, status, reserved_until, buyer_name, quantity })),
+      })),
+    };
   },
   gifts(id: string): Gift[] {
     return [...(current().gifts.get(id) ?? [])].sort((a, b) => b.created_at.localeCompare(a.created_at));
   },
-  addItem(registryId: string, values: Omit<Item, "id" | "registry_id" | "sort_order" | "created_at">) {
-    const item: Item = { ...values, id: newId("item"), registry_id: registryId, sort_order: 0, created_at: new Date().toISOString() };
+  addItem(registryId: string, values: Omit<Item, "id" | "registry_id" | "sort_order" | "created_at" | "purchases">) {
+    const item: Item = {
+      ...values,
+      id: newId("item"),
+      registry_id: registryId,
+      sort_order: 0,
+      created_at: new Date().toISOString(),
+      purchases: [],
+    };
     setItems(registryId, (items) => [item, ...items]);
     return { id: item.id, title: item.title };
   },

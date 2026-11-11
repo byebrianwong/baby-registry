@@ -1,4 +1,4 @@
-import { Resend } from "resend";
+import { getMailer, sendEmail } from "./mailer";
 import { supabaseAdmin } from "./supabase-admin";
 import { formatPrice } from "./money";
 import { SECRET_GIVER_NAME } from "./gifts";
@@ -32,14 +32,6 @@ import {
   type GiftExchange,
   type LinkedRegistry,
 } from "./events";
-
-let _resend: Resend | null = null;
-function getResend() {
-  if (!_resend) {
-    _resend = new Resend(process.env.RESEND_API_KEY);
-  }
-  return _resend;
-}
 
 const FROM = "Regibee <notifications@regibee.com>";
 
@@ -183,7 +175,7 @@ type ReservationEmailOpts = Parameters<typeof itemReservedBuyerHtml>[0] & { buye
 /** Tells a guest their reservation is held, with the address and links to finish. */
 export async function confirmItemReserved(opts: ReservationEmailOpts) {
   try {
-    await getResend().emails.send({
+    await sendEmail({
       from: FROM,
       to: TEST_RECIPIENT_OVERRIDE || opts.buyerEmail,
       subject: `You reserved "${opts.itemTitle}". It's held for ${opts.holdDays} days`,
@@ -199,7 +191,7 @@ export async function remindItemReservation(
   opts: Parameters<typeof itemReservationReminderBuyerHtml>[0] & { buyerEmail: string }
 ) {
   try {
-    await getResend().emails.send({
+    await sendEmail({
       from: FROM,
       to: TEST_RECIPIENT_OVERRIDE || opts.buyerEmail,
       subject: `Your reservation of "${opts.itemTitle}" ends soon`,
@@ -215,7 +207,7 @@ export async function notifyItemReservationEnded(
   opts: Parameters<typeof itemReservationEndedBuyerHtml>[0] & { buyerEmail: string }
 ) {
   try {
-    await getResend().emails.send({
+    await sendEmail({
       from: FROM,
       to: TEST_RECIPIENT_OVERRIDE || opts.buyerEmail,
       subject: `Your reservation of "${opts.itemTitle}" ended`,
@@ -231,7 +223,7 @@ export async function confirmItemGiven(
   opts: Parameters<typeof itemGivenBuyerHtml>[0] & { buyerEmail: string }
 ) {
   try {
-    await getResend().emails.send({
+    await sendEmail({
       from: FROM,
       to: TEST_RECIPIENT_OVERRIDE || opts.buyerEmail,
       subject: `Your gift is confirmed — "${opts.itemTitle}"`,
@@ -247,7 +239,7 @@ export async function confirmItemCovered(
   opts: Parameters<typeof itemCoveredBuyerHtml>[0] & { buyerEmail: string }
 ) {
   try {
-    await getResend().emails.send({
+    await sendEmail({
       from: FROM,
       to: TEST_RECIPIENT_OVERRIDE || opts.buyerEmail,
       subject: `Your gift is confirmed — "${opts.itemTitle}"`,
@@ -269,7 +261,7 @@ export async function confirmCashFundContribution(opts: {
   registryUrl?: string;
 }) {
   try {
-    await getResend().emails.send({
+    await sendEmail({
       from: FROM,
       to: TEST_RECIPIENT_OVERRIDE || opts.buyerEmail,
       subject: `Your contribution is confirmed — "${opts.fundTitle}"`,
@@ -311,7 +303,7 @@ export async function notifyItemGiven(opts: {
 
     await Promise.all(
       managers.map((m) =>
-        getResend().emails.send({
+        sendEmail({
           from: FROM,
           to: TEST_RECIPIENT_OVERRIDE || m.email,
           subject: `🎁 ${buyerName} bought "${opts.itemTitle}"`,
@@ -351,7 +343,7 @@ export async function notifyCompletionDiscounts(opts: {
 
     await Promise.all(
       managers.map((m) =>
-        getResend().emails.send({
+        sendEmail({
           from: FROM,
           to: TEST_RECIPIENT_OVERRIDE || m.email,
           subject,
@@ -390,7 +382,7 @@ export async function notifyCashFundContribution(opts: {
 
     await Promise.all(
       managers.map((m) =>
-        getResend().emails.send({
+        sendEmail({
           from: FROM,
           to: TEST_RECIPIENT_OVERRIDE || m.email,
           subject: `💵 ${buyerName} contributed ${formatted} to "${opts.fundTitle}"`,
@@ -435,7 +427,7 @@ export async function notifyItemCovered(opts: {
 
     await Promise.all(
       managers.map((m) =>
-        getResend().emails.send({
+        sendEmail({
           from: FROM,
           to: TEST_RECIPIENT_OVERRIDE || m.email,
           subject: `🎉 ${buyerName} sent you ${sent} for "${opts.itemTitle}"`,
@@ -467,7 +459,7 @@ export async function sendManagerInvite(opts: {
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
     const inviteUrl = `${siteUrl}/invite/${opts.token}`;
 
-    await getResend().emails.send({
+    await sendEmail({
       from: FROM,
       to: TEST_RECIPIENT_OVERRIDE || opts.toEmail,
       subject: `${opts.inviterName} invited you to manage "${opts.registryTitle}"`,
@@ -495,7 +487,7 @@ export async function notifyNewSuggestion(opts: {
 
     await Promise.all(
       managers.map((m) =>
-        getResend().emails.send({
+        sendEmail({
           from: FROM,
           to: TEST_RECIPIENT_OVERRIDE || m.email,
           subject: `💡 ${opts.suggestedByName} suggested "${opts.title}"`,
@@ -557,7 +549,7 @@ export async function notifyFollowRequest(opts: { followerId: string; followeeId
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
     const followerName = displayName(follower).slice(0, 60);
 
-    await getResend().emails.send({
+    await sendEmail({
       from: FROM,
       to: TEST_RECIPIENT_OVERRIDE || user.email,
       subject: `${followerName} wants to follow you on Regibee`,
@@ -580,7 +572,7 @@ export async function sendFollowInviteEmail(opts: { toEmail: string; inviterName
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
     const inviterName = opts.inviterName.slice(0, 60);
 
-    await getResend().emails.send({
+    await sendEmail({
       from: FROM,
       to: TEST_RECIPIENT_OVERRIDE || opts.toEmail,
       subject: `${inviterName} wants to follow you on Regibee`,
@@ -666,7 +658,7 @@ export async function sendEventInvitations(opts: {
   for (let start = 0; start < opts.guests.length; start += BATCH_SIZE) {
     const chunk = opts.guests.slice(start, start + BATCH_SIZE);
     try {
-      const { error } = await getResend().batch.send(
+      const { error } = await getMailer().sendBatch(
         chunk.map((guest) => ({
           from: fromHost(opts.hostName),
           to: TEST_RECIPIENT_OVERRIDE || guest.email,
@@ -713,7 +705,7 @@ export async function confirmRsvpToGuest(opts: {
       opts.status === "yes"
         ? `You're going to ${opts.event.title}`
         : `Your RSVP for ${opts.event.title}`;
-    await getResend().emails.send({
+    await sendEmail({
       from: FROM,
       to: TEST_RECIPIENT_OVERRIDE || opts.guest.email,
       subject,
@@ -752,7 +744,7 @@ export async function notifyHostOfRsvp(opts: {
     if (!email) return;
 
     const answer = opts.status === "yes" ? "is going" : opts.status === "maybe" ? "might come" : "can't make it";
-    await getResend().emails.send({
+    await sendEmail({
       from: FROM,
       to: TEST_RECIPIENT_OVERRIDE || email,
       subject: `${opts.guestName} ${answer} to ${opts.event.title}`,

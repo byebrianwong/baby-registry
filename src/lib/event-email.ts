@@ -1,17 +1,12 @@
-import { Resend } from "resend";
+import { getMailer, sendEmail } from "./mailer";
 import { supabaseAdmin } from "./supabase-admin";
 import { formatEventDate, type EventDetails, type EventGuest, type GiftExchange } from "./events";
 import { coHostInviteHtml, exchangeAssignmentHtml, registryLinkedHtml } from "./event-email-templates";
 import { resolveRegistryLink } from "./events-server";
 
 // Emails about co-hosts, linked registries and gift exchanges. The invitation
-// and RSVP emails are in email.ts.
-
-let resend: Resend | null = null;
-function getResend() {
-  if (!resend) resend = new Resend(process.env.RESEND_API_KEY);
-  return resend;
-}
+// and RSVP emails are in email.ts. Both send through mailer.ts, which uses
+// Resend, or Mailpit in the end-to-end tests.
 
 const FROM = "Regibee <notifications@regibee.com>";
 
@@ -62,7 +57,7 @@ export async function notifyRegistryLinked(opts: {
         ]);
         const email = user?.user?.email;
         if (!email) continue;
-        await getResend().emails.send({
+        await sendEmail({
           from: FROM,
           to: TEST_RECIPIENT_OVERRIDE || email,
           subject: `${linkedByName} linked your registry to ${opts.event.title}`,
@@ -90,7 +85,7 @@ export async function sendCoHostInvite(opts: {
   token: string;
 }) {
   try {
-    await getResend().emails.send({
+    await sendEmail({
       from: FROM,
       to: TEST_RECIPIENT_OVERRIDE || opts.toEmail,
       subject: `${opts.inviterName} asked you to co-host ${opts.eventTitle}`,
@@ -162,7 +157,7 @@ export async function sendExchangeAssignments(opts: {
 
   for (let start = 0; start < emails.length; start += BATCH_SIZE) {
     try {
-      const { error } = await getResend().batch.send(emails.slice(start, start + BATCH_SIZE));
+      const { error } = await getMailer().sendBatch(emails.slice(start, start + BATCH_SIZE));
       if (error) console.error("[email] Failed to send Secret Santa names:", error);
     } catch (err) {
       console.error("[email] Failed to send Secret Santa names:", err);

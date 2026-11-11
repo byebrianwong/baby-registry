@@ -118,11 +118,13 @@ async function fetchRegistry(id: string, userId: string): Promise<RegistryDetail
     supabase
       .from("registry_items")
       .select(
-        "id, registry_id, category_id, title, external_url, image_url, price, quantity_needed, quantity_fulfilled, is_essential, is_parent_purchased, is_open_to_used, minimum_condition, notes, sort_order, created_at"
+        "id, registry_id, category_id, title, external_url, image_url, price, quantity_needed, quantity_fulfilled, is_essential, is_parent_purchased, is_open_to_used, minimum_condition, notes, sort_order, created_at, purchases(id, status, reserved_until, buyer_name, quantity)"
       )
       .eq("registry_id", id)
       .order("sort_order")
-      .order("created_at", { ascending: false }),
+      .order("created_at", { ascending: false })
+      // Newest first, as the website's owner page lists them.
+      .order("created_at", { referencedTable: "purchases", ascending: false }),
     supabase
       .from("cash_funds")
       .select("id, registry_id, title, description, goal_amount, current_amount")
