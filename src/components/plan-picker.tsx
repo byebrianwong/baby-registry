@@ -233,10 +233,11 @@ export function PlanPicker({
   if (occasion && state.gifts) {
     if (withEvent) summary.push(`An invitation with RSVPs: “${state.title || suggestedTitle(state)}”`);
     if (state.gifts === "new_list") {
+      const whose = state.audience === "child" ? "Their" : "Your";
       summary.push(
         withEvent
-          ? `Your ${occasion.list.noun}, “${listTitleFor(occasion, state.name)}”, linked to the invitation`
-          : `Your ${occasion.list.noun}`,
+          ? `${whose} ${occasion.list.noun}, “${listTitleFor(occasion, state.name)}”, linked to the invitation`
+          : `${whose} ${occasion.list.noun}`,
       );
       if (state.audience === "child") summary.push("You'll always see what's been reserved, since you keep it for your child");
     }
