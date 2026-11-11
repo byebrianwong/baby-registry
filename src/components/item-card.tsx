@@ -10,7 +10,7 @@ import { UsedConditionTag } from "@/components/ui/used-condition-tag";
 import { toggleParentPurchased } from "@/lib/actions/registry";
 import { EditItemDialog } from "@/components/edit-item-dialog";
 import { GiftDetailModal, type Purchase } from "@/components/gift-detail-modal";
-import { isOpenReservation } from "@/lib/gifts";
+import { giverNameForOwner, isOpenReservation } from "@/lib/gifts";
 import type { RetailerRegistry, StoreId } from "@/lib/retailers";
 import { formatPrice } from "@/lib/money";
 
@@ -129,7 +129,7 @@ export function ItemCard({ item, registryId, isOwner, categories = [], zipCode, 
                       className="cursor-pointer hover:opacity-80 max-w-full overflow-hidden text-ellipsis block"
                       onClick={(e) => { e.stopPropagation(); setGiftDetailOpen(true); }}
                     >
-                      {`${onlyReserved ? "Reserved" : "Gifted"} by ${firstGiver.buyer_name}`}
+                      {`${onlyReserved ? "Reserved" : "Gifted"} by ${giverNameForOwner(firstGiver)}`}
                       {activePurchases.length > 1
                         ? ` + ${activePurchases.length - 1} other${activePurchases.length > 2 ? "s" : ""}`
                         : ""}

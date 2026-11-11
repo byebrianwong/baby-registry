@@ -1,8 +1,8 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { EventsOverview } from "./events-overview";
 import { DashboardTabs } from "./dashboard-tabs";
-import { formatEventTime, summarizeRsvps } from "@/lib/events";
-import { SAMPLE_TODAY, sampleEvent, sampleGuests } from "@/lib/event-sample-data";
+import { formatEventTime, formatShortEventDate, summarizeRsvps } from "@/lib/events";
+import { SAMPLE_TODAY, sampleEvent, sampleGuests, sampleLinkedRegistries } from "@/lib/event-sample-data";
 
 // The Events tab. Its page loads events on the server, which Storybook can't
 // render, so these pass the cards in.
@@ -81,3 +81,30 @@ export const WithEvents: Story = {
 };
 
 export const Empty: Story = { args: { upcoming: [], past: [] } };
+
+/**
+ * Remi & Max haven't planned an event, but friends are hosting two that link
+ * their registries. Those show as "Celebrating you" above the empty state.
+ */
+export const CelebratingYou: Story = {
+  args: {
+    upcoming: [],
+    past: [],
+    linked: [
+      {
+        id: sampleEvent.id,
+        title: sampleEvent.title,
+        dateText: formatShortEventDate(sampleEvent.event_date!),
+        registryTitles: sampleLinkedRegistries.map((r) => r.title),
+        href: `/e/${sampleEvent.slug}`,
+      },
+      {
+        id: "sip-and-see",
+        title: "Come Meet Baby Remi",
+        dateText: null,
+        registryTitles: [sampleLinkedRegistries[0].title],
+        href: "#",
+      },
+    ],
+  },
+};

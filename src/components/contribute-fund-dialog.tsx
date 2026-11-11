@@ -22,6 +22,7 @@ import { contributeToCashFund } from "@/lib/actions/registry";
 import { CelebrationDialog } from "@/components/celebration-dialog";
 import type { PaymentMethods } from "@/lib/types";
 import { formatDollars } from "@/lib/money";
+import { useGuestPrefill } from "@/components/guest-prefill-context";
 
 type DialogAction = (formData: FormData) => Promise<{ error: string } | undefined>;
 
@@ -59,6 +60,8 @@ export function ContributeFundDialog({
   previousAmount,
   shippingAddress,
 }: ContributeFundDialogProps) {
+  // A guest from an event invitation: their name and email start filled in.
+  const prefill = useGuestPrefill();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -200,6 +203,7 @@ export function ContributeFundDialog({
             placeholder="Alex Kim"
             autoComplete="name"
             enterKeyHint="next"
+            defaultValue={prefill?.name || undefined}
             isRequired
           />
           <Input
@@ -210,6 +214,7 @@ export function ContributeFundDialog({
             autoComplete="email"
             enterKeyHint="next"
             icon={Mail01}
+            defaultValue={prefill?.email || undefined}
             isRequired
           />
           <TextArea

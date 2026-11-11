@@ -2,7 +2,12 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { EventForm } from "@/components/event-form";
-import { getEventForManager, getLinkedRegistry, getManageableRegistries } from "@/lib/events-server";
+import {
+  getEventForManager,
+  getEventRegistries,
+  getGiftExchange,
+  getManageableRegistries,
+} from "@/lib/events-server";
 import { getViewer } from "@/lib/viewer";
 
 export const metadata = { title: "Edit event | Regibee" };
@@ -14,15 +19,13 @@ export default async function EditEventPage({ params }: { params: Promise<{ even
   const { eventId } = await params;
   const found = await getEventForManager(eventId, viewer.id);
   if (!found) notFound();
-  const { event, isOwner } = found;
+  const { event } = found;
 
-  const registries = await getManageableRegistries(viewer.id);
-  // A co-host may not manage the linked registry themselves. Show it anyway,
-  // so the list doesn't look unlinked.
-  if (event.registry_id && !registries.some((r) => r.id === event.registry_id)) {
-    const linked = await getLinkedRegistry(event.registry_id);
-    if (linked) registries.unshift({ id: event.registry_id, title: linked.title });
-  }
+  const [registries, linked, exchange] = await Promise.all([
+    getManageableRegistries(viewer.id),
+    getEventRegistries(event.id),
+    getGiftExchange(event.id),
+  ]);
 
   return (
     <div className="container mx-auto max-w-2xl px-4 py-8">
@@ -36,7 +39,13 @@ export default async function EditEventPage({ params }: { params: Promise<{ even
       <h1 className="mt-4 text-3xl font-bold">Edit event</h1>
       <p className="mt-1 text-tertiary">Guests see your changes on the event page right away.</p>
       <div className="mt-6">
-        <EventForm eventId={event.id} initial={event} registries={registries} canChangeRegistry={isOwner} />
+        <EventForm
+          eventId={event.id}
+          initial={event}
+          registries={registries}
+          linkedRegistries={linked.map((r) => ({ id: r.id, title: r.title, honoree: r.honoree }))}
+          exchange={exchange}
+        />
       </div>
     </div>
   );

@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/dialog";
 import {
   addEventGuests,
+  copyGuestsFromEvent,
   removeEventGuest,
   sendEventInvites,
   sendEventReminders,
@@ -45,6 +46,10 @@ export interface GuestManagerActions {
   setRsvp: (eventId: string, guestId: string, status: RsvpStatus, partySize: number) => Promise<ActionResult>;
   updateGuest: (eventId: string, guestId: string, changes: { name: string; email: string | null }) => Promise<ActionResult>;
   removeGuest: (eventId: string, guestId: string) => Promise<ActionResult>;
+  copyGuests: (
+    eventId: string,
+    sourceEventId: string,
+  ) => Promise<ActionResult & { added?: number; alreadyListed?: number }>;
 }
 
 const DEFAULT_ACTIONS: GuestManagerActions = {
@@ -54,6 +59,7 @@ const DEFAULT_ACTIONS: GuestManagerActions = {
   setRsvp: setGuestRsvp,
   updateGuest: updateEventGuest,
   removeGuest: removeEventGuest,
+  copyGuests: copyGuestsFromEvent,
 };
 
 export interface EventGuestManagerProps {
@@ -68,6 +74,12 @@ export interface EventGuestManagerProps {
   /** Put in front of the RSVP links' path. The demo passes "/demo". */
   basePath?: string;
   actions?: Partial<GuestManagerActions>;
+  /** The RSVP asks how many kids are coming. */
+  askKids?: boolean;
+  /** Whether the event has a gift exchange, to show who's in it. */
+  hasExchange?: boolean;
+  /** Other events the host can copy guests from. */
+  copySources?: { id: string; title: string; guestCount: number }[];
 }
 
 type Filter = "all" | RsvpStatus;
@@ -100,14 +112,26 @@ function csvCell(value: string | number | null) {
   return /[",\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
 }
 
-function downloadCsv(guests: EventGuest[]) {
+function downloadCsv(guests: EventGuest[], { askKids = false, hasExchange = false } = {}) {
+  const coming = (g: EventGuest) => g.rsvp_status === "yes" || g.rsvp_status === "maybe";
   const rows = [
-    ["Name", "Email", "RSVP", "People", "Note", "Invited"],
+    [
+      "Name",
+      "Email",
+      "RSVP",
+      "People",
+      ...(askKids ? ["Kids"] : []),
+      ...(hasExchange ? ["Gift exchange"] : []),
+      "Note",
+      "Invited",
+    ],
     ...guests.map((g) => [
       g.name,
       g.email,
       RSVP_LABELS[g.rsvp_status],
-      g.rsvp_status === "yes" || g.rsvp_status === "maybe" ? g.party_size : "",
+      coming(g) ? g.party_size : "",
+      ...(askKids ? [coming(g) ? g.kids_count : ""] : []),
+      ...(hasExchange ? [g.in_exchange ? "In" : ""] : []),
       g.rsvp_note,
       g.invited_at ? new Date(g.invited_at).toISOString().slice(0, 10) : "",
     ]),
@@ -131,6 +155,9 @@ export function EventGuestManager({
   origin,
   basePath = "",
   actions: actionOverrides,
+  askKids = false,
+  hasExchange = false,
+  copySources = [],
 }: EventGuestManagerProps) {
   const router = useRouter();
   const actions = { ...DEFAULT_ACTIONS, ...actionOverrides };
@@ -230,6 +257,28 @@ export function EventGuestManager({
     router.refresh();
   };
 
+  const copyFrom = async (sourceEventId: string) => {
+    if (!sourceEventId) return;
+    setAdding(true);
+    setAddError("");
+    const result = await actions.copyGuests(eventId, sourceEventId);
+    setAdding(false);
+    if (result.error) {
+      setAddError(result.error);
+      return;
+    }
+    const added = result.added ?? 0;
+    const skipped = result.alreadyListed ?? 0;
+    toast.success(
+      `${added === 1 ? "Added 1 guest" : `Added ${added} guests`}${skipped ? `. ${skipped} already on the list.` : ""}`,
+    );
+    router.refresh();
+  };
+
+  const kidsComing = guests
+    .filter((g) => g.rsvp_status === "yes")
+    .reduce((sum, g) => sum + (g.kids_count ?? 0), 0);
+
   const confirmCount = confirming === "invite" ? uninvited.length : remindable.length;
 
   return (
@@ -238,7 +287,9 @@ export function EventGuestManager({
         <Stat
           label="Going"
           value={summary.attending}
-          detail={summary.yes === 1 ? "1 RSVP" : `${summary.yes} RSVPs`}
+          detail={`${summary.yes === 1 ? "1 RSVP" : `${summary.yes} RSVPs`}${
+            askKids && kidsComing > 0 ? `, ${kidsComing} ${kidsComing === 1 ? "kid" : "kids"}` : ""
+          }`}
         />
         <Stat
           label="Maybe"
@@ -398,6 +449,23 @@ export function EventGuestManager({
             </Button>
           </form>
         )}
+        {copySources.length > 0 && (
+          <div className="mt-3 border-t border-secondary pt-3">
+            <NativeSelect
+              aria-label="Copy guests from another event"
+              value=""
+              disabled={adding}
+              onChange={(e) => copyFrom(e.target.value)}
+              options={[
+                { value: "", label: "Copy guests from another event…" },
+                ...copySources.map((source) => ({
+                  value: source.id,
+                  label: `${source.title} (${source.guestCount === 1 ? "1 guest" : `${source.guestCount} guests`})`,
+                })),
+              ]}
+            />
+          </div>
+        )}
         {addError && (
           <p role="alert" className="mt-2 text-sm text-error-primary">
             {addError}
@@ -418,7 +486,7 @@ export function EventGuestManager({
             Guest list
           </h2>
           {guests.length > 0 && (
-            <Button variant="outline" size="sm" onClick={() => downloadCsv(guests)}>
+            <Button variant="outline" size="sm" onClick={() => downloadCsv(guests, { askKids, hasExchange })}>
               <span className="inline-flex items-center gap-1.5">
                 <Download className="size-4" />
                 Download CSV
@@ -487,7 +555,15 @@ export function EventGuestManager({
                       {(guest.rsvp_status === "yes" || guest.rsvp_status === "maybe") && guest.party_size > 1
                         ? ` · ${guest.party_size}`
                         : ""}
+                      {askKids && (guest.rsvp_status === "yes" || guest.rsvp_status === "maybe") && guest.kids_count > 0
+                        ? ` (${guest.kids_count} ${guest.kids_count === 1 ? "kid" : "kids"})`
+                        : ""}
                     </span>
+                    {hasExchange && guest.in_exchange && (
+                      <span className="rounded-full bg-mint-50 px-2 py-0.5 text-xs font-medium text-mint-800">
+                        Gift exchange{guest.wishlist_url || guest.gift_ideas ? " · wishlist added" : ""}
+                      </span>
+                    )}
                   </div>
                   <p className="truncate text-sm text-tertiary">
                     {guest.email ?? "No email"}

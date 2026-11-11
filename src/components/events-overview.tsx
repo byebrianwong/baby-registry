@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CalendarHeart, Plus } from "lucide-react";
+import { CalendarHeart, Gift, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { EventCard, type EventCardProps } from "@/components/event-card";
@@ -11,6 +11,12 @@ export interface EventsOverviewProps {
   past: (EventCardProps & { id: string })[];
   /** Put in front of the New Event link. The demo passes "/demo". */
   basePath?: string;
+  /**
+   * Events someone else hosts that link one of your registries, like a
+   * shower a friend is throwing for you. You see the guest page, not the
+   * host's.
+   */
+  linked?: { id: string; title: string; dateText: string | null; registryTitles: string[]; href: string }[];
 }
 
 export function NewEventButton({ basePath = "" }: { basePath?: string }) {
@@ -27,7 +33,37 @@ export function NewEventButton({ basePath = "" }: { basePath?: string }) {
 }
 
 /** The Events tab on the dashboard. Its page (dashboard/(tabs)/events) loads the events. */
-export function EventsOverview({ upcoming, past, basePath = "" }: EventsOverviewProps) {
+function LinkedEvents({ linked }: { linked: NonNullable<EventsOverviewProps["linked"]> }) {
+  return (
+    <section aria-labelledby="linked-events-heading" className="mt-8 rounded-2xl bg-blush-50 p-4">
+      <div className="flex items-start gap-3">
+        <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary">
+          <Gift aria-hidden="true" className="size-4.5 text-blush-700" />
+        </span>
+        <div className="min-w-0">
+          <h2 id="linked-events-heading" className="font-medium text-primary">
+            Celebrating you
+          </h2>
+          <p className="text-sm text-tertiary">Events other people are hosting that link your registry.</p>
+          <ul className="mt-2 flex flex-col gap-1">
+            {linked.map((event) => (
+              <li key={event.id} className="text-sm">
+                <Link href={event.href} className="font-medium text-brand-600 hover:underline">
+                  {event.title}
+                </Link>
+                <span className="text-tertiary">
+                  {event.dateText ? ` · ${event.dateText}` : ""} · links {event.registryTitles.join(", ")}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+export function EventsOverview({ upcoming, past, basePath = "", linked = [] }: EventsOverviewProps) {
   const none = upcoming.length === 0 && past.length === 0;
 
   return (
@@ -40,6 +76,8 @@ export function EventsOverview({ upcoming, past, basePath = "" }: EventsOverview
         </div>
         <NewEventButton basePath={basePath} />
       </div>
+
+      {linked.length > 0 && <LinkedEvents linked={linked} />}
 
       {none ? (
         <Card className="mt-8">

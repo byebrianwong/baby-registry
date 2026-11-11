@@ -46,6 +46,12 @@ function guests(today: string, eventId: string, list: GuestInput[]): EventGuest[
       invited_at: g.invited != null ? at(today, -g.invited) : null,
       reminded_at: g.reminded != null ? at(today, -g.reminded, "16:00") : null,
       added_by_guest: g.addedByGuest ?? false,
+      kids_count: 0,
+      in_exchange: false,
+      wishlist_url: null,
+      gift_ideas: null,
+      shipping_address: null,
+      giftee_id: null,
       created_at: at(today, -14),
     };
   });
@@ -76,6 +82,9 @@ function babyShower(today: string): DemoEvent {
     max_party_size: 3,
     open_rsvp: true,
     email_host_on_rsvp: true,
+    gift_note: null,
+    ask_kids: false,
+    repeated_from: null,
     created_at: at(today, -14),
     updated_at: at(today, -14),
     guests: guests(today, id, [
@@ -159,6 +168,9 @@ function birthdayDinner(today: string): DemoEvent {
     // Only people with their own RSVP link can answer.
     open_rsvp: false,
     email_host_on_rsvp: true,
+    gift_note: null,
+    ask_kids: false,
+    repeated_from: null,
     created_at: at(today, -3),
     updated_at: at(today, -3),
     guests: guests(today, id, [
@@ -196,6 +208,9 @@ function housewarming(today: string): DemoEvent {
     max_party_size: 2,
     open_rsvp: true,
     email_host_on_rsvp: false,
+    gift_note: null,
+    ask_kids: false,
+    repeated_from: null,
     created_at: at(today, -180),
     updated_at: at(today, -180),
     guests: guests(today, id, [

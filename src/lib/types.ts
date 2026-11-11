@@ -107,4 +107,12 @@ export interface Purchase {
   created_at: string;
   updated_at: string;
   item_title?: string;
+  /** The event guest who gave it, when they came from an event's invitation. */
+  event_guest_id?: string | null;
+  /**
+   * A Secret Santa's gift. The list's owners and managers see "Secret Santa"
+   * instead of the giver's name and email (see giverNameForOwner in
+   * src/lib/gifts.ts).
+   */
+  hide_giver?: boolean;
 }

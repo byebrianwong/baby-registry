@@ -4,13 +4,24 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Info } from "lucide-react";
 import { EventForm } from "@/components/event-form";
-import { DEMO_ME_ID, findDemoEvent } from "@/lib/demo-events";
+import { findDemoEvent } from "@/lib/demo-events";
 import { demoOwnRegistries } from "@/lib/demo-registries";
 import { useDemoToday } from "../demo-today";
 import { DemoOwnerShell } from "./demo-shell";
 import { DEMO_NOT_SAVED } from "./demo-event-host";
 
 const notSaved = async () => ({ error: DEMO_NOT_SAVED });
+
+/** The event form's registry link lookup, against the demo's own registries. */
+function demoLookup(today: string) {
+  return async (link: string) => {
+    const slug = link.trim().match(/r\/([a-z0-9-]+)/i)?.[1] ?? link.trim();
+    const found = demoOwnRegistries(today).find((r) => r.slug === slug);
+    return found
+      ? { error: null, registry: { id: found.id, title: found.title, honoree: found.honoree_names ?? null } }
+      : { error: "In the demo, paste the link to a demo registry, like /demo/r/remi-and-max." };
+  };
+}
 
 function DemoNotice() {
   return (
@@ -54,7 +65,7 @@ export function DemoEventForm({ eventId, registryId }: { eventId?: string; regis
               eventId={event.id}
               initial={event}
               registries={registries}
-              canChangeRegistry={event.owner_id === DEMO_ME_ID}
+              lookupAction={demoLookup(today)}
               updateAction={notSaved}
               setImageAction={notSaved}
               uploadImage={notSaved}
@@ -63,6 +74,7 @@ export function DemoEventForm({ eventId, registryId }: { eventId?: string; regis
             <EventForm
               registries={registries}
               initial={{ registry_id: registries.find((r) => r.id === registryId)?.id ?? null }}
+              lookupAction={demoLookup(today)}
               createAction={notSaved}
               setImageAction={notSaved}
               uploadImage={notSaved}
