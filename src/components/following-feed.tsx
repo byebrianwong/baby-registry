@@ -107,6 +107,7 @@ export function FollowingFeed({
                   registry={registry}
                   isPast={isPastEvent(registry, today)}
                   ownerName={`${displayName(registry.owner)} · ${registry.groupNames.join(", ")}`}
+                  privateLabel="Your group only"
                   basePath={basePath}
                 />
               ))}
