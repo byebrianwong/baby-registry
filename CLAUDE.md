@@ -61,8 +61,8 @@ Vercel holds these env vars for production, preview and development: `NEXT_PUBLI
 ## Mobile app
 
 - The iPhone and Android app lives in `mobile/`. It's an Expo (React Native) app for registry owners. [mobile/README.md](mobile/README.md) covers what it does, running it and what's left before the app stores.
-- It signs in to the same Supabase project and reads and writes the tables directly, as the signed-in user, under the same access rules as the website. It only has the anon key. `mobile/src/lib/data.ts` copies what the website's server actions in `src/lib/actions/registry.ts` do. When you change one, check the other.
-- It shares `src/lib/retailers.ts`, `src/lib/demo-data.ts` and `src/lib/gifts.ts` with the website through the `@shared/*` path. Keep those files free of imports, or the app can't use them.
+- It signs in to the same Supabase project and reads and writes the tables directly, as the signed-in user, under the same access rules as the website. It only has the anon key. The one exception is deleting the account, which needs the service-role key: the app calls the website's `/api/account` (on `EXPO_PUBLIC_SITE_URL`, regibee.com by default) with its access token. Like the extension, that only works once the route is deployed there. `mobile/src/lib/data.ts` copies what the website's server actions in `src/lib/actions/registry.ts` do. When you change one, check the other.
+- It shares `src/lib/retailers.ts`, `src/lib/demo-data.ts`, `src/lib/gifts.ts` and `src/lib/account-deletion-summary.ts` with the website through the `@shared/*` path. Keep those files free of imports, or the app can't use them.
 - Its product reader is built from `extension/src/product-reader.ts`. After changing that file, run `npm run product-reader` in `mobile/`.
 - The root `tsconfig.json` leaves out `mobile/`. The app has its own checks.
 
@@ -84,7 +84,7 @@ Vercel holds these env vars for production, preview and development: `NEXT_PUBLI
 - If you changed components or stories, also run `npm run build-storybook`.
 - If you added a migration, also run `npm run check:migrations`.
 - If you changed `extension/`, `src/lib/retailers.ts` or `src/lib/extension.ts`, also run `npm run extension:build` and `npm run test:extension`. The tests skip when this computer has no saved store pages. See "Tests" in [extension/README.md](extension/README.md).
-- If you changed `mobile/`, `src/lib/retailers.ts`, `src/lib/demo-data.ts`, `src/lib/gifts.ts` or `extension/src/product-reader.ts`, also run `npm run lint` and `npm run check` in `mobile/`.
+- If you changed `mobile/`, `src/lib/retailers.ts`, `src/lib/demo-data.ts`, `src/lib/gifts.ts`, `src/lib/account-deletion-summary.ts` or `extension/src/product-reader.ts`, also run `npm run lint` and `npm run check` in `mobile/`.
 - `npm run lint` fails right now. `eslint.config.mjs` imports `eslint-plugin-storybook`, which isn't in `package.json`.
 
 ## After opening a pull request

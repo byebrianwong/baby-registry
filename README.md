@@ -53,6 +53,7 @@ A gift registry app built with Next.js, Supabase, and Tailwind CSS. It started a
 ### Accounts and demo
 
 - **Sign-up and password reset** - Accounts use an email and password. "Forgot password" sends a reset link by email.
+- **Delete account** - On the Account page and in the app. The confirmation lists what goes: registries only you manage, with their items, gifts and photos; your events, with their guest lists; your profile and follows. A registry other people help manage stays with them, and the co-manager who joined first becomes its owner. `DELETE /api/account` does it (`src/lib/account-deletion.ts`).
 - **Demo** - `/demo/dashboard` is the owner's side, signed in as the sample couple Remi & Max: a baby registry and a birthday wishlist, events with guest lists and RSVPs, following and profiles, and a guide to all of it. `/demo` is the gift giver view. No account needed, and nothing is saved. The demo pages mirror the real ones under `/demo` (`/demo/r/...`, `/demo/e/...`, `/demo/u/...`) and use the same components, with stand-ins for their server actions.
 
 ## Tech Stack
@@ -138,7 +139,7 @@ src/
 │   ├── (protected)/      # Pages that need an account
 │   │   └── dashboard/
 │   │       ├── page.tsx           # Your registries
-│   │       ├── account/           # Profile, follow requests, followers, blocked people
+│   │       ├── account/           # Profile, follow requests, followers, blocked people, delete account
 │   │       ├── following/         # Registries from people you follow, people search
 │   │       ├── events/            # The Events tab, new events, and each event's guests and RSVPs
 │   │       └── registry/
@@ -147,6 +148,7 @@ src/
 │   │               ├── page.tsx       # Items, gift activity, suggestions
 │   │               ├── checklist/     # Baby checklist
 │   │               └── settings/      # Registry settings and managers
+│   ├── api/account/      # Deletes the signed-in account, for the website and the app
 │   ├── api/extension/    # The browser extension's API
 │   ├── auth/callback/    # Where email confirmation and password reset links land
 │   ├── demo/             # Demo pages with sample data, at the real pages' paths under /demo
