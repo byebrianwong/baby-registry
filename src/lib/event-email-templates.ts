@@ -57,6 +57,30 @@ export function coHostInviteHtml(opts: { inviterName: string; eventTitle: string
   `;
 }
 
+/**
+ * Asks the person an event is for to make a gift list. The list is linked to
+ * the event as soon as they make it.
+ */
+export function listRequestHtml(opts: {
+  honoreeName: string;
+  hostName: string;
+  eventTitle: string;
+  eventDate?: string | null;
+  /** "baby registry", "birthday wishlist". */
+  listNoun: string;
+  requestUrl: string;
+}): string {
+  const when = opts.eventDate ? ` on ${escapeHtml(opts.eventDate)}` : "";
+  return `
+    <p>Hi ${escapeHtml(opts.honoreeName)},</p>
+    <p><strong>${escapeHtml(opts.hostName)}</strong> is planning <strong>${escapeHtml(opts.eventTitle)}</strong>${when} on Regibee, and asked you to make a ${escapeHtml(opts.listNoun)} so guests know what you'd like.</p>
+    <p>Add things from any store. Your list is linked to the invitation as soon as you make it, and guests reserve gifts without needing an account. ${escapeHtml(opts.hostName)} can't change your list.</p>
+    ${button(opts.requestUrl, `Make my ${opts.listNoun}`)}
+    <p style="color:#888;font-size:13px;">Or copy this link: ${escapeHtml(opts.requestUrl)}</p>
+    <p style="color:#888;font-size:13px;">If you don't know ${escapeHtml(opts.hostName)}, you can ignore this email.</p>
+  `;
+}
+
 /** Tells one person in a gift exchange whose name they drew. */
 export function exchangeAssignmentHtml(opts: {
   giverName: string;

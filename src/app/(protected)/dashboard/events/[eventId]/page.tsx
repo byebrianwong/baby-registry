@@ -25,6 +25,7 @@ import {
   getExchangeExclusions,
   getGiftExchange,
   getHostInvites,
+  getPendingListRequests,
   listOtherEventsForCopy,
 } from "@/lib/events-server";
 import { getViewer } from "@/lib/viewer";
@@ -49,7 +50,7 @@ export default async function ManageEventPage({
   if (!found) notFound();
   const { event, isOwner } = found;
 
-  const [allGuests, registries, exchange, exclusions, hosts, invites, copySources, groups] = await Promise.all([
+  const [allGuests, registries, exchange, exclusions, hosts, invites, copySources, groups, listRequests] = await Promise.all([
     getEventGuests(event.id),
     getEventRegistries(event.id),
     getGiftExchange(event.id),
@@ -58,6 +59,7 @@ export default async function ManageEventPage({
     getHostInvites(event.id),
     listOtherEventsForCopy(viewer.id, event.id),
     listGroupsForOwner(viewer.id),
+    getPendingListRequests(event.id),
   ]);
   // Worked out before the guests are trimmed for the host, since it needs the pairs.
   const status = exchange ? exchangeStatus(allGuests, exchange) : null;
@@ -200,9 +202,14 @@ export default async function ManageEventPage({
                         </li>
                       ))}
                     </ul>
-                  ) : (
+                  ) : listRequests.length === 0 ? (
                     <p className="text-sm text-tertiary">No registry linked.</p>
-                  )}
+                  ) : null}
+                  {listRequests.map((request) => (
+                    <p key={request.email} className="text-sm text-tertiary">
+                      Waiting for {request.name} to make their list. We emailed {request.email}.
+                    </p>
+                  ))}
                   {event.gift_note && <p className="text-sm whitespace-pre-line text-secondary">{event.gift_note}</p>}
                   <Link href={`/dashboard/events/${event.id}/edit`} className="text-sm font-medium text-brand-600 hover:underline">
                     {registries.length > 0 || event.gift_note ? "Change gifts" : "Link a registry or add a gift note"}

@@ -9,7 +9,7 @@ export interface EventsOverviewProps {
   upcoming: (EventCardProps & { id: string })[];
   /** Before today, most recent first. */
   past: (EventCardProps & { id: string })[];
-  /** Put in front of the New Event link. The demo passes "/demo". */
+  /** Put in front of the New link. The demo passes "/demo". */
   basePath?: string;
   /**
    * Events someone else hosts that link one of your registries, like a
@@ -19,13 +19,17 @@ export interface EventsOverviewProps {
   linked?: { id: string; title: string; dateText: string | null; registryTitles: string[]; href: string }[];
 }
 
+/**
+ * The New button: "What are you planning?" (/dashboard/new). The demo has no
+ * picker, so with a base path it opens the demo's event form.
+ */
 export function NewEventButton({ basePath = "" }: { basePath?: string }) {
   return (
     <Button asChild>
-      <Link href={`${basePath}/dashboard/events/new`}>
+      <Link href={basePath ? `${basePath}/dashboard/events/new` : "/dashboard/new"}>
         <span className="inline-flex items-center gap-1.5">
           <Plus className="h-4 w-4 shrink-0" />
-          New Event
+          New
         </span>
       </Link>
     </Button>

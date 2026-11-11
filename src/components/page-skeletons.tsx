@@ -62,10 +62,10 @@ export function DashboardSkeleton() {
           <p className="text-tertiary">Manage your registries and track gifts</p>
         </div>
         <Button asChild>
-          <Link href="/dashboard/registry/new">
+          <Link href="/dashboard/new">
             <span className="inline-flex items-center gap-1.5">
               <Plus className="h-4 w-4 shrink-0" />
-              New Registry
+              New
             </span>
           </Link>
         </Button>
@@ -112,10 +112,10 @@ export function EventsSkeleton() {
           <p className="text-tertiary">Send invitations and track RSVPs</p>
         </div>
         <Button asChild>
-          <Link href="/dashboard/events/new">
+          <Link href="/dashboard/new">
             <span className="inline-flex items-center gap-1.5">
               <Plus className="h-4 w-4 shrink-0" />
-              New Event
+              New
             </span>
           </Link>
         </Button>

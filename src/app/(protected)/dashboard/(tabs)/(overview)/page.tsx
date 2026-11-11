@@ -171,10 +171,10 @@ export default async function DashboardPage() {
           )}
         </div>
         <Button asChild>
-          <Link href="/dashboard/registry/new">
+          <Link href="/dashboard/new">
             <span className="inline-flex items-center gap-1.5">
               <Plus className="h-4 w-4 shrink-0" />
-              New Registry
+              New
             </span>
           </Link>
         </Button>
@@ -231,10 +231,10 @@ export default async function DashboardPage() {
               Create your first registry to start adding items.
             </p>
             <Button className="mt-6" asChild>
-              <Link href="/dashboard/registry/new">
+              <Link href="/dashboard/new">
                 <span className="inline-flex items-center gap-1.5">
                   <Plus className="h-4 w-4 shrink-0" />
-                  Create Registry
+                  Start something new
                 </span>
               </Link>
             </Button>
