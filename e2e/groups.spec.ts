@@ -47,6 +47,10 @@ test("a guest list saved as a group fills an event and runs next year's exchange
 
   // The host saves the guest list as a group.
   await signIn(page, host);
+  // The dev server compiles a page the first time it's opened, and a page
+  // still compiling can fail the app's own navigation to it. Opening the group
+  // page once first (for a group that doesn't exist) gets that out of the way.
+  await page.request.get("/dashboard/groups/00000000-0000-4000-8000-000000000000");
   await openEvent(page, lastYear.id);
   await page.getByRole("button", { name: "Save as a group" }).click();
   const dialog = page.getByRole("dialog");
