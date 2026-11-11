@@ -71,6 +71,8 @@ export default function AccountScreen() {
         <Row icon="people" label="People you follow" onPress={() => open("/dashboard/following")} />
         <Divider inset={52} />
         <Row icon="settings" label="Profile, privacy and email" onPress={() => open("/dashboard/account")} />
+        <Divider inset={52} />
+        <Row icon="lock" label="Privacy policy" onPress={() => open("/privacy")} />
       </Section>
 
       {demo ? (

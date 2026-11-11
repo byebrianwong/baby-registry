@@ -82,5 +82,5 @@ The reader (`src/reader.ts`) works the same way for every store: it finds the re
 ## Before publishing to the Chrome Web Store
 
 - Check the Target owner view and a Pottery Barn Kids registry page, then mark them `verified`.
-- Write a privacy policy page. The store asks for one because the extension reads registry pages and holds a Regibee session.
+- Use https://www.regibee.com/privacy as the privacy policy URL. The store asks for one because the extension reads registry pages and holds a Regibee session. The page's "The browser extension" section says what it reads and keeps, so update it when that changes.
 - A Safari version needs an Apple developer account and an Xcode wrapper.

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { DashboardTabs } from "@/components/dashboard-tabs";
 import { NavBar } from "@/components/nav-bar";
+import { PoweredByFooter } from "@/components/site-footer";
 import { DEMO_FOLLOWS, DEMO_ME, demoProfilePath } from "@/lib/demo-people";
 
 /** The strip across the top of every demo page. */
@@ -48,14 +49,7 @@ export function DemoGuestShell({ children }: { children: React.ReactNode }) {
     <div className="flex min-h-screen flex-col bg-primary">
       <DemoBanner />
       {children}
-      <footer className="mt-8 border-t py-6">
-        <div className="container mx-auto px-4 text-center text-sm text-tertiary">
-          Powered by{" "}
-          <Link href="/" className="font-medium text-brand-600 hover:underline">
-            Regibee
-          </Link>
-        </div>
-      </footer>
+      <PoweredByFooter />
     </div>
   );
 }

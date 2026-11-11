@@ -5,6 +5,7 @@ import type { Metadata } from "next";
 import { Logo } from "@/components/logo";
 import { EventInvitation } from "@/components/event-invitation";
 import { RsvpForm } from "@/components/rsvp-form";
+import { PoweredByFooter } from "@/components/site-footer";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { getLinkedRegistry } from "@/lib/events-server";
 import {
@@ -124,14 +125,7 @@ export default async function PublicEventPage({
         </EventInvitation>
       </main>
 
-      <footer className="mt-8 border-t py-6">
-        <div className="container mx-auto px-4 text-center text-sm text-tertiary">
-          Powered by{" "}
-          <a href="/" className="font-medium text-brand-600 hover:underline">
-            Regibee
-          </a>
-        </div>
-      </footer>
+      <PoweredByFooter />
     </div>
   );
 }
