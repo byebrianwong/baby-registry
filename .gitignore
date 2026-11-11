@@ -60,3 +60,6 @@ next-env.d.ts
 /extension/test/**/*.html
 /test-results/
 /playwright-report/
+
+# end-to-end tests (e2e/README.md)
+/.next-e2e/

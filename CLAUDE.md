@@ -48,6 +48,13 @@ Vercel holds these env vars for production, preview and development: `NEXT_PUBLI
 - The free plan includes 5,000 snapshots a month. When they run out, Chromatic pauses testing and review until the next month.
 - Storybook can't render async server components. Put a page's markup in a plain component and write the story for that. The landing page works this way.
 
+## End-to-end tests
+
+- `e2e/` holds Playwright tests that use the website in a browser and check the emails that follow. [e2e/README.md](e2e/README.md) covers setup.
+- They run against local Supabase in Docker (`npm run e2e:db`), never production. Every email, Supabase's own included, lands in local Supabase's Mailpit inbox at http://127.0.0.1:54324.
+- `EMAIL_TRANSPORT=mailpit` makes `src/lib/mailer.ts` send to Mailpit instead of Resend. Only the tests set it. Send every email through `src/lib/mailer.ts`, not Resend directly, so tests can catch it.
+- GitHub Actions doesn't run these tests yet.
+
 ## Browser extension
 
 - The Chrome extension lives in `extension/`. [extension/README.md](extension/README.md) covers building, loading and what it reads.
@@ -68,6 +75,7 @@ Vercel holds these env vars for production, preview and development: `NEXT_PUBLI
 
 - Run `npx tsc --noEmit` and `npm run build`.
 - If you changed components or stories, also run `npm run build-storybook`.
+- If you changed a flow the end-to-end tests cover, emails, `supabase/migrations` or `e2e/`, also run `npm run test:e2e`. After adding a migration, run `npm run e2e:db` first.
 - If you changed `extension/`, `src/lib/retailers.ts` or `src/lib/extension.ts`, also run `npm run extension:build` and `npm run test:extension`. The tests skip when this computer has no saved store pages. See "Tests" in [extension/README.md](extension/README.md).
 - If you changed `mobile/`, `src/lib/retailers.ts`, `src/lib/demo-data.ts` or `extension/src/product-reader.ts`, also run `npm run lint` and `npm run check` in `mobile/`.
 - `npm run lint` fails right now. `eslint.config.mjs` imports `eslint-plugin-storybook`, which isn't in `package.json`.
