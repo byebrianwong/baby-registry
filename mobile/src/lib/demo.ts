@@ -11,6 +11,7 @@ import {
   demoPurchases,
   demoSuggestions,
 } from "@shared/demo-data";
+import { GIFT_HOLD_DAYS, isOpenReservation } from "@shared/gifts";
 
 import type { Category, Gift, Item, Registry, RegistryDetail, RegistrySummary } from "@/lib/types";
 
@@ -41,6 +42,13 @@ function today() {
   return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
 }
 
+const HOUR_MS = 3_600_000;
+
+// The website's sample gifts were all given before gift holds existed, so they
+// count as given. Here two are still held, reserved this many hours ago, so the
+// demo shows both kinds (src/lib/gifts.ts).
+const HELD_HOURS_AGO: Record<string, number> = { "purchase-10": 3, "purchase-9": 30 };
+
 function build(): Store {
   const day = today();
   const registry: Registry = {
@@ -68,20 +76,25 @@ function build(): Store {
     ...items.map((i) => [i.id, i.title] as const),
     ...DEMO_CASH_FUNDS.map((f) => [f.id, f.title] as const),
   ]);
-  const gifts: Gift[] = demoPurchases(day).map((p) => ({
-    id: p.id,
-    buyer_name: p.buyer_name,
-    buyer_email: p.buyer_email ?? null,
-    quantity: p.quantity,
-    amount: p.amount ?? null,
-    status: p.status,
-    message: p.message ?? null,
-    created_at: p.created_at,
-    registry_item_id: p.registry_item_id ?? null,
-    cash_fund_id: p.cash_fund_id ?? null,
-    kind: p.cash_fund_id ? "fund" : "item",
-    for_title: titles.get((p.registry_item_id ?? p.cash_fund_id) as string) ?? "",
-  }));
+  const gifts: Gift[] = demoPurchases(day).map((p) => {
+    const heldHoursAgo = HELD_HOURS_AGO[p.id];
+    const reservedAt = heldHoursAgo === undefined ? null : Date.now() - heldHoursAgo * HOUR_MS;
+    return {
+      id: p.id,
+      buyer_name: p.buyer_name,
+      buyer_email: p.buyer_email ?? null,
+      quantity: p.quantity,
+      amount: p.amount ?? null,
+      status: p.status,
+      reserved_until: reservedAt === null ? null : new Date(reservedAt + GIFT_HOLD_DAYS * 24 * HOUR_MS).toISOString(),
+      message: p.message ?? null,
+      created_at: reservedAt === null ? p.created_at : new Date(reservedAt).toISOString(),
+      registry_item_id: p.registry_item_id ?? null,
+      cash_fund_id: p.cash_fund_id ?? null,
+      kind: p.cash_fund_id ? "fund" : "item",
+      for_title: titles.get((p.registry_item_id ?? p.cash_fund_id) as string) ?? "",
+    };
+  });
   const detail: RegistryDetail = {
     registry,
     role: "owner",
@@ -108,7 +121,9 @@ function summary(detail: RegistryDetail, gifts: Gift[]): RegistrySummary {
     itemCount: detail.items.length,
     fulfilledCount: detail.items.filter((i) => i.quantity_fulfilled >= i.quantity_needed).length,
     totalValue: detail.items.reduce((sum, i) => sum + (i.price ?? 0), 0),
-    recentGifts: active.slice(0, 3).map((g) => ({ id: g.id, buyer_name: g.buyer_name, created_at: g.created_at })),
+    recentGifts: active
+      .slice(0, 3)
+      .map((g) => ({ id: g.id, buyer_name: g.buyer_name, created_at: g.created_at, held: isOpenReservation(g) })),
   };
 }
 

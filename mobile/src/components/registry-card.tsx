@@ -62,7 +62,7 @@ export function RegistryCard({ registry, onPress }: { registry: RegistrySummary;
         <View style={[styles.latest, { backgroundColor: theme.successSoft }]}>
           <Icon name="gift" size={14} color={theme.success} />
           <Text variant="footnote" style={{ flex: 1, color: theme.success }} numberOfLines={1}>
-            {latest.buyer_name} reserved a gift · {timeAgo(latest.created_at)}
+            {latest.buyer_name} {latest.held ? "reserved" : "gave"} a gift · {timeAgo(latest.created_at)}
           </Text>
         </View>
       ) : null}
