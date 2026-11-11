@@ -32,6 +32,7 @@ create table public.event_list_requests (
 
 create index idx_event_list_requests_event_id on public.event_list_requests(event_id);
 create index idx_event_list_requests_registry_id on public.event_list_requests(registry_id) where registry_id is not null;
+create index idx_event_list_requests_requested_by on public.event_list_requests(requested_by) where requested_by is not null;
 
 -- One request per person on each event.
 create unique index event_list_requests_event_email_key
