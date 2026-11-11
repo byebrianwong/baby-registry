@@ -23,6 +23,7 @@ export interface CategoryNavItem {
 
 interface CategoryNavProps {
   categories: CategoryNavItem[];
+  /** Shown under the list in the desktop sidebar (lg and up) only. */
   suggestButton?: React.ReactNode;
 }
 
@@ -137,13 +138,10 @@ export function CategoryNav({ categories, suggestButton }: CategoryNavProps) {
             <SheetHeader>
               <SheetTitle>Categories</SheetTitle>
             </SheetHeader>
+            {/* No suggest button here: below lg the registry grid's toolbar
+                shows it, so guests don't have to open this sheet to find it. */}
             <div className="px-4 pb-4">
               {navList}
-              {suggestButton && (
-                <div className="mt-4">
-                  {suggestButton}
-                </div>
-              )}
             </div>
           </SheetContent>
         </Sheet>

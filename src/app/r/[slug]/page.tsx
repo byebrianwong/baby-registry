@@ -379,37 +379,32 @@ export default async function PublicRegistryPage({
         }
       />
 
-      {/* Items */}
+      {/* Items. With no items or funds yet, the grid says so and still offers
+          "Suggest an item". */}
       <main className="container mx-auto px-4 py-8">
-        {totalItems === 0 && allFunds.length === 0 ? (
-          <div className="text-center py-16 text-tertiary">
-            <p>This registry doesn&apos;t have any items yet.</p>
-          </div>
-        ) : (
-          <PublicRegistryGrid
-            items={shownItems}
-            categories={allCategories}
-            cashFunds={allFunds}
-            parentName={parentName}
-            paymentMethods={paymentMethods}
-            shippingAddress={shippingAddress}
-            myGifts={myGifts}
-            myItemGifts={myItemGifts}
-            reservedCounts={reservedCounts}
-            openGift={openGift}
-            coverCounts={coverCountsObj}
-            selfPurchasedLabel={copy.selfPurchasedLabel}
-            coverFlavor={copy.coverItemFlavor(parentName)}
-            linkedStores={linkedStores}
-            showStoreRegistries={isBabyRegistry}
-            suggestButton={
-              <SuggestItemDialog
-                registryId={registry.id}
-                categories={allCategories.map((c) => ({ id: c.id, name: c.name }))}
-              />
-            }
-          />
-        )}
+        <PublicRegistryGrid
+          items={shownItems}
+          categories={allCategories}
+          cashFunds={allFunds}
+          parentName={parentName}
+          paymentMethods={paymentMethods}
+          shippingAddress={shippingAddress}
+          myGifts={myGifts}
+          myItemGifts={myItemGifts}
+          reservedCounts={reservedCounts}
+          openGift={openGift}
+          coverCounts={coverCountsObj}
+          selfPurchasedLabel={copy.selfPurchasedLabel}
+          coverFlavor={copy.coverItemFlavor(parentName)}
+          linkedStores={linkedStores}
+          showStoreRegistries={isBabyRegistry}
+          suggestButton={
+            <SuggestItemDialog
+              registryId={registry.id}
+              categories={allCategories.map((c) => ({ id: c.id, name: c.name }))}
+            />
+          }
+        />
       </main>
 
       <footer className="border-t py-6 mt-8">

@@ -24,6 +24,7 @@ import { getCategorySectionId } from "@/lib/category-section-id";
 import type { PaymentMethods } from "@/lib/types";
 import { classifyStoreLink, detectStore, registryStoreFor, STORES, type StoreId } from "@/lib/retailers";
 import { formatDollars, formatPrice } from "@/lib/money";
+import { cn } from "@/lib/utils";
 
 interface RegistryItem {
   id: string;
@@ -137,6 +138,15 @@ export function PublicRegistryGrid({
   const [sort, setSort] = useState<SortMode>("default");
   const [storeFilter, setStoreFilter] = useState<StoreId | "any">("any");
 
+  if (items.length === 0 && cashFunds.length === 0) {
+    return (
+      <div className="flex flex-col items-center gap-4 py-16 text-center text-tertiary">
+        <p>This registry doesn&apos;t have any items yet.</p>
+        {suggestButton && <div className="max-sm:w-full">{suggestButton}</div>}
+      </div>
+    );
+  }
+
   // Offer a store filter only when items come from more than one known store.
   const storesInItems = STORES.filter((s) =>
     items.some((item) => detectStore(item.external_url)?.id === s.id)
@@ -219,6 +229,8 @@ export function PublicRegistryGrid({
       normalizedQuery !== "" ||
       storeFilter !== "any");
 
+  const showCategoryNav = navItems.length >= 1;
+
   // Reservations this visitor hasn't confirmed yet, for the banner.
   const openReservations: ReservationBannerEntry[] = items
     .filter((item) => !item.is_parent_purchased && myItemGifts[item.id]?.status === "reserved")
@@ -234,7 +246,7 @@ export function PublicRegistryGrid({
 
   return (
     <div className="flex gap-8 items-start">
-      {navItems.length >= 1 && (
+      {showCategoryNav && (
         <CategoryNav categories={navItems} suggestButton={suggestButton} />
       )}
       <div className="flex-1 min-w-0 space-y-10">
@@ -248,45 +260,55 @@ export function PublicRegistryGrid({
         />
 
         {/* Toolbar */}
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="relative flex-1 max-w-md">
-            <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-tertiary" />
-            <input
-              type="search"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search items"
-              aria-label="Search items"
-              enterKeyHint="search"
-              // 16px on phones, so iOS doesn't zoom in on focus.
-              className="w-full rounded-md border border-primary bg-primary py-2 pl-9 pr-3 text-sm placeholder:text-tertiary focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 max-sm:py-2.5 max-sm:text-md"
-            />
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            {showStoreFilter && (
-              <TightSelect<StoreId | "any">
-                ariaLabel="Store filter"
-                value={storeFilter}
-                onChange={setStoreFilter}
-                options={[
-                  { value: "any", label: "Any store" },
-                  ...storesInItems.map((s) => ({ value: s.id, label: s.name })),
-                ]}
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="relative flex-1 max-w-md">
+              <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-tertiary" />
+              <input
+                type="search"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search items"
+                aria-label="Search items"
+                enterKeyHint="search"
+                // 16px on phones, so iOS doesn't zoom in on focus.
+                className="w-full rounded-md border border-primary bg-primary py-2 pl-9 pr-3 text-sm placeholder:text-tertiary focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 max-sm:py-2.5 max-sm:text-md"
               />
-            )}
-            <TightSelect
-              ariaLabel="Price filter"
-              value={priceBucket}
-              onChange={setPriceBucket}
-              options={PRICE_BUCKETS.map((b) => ({ value: b.value, label: b.label }))}
-            />
-            <TightSelect<SortMode>
-              ariaLabel="Sort order"
-              value={sort}
-              onChange={setSort}
-              options={SORT_OPTIONS}
-            />
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              {showStoreFilter && (
+                <TightSelect<StoreId | "any">
+                  ariaLabel="Store filter"
+                  value={storeFilter}
+                  onChange={setStoreFilter}
+                  options={[
+                    { value: "any", label: "Any store" },
+                    ...storesInItems.map((s) => ({ value: s.id, label: s.name })),
+                  ]}
+                />
+              )}
+              <TightSelect
+                ariaLabel="Price filter"
+                value={priceBucket}
+                onChange={setPriceBucket}
+                options={PRICE_BUCKETS.map((b) => ({ value: b.value, label: b.label }))}
+              />
+              <TightSelect<SortMode>
+                ariaLabel="Sort order"
+                value={sort}
+                onChange={setSort}
+                options={SORT_OPTIONS}
+              />
+            </div>
           </div>
+          {/* From lg up, the category sidebar shows "Suggest an item". Below lg
+              the categories hide behind a floating button, so guests on phones
+              find it here instead. With no sidebar, it's here at every width. */}
+          {suggestButton && (
+            <div className={cn("sm:self-start", showCategoryNav && "lg:hidden")}>
+              {suggestButton}
+            </div>
+          )}
         </div>
 
         {noMatches && (
