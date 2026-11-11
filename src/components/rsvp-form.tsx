@@ -281,7 +281,8 @@ export function RsvpForm({
         )}
 
         {(showPartySize || showKids) && (
-          <div className="grid gap-4 sm:grid-cols-2">
+          // Side by side only when both show. Alone, the dropdown keeps the full width.
+          <div className={cx("grid gap-4", showPartySize && showKids && "sm:grid-cols-2")}>
             {showPartySize && (
               <NativeSelect
                 label="How many people, including you?"
