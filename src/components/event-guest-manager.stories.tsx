@@ -101,6 +101,6 @@ export const SavingAsGroup: Story = {
     const dialog = within(await screen.findByRole("dialog"));
     // In the document, not "visible": the dialog fades in, and Chromatic
     // snapshots the end of the fade.
-    await expect(dialog.getByLabelText("Group name")).toHaveValue(sampleEvent.title);
+    await expect(dialog.getByRole("textbox", { name: "Group name" })).toHaveValue(sampleEvent.title);
   },
 };
