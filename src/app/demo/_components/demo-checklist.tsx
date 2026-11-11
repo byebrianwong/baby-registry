@@ -150,7 +150,7 @@ export function DemoChecklist() {
               />
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <div className="flex rounded-md border">
                 {(
                   ["all", "essential", "not-added"] as FilterMode[]
