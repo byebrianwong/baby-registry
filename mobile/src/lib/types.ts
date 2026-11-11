@@ -45,7 +45,16 @@ export interface Item {
   notes: string | null;
   sort_order: number;
   created_at: string;
+  /**
+   * Guests' gifts of this item, newest first, cancelled ones included.
+   * Reserving raises quantity_fulfilled, so these tell an open hold from a
+   * gift that was given.
+   */
+  purchases: ItemGift[];
 }
+
+/** A gift as an item's row reads it. */
+export type ItemGift = Pick<Gift, "id" | "status" | "reserved_until" | "buyer_name" | "quantity">;
 
 export interface CashFund {
   id: string;

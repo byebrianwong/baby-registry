@@ -3,6 +3,8 @@ import * as WebBrowser from "expo-web-browser";
 import { memo } from "react";
 import { Alert, Platform, Pressable, StyleSheet, View } from "react-native";
 
+import { isOpenReservation } from "@shared/gifts";
+
 import { Icon } from "@/components/icon";
 import { ItemImage } from "@/components/item-image";
 import { haptic, Pill, Text } from "@/components/ui";
@@ -17,11 +19,31 @@ export interface ItemActions {
   remove: (item: Item) => void;
 }
 
+/**
+ * Reserving an item raises quantity_fulfilled, so an open hold is taken off
+ * the given count and shown as reserved until the guest says they bought it.
+ * An item that only has holds reads "Reserved by" its newest guest, the way the
+ * website's owner page does (src/components/item-card.tsx).
+ */
 function status(item: Item): { label: string; tone: "neutral" | "tint" | "success" } {
   if (item.is_parent_purchased) return { label: "You bought it", tone: "success" };
-  if (item.quantity_fulfilled >= item.quantity_needed) return { label: "All given", tone: "success" };
-  if (item.quantity_fulfilled > 0) return { label: `${item.quantity_fulfilled} of ${item.quantity_needed} given`, tone: "tint" };
-  return { label: item.quantity_needed > 1 ? `Wants ${item.quantity_needed}` : "Not given yet", tone: "neutral" };
+  const needed = item.quantity_needed;
+  const held = item.purchases.filter((p) => p.status !== "cancelled" && isOpenReservation(p));
+  // quantity_fulfilled stays the count, as on the website. Unmarking "I bought
+  // it myself" sets it to 0 even while a hold is open.
+  const heldCount = Math.min(item.quantity_fulfilled, held.reduce((sum, p) => sum + (p.quantity || 1), 0));
+  const given = item.quantity_fulfilled - heldCount;
+  if (given >= needed) return { label: "All given", tone: "success" };
+  if (given === 0 && heldCount >= needed) {
+    const others = held.length - 1;
+    const more = others > 0 ? ` + ${others} other${others > 1 ? "s" : ""}` : "";
+    return { label: `Reserved by ${held[0].buyer_name}${more}`, tone: "tint" };
+  }
+  if (given === 0 && heldCount > 0) return { label: `${heldCount} of ${needed} reserved`, tone: "tint" };
+  if (given > 0) {
+    return { label: `${given} of ${needed} given${heldCount > 0 ? `, ${heldCount} reserved` : ""}`, tone: "tint" };
+  }
+  return { label: needed > 1 ? `Wants ${needed}` : "Not given yet", tone: "neutral" };
 }
 
 function openLink(item: Item) {
