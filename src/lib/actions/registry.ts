@@ -1514,6 +1514,7 @@ export async function acceptInvite(token: string) {
     return { error: "Not authenticated" };
   }
 
+  // The function adds the signed-in user (auth.uid()). p_user_id is ignored.
   const { data, error } = await supabase.rpc("accept_registry_invite", {
     p_token: token,
     p_user_id: user.id,
