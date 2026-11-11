@@ -146,7 +146,7 @@ export function PrivacyPolicy({ nav }: { nav: React.ReactNode }) {
             <P>
               Signed-in people can find you on Regibee by name, or by typing your whole email address, only if you
               turn that on. It&apos;s the &ldquo;Let friends find me&rdquo; box when you sign up, and two settings
-              on your Account page. Your email address is never shown to anyone.
+              on your Account page. Search never shows your email address.
             </P>
 
             <H3>Your registries</H3>
@@ -187,11 +187,26 @@ export function PrivacyPolicy({ nav }: { nav: React.ReactNode }) {
 
             <H3>Your events</H3>
             <P>
-              For an event you add its details, which can include a date, a place and its address, a message and an
-              invitation picture, and a guest list with names and email addresses. Guests opening the event&apos;s
-              link see its details. The guest list and the RSVPs are only for you and anyone who helps manage the
-              registry the event links to. Event pages are hidden from search engines.
+              For an event you add its details, which can include a date, a place and its address, a message, a gift
+              note and an invitation picture, and a guest list with names and email addresses. You can link
+              registries to it, yours or anyone else&apos;s you have the link to, and we email a registry&apos;s
+              owners when you link it. Guests opening the event&apos;s link see its details. Event pages are hidden
+              from search engines.
             </P>
+            <List>
+              <li>
+                The guest list and the RSVPs are only for you and your co-hosts. You can invite co-hosts by email or
+                with a link, and they can manage the event with you.
+              </li>
+              <li>
+                When you email invitations, reminders or Secret Santa names, replies go to your email address, so
+                guests who reply see it.
+              </li>
+              <li>
+                In a gift exchange, you see who has joined and how many have added a wishlist or address, but not
+                who drew whom or what anyone added.
+              </li>
+            </List>
 
             <H3>Following and blocking</H3>
             <P>
@@ -209,7 +224,8 @@ export function PrivacyPolicy({ nav }: { nav: React.ReactNode }) {
                 <strong className="font-semibold text-primary">Giving a gift.</strong> You give your name, your email
                 address and, if you like, a message. We record what you gave: the item and how many, or the amount
                 you sent to a cash fund. The registry&apos;s owner and anyone helping them manage it see your name,
-                email, message and gift. Other guests only see that an item is reserved or given, not by whom.
+                email, message and gift. Other guests only see that an item is reserved or given, not by whom. If
+                you give from an event&apos;s invitation, the gift is matched to your RSVP.
               </li>
               <li>
                 <strong className="font-semibold text-primary">Suggesting an item.</strong> The owners get your
@@ -217,9 +233,16 @@ export function PrivacyPolicy({ nav }: { nav: React.ReactNode }) {
               </li>
               <li>
                 <strong className="font-semibold text-primary">RSVPing.</strong> A host may add your name and email
-                address to their guest list to invite you. When you reply, the host and the people helping them see
-                your answer, how many people are coming and any note you add. Your personal RSVP link has a secret
-                code in it, so keep it to yourself.
+                address to their guest list to invite you. When you reply, the host and their co-hosts see your
+                answer, how many people are coming (and how many are kids, if the host asks) and any note you add.
+                Your personal RSVP link has a secret code in it, so keep it to yourself.
+              </li>
+              <li>
+                <strong className="font-semibold text-primary">Gift exchanges (Secret Santa).</strong> If you join
+                one, you can add a wishlist link and gift ideas, and a shipping address when gifts are mailed. Only
+                the person who draws your name sees them, and only you see whose name you drew. A gift you give as
+                someone&apos;s Secret Santa shows their registry&apos;s owners &ldquo;Secret Santa&rdquo; instead of
+                your name and email. We keep those apart, only to send you emails about your gift.
               </li>
               <li>
                 When you give a gift or suggest an item, your browser gets an anonymous Regibee session: a random
@@ -299,8 +322,15 @@ export function PrivacyPolicy({ nav }: { nav: React.ReactNode }) {
                 to guests, to confirm a gift or an RSVP, to remind them before a reservation ends, and to invite
                 them to an event;
               </li>
-              <li>to people invited to help manage a registry, and to people someone asks to follow;</li>
-              <li>to owners when a store&apos;s completion discount for their registry may be open.</li>
+              <li>
+                to people invited to help manage a registry or co-host an event, and to people someone asks to
+                follow;
+              </li>
+              <li>to gift exchange members, with the name they drew;</li>
+              <li>
+                to owners when someone links their registry to an event, or when a store&apos;s completion discount
+                for their registry may be open.
+              </li>
             </List>
             <P>
               You can turn off follow request emails on your Account page, and RSVP emails for each event you host.
@@ -317,6 +347,10 @@ export function PrivacyPolicy({ nav }: { nav: React.ReactNode }) {
             <List>
               <li>Sign-in cookies keep you signed in, and keep a guest&apos;s anonymous session.</li>
               <li>A cookie remembers the gifts a guest gave from that browser, for up to a year.</li>
+              <li>
+                When a guest opens a gift link from an event invitation, a cookie remembers who they are for up to
+                60 days, so the gift form fills in their name and email.
+              </li>
               <li>
                 There are no analytics, advertising or tracking cookies, and no tracking scripts. Our fonts load from
                 regibee.com itself.
@@ -436,7 +470,7 @@ export function PrivacyPolicy({ nav }: { nav: React.ReactNode }) {
           <Section id="security">
             <P>
               Every connection to Regibee is encrypted. Access rules in the database let each person reach only what
-              they&apos;re allowed to, and guest lists, follows and blocks can be read only by our server. No system
+              they&apos;re allowed to. Guest lists, gift exchanges, follows and blocks can be read only by our server. No system
               is perfectly secure, so if you find a problem, please email us at <ContactEmail />.
             </P>
           </Section>
