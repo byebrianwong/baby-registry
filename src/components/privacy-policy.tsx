@@ -188,7 +188,9 @@ export function PrivacyPolicy({ nav }: { nav: React.ReactNode }) {
             <H3>Your events</H3>
             <P>
               For an event you add its details, which can include a date, a place and its address, a message, a gift
-              note and an invitation picture, and a guest list with names and email addresses. You can link
+              note and an invitation picture, questions to ask when guests RSVP, a sign-up sheet, and a guest list
+              with names and email addresses. We keep a copy of the messages you email guests, so you can see what
+              you sent. You can link
               registries to it, yours or anyone else&apos;s you have the link to, and we email a registry&apos;s
               owners when you link it. Guests opening the event&apos;s link see its details. Event pages are hidden
               from search engines.
@@ -199,8 +201,9 @@ export function PrivacyPolicy({ nav }: { nav: React.ReactNode }) {
                 with a link, and they can manage the event with you.
               </li>
               <li>
-                When you email invitations, reminders or Secret Santa names, replies go to your email address, so
-                guests who reply see it.
+                Emails we send for your event, such as invitations, reminders, your messages, updates when its
+                details change, Secret Santa names and gift list requests, reply to your email address, so people
+                who reply see it.
               </li>
               <li>
                 In a gift exchange, you see who has joined and how many have added a wishlist or address, but not
@@ -248,7 +251,15 @@ export function PrivacyPolicy({ nav }: { nav: React.ReactNode }) {
                 <strong className="font-semibold text-primary">RSVPing.</strong> A host may add your name and email
                 address to their guest list to invite you. When you reply, the host and their co-hosts see your
                 answer, how many people are coming (and how many are kids, if the host asks) and any note you add.
-                Your personal RSVP link has a secret code in it, so keep it to yourself.
+                They also see your answers to any questions they ask, such as meal choices, allergies or dietary
+                needs, and the names of the people coming with you. Other guests don&apos;t. Your personal RSVP link
+                has a secret code in it, so keep it to yourself.
+              </li>
+              <li>
+                <strong className="font-semibold text-primary">Sign-up sheets.</strong> If an event has one, you can
+                take a spot, like bringing a dish or a meal train day, with a note. Hosts see who took what. Other
+                guests see what&apos;s taken, not by whom. A meal train&apos;s drop-off address shows only to guests
+                who signed up for a day.
               </li>
               <li>
                 <strong className="font-semibold text-primary">Gift exchanges (Secret Santa).</strong> If you join
@@ -332,8 +343,8 @@ export function PrivacyPolicy({ nav }: { nav: React.ReactNode }) {
             <List>
               <li>to owners, when someone gives a gift, sends money to a fund, suggests an item, or RSVPs;</li>
               <li>
-                to guests, to confirm a gift or an RSVP, to remind them before a reservation ends, and to invite
-                them to an event;
+                to guests, to confirm a gift or an RSVP, to remind them before a reservation ends, to invite them to
+                an event, with the host&apos;s messages and any changes to it, and to remind them the day before;
               </li>
               <li>
                 to people invited to help manage a registry or co-host an event, and to people someone asks to
