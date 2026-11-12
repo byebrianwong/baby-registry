@@ -8,7 +8,15 @@ import { RsvpForm } from "@/components/rsvp-form";
 import { PoweredByFooter } from "@/components/site-footer";
 import { SecretSantaCard } from "@/components/secret-santa-card";
 import { supabaseAdmin } from "@/lib/supabase-admin";
-import { getEventRegistries, getGifteeFor, getGiftExchange, registrySlugFromLink } from "@/lib/events-server";
+import {
+  getEventRegistries,
+  getGifteeFor,
+  getGiftExchange,
+  getSignupSheet,
+  registrySlugFromLink,
+} from "@/lib/events-server";
+import { hidesAddressUntilSignup, signupRowsForGuest, withAddressFor } from "@/lib/signups";
+import { storedAnswers, storedQuestions } from "@/lib/rsvp-questions";
 import {
   eventHasPassed,
   formatEventDate,
@@ -65,14 +73,15 @@ export default async function PublicEventPage({
   const [event, viewer] = await Promise.all([getEvent(slug), getViewer()]);
   if (!event) notFound();
 
-  const [registries, exchange, guestResult] = await Promise.all([
+  const [registries, exchange, signupSheet, guestResult] = await Promise.all([
     getEventRegistries(event.id, { withItems: true }),
     getGiftExchange(event.id),
+    getSignupSheet(event.id),
     token
       ? supabaseAdmin
           .from("event_guests")
           .select(
-            "name, rsvp_status, party_size, kids_count, rsvp_note, token, in_exchange, wishlist_url, gift_ideas, shipping_address, giftee_id",
+            "id, name, rsvp_status, party_size, kids_count, rsvp_note, token, in_exchange, wishlist_url, gift_ideas, shipping_address, giftee_id, answers",
           )
           .eq("event_id", event.id)
           .eq("token", token)
@@ -81,6 +90,7 @@ export default async function PublicEventPage({
   ]);
   const guest = guestResult.data as Pick<
     EventGuest,
+    | "id"
     | "name"
     | "rsvp_status"
     | "party_size"
@@ -92,6 +102,7 @@ export default async function PublicEventPage({
     | "gift_ideas"
     | "shipping_address"
     | "giftee_id"
+    | "answers"
   > | null;
 
   // Who this guest drew, once names are drawn. Only their own link shows it.
@@ -103,12 +114,20 @@ export default async function PublicEventPage({
       : giftee.wishlistUrl
     : null;
 
+  // The event's own time zone could be a day behind UTC, so it counts as over
+  // only once yesterday in UTC is past it. Sign-up days work the same way.
+  const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  const signupRows = signupSheet ? signupRowsForGuest(signupSheet, guest?.id ?? null, yesterday) : [];
+  // A meal train's drop-off address shows only to guests who signed up for a day.
+  const signedUp = signupRows.some((row) => row.mine);
+  const shown = withAddressFor(event, signedUp);
+  const addressHidden = shown !== event && Boolean(event.location_name || event.location_address);
+  const mealTrain = hidesAddressUntilSignup(event.event_type);
+
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
   const eventUrl = `${siteUrl}/e/${event.slug}`;
-  const google = googleCalendarUrl(event, eventUrl);
-  // The event's own time zone could be a day behind UTC, so it counts as over
-  // only once yesterday in UTC is past it.
-  const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  const google = googleCalendarUrl(shown, eventUrl);
+  // The .ics file has no guest, so it never has a meal train's address.
 
   return (
     <div className="min-h-screen bg-primary">
@@ -122,12 +141,18 @@ export default async function PublicEventPage({
 
       <main className="container mx-auto px-4 py-8 sm:py-12">
         <EventInvitation
-          event={event}
+          event={shown}
           registries={registries}
           exchange={exchange}
           eventSlug={event.slug}
           guestToken={guest?.token ?? null}
           calendar={google ? { google, ics: `/e/${event.slug}/calendar` } : null}
+          signup={
+            signupSheet
+              ? { title: signupSheet.sheet.title, note: signupSheet.sheet.note, rows: signupRows, mealTrain }
+              : null
+          }
+          addressHidden={addressHidden}
         >
           {giftee && exchange && (
             <SecretSantaCard
@@ -157,6 +182,7 @@ export default async function PublicEventPage({
                     wishlistUrl: guest.wishlist_url,
                     giftIdeas: guest.gift_ideas,
                     shippingAddress: guest.shipping_address,
+                    answers: storedAnswers(guest.answers),
                   }
                 : null
             }
@@ -165,6 +191,9 @@ export default async function PublicEventPage({
             askKids={event.ask_kids}
             exchange={exchange ? { mailed: exchange.mailed, drawn: Boolean(exchange.drawn_at) } : null}
             passed={eventHasPassed(event, yesterday)}
+            signup={signupSheet ? { title: signupSheet.sheet.title, rows: signupRows } : null}
+            mealTrain={mealTrain}
+            questions={storedQuestions(event.rsvp_questions)}
           />
         </EventInvitation>
       </main>

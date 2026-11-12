@@ -125,7 +125,7 @@ export function DemoEventHost({ eventId }: { eventId: string }) {
   const event = findDemoEvent(today, { id: eventId });
   if (!event) notFound();
   const { guests, actions } = useDemoGuests(event.guests);
-  const registry = event.registry_id ? findDemoRegistry(today, { id: event.registry_id }) : null;
+  const registry = event.registryId ? findDemoRegistry(today, { id: event.registryId }) : null;
   const theme = eventTheme(event.event_type);
   const time = formatEventTime(event);
   const publicPath = `/demo/e/${event.slug}`;

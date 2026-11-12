@@ -1,4 +1,4 @@
-import { CalendarDays, CalendarPlus, Clock, Gift, MapPin, PartyPopper, Shuffle } from "lucide-react";
+import { CalendarDays, CalendarPlus, Clock, CookingPot, Gift, MapPin, PartyPopper, Shuffle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   eventTheme,
@@ -11,6 +11,7 @@ import {
   type LinkedRegistry,
 } from "@/lib/events";
 import { formatPrice } from "@/lib/money";
+import { SignupSheetSection, type InvitationSignup } from "@/components/signup-sheet";
 import { cx } from "@/lib/utils/cx";
 
 export type InvitationEvent = Pick<
@@ -56,6 +57,13 @@ export interface EventInvitationProps {
   guestToken?: string | null;
   /** Add-to-calendar links, when the event has a date. */
   calendar?: { google: string; ics: string } | null;
+  /** The event's sign-up sheet, as this guest sees it. */
+  signup?: InvitationSignup | null;
+  /**
+   * A meal train's drop-off address, held back until the guest signs up.
+   * The event passed in has no address; this says there is one.
+   */
+  addressHidden?: boolean;
   /** The RSVP form, under the details. */
   children?: React.ReactNode;
   /** Put in front of the registry link. The demo passes "/demo". */
@@ -86,6 +94,8 @@ export function EventInvitation({
   eventSlug,
   guestToken,
   calendar,
+  signup = null,
+  addressHidden = false,
   children,
   basePath = "",
 }: EventInvitationProps) {
@@ -118,7 +128,12 @@ export function EventInvitation({
       ) : (
         <div className={cx("flex flex-col items-center gap-3 rounded-2xl px-6 py-10 text-center", theme.bg)}>
           <span className="flex size-14 items-center justify-center rounded-full bg-primary">
-            <PartyPopper aria-hidden="true" className={cx("size-7", theme.icon)} />
+            {/* A meal train is help after a birth, an illness or a loss, not a party. */}
+            {event.event_type === "meal_train" ? (
+              <CookingPot aria-hidden="true" className={cx("size-7", theme.icon)} />
+            ) : (
+              <PartyPopper aria-hidden="true" className={cx("size-7", theme.icon)} />
+            )}
           </span>
           <p className={cx("text-sm font-semibold tracking-wide uppercase", theme.text)}>
             {eventTypeLabel(event.event_type)}
@@ -176,6 +191,11 @@ export function EventInvitation({
                   Open in Maps
                 </a>
               )}
+            </DetailRow>
+          )}
+          {addressHidden && (
+            <DetailRow icon={MapPin}>
+              <p>The drop-off address shows here once you sign up for a day.</p>
             </DetailRow>
           )}
           {event.rsvp_by && (
@@ -252,6 +272,8 @@ export function EventInvitation({
             ))}
           </section>
         )}
+
+        {signup && <SignupSheetSection signup={signup} />}
 
         {exchange && (
           <section aria-labelledby="exchange-heading" className="flex items-start gap-3 rounded-2xl bg-mint-50 p-4">

@@ -1,7 +1,14 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { expect, fn, userEvent, within } from "storybook/test";
 import { RsvpForm } from "./rsvp-form";
-import { sampleExchangeEvent } from "@/lib/event-sample-data";
+import {
+  SAMPLE_TODAY,
+  sampleExchangeEvent,
+  sampleMealTrainSheet,
+  samplePotluckSheet,
+} from "@/lib/event-sample-data";
+import { signupRowsForGuest } from "@/lib/signups";
+import { defaultQuestions } from "@/lib/rsvp-questions";
 
 // The RSVP box on its own, for the questions that only some events ask. The
 // Event Invitation stories show it inside the whole page.
@@ -65,5 +72,80 @@ export const AskingKids: Story = {
     const canvas = within(canvasElement);
     await userEvent.click(canvas.getByRole("button", { name: "Going" }));
     await expect(canvas.getByLabelText(/How many are kids/)).toBeVisible();
+  },
+};
+
+/**
+ * A potluck. Going shows "I'll bring…" with each row's spots left and what
+ * others are bringing. Dessert is full. Ticking a row opens a box for what
+ * you're bringing.
+ */
+export const BringingSomething: Story = {
+  args: {
+    signup: { title: samplePotluckSheet.sheet.title, rows: signupRowsForGuest(samplePotluckSheet, "g4", SAMPLE_TODAY) },
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByRole("button", { name: "Going" }));
+    await expect(canvas.getByRole("checkbox", { name: /Dessert/ })).toBeDisabled();
+    await userEvent.click(canvas.getByText("Side"));
+    await expect(canvas.getByRole("checkbox", { name: /Side/ })).toBeChecked();
+    await expect(canvas.getByRole("textbox", { name: "What you're bringing for Side" })).toBeVisible();
+  },
+};
+
+/**
+ * A meal train: no party, so guests answer "I can help" or "Not this time"
+ * and pick a day. Monday is taken.
+ */
+export const MealTrain: Story = {
+  args: {
+    mealTrain: true,
+    maxPartySize: 1,
+    signup: { title: sampleMealTrainSheet.sheet.title, rows: signupRowsForGuest(sampleMealTrainSheet, "g4", SAMPLE_TODAY) },
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByRole("heading", { name: "Hi Fiyero, can you help?" })).toBeVisible();
+    await userEvent.click(canvas.getByRole("button", { name: "I can help" }));
+    await expect(canvas.getByText("Pick a day")).toBeVisible();
+    await expect(canvas.getByRole("checkbox", { name: /Mon, Mar 2/ })).toBeDisabled();
+  },
+};
+
+/** A guest who signed up sees what they're bringing, and can change it. */
+export const SignedUp: Story = {
+  args: {
+    guest: { name: "Glinda", status: "yes", partySize: 2, note: null },
+    signup: { title: samplePotluckSheet.sheet.title, rows: signupRowsForGuest(samplePotluckSheet, "g1", SAMPLE_TODAY) },
+  },
+};
+
+/**
+ * A wedding's questions. Coming with someone asks their name, then a meal for
+ * each of you. Dietary needs are optional.
+ */
+export const WeddingQuestions: Story = {
+  args: { maxPartySize: 2, questions: defaultQuestions(["plus_ones", "meal", "diet"]) },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByRole("button", { name: "Going" }));
+    await userEvent.selectOptions(canvas.getByLabelText(/How many people, including you/), "2");
+    await userEvent.type(canvas.getByRole("textbox", { name: "Name of guest 2" }), "Elphaba");
+    await expect(canvas.getByRole("combobox", { name: "For Elphaba" })).toBeVisible();
+  },
+};
+
+/** A guest who answered sees their answers, with each person's meal. */
+export const WeddingAnswered: Story = {
+  args: {
+    guest: {
+      name: "Fiyero",
+      status: "yes",
+      partySize: 2,
+      note: null,
+      answers: { meal: ["Fish", "Vegetarian"], plus_ones: ["Elphaba"], diet: "Elphaba is allergic to water" },
+    },
+    questions: defaultQuestions(["plus_ones", "meal", "diet"]),
   },
 };
