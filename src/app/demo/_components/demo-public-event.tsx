@@ -23,7 +23,7 @@ export function DemoPublicEvent({ slug, token }: { slug: string; token: string |
   const event = findDemoEvent(today, { slug });
   if (!event) notFound();
 
-  const registry = event.registry_id ? findDemoRegistry(today, { id: event.registry_id }) : null;
+  const registry = event.registryId ? findDemoRegistry(today, { id: event.registryId }) : null;
   const guest = token ? (event.guests.find((g) => g.token === token) ?? null) : null;
   const google = googleCalendarUrl(event, `${SITE_URL}/demo/e/${event.slug}`);
 

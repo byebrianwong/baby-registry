@@ -1,5 +1,7 @@
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import type { EventDetails, EventGuest, ExchangeGiftee, GiftExchange, LinkedRegistry } from "@/lib/events";
+import type { SignupClaim, SignupItem, SignupSheet, SignupSheetWithRows } from "@/lib/signups";
+import type { EventMessage } from "@/lib/event-updates";
 
 // Reads for the event pages. The event tables have no access rules for the
 // API roles (see 015_events.sql), so everything goes through the service-role
@@ -356,6 +358,42 @@ export async function getGifteeFor(eventId: string, gifteeId: string | null): Pr
     giftIdeas: giftee.gift_ideas,
     shippingAddress: giftee.shipping_address,
   };
+}
+
+// ── Sign-up sheets ───────────────────────────────────────────
+
+/** The event's sign-up sheet with its rows and claims, or null when it has none. */
+export async function getSignupSheet(eventId: string): Promise<SignupSheetWithRows | null> {
+  const { data: sheet } = await supabaseAdmin.from("signup_sheets").select("*").eq("event_id", eventId).maybeSingle();
+  if (!sheet) return null;
+  const { data: items } = await supabaseAdmin
+    .from("signup_items")
+    .select("*")
+    .eq("event_id", eventId)
+    .order("sort_order")
+    .order("created_at");
+  const ids = (items || []).map((i) => i.id as string);
+  const { data: claims } = ids.length
+    ? await supabaseAdmin.from("signup_claims").select("*").in("item_id", ids).order("created_at")
+    : { data: [] };
+  return {
+    sheet: sheet as SignupSheet,
+    items: (items || []) as SignupItem[],
+    claims: (claims || []) as SignupClaim[],
+  };
+}
+
+// ── Messages to guests ───────────────────────────────────────
+
+/** What was emailed to the event's guests after the invitation, newest first. */
+export async function getEventMessages(eventId: string, limit = 20): Promise<EventMessage[]> {
+  const { data } = await supabaseAdmin
+    .from("event_messages")
+    .select("*")
+    .eq("event_id", eventId)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  return (data || []) as EventMessage[];
 }
 
 /** Other events the user can manage, newest first, for "copy guests from". */

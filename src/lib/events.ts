@@ -5,6 +5,7 @@
 
 import { themeForTint, type OccasionTheme } from "@/lib/occasion-theme";
 import { OCCASIONS, OCCASION_IDS, occasionFor, type OccasionId } from "@/lib/occasions";
+import type { QuestionKind, RsvpAnswers, RsvpQuestion } from "@/lib/rsvp-questions";
 
 /** Every event type: the occasions in src/lib/occasions.ts, in order. */
 export const EVENT_TYPES = OCCASION_IDS;
@@ -16,11 +17,6 @@ export type RsvpStatus = "pending" | "yes" | "no" | "maybe";
 export interface EventDetails {
   id: string;
   owner_id: string;
-  /**
-   * The one registry the old code linked. Kept until that code is gone; links
-   * now live in event_registries (see getEventRegistries).
-   */
-  registry_id: string | null;
   slug: string;
   event_type: EventType;
   title: string;
@@ -49,6 +45,15 @@ export interface EventDetails {
   repeated_from: string | null;
   /** The group its guests came from (src/lib/groups.ts), or null. */
   group_id?: string | null;
+  /**
+   * What the RSVP asks besides how many are coming (src/lib/rsvp-questions.ts).
+   * Read it with storedQuestions, since it comes straight from the database.
+   */
+  rsvp_questions?: RsvpQuestion[];
+  /** Email everyone going a reminder the day before. */
+  remind_day_before?: boolean;
+  /** The event date the last day-before reminder went out for. */
+  reminded_for?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -75,6 +80,8 @@ export interface EventGuest {
   shipping_address: string | null;
   /** The guest this one drew in the gift exchange. Only they see it. */
   giftee_id: string | null;
+  /** Answers to the event's RSVP questions, by question id. Read with storedAnswers. */
+  answers?: RsvpAnswers;
   created_at: string;
 }
 
@@ -99,6 +106,10 @@ export interface EventTypeOption {
     giftNote?: string;
     askKids?: boolean;
     exchange?: boolean;
+    /** A new event starts with this sign-up sheet (src/lib/signups.ts). */
+    signup?: "potluck" | "meal_train";
+    /** A new event's RSVP asks these (src/lib/rsvp-questions.ts). */
+    questions?: QuestionKind[];
   };
 }
 
