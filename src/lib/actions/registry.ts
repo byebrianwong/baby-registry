@@ -13,6 +13,7 @@ import {
   getRegistryInfoForBuyer,
 } from "@/lib/email";
 import { supabaseAdmin } from "@/lib/supabase-admin";
+import { requireAccount } from "@/lib/require-account";
 import { insertRegistry } from "@/lib/registry-create";
 import { registryPhotoUrlPrefix } from "@/lib/registry-photos";
 import { buildBuyerRegistryUrl } from "@/lib/buyer-link";
@@ -1595,13 +1596,11 @@ export async function generateInviteLink(registryId: string, maxUses: number | n
 }
 
 export async function acceptInvite(token: string) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return { error: "Not authenticated" };
+  // Guests who reserved a gift have an anonymous session. Managing a registry
+  // takes an account they can sign back in to, so they're refused.
+  const { user, supabase, error: accountError } = await requireAccount();
+  if (accountError || !user) {
+    return { error: "Sign in or create an account to accept this invitation." };
   }
 
   // The function adds the signed-in user (auth.uid()). p_user_id is ignored.
