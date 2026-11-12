@@ -117,7 +117,7 @@ function timeField(formData: FormData, name: string): string | null | "invalid" 
 
 type EventFields = Omit<
   EventDetails,
-  "id" | "owner_id" | "registry_id" | "slug" | "image_url" | "repeated_from" | "created_at" | "updated_at"
+  "id" | "owner_id" | "slug" | "image_url" | "repeated_from" | "created_at" | "updated_at"
 >;
 
 function readEventForm(formData: FormData): { fields: EventFields } | { error: string } {
@@ -376,8 +376,6 @@ export async function unlinkRegistryFromEvent(eventId: string, registryId: strin
     .eq("event_id", eventId)
     .eq("registry_id", registryId);
   if (deleteError) return { error: "The registry wasn't unlinked. Try again." };
-  // The old column, until it's dropped: keep it from bringing the link back.
-  await supabaseAdmin.from("events").update({ registry_id: null }).eq("id", eventId).eq("registry_id", registryId);
   revalidateEvent(event);
   revalidatePath(`/dashboard/registry/${registryId}`);
   revalidatePath("/dashboard/events");

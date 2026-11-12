@@ -1,11 +1,11 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { expect, fireEvent, fn, within } from "storybook/test";
 import { EventForm } from "./event-form";
-import { sampleEvent, sampleLinkedRegistries } from "@/lib/event-sample-data";
+import { SAMPLE_REGISTRY_ID, sampleEvent, sampleLinkedRegistries } from "@/lib/event-sample-data";
 import { defaultQuestions } from "@/lib/rsvp-questions";
 
 const registries = [
-  { id: sampleEvent.registry_id!, title: "Remi & Max's Baby Registry" },
+  { id: SAMPLE_REGISTRY_ID, title: "Remi & Max's Baby Registry" },
   { id: "00000000-0000-4000-8000-000000000003", title: "Max's Birthday Wishlist" },
 ];
 

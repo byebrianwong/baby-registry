@@ -65,6 +65,7 @@ export function DemoEventForm({ eventId, registryId }: { eventId?: string; regis
               eventId={event.id}
               initial={event}
               registries={registries}
+              startRegistryId={event.registryId}
               lookupAction={demoLookup(today)}
               updateAction={notSaved}
               setImageAction={notSaved}
@@ -73,7 +74,7 @@ export function DemoEventForm({ eventId, registryId }: { eventId?: string; regis
           ) : (
             <EventForm
               registries={registries}
-              initial={{ registry_id: registries.find((r) => r.id === registryId)?.id ?? null }}
+              startRegistryId={registries.find((r) => r.id === registryId)?.id ?? null}
               lookupAction={demoLookup(today)}
               createAction={notSaved}
               setImageAction={notSaved}

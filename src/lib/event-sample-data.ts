@@ -9,10 +9,12 @@ export const SAMPLE_TODAY = "2026-02-28";
 
 export const SAMPLE_INVITATION_URL = "/samples/invitation.svg";
 
+/** The parents' registry the shower links. */
+export const SAMPLE_REGISTRY_ID = "00000000-0000-4000-8000-000000000002";
+
 export const sampleEvent: EventDetails = {
   id: "7d4c1f0e-2b5a-4c3d-9e8f-0a1b2c3d4e5f",
   owner_id: "00000000-0000-4000-8000-000000000001",
-  registry_id: "00000000-0000-4000-8000-000000000002",
   slug: "remis-baby-shower-k3m9q2xa",
   event_type: "baby_shower",
   title: "Remi's Baby Shower",
@@ -120,7 +122,7 @@ export const sampleGuests: EventGuest[] = [
  */
 export const sampleLinkedRegistries = [
   {
-    id: sampleEvent.registry_id!,
+    id: SAMPLE_REGISTRY_ID,
     title: sampleRegistry.title,
     slug: sampleRegistry.slug,
     honoree: "Remi & Max",
@@ -139,7 +141,6 @@ export const sampleLinkedRegistries = [
 export const sampleExchangeEvent: EventDetails = {
   ...sampleEvent,
   id: "8e5d2a1f-3c4b-4d6e-8f90-1a2b3c4d5e6f",
-  registry_id: null,
   slug: "holiday-gift-swap-p4w8n2rt",
   event_type: "christmas",
   title: "Holiday Gift Swap",
@@ -218,7 +219,6 @@ export const sampleDrawnExchangeGuests: EventGuest[] = sampleExchangeGuests.map(
 export const samplePotluckEvent: EventDetails = {
   ...sampleEvent,
   id: "9f6e3b2a-4d5c-4e7f-9a01-2b3c4d5e6f70",
-  registry_id: null,
   slug: "friendsgiving-potluck-r7t2m9wq",
   event_type: "potluck",
   title: "Friendsgiving Potluck",
@@ -276,7 +276,6 @@ export const samplePotluckSheet: SignupSheetWithRows = {
 export const sampleMealTrainEvent: EventDetails = {
   ...sampleEvent,
   id: "0a7f4c3b-5e6d-4f80-8b12-3c4d5e6f7081",
-  registry_id: null,
   slug: "meals-for-remi-and-max-c5h8k2pz",
   event_type: "meal_train",
   title: "Meals for Remi & Max",

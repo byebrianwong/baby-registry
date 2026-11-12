@@ -45,7 +45,6 @@ type Values = Pick<
   | "max_party_size"
   | "open_rsvp"
   | "email_host_on_rsvp"
-  | "registry_id"
   | "gift_note"
   | "ask_kids"
   | "rsvp_questions"
@@ -76,6 +75,11 @@ export interface EventFormProps {
   registries: { id: string; title: string }[];
   /** The registries the event links now, in order. */
   linkedRegistries?: FormRegistry[];
+  /**
+   * Without linkedRegistries, the form starts with this registry linked:
+   * "Plan an event" on a registry's page, and the demo's events.
+   */
+  startRegistryId?: string | null;
   /** The event's gift exchange, when it has one. */
   exchange?: Pick<GiftExchange, "budget" | "draw_by" | "mailed" | "drawn_at"> | null;
   createAction?: (formData: FormData) => Promise<ActionResult & { id?: string }>;
@@ -101,6 +105,7 @@ export function EventForm({
   initial = {},
   registries,
   linkedRegistries,
+  startRegistryId = null,
   exchange = null,
   createAction = createEvent,
   lookupAction = lookupRegistryLink,
@@ -138,7 +143,7 @@ export function EventForm({
   // Linked registries. "Plan an event" on a registry's page starts with that one.
   const [linked, setLinked] = useState<FormRegistry[]>(() => {
     if (linkedRegistries) return linkedRegistries;
-    const start = registries.find((r) => r.id === initial.registry_id);
+    const start = registries.find((r) => r.id === startRegistryId);
     return start ? [{ id: start.id, title: start.title }] : [];
   });
   const [pasted, setPasted] = useState("");

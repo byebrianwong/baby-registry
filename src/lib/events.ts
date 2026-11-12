@@ -17,11 +17,6 @@ export type RsvpStatus = "pending" | "yes" | "no" | "maybe";
 export interface EventDetails {
   id: string;
   owner_id: string;
-  /**
-   * The one registry the old code linked. Kept until that code is gone; links
-   * now live in event_registries (see getEventRegistries).
-   */
-  registry_id: string | null;
   slug: string;
   event_type: EventType;
   title: string;
