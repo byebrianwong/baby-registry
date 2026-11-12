@@ -28,6 +28,7 @@ import {
   listOtherEventsForCopy,
 } from "@/lib/events-server";
 import { getViewer } from "@/lib/viewer";
+import { listGroupsForOwner } from "@/lib/groups-server";
 import { cx } from "@/lib/utils/cx";
 import { DeleteEventButton } from "./delete-event-button";
 
@@ -48,7 +49,7 @@ export default async function ManageEventPage({
   if (!found) notFound();
   const { event, isOwner } = found;
 
-  const [allGuests, registries, exchange, exclusions, hosts, invites, copySources] = await Promise.all([
+  const [allGuests, registries, exchange, exclusions, hosts, invites, copySources, groups] = await Promise.all([
     getEventGuests(event.id),
     getEventRegistries(event.id),
     getGiftExchange(event.id),
@@ -56,6 +57,7 @@ export default async function ManageEventPage({
     getEventHosts(event),
     getHostInvites(event.id),
     listOtherEventsForCopy(viewer.id, event.id),
+    listGroupsForOwner(viewer.id),
   ]);
   // Worked out before the guests are trimmed for the host, since it needs the pairs.
   const status = exchange ? exchangeStatus(allGuests, exchange) : null;
@@ -143,6 +145,8 @@ export default async function ManageEventPage({
             askKids={event.ask_kids}
             hasExchange={Boolean(exchange)}
             copySources={copySources}
+            groups={groups}
+            eventTitle={event.title}
           />
         </div>
 

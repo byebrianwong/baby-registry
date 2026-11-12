@@ -9,11 +9,14 @@ export function ProfileRegistryCard({
   registry,
   isPast = false,
   ownerName,
+  privateLabel = "Followers only",
   basePath = "",
 }: {
   registry: ListedRegistry;
   isPast?: boolean;
   ownerName?: string;
+  /** The badge on a private registry: who can see it. */
+  privateLabel?: string;
   /** Put in front of the registry link. The demo passes "/demo". */
   basePath?: string;
 }) {
@@ -54,7 +57,7 @@ export function ProfileRegistryCard({
         {!registry.is_public && (
           <Badge variant="secondary">
             <Lock className="h-3 w-3" />
-            Followers only
+            {privateLabel}
           </Badge>
         )}
         {isPast && <Badge variant="secondary">Past</Badge>}
