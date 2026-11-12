@@ -19,6 +19,9 @@ import {
   eventInvitationHtml,
   rsvpGuestConfirmationHtml,
   rsvpHostNotificationHtml,
+  guestMessageHtml,
+  eventChangedHtml,
+  dayBeforeReminderHtml,
   confirmSignupHtml,
   resetPasswordHtml,
 } from "@/lib/email-templates";
@@ -381,6 +384,101 @@ export const RsvpHostNotification: Story = {
 
 // Sent to a registry's owners when someone who doesn't manage it links it to
 // their event.
+// ── Sign-up sheets and RSVP questions ────────────────────────
+
+const samplePotluckEmail = {
+  title: "Friendsgiving Potluck",
+  hostedBy: "Glinda & Elphaba",
+  date: "Saturday, November 21, 2026",
+  time: "4 – 9 PM PST",
+  locationName: "The Emerald Apartment",
+  locationAddress: "12 Yellow Brick Rd, Apt 3\nSan Francisco, CA 94110",
+  mapUrl: "https://www.google.com/maps/search/?api=1&query=12%20Yellow%20Brick%20Rd",
+  signup: { title: "Bring a dish", mealTrain: false },
+};
+
+// A potluck: what the guest signed up to bring, and their answers to the host's questions.
+export const RsvpGuestConfirmationWithSignups: Story = {
+  args: {
+    subject: "You're going to Friendsgiving Potluck",
+    html: rsvpGuestConfirmationHtml({
+      guestName: "Fiyero",
+      status: "yes",
+      partySize: 2,
+      event: samplePotluckEmail,
+      rsvpUrl: "https://regibee.com/e/friendsgiving-potluck-r7t2m9wq?g=Rml5ZXJvcyBsaW5r",
+      calendarUrl: "https://calendar.google.com/calendar/render?action=TEMPLATE",
+      signups: ["Side (Mac and cheese)", "Drinks (Sparkling cider)"],
+      answers: [{ label: "Allergies or dietary needs", value: "Galinda is vegetarian" }],
+    }),
+  },
+};
+
+// A meal train's invitation leaves the address out: guests get it once they sign up.
+export const MealTrainInvitation: Story = {
+  args: {
+    subject: "You're invited: Meals for Remi & Max",
+    from: '"Aunt Linda via Regibee" <notifications@regibee.com>',
+    html: eventInvitationHtml({
+      guestName: "Glinda",
+      hostName: "Aunt Linda",
+      event: { title: "Meals for Remi & Max", hostedBy: "Aunt Linda", signup: { title: "Meals", mealTrain: true } },
+      message: "Remi and Max are home with the baby! Drop off between 5 and 6. They're vegetarian.",
+      rsvpUrl: "https://regibee.com/e/meals-for-remi-and-max-c5h8k2pz?g=R2xpbmRhcyBsaW5r",
+    }),
+  },
+};
+
+// "Message everyone going", written by the host.
+export const GuestMessage: Story = {
+  args: {
+    subject: "About Remi's Baby Shower",
+    from: '"Aunt Linda & Grandma Jo via Regibee" <notifications@regibee.com>',
+    html: guestMessageHtml({
+      guestName: "Glinda",
+      hostName: "Aunt Linda & Grandma Jo",
+      eventTitle: "Remi's Baby Shower",
+      body: "Parking on Sunnyside fills up fast. There's more on Ward St, a block over.\n\nSee you Saturday!",
+      rsvpUrl: "https://regibee.com/e/remis-baby-shower-k3m9q2xa?g=Qm9vayBmb3IgYSBiYWJ5",
+    }),
+  },
+};
+
+// Sent when the host changes the date, time or place.
+export const EventChanged: Story = {
+  args: {
+    subject: "New time and place: Remi's Baby Shower",
+    from: '"Aunt Linda & Grandma Jo via Regibee" <notifications@regibee.com>',
+    html: eventChangedHtml({
+      guestName: "Glinda",
+      hostName: "Aunt Linda & Grandma Jo",
+      event: { ...sampleEventEmail, time: "3 – 6 PM PDT", locationName: "Linda's house", locationAddress: "88 Hillcrest Rd\nOakland, CA 94618" },
+      changes: [
+        { label: "Time", before: "2 – 5 PM PDT", after: "3 – 6 PM PDT" },
+        { label: "Place", before: "Grandma Jo's garden, 1450 Sunnyside Ave, Berkeley, CA 94703", after: "Linda's house, 88 Hillcrest Rd\nOakland, CA 94618" },
+      ],
+      rsvpUrl: "https://regibee.com/e/remis-baby-shower-k3m9q2xa?g=Qm9vayBmb3IgYSBiYWJ5",
+      calendarUrl: "https://calendar.google.com/calendar/render?action=TEMPLATE",
+    }),
+  },
+};
+
+// The day before, to everyone going, with what they signed up to bring.
+export const DayBeforeReminder: Story = {
+  args: {
+    subject: "Tomorrow: Friendsgiving Potluck",
+    from: '"Glinda & Elphaba via Regibee" <notifications@regibee.com>',
+    html: dayBeforeReminderHtml({
+      guestName: "Fiyero",
+      hostName: "Glinda & Elphaba",
+      event: samplePotluckEmail,
+      rsvpUrl: "https://regibee.com/e/friendsgiving-potluck-r7t2m9wq?g=Rml5ZXJvcyBsaW5r",
+      calendarUrl: "https://calendar.google.com/calendar/render?action=TEMPLATE",
+      signups: ["Side (Mac and cheese)"],
+    }),
+  },
+};
+
 export const RegistryLinked: Story = {
   args: {
     subject: "Linda Upland linked your registry to Remi's Baby Shower",

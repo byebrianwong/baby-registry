@@ -14,9 +14,21 @@ import {
   getEventRegistries,
   getExchangeExclusions,
   getGiftExchange,
+  getSignupSheet,
   registrySlugFromLink,
   resolveRegistryLink,
 } from "@/lib/events-server";
+import { copySignupSheet, insertSignupSheet } from "@/lib/signups-server";
+import {
+  MAX_CLAIM_NOTE_LENGTH,
+  claimsByGuest,
+  describeClaim,
+  formatSlotDate,
+  hidesAddressUntilSignup,
+  rowsForDays,
+  signupRowsForGuest,
+  type GuestClaim,
+} from "@/lib/signups";
 import {
   exchangeKind,
   isEmail,
@@ -41,7 +53,16 @@ import { newPeople, personKey, type Person } from "@/lib/groups";
 import { getGroupForOwner, getGroupMembers, listGroupEvents } from "@/lib/groups-server";
 import { createGroup } from "@/lib/actions/groups";
 import { getSessionUser } from "@/lib/viewer";
-import { confirmRsvpToGuest, notifyHostOfRsvp, sendEventInvitations } from "@/lib/email";
+import { confirmRsvpToGuest, notifyHostOfRsvp, sendEventChangeEmails, sendEventInvitations } from "@/lib/email";
+import { changeRecipients, changedParts } from "@/lib/event-updates";
+import {
+  answerLines,
+  cleanQuestions,
+  defaultQuestions,
+  readAnswers,
+  storedQuestions,
+  type RsvpAnswers,
+} from "@/lib/rsvp-questions";
 import { notifyRegistryLinked, sendCoHostInvite, sendExchangeAssignments, sendListRequest } from "@/lib/event-email";
 import {
   NO_GIFTS_NOTE,
@@ -99,12 +120,28 @@ function timeField(formData: FormData, name: string): string | null | "invalid" 
 
 type EventFields = Omit<
   EventDetails,
-  "id" | "owner_id" | "registry_id" | "slug" | "image_url" | "repeated_from" | "created_at" | "updated_at"
+  "id" | "owner_id" | "slug" | "image_url" | "repeated_from" | "created_at" | "updated_at"
 >;
 
 function readEventForm(formData: FormData): { fields: EventFields } | { error: string } {
   const title = text(formData, "title", 120);
   if (!title) return { error: "Give your event a name." };
+
+  // The RSVP questions, when the form sent them. Missing leaves them as they are.
+  let questions: EventFields["rsvp_questions"];
+  const rawQuestions = formData.get("rsvpQuestions");
+  if (rawQuestions !== null) {
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(String(rawQuestions));
+    } catch {
+      return { error: "The RSVP questions didn't come through. Try again." };
+    }
+    const cleaned = cleanQuestions(parsed);
+    if ("error" in cleaned) return { error: cleaned.error };
+    questions = cleaned.questions;
+  }
+  const rawRemind = formData.get("remindDayBefore");
 
   const rawType = formData.get("eventType");
   const eventDate = dateField(formData, "eventDate");
@@ -142,6 +179,8 @@ function readEventForm(formData: FormData): { fields: EventFields } | { error: s
       email_host_on_rsvp: formData.get("emailHostOnRsvp") !== "false",
       gift_note: text(formData, "giftNote", MAX_GIFT_NOTE_LENGTH),
       ask_kids: formData.get("askKids") === "true",
+      ...(questions !== undefined && { rsvp_questions: questions }),
+      ...(rawRemind !== null && { remind_day_before: rawRemind !== "false" }),
     },
   };
 }
@@ -281,6 +320,16 @@ async function saveRegistryLinks(event: Pick<EventDetails, "id" | "owner_id" | "
   return { error: null };
 }
 
+/** What a new event of this occasion starts with (src/lib/occasions.ts). */
+function occasionDefaults(eventType: string) {
+  return isOccasionId(eventType) ? occasionFor(eventType).defaults : undefined;
+}
+
+/** The sign-up sheet a new event of this occasion starts with, if any. */
+function occasionSignupPreset(eventType: string) {
+  return occasionDefaults(eventType)?.signup ?? null;
+}
+
 async function saveExchange(eventId: string, form: ExchangeForm): Promise<{ error: string | null }> {
   const existing = await getGiftExchange(eventId);
   if (!form.enabled) {
@@ -344,8 +393,6 @@ export async function unlinkRegistryFromEvent(eventId: string, registryId: strin
     .eq("event_id", eventId)
     .eq("registry_id", registryId);
   if (deleteError) return { error: "The registry wasn't unlinked. Try again." };
-  // The old column, until it's dropped: keep it from bringing the link back.
-  await supabaseAdmin.from("events").update({ registry_id: null }).eq("id", eventId).eq("registry_id", registryId);
   revalidateEvent(event);
   revalidatePath(`/dashboard/registry/${registryId}`);
   revalidatePath("/dashboard/events");
@@ -385,10 +432,13 @@ export async function createEvent(formData: FormData): Promise<Result<{ id: stri
   const exchange = readExchangeForm(formData);
   if (exchange && "error" in exchange) return { error: exchange.error };
 
+  // A form that didn't send questions gets the occasion's.
+  const questions = form.fields.rsvp_questions ?? defaultQuestions(occasionDefaults(form.fields.event_type)?.questions);
   const { data, error } = await supabaseAdmin
     .from("events")
     .insert({
       ...form.fields,
+      rsvp_questions: questions,
       owner_id: user.id,
       slug: generateEventSlug(form.fields.title),
     })
@@ -404,6 +454,9 @@ export async function createEvent(formData: FormData): Promise<Result<{ id: stri
   // which beats a second copy of the event from trying again.
   if (links.ids && links.ids.length > 0) await saveRegistryLinks(data, links.ids, user.id);
   if (exchange?.enabled) await saveExchange(data.id, exchange);
+  // A potluck or a meal train starts with its sign-up sheet.
+  const signupPreset = occasionSignupPreset(form.fields.event_type);
+  if (signupPreset) await insertSignupSheet(data.id, signupPreset);
 
   revalidateEvent(data);
   return { error: null, id: data.id };
@@ -442,6 +495,19 @@ export async function updateEvent(eventId: string, formData: FormData): Promise<
     return { error: "Your changes weren't saved. Try again." };
   }
 
+  // A new date, time or place goes to everyone who might come, unless the
+  // host unticked "Email guests about the change" (say, to fix a typo).
+  const nextEvent = { ...access.event, ...form.fields } as EventDetails;
+  const parts = changedParts(access.event, nextEvent);
+  if (parts.length > 0 && formData.get("notifyGuests") !== "false") {
+    const before = access.event;
+    const userId = access.user.id;
+    const replyTo = access.user.email ?? null;
+    after(async () => {
+      await emailEventChange(before, nextEvent, parts, userId, replyTo);
+    });
+  }
+
   if (links.ids) {
     const saved = await saveRegistryLinks(access.event, links.ids, access.user.id);
     if (saved.error) return { error: saved.error };
@@ -449,6 +515,47 @@ export async function updateEvent(eventId: string, formData: FormData): Promise<
 
   revalidateEvent(access.event);
   return { error: null };
+}
+
+/**
+ * Emails the guests who might come that the date, time or place changed, and
+ * logs it on the event's messages. Runs after the response, from updateEvent.
+ */
+async function emailEventChange(
+  before: EventDetails,
+  nextEvent: EventDetails,
+  parts: ReturnType<typeof changedParts>,
+  userId: string,
+  replyTo: string | null,
+) {
+  const [guests, registries, sheet, hostName] = await Promise.all([
+    getEventGuests(nextEvent.id),
+    getEventRegistries(nextEvent.id),
+    getSignupSheet(nextEvent.id),
+    hostNameFor(nextEvent, userId),
+  ]);
+  const signedUp = sheet ? claimsByGuest(sheet) : new Map();
+  const recipients = changeRecipients(guests);
+  if (recipients.length === 0) return;
+  const { sent } = await sendEventChangeEmails({
+    before,
+    after: nextEvent,
+    parts,
+    registries,
+    hostName,
+    replyTo,
+    guests: recipients.map((g) => ({ name: g.name, email: g.email, token: g.token, signedUp: signedUp.has(g.id) })),
+  });
+  if (sent > 0) {
+    await supabaseAdmin.from("event_messages").insert({
+      event_id: nextEvent.id,
+      sent_by: userId,
+      kind: "change",
+      audience: "not_declined",
+      subject: `New ${parts.join(", ")}: ${nextEvent.title}`.slice(0, 150),
+      recipients: sent,
+    });
+  }
 }
 
 /** Sets or clears the invitation picture. The browser uploads it first. */
@@ -583,8 +690,17 @@ export async function setGuestRsvp(
     .eq("id", guestId)
     .eq("event_id", eventId);
   if (error) return { error: "The RSVP wasn't saved. Try again." };
+  // Someone who isn't coming isn't bringing anything: free their spots.
+  if (status === "no") await releaseSignups(eventId, guestId);
   revalidateEvent(access.event);
   return { error: null };
+}
+
+/** Takes a guest off every row of the event's sign-up sheet. */
+async function releaseSignups(eventId: string, guestId: string) {
+  const { data: items } = await supabaseAdmin.from("signup_items").select("id").eq("event_id", eventId);
+  const ids = (items || []).map((i) => i.id as string);
+  if (ids.length > 0) await supabaseAdmin.from("signup_claims").delete().eq("guest_id", guestId).in("item_id", ids);
 }
 
 export async function removeEventGuest(eventId: string, guestId: string): Promise<Result> {
@@ -623,15 +739,17 @@ export async function sendEventInvites(eventId: string, guestIds?: string[]): Pr
   ) as (typeof guests[number] & { email: string })[];
   if (recipients.length === 0) return { error: "There's no one to send it to. Add guests with email addresses." };
 
-  const [registries, exchange, hostName] = await Promise.all([
+  const [registries, exchange, hostName, signups] = await Promise.all([
     getEventRegistries(eventId),
     getGiftExchange(eventId),
     hostNameFor(access.event, access.user.id),
+    getSignupSheet(eventId),
   ]);
   const { sentTokens, error } = await sendEventInvitations({
     event: access.event,
     registries,
     exchange,
+    signupTitle: signups?.sheet.title ?? null,
     hostName,
     replyTo: access.user.email ?? null,
     guests: recipients,
@@ -667,15 +785,17 @@ export async function sendEventReminders(eventId: string): Promise<Result<{ sent
     return { error: "Everyone invited has replied or got a reminder in the last day." };
   }
 
-  const [registries, exchange, hostName] = await Promise.all([
+  const [registries, exchange, hostName, signups] = await Promise.all([
     getEventRegistries(eventId),
     getGiftExchange(eventId),
     hostNameFor(access.event, access.user.id),
+    getSignupSheet(eventId),
   ]);
   const { sentTokens, error } = await sendEventInvitations({
     event: access.event,
     registries,
     exchange,
+    signupTitle: signups?.sheet.title ?? null,
     hostName,
     replyTo: access.user.email ?? null,
     guests: recipients,
@@ -715,6 +835,73 @@ export interface RsvpInput {
     giftIdeas?: string;
     shippingAddress?: string;
   };
+  /**
+   * For an event with a sign-up sheet: every row the guest wants, with what
+   * they're bringing. Rows left out are released. Leave it out to keep the
+   * guest's sign-ups as they are.
+   */
+  signups?: { itemId: string; note?: string }[];
+  /** Answers to the event's RSVP questions, by question id (src/lib/rsvp-questions.ts). */
+  answers?: RsvpAnswers;
+}
+
+type SignupRequest = { claims: { item_id: string; note: string | null }[] } | { error: string };
+
+/**
+ * Checks a guest's sign-up choices against the sheet. Someone who can't go
+ * gives up their spots. A row whose day is over can be kept, not newly taken.
+ */
+function readSignups(
+  input: RsvpInput,
+  sheet: NonNullable<Awaited<ReturnType<typeof getSignupSheet>>>,
+  guestId: string | null,
+  eventType: string,
+): SignupRequest {
+  if (input.status === "no") return { claims: [] };
+  const requested = input.signups ?? [];
+  // The event's time zone could be a day behind UTC, so a day counts as over
+  // once yesterday in UTC is past it, like the event page.
+  const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  const rows = new Map(signupRowsForGuest(sheet, guestId, yesterday).map((row) => [row.id, row]));
+  const claims = new Map<string, string | null>();
+  for (const choice of requested.slice(0, rows.size)) {
+    const row = typeof choice?.itemId === "string" ? rows.get(choice.itemId) : undefined;
+    if (!row) return { error: "The sign-up sheet changed. Refresh the page and pick again." };
+    if (row.passed && !row.mine) return { error: `${row.slotDate ? formatSlotDate(row.slotDate) : row.label} has passed. Pick another.` };
+    const note = typeof choice.note === "string" ? choice.note.trim().slice(0, MAX_CLAIM_NOTE_LENGTH) : "";
+    claims.set(row.id, note || null);
+  }
+  if (hidesAddressUntilSignup(eventType) && input.status === "yes" && claims.size === 0) {
+    return { error: "Pick at least one day you can help." };
+  }
+  return { claims: [...claims].map(([item_id, note]) => ({ item_id, note })) };
+}
+
+/**
+ * Saves a guest's sign-ups. Null when saved; otherwise what to tell them,
+ * such as which row filled up while they were choosing.
+ */
+async function saveSignups(
+  eventId: string,
+  guestId: string,
+  claims: { item_id: string; note: string | null }[],
+  sheet: NonNullable<Awaited<ReturnType<typeof getSignupSheet>>>,
+): Promise<string | null> {
+  const { data: fullId, error } = await supabaseAdmin.rpc("save_signup_claims", {
+    p_event_id: eventId,
+    p_guest_id: guestId,
+    p_claims: claims,
+  });
+  if (error) {
+    console.error("[events] Failed to save sign-ups:", error);
+    return "Your sign-ups weren't saved. Try again.";
+  }
+  if (fullId) {
+    const row = sheet.items.find((item) => item.id === fullId);
+    const name = row ? (row.slot_date ? `${formatSlotDate(row.slot_date)}: ${row.label}` : row.label) : "One of those";
+    return `${name} just filled up. Pick something else.`;
+  }
+  return null;
 }
 
 /**
@@ -799,13 +986,15 @@ export async function submitRsvp(input: RsvpInput): Promise<Result<{ token: stri
   const { data: eventRow } = await supabaseAdmin.from("events").select("*").eq("slug", input.slug).maybeSingle();
   if (!eventRow) return { error: "This event wasn't found." };
   const event = eventRow as EventDetails;
-  const exchange = await getGiftExchange(event.id);
+  const [exchange, sheet] = await Promise.all([getGiftExchange(event.id), getSignupSheet(event.id)]);
+  // A meal train has no get-together either: "yes" means "I can help".
+  const mealTrain = hidesAddressUntilSignup(event.event_type);
 
   // A mailed exchange has no get-together: "yes" means "I'm in", for one person.
   const partySize =
     input.status === "no"
       ? 0
-      : exchange?.mailed
+      : exchange?.mailed || mealTrain
         ? 1
         : Math.min(Math.max(Math.round(Number(input.partySize)) || 1, 1), event.max_party_size);
   const kidsCount =
@@ -813,26 +1002,44 @@ export async function submitRsvp(input: RsvpInput): Promise<Result<{ token: stri
       ? Math.min(Math.max(Math.round(Number(input.kidsCount)) || 0, 0), partySize)
       : 0;
   const note = input.note?.trim().slice(0, 1000) || null;
+  // Someone who can't come answers no questions. Everyone else answers the
+  // host's, with a meal for each person coming and a name for each plus-one.
+  const questions = storedQuestions(event.rsvp_questions);
+  let answers: RsvpAnswers = {};
+  if (input.status !== "no" && questions.length > 0) {
+    const read = readAnswers(questions, input.answers, partySize);
+    if ("error" in read) return { error: read.error };
+    answers = read.answers;
+  }
   const response: Record<string, unknown> = {
     rsvp_status: input.status,
     party_size: partySize,
     kids_count: kidsCount,
     rsvp_note: note,
+    answers,
     responded_at: new Date().toISOString(),
   };
 
   // The guest as they are now, for the exchange rules below.
-  let existing: Pick<EventGuest, "in_exchange"> | null = null;
+  let existing: Pick<EventGuest, "id" | "in_exchange"> | null = null;
   if (input.token) {
     const { data } = await supabaseAdmin
       .from("event_guests")
-      .select("in_exchange")
+      .select("id, in_exchange")
       .eq("event_id", event.id)
       .eq("token", input.token)
       .maybeSingle();
     if (!data) return { error: "This RSVP link isn't on the guest list anymore. Ask the host for a new one." };
     existing = data;
   }
+
+  // Sign-ups are checked before anything is saved. A guest who sent none
+  // keeps theirs, unless they can't go.
+  const signups =
+    sheet && (input.signups !== undefined || input.status === "no")
+      ? readSignups(input, sheet, existing?.id ?? null, event.event_type)
+      : null;
+  if (signups && "error" in signups) return { error: signups.error };
 
   if (exchange && input.exchange) {
     // Everyone gives everyone: every guest who's coming takes part, with no
@@ -859,7 +1066,15 @@ export async function submitRsvp(input: RsvpInput): Promise<Result<{ token: stri
     }
   }
 
-  let guest: { name: string; email: string | null; token: string; in_exchange: boolean };
+  // Everything else is checked. A guest with a link takes their spots before
+  // their answer is saved, so a row that filled up meanwhile stops the whole
+  // RSVP and nothing changes.
+  if (signups && existing) {
+    const problem = await saveSignups(event.id, existing.id, signups.claims, sheet!);
+    if (problem) return { error: problem };
+  }
+
+  let guest: { id: string; name: string; email: string | null; token: string; in_exchange: boolean };
   let newGuest = false;
 
   if (input.token) {
@@ -868,7 +1083,7 @@ export async function submitRsvp(input: RsvpInput): Promise<Result<{ token: stri
       .update(response)
       .eq("event_id", event.id)
       .eq("token", input.token)
-      .select("name, email, token, in_exchange")
+      .select("id, name, email, token, in_exchange")
       .maybeSingle();
     if (error || !data) return { error: "This RSVP link isn't on the guest list anymore. Ask the host for a new one." };
     guest = data;
@@ -896,7 +1111,7 @@ export async function submitRsvp(input: RsvpInput): Promise<Result<{ token: stri
     const { data, error } = await supabaseAdmin
       .from("event_guests")
       .insert({ ...response, event_id: event.id, name, email, token: generateGuestToken(), added_by_guest: true })
-      .select("name, email, token, in_exchange")
+      .select("id, name, email, token, in_exchange")
       .single();
     if (error?.code === "23505") {
       return {
@@ -905,6 +1120,15 @@ export async function submitRsvp(input: RsvpInput): Promise<Result<{ token: stri
       };
     }
     if (error || !data) return { error: "Your RSVP wasn't saved. Try again." };
+    // A new guest needs a row before taking spots. If a spot is gone, the
+    // row goes too, so trying again starts clean.
+    if (signups && signups.claims.length > 0) {
+      const problem = await saveSignups(event.id, data.id, signups.claims, sheet!);
+      if (problem) {
+        await supabaseAdmin.from("event_guests").delete().eq("id", data.id);
+        return { error: problem };
+      }
+    }
     guest = data;
     newGuest = true;
   }
@@ -916,7 +1140,9 @@ export async function submitRsvp(input: RsvpInput): Promise<Result<{ token: stri
   }
 
   after(async () => {
-    const registries = await getEventRegistries(event.id);
+    const [registries, savedSheet] = await Promise.all([getEventRegistries(event.id), getSignupSheet(event.id)]);
+    // What the guest signed up for, as it stands after this RSVP.
+    const claims: GuestClaim[] = savedSheet ? (claimsByGuest(savedSheet).get(guest.id) ?? []) : [];
     const tasks: Promise<void>[] = [];
     if (guest.email) {
       tasks.push(
@@ -928,6 +1154,8 @@ export async function submitRsvp(input: RsvpInput): Promise<Result<{ token: stri
           guest: { name: guest.name, email: guest.email, token: guest.token },
           status: input.status,
           partySize,
+          signups: savedSheet ? { title: savedSheet.sheet.title, claims: claims.map(describeClaim) } : null,
+          answers: answerLines(questions, answers, "You"),
         }),
       );
     }
@@ -943,6 +1171,8 @@ export async function submitRsvp(input: RsvpInput): Promise<Result<{ token: stri
           attending: summary.attending,
           pending: summary.pending,
           newGuest,
+          signups: claims.map(describeClaim),
+          answers: answerLines(questions, answers, guest.name),
         }),
       );
     }
@@ -1124,6 +1354,8 @@ async function copyEventForNextYear(
       email_host_on_rsvp: old.email_host_on_rsvp,
       gift_note: old.gift_note,
       ask_kids: old.ask_kids,
+      rsvp_questions: storedQuestions(old.rsvp_questions),
+      remind_day_before: old.remind_day_before ?? true,
       repeated_from: old.id,
       group_id: groupId,
     })
@@ -1179,6 +1411,8 @@ async function copyEventForNextYear(
       registries.map((r, index) => ({ event_id: copy.id, registry_id: r.id, linked_by: ownerId, sort_order: index })),
     );
   }
+
+  await copySignupSheet(old.id, copy.id, 1);
 
   if (exchange) {
     await supabaseAdmin.from("gift_exchanges").insert({
@@ -1506,6 +1740,15 @@ export async function undoExchangeDraw(eventId: string): Promise<Result> {
 
 // ── "What are you planning?" ─────────────────────────────────
 
+/** How many days a meal train from the picker starts with. */
+const MEAL_TRAIN_DAYS = 7;
+
+function addDays(date: string, days: number): string {
+  const next = new Date(`${date}T00:00:00Z`);
+  next.setUTCDate(next.getUTCDate() + days);
+  return next.toISOString().slice(0, 10);
+}
+
 export interface PlanInput {
   /** An occasion id from src/lib/occasions.ts. */
   occasion: string;
@@ -1539,7 +1782,7 @@ export async function startPlan(input: PlanInput): Promise<Result<{ href: string
   if (!isOccasionId(input.occasion)) return { error: "Choose what you're planning." };
   const occasion = occasionFor(input.occasion);
   if (!(occasion.audiences as readonly Audience[]).includes(input.audience)) return { error: "Choose who it's for." };
-  if (!giftPlansFor(input.audience).includes(input.gifts)) return { error: "Choose how gifts work." };
+  if (!giftPlansFor(input.audience, occasion).includes(input.gifts)) return { error: "Choose how gifts work." };
 
   const name = input.name?.trim().slice(0, 100) ?? "";
   if (nameLabelFor(input.audience) && !name && input.gifts === "ask") return { error: "Add their name." };
@@ -1587,6 +1830,8 @@ export async function startPlan(input: PlanInput): Promise<Result<{ href: string
   }
 
   const defaults = "defaults" in occasion ? occasion.defaults : undefined;
+  // A meal train has no day of its own: the date is its first drop-off day.
+  const mealTrain = hidesAddressUntilSignup(occasion.id);
   const { data: event, error } = await supabaseAdmin
     .from("events")
     .insert({
@@ -1594,8 +1839,9 @@ export async function startPlan(input: PlanInput): Promise<Result<{ href: string
       slug: generateEventSlug(title),
       event_type: occasion.id,
       title,
-      event_date: date || null,
+      event_date: mealTrain ? null : date || null,
       ask_kids: Boolean(defaults?.askKids),
+      rsvp_questions: defaultQuestions(defaults?.questions),
       gift_note: input.gifts === "no_gifts" ? NO_GIFTS_NOTE : (defaults?.giftNote ?? null),
     })
     .select("*")
@@ -1614,6 +1860,12 @@ export async function startPlan(input: PlanInput): Promise<Result<{ href: string
     await saveExchange(saved.id, { enabled: true, kind: "everyone", budget: null, draw_by: null, mailed: false });
   } else if (input.gifts === "exchange" || defaults?.exchange) {
     await saveExchange(saved.id, { enabled: true, kind: "draw", budget: null, draw_by: null, mailed: false });
+  }
+  // A potluck or a meal train always starts with its sheet, like a gift exchange with its draw.
+  if (input.gifts === "signup" || defaults?.signup) {
+    // A meal train with a first day starts with a dinner each day for a week.
+    const week = mealTrain && date ? rowsForDays(date, addDays(date, MEAL_TRAIN_DAYS - 1), "Dinner") : null;
+    await insertSignupSheet(saved.id, defaults?.signup ?? "potluck", week ?? []);
   }
   if (input.gifts === "ask") {
     const token = crypto.randomBytes(24).toString("hex");

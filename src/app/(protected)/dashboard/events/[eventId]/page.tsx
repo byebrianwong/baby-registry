@@ -9,6 +9,11 @@ import { EventGuestManager } from "@/components/event-guest-manager";
 import { EventCoHosts } from "@/components/event-co-hosts";
 import { ExchangeManager } from "@/components/exchange-manager";
 import { PlanAgainButton } from "@/components/plan-again-button";
+import { SignupSheetManager, SignupSheetStarter } from "@/components/signup-sheet-manager";
+import { GuestMessages } from "@/components/guest-messages";
+import { MESSAGE_AUDIENCES, messageRecipients, type MessageAudience } from "@/lib/event-updates";
+import { storedQuestions } from "@/lib/rsvp-questions";
+import { claimsByGuest, describeClaim, hidesAddressUntilSignup, signupRowsForHost } from "@/lib/signups";
 import {
   eventTheme,
   eventTypeLabel,
@@ -26,7 +31,9 @@ import {
   getExchangeExclusions,
   getGiftExchange,
   getHostInvites,
+  getEventMessages,
   getPendingListRequests,
+  getSignupSheet,
   listOtherEventsForCopy,
 } from "@/lib/events-server";
 import { getViewer } from "@/lib/viewer";
@@ -51,7 +58,7 @@ export default async function ManageEventPage({
   if (!found) notFound();
   const { event, isOwner } = found;
 
-  const [allGuests, registries, exchange, exclusions, hosts, invites, copySources, groups, listRequests] = await Promise.all([
+  const [allGuests, registries, exchange, exclusions, hosts, invites, copySources, groups, listRequests, signupSheet, messages] = await Promise.all([
     getEventGuests(event.id),
     getEventRegistries(event.id),
     getGiftExchange(event.id),
@@ -61,12 +68,24 @@ export default async function ManageEventPage({
     listOtherEventsForCopy(viewer.id, event.id),
     listGroupsForOwner(viewer.id),
     getPendingListRequests(event.id),
+    getSignupSheet(event.id),
+    getEventMessages(event.id, 5),
   ]);
   // Worked out before the guests are trimmed for the host, since it needs the pairs.
   const status = exchange ? exchangeStatus(allGuests, exchange) : null;
   // The host never sees who drew whom, or the wishlists and addresses guests
   // were told only their Secret Santa sees.
   const guests = allGuests.map(guestForHost);
+  // What each guest signed up for, as their row on the guest list shows it.
+  const signupsByGuest = signupSheet
+    ? Object.fromEntries([...claimsByGuest(signupSheet)].map(([id, claims]) => [id, claims.map(describeClaim)]))
+    : undefined;
+  const mealTrain = hidesAddressUntilSignup(event.event_type);
+  const questions = storedQuestions(event.rsvp_questions);
+  // How many guests with an email each "Message guests" choice reaches.
+  const audienceCounts = Object.fromEntries(
+    (Object.keys(MESSAGE_AUDIENCES) as MessageAudience[]).map((a) => [a, messageRecipients(allGuests, a).length]),
+  ) as Record<MessageAudience, number>;
   const theme = eventTheme(event.event_type);
   const time = formatEventTime(event);
   const publicPath = `/e/${event.slug}`;
@@ -139,6 +158,14 @@ export default async function ManageEventPage({
               editHref={`/dashboard/events/${event.id}/edit`}
             />
           )}
+          {signupSheet && (
+            <SignupSheetManager
+              eventId={event.id}
+              sheet={signupSheet.sheet}
+              rows={signupRowsForHost(signupSheet, allGuests)}
+              mealTrain={mealTrain}
+            />
+          )}
           <EventGuestManager
             eventId={event.id}
             eventSlug={event.slug}
@@ -151,6 +178,8 @@ export default async function ManageEventPage({
             copySources={copySources}
             groups={groups}
             eventTitle={event.title}
+            signups={signupsByGuest}
+            questions={questions}
           />
         </div>
 
@@ -220,6 +249,17 @@ export default async function ManageEventPage({
               </div>
             </CardContent>
           </Card>
+
+          {!signupSheet && <SignupSheetStarter eventId={event.id} />}
+
+          <GuestMessages
+            eventId={event.id}
+            eventTitle={event.title}
+            counts={audienceCounts}
+            messages={messages}
+            remindDayBefore={event.remind_day_before ?? true}
+            editHref={`/dashboard/events/${event.id}/edit`}
+          />
 
           <EventCoHosts eventId={event.id} hosts={hosts} invites={invites} viewerId={viewer.id} />
 

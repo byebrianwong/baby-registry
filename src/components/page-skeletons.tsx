@@ -172,6 +172,59 @@ export function FollowingSkeleton() {
   );
 }
 
+function SavedItemCardSkeleton() {
+  return (
+    <div className="flex flex-col rounded-xl border border-secondary p-3">
+      <div className="flex gap-3">
+        <Skeleton className="size-4 rounded" />
+        <Skeleton className="size-16 shrink-0 rounded-lg" />
+        <div className="flex-1 space-y-2">
+          <Skeleton className="h-4 w-full" />
+          <Skeleton className="h-4 w-24" />
+        </div>
+      </div>
+      <div className="mt-3 flex items-end justify-between gap-2">
+        <Skeleton className="h-5 w-28 rounded-full" />
+        <Skeleton className="h-8 w-20 rounded-lg" />
+      </div>
+    </div>
+  );
+}
+
+/** The Saved tab while it loads: the filters and a grid of item cards. */
+export function SavedSkeleton() {
+  return (
+    <div className="container mx-auto px-4 pt-6 pb-8" aria-busy="true">
+      <LoadingMessage>Loading your saved items</LoadingMessage>
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <h1 className="sr-only">Saved</h1>
+          <p className="text-tertiary">Everything on your lists, in one place.</p>
+        </div>
+        <Skeleton className="h-10 w-36 shrink-0 rounded-lg" />
+      </div>
+
+      <section className="mt-6">
+        {/* Still wanted / Gifted / All, and the search box */}
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <Skeleton className="h-9 w-full rounded-lg sm:w-72" />
+          <Skeleton className="h-10 w-full rounded-lg sm:max-w-64" />
+        </div>
+
+        <div className="mt-4 flex min-h-5 items-center">
+          <Skeleton className="h-5 w-32" />
+        </div>
+
+        <div className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {[0, 1, 2, 3, 4, 5].map((i) => (
+            <SavedItemCardSkeleton key={i} />
+          ))}
+        </div>
+      </section>
+    </div>
+  );
+}
+
 function FieldSkeleton() {
   return (
     <div className="space-y-1.5">

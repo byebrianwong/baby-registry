@@ -4,14 +4,20 @@ import { EventInvitation, type InvitationRegistry } from "./event-invitation";
 import { RsvpForm } from "./rsvp-form";
 import { GuestWishLists } from "./guest-wish-lists";
 import {
+  SAMPLE_TODAY,
   sampleEvent,
   sampleEveryoneExchange,
   sampleExchange,
   sampleExchangeEvent,
   sampleGuestWishLists,
   sampleLinkedRegistries,
+  sampleMealTrainEvent,
+  sampleMealTrainSheet,
+  samplePotluckEvent,
+  samplePotluckSheet,
   sampleRegistry,
 } from "@/lib/event-sample-data";
+import { signupRowsForGuest, withAddressFor } from "@/lib/signups";
 
 // The public event page (src/app/e/[slug]/page.tsx) without its header and
 // footer. The page reads the event on the server, which Storybook can't render.
@@ -196,6 +202,75 @@ export const WithGiftExchange: Story = {
       />
     </EventInvitation>
   ),
+};
+
+const potluckRows = signupRowsForGuest(samplePotluckSheet, "g1", SAMPLE_TODAY);
+
+/**
+ * A potluck with a sign-up sheet. Glinda signed up to bring a side. The sheet
+ * shows what everyone's bringing, but not who.
+ */
+export const PotluckWithSignupSheet: Story = {
+  args: {
+    event: samplePotluckEvent,
+    registry: null,
+    signup: { title: samplePotluckSheet.sheet.title, note: samplePotluckSheet.sheet.note, rows: potluckRows },
+  },
+  render: (args) => (
+    <EventInvitation {...args}>
+      <RsvpForm
+        slug={samplePotluckEvent.slug}
+        guest={{ name: "Glinda", status: "yes", partySize: 2, note: null }}
+        token="token-g1"
+        openRsvp
+        maxPartySize={2}
+        passed={false}
+        signup={{ title: samplePotluckSheet.sheet.title, rows: potluckRows }}
+        submitAction={submitAction}
+      />
+    </EventInvitation>
+  ),
+};
+
+const mealTrainRows = signupRowsForGuest(sampleMealTrainSheet, "g4", SAMPLE_TODAY);
+
+/**
+ * A meal train, for a guest who hasn't signed up yet. The drop-off address
+ * stays hidden until they pick a day.
+ */
+export const MealTrainBeforeSigningUp: Story = {
+  args: {
+    event: withAddressFor(sampleMealTrainEvent, false),
+    registry: null,
+    calendar: null,
+    addressHidden: true,
+    signup: {
+      title: sampleMealTrainSheet.sheet.title,
+      note: sampleMealTrainSheet.sheet.note,
+      rows: mealTrainRows,
+      mealTrain: true,
+    },
+  },
+  render: (args) => (
+    <EventInvitation {...args}>
+      <RsvpForm
+        slug={sampleMealTrainEvent.slug}
+        guest={{ name: "Fiyero", status: "pending", partySize: 1, note: null }}
+        token="token-g4"
+        openRsvp
+        maxPartySize={1}
+        passed={false}
+        mealTrain
+        signup={{ title: sampleMealTrainSheet.sheet.title, rows: mealTrainRows }}
+        submitAction={submitAction}
+      />
+    </EventInvitation>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByText("The drop-off address shows here once you sign up for a day.")).toBeVisible();
+    await expect(canvas.queryByText(/Sunnyside/)).toBeNull();
+  },
 };
 
 /**

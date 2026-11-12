@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { isUuid } from "@/lib/extension";
 import { isGiftLinkStep } from "@/lib/gifts";
+import { listsForItems } from "@/lib/list-items";
 import { MY_GIFTS_COOKIE, MY_GIFTS_COOKIE_OPTIONS, withGift } from "@/lib/my-gifts-cookie";
 
 export const dynamic = "force-dynamic";
@@ -26,15 +27,16 @@ export async function GET(
     .single();
   if (!purchase?.registry_item_id) return NextResponse.redirect(target);
 
-  const { data: item } = await supabaseAdmin
-    .from("registry_items")
-    .select("id, registry_id")
-    .eq("id", purchase.registry_item_id)
-    .single();
-  const { data: registry } = item
-    ? await supabaseAdmin.from("registries").select("slug").eq("id", item.registry_id).single()
-    : { data: null };
-  if (!item || registry?.slug !== slug) return NextResponse.redirect(target);
+  // An item can be on several of its owner's lists (src/lib/list-items.ts).
+  // The link works on any of them.
+  const [lists, { data: registry }] = await Promise.all([
+    listsForItems([purchase.registry_item_id]),
+    supabaseAdmin.from("registries").select("id").eq("slug", slug).maybeSingle(),
+  ]);
+  const item = { id: purchase.registry_item_id as string };
+  if (!registry || !(lists.get(item.id) ?? []).includes(registry.id as string)) {
+    return NextResponse.redirect(target);
+  }
 
   target.searchParams.set("gift", item.id);
   const step = request.nextUrl.searchParams.get("step");

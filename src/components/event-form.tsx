@@ -25,6 +25,10 @@ import {
   type ExchangeKind,
   type GiftExchange,
 } from "@/lib/events";
+import { hidesAddressUntilSignup } from "@/lib/signups";
+import { RsvpQuestionsEditor } from "@/components/rsvp-questions-editor";
+import { defaultQuestions, storedQuestions, type RsvpQuestion } from "@/lib/rsvp-questions";
+import { changedParts, changeSummary } from "@/lib/event-updates";
 import { cx } from "@/lib/utils/cx";
 
 type Values = Pick<
@@ -44,9 +48,10 @@ type Values = Pick<
   | "max_party_size"
   | "open_rsvp"
   | "email_host_on_rsvp"
-  | "registry_id"
   | "gift_note"
   | "ask_kids"
+  | "rsvp_questions"
+  | "remind_day_before"
 >;
 
 /** A registry on the form's list of links. */
@@ -73,6 +78,11 @@ export interface EventFormProps {
   registries: { id: string; title: string }[];
   /** The registries the event links now, in order. */
   linkedRegistries?: FormRegistry[];
+  /**
+   * Without linkedRegistries, the form starts with this registry linked:
+   * "Plan an event" on a registry's page, and the demo's events.
+   */
+  startRegistryId?: string | null;
   /** The event's gift exchange, when it has one. */
   exchange?: Pick<GiftExchange, "kind" | "budget" | "draw_by" | "mailed" | "drawn_at"> | null;
   createAction?: (formData: FormData) => Promise<ActionResult & { id?: string }>;
@@ -98,6 +108,7 @@ export function EventForm({
   initial = {},
   registries,
   linkedRegistries,
+  startRegistryId = null,
   exchange = null,
   createAction = createEvent,
   lookupAction = lookupRegistryLink,
@@ -123,11 +134,19 @@ export function EventForm({
   const [emailHost, setEmailHost] = useState(initial.email_host_on_rsvp ?? true);
   const [askKids, setAskKids] = useState(initial.ask_kids ?? false);
   const [giftNote, setGiftNote] = useState(initial.gift_note ?? "");
+  // A new event starts with its occasion's questions; an existing one keeps its own.
+  const [questions, setQuestions] = useState<RsvpQuestion[]>(() =>
+    eventId
+      ? storedQuestions(initial.rsvp_questions)
+      : defaultQuestions(EVENT_TYPE_OPTIONS.find((o) => o.value === (initial.event_type ?? "baby_shower"))?.defaults?.questions),
+  );
+  const [remindDayBefore, setRemindDayBefore] = useState(initial.remind_day_before ?? true);
+  const [notifyGuests, setNotifyGuests] = useState(true);
 
   // Linked registries. "Plan an event" on a registry's page starts with that one.
   const [linked, setLinked] = useState<FormRegistry[]>(() => {
     if (linkedRegistries) return linkedRegistries;
-    const start = registries.find((r) => r.id === initial.registry_id);
+    const start = registries.find((r) => r.id === startRegistryId);
     return start ? [{ id: start.id, title: start.title }] : [];
   });
   const [pasted, setPasted] = useState("");
@@ -147,7 +166,7 @@ export function EventForm({
   const drawn = Boolean(exchange?.drawn_at);
   // Choosing an occasion on a new event sets its defaults, but never undoes
   // a choice the host made themselves.
-  const [touched, setTouched] = useState({ exchange: false, askKids: false });
+  const [touched, setTouched] = useState({ exchange: false, askKids: false, questions: false });
 
   // The picture: the saved one, or a new file waiting to upload on save.
   const [imageUrl, setImageUrl] = useState<string | null>(initial.image_url ?? null);
@@ -194,7 +213,30 @@ export function EventForm({
       setKind(type === "gift_exchange" ? "draw" : "everyone");
     }
     if (!touched.askKids) setAskKids(Boolean(defaults.askKids));
+    if (!touched.questions) setQuestions(defaultQuestions(defaults.questions));
   };
+
+  // On an existing event, a new date, time or place can email guests.
+  const changes = editing
+    ? changedParts(
+        {
+          event_date: initial.event_date ?? null,
+          start_time: initial.start_time ?? null,
+          end_time: initial.end_time ?? null,
+          time_zone: initial.time_zone ?? null,
+          location_name: initial.location_name ?? null,
+          location_address: initial.location_address ?? null,
+        },
+        {
+          event_date: eventDate || null,
+          start_time: startTime || null,
+          end_time: endTime || null,
+          time_zone: timeZone || null,
+          location_name: locationName || null,
+          location_address: locationAddress || null,
+        },
+      )
+    : [];
 
   const addPastedLink = async () => {
     const link = pasted.trim();
@@ -240,6 +282,9 @@ export function EventForm({
     data.set("openRsvp", String(openRsvp));
     data.set("emailHostOnRsvp", String(emailHost));
     data.set("askKids", String(askKids));
+    data.set("rsvpQuestions", JSON.stringify(questions));
+    data.set("remindDayBefore", String(remindDayBefore));
+    data.set("notifyGuests", String(notifyGuests && changes.length > 0));
     data.set("giftNote", giftNote);
     data.set("registryLinks", JSON.stringify(linked.map((r) => (r.link ? { link: r.link } : { id: r.id }))));
     data.set("exchangeEnabled", String(exchangeOn));
@@ -415,24 +460,38 @@ export function EventForm({
         </div>
       </Section>
 
-      <Section title="Where">
-        <Input
-          label="Place"
-          value={locationName}
-          onChange={setLocationName}
-          maxLength={120}
-          placeholder={`e.g., "Grandma's house" or "The Garden Room"`}
-        />
-        <TextArea
-          label="Address"
-          value={locationAddress}
-          onChange={setLocationAddress}
-          maxLength={300}
-          rows={2}
-          placeholder={"123 Main St\nSan Francisco, CA 94102"}
-          hint="Only people with the event link see it. Guests get a map link."
-        />
-      </Section>
+      {hidesAddressUntilSignup(eventType) ? (
+        <Section title="Where to drop off">
+          <TextArea
+            label="Drop-off address"
+            value={locationAddress}
+            onChange={setLocationAddress}
+            maxLength={300}
+            rows={2}
+            placeholder={"123 Main St\nSan Francisco, CA 94102"}
+            hint="Only people who sign up for a day see it, on their own link and in their email."
+          />
+        </Section>
+      ) : (
+        <Section title="Where">
+          <Input
+            label="Place"
+            value={locationName}
+            onChange={setLocationName}
+            maxLength={120}
+            placeholder={`e.g., "Grandma's house" or "The Garden Room"`}
+          />
+          <TextArea
+            label="Address"
+            value={locationAddress}
+            onChange={setLocationAddress}
+            maxLength={300}
+            rows={2}
+            placeholder={"123 Main St\nSan Francisco, CA 94102"}
+            hint="Only people with the event link see it. Guests get a map link."
+          />
+        </Section>
+      )}
 
       <Section title="Message to guests" description="Parking, dress code, what to bring: anything guests should know.">
         <TextArea
@@ -478,6 +537,19 @@ export function EventForm({
           isSelected={emailHost}
           onChange={setEmailHost}
           label={<span className="font-normal">Email me when someone RSVPs</span>}
+        />
+        <Checkbox
+          isSelected={remindDayBefore}
+          onChange={setRemindDayBefore}
+          label={<span className="font-normal">Email everyone going a reminder the day before</span>}
+          hint="With the time, the place and anything they signed up to bring."
+        />
+        <RsvpQuestionsEditor
+          questions={questions}
+          onChange={(next) => {
+            setQuestions(next);
+            setTouched((t) => ({ ...t, questions: true }));
+          }}
         />
       </Section>
 
@@ -674,6 +746,17 @@ export function EventForm({
           </>
         )}
       </Section>
+
+      {changes.length > 0 && (
+        <div className="rounded-xl bg-brand-50 p-4">
+          <Checkbox
+            isSelected={notifyGuests}
+            onChange={setNotifyGuests}
+            label={<span className="font-medium">Email guests about the {changeSummary(changes).replace(/^New /, "new ")}</span>}
+            hint="Everyone who said yes or maybe, and everyone invited who hasn't answered, gets the new details. Untick this for a small fix, like a typo."
+          />
+        </div>
+      )}
 
       {error && (
         <p role="alert" className="text-sm text-error-primary">

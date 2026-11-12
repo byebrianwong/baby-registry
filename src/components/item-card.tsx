@@ -42,9 +42,11 @@ interface ItemCardProps {
   /** Passed to the edit dialog's store link notice. */
   linkedRegistries?: RetailerRegistry[];
   storesWithRegistryLinks?: StoreId[];
+  /** The titles of the owner's other lists this item is on, if any. */
+  otherLists?: string[];
 }
 
-export function ItemCard({ item, registryId, isOwner, categories = [], zipCode, highlightId, purchases, selfPurchaseButtonLabel = "Mark as bought by parent", registryType = "baby", eventType = null, linkedRegistries, storesWithRegistryLinks }: ItemCardProps) {
+export function ItemCard({ item, registryId, isOwner, categories = [], zipCode, highlightId, purchases, selfPurchaseButtonLabel = "Mark as bought by parent", registryType = "baby", eventType = null, linkedRegistries, storesWithRegistryLinks, otherLists }: ItemCardProps) {
   const [toggling, setToggling] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [giftDetailOpen, setGiftDetailOpen] = useState(false);
@@ -168,6 +170,12 @@ export function ItemCard({ item, registryId, isOwner, categories = [], zipCode, 
             {item.notes && (
               <p className="text-sm whitespace-pre-line">{item.notes}</p>
             )}
+
+            {isOwner && otherLists && otherLists.length > 0 && (
+              <p className="text-xs text-tertiary">
+                Also on {otherLists.length <= 2 ? otherLists.join(" and ") : `${otherLists[0]} and ${otherLists.length - 1} more lists`}
+              </p>
+            )}
           </div>
         </div>
 
@@ -224,6 +232,7 @@ export function ItemCard({ item, registryId, isOwner, categories = [], zipCode, 
         onOpenChange={setEditOpen}
         linkedRegistries={linkedRegistries}
         storesWithRegistryLinks={storesWithRegistryLinks}
+        otherLists={otherLists}
       />
     )}
     {purchases && purchases.length > 0 && (

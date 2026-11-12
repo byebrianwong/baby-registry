@@ -119,7 +119,9 @@ export function PlanPicker({
 
   const occasion = state.occasion ? occasionFor(state.occasion) : null;
   const audiences = (occasion?.audiences ?? []) as readonly Audience[];
-  const giftPlans = state.audience ? giftPlansFor(state.audience) : [];
+  const giftPlans = state.audience ? giftPlansFor(state.audience, occasion) : [];
+  // A meal train has no day of its own; the date is its first drop-off day.
+  const mealTrain = state.occasion === "meal_train";
   const nameLabel = state.audience ? nameLabelFor(state.audience) : null;
   const withEvent = state.gifts ? planNeedsEvent(state.gifts) || state.invitation : true;
 
@@ -248,6 +250,19 @@ export function PlanPicker({
       summary.push("Everyone gives everyone: guests link their wish lists when they RSVP, and see each other's");
     }
     if (state.gifts === "no_gifts") summary.push("A note on the invitation: “No gifts, please.”");
+    // A potluck or a meal train always starts with its sheet, like a gift exchange with its draw.
+    const startsSheet = Boolean(occasion.defaults && "signup" in occasion.defaults);
+    if (state.gifts === "signup" || startsSheet) {
+      summary.push(
+        mealTrain
+          ? state.date
+            ? "A sign-up sheet with a dinner each day for a week. Guests pick a day, and only they see the drop-off address."
+            : "A sign-up sheet. Add the days next. Guests pick a day, and only they see the drop-off address."
+          : state.occasion === "potluck"
+            ? "A sign-up sheet for mains, sides, desserts and drinks. Change the rows next."
+            : "A sign-up sheet for things to bring. Change the rows next.",
+      );
+    }
     if ("defaults" in occasion && occasion.defaults && "askKids" in occasion.defaults) {
       summary.push("The RSVP asks how many kids are coming");
     }
@@ -404,7 +419,12 @@ export function PlanPicker({
               maxLength={120}
               placeholder={occasion.titlePlaceholder}
             />
-            <Input label="Date (optional)" type="date" value={state.date} onChange={(date) => update({ date })} />
+            <Input
+              label={mealTrain ? "First day (optional)" : "Date (optional)"}
+              type="date"
+              value={state.date}
+              onChange={(date) => update({ date })}
+            />
           </div>
           {summary.length > 0 && (
             <div className="rounded-xl bg-secondary p-4">

@@ -44,6 +44,10 @@ const meta: Meta<typeof AccountSettings> = {
     registries,
     saveAction: mockSave as never,
     listAction: mockList as never,
+    deleteAccountActions: {
+      loadSummary: async () => ({ deleted: [], handedOver: [], leaving: [], events: 0 }),
+      deleteAction: async () => ({}),
+    },
   },
 };
 export default meta;

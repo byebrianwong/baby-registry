@@ -1,4 +1,5 @@
 import { supabaseAdmin } from "@/lib/supabase-admin";
+import { loadItemsForLists } from "@/lib/list-items";
 import {
   exchangeKind,
   type EventDetails,
@@ -8,6 +9,8 @@ import {
   type GuestWishList,
   type LinkedRegistry,
 } from "@/lib/events";
+import type { SignupClaim, SignupItem, SignupSheet, SignupSheetWithRows } from "@/lib/signups";
+import type { EventMessage } from "@/lib/event-updates";
 
 // Reads for the event pages. The event tables have no access rules for the
 // API roles (see 015_events.sql), so everything goes through the service-role
@@ -245,16 +248,30 @@ export async function getEventRegistries(eventId: string, { withItems = false } 
   }));
   if (!withItems || registries.length === 0) return registries;
 
-  const { data: items } = await supabaseAdmin
-    .from("registry_items")
-    .select("id, registry_id, title, image_url, price, quantity_needed, quantity_fulfilled, is_essential, sort_order")
-    .in("registry_id", registries.map((r) => r.id))
-    .order("is_essential", { ascending: false })
-    .order("sort_order");
+  // Each list's own items and the ones its owner placed on it from their
+  // other lists (src/lib/list-items.ts).
+  type PreviewItem = {
+    id: string;
+    registry_id: string;
+    category_id: string | null;
+    created_at: string;
+    title: string;
+    image_url: string | null;
+    price: number | null;
+    quantity_needed: number;
+    quantity_fulfilled: number;
+    is_essential: boolean;
+    sort_order: number;
+  };
+  const itemsByList = await loadItemsForLists<PreviewItem>(
+    registries.map((r) => r.id),
+    "id, registry_id, category_id, created_at, title, image_url, price, quantity_needed, quantity_fulfilled, is_essential, sort_order",
+  ).catch(() => new Map<string, PreviewItem[]>());
   for (const registry of registries) {
-    const open = (items || []).filter(
-      (item) => item.registry_id === registry.id && item.quantity_fulfilled < item.quantity_needed,
-    );
+    const open = (itemsByList.get(registry.id) ?? [])
+      .filter((item) => item.quantity_fulfilled < item.quantity_needed)
+      // Most wanted first, then in list order.
+      .sort((a, b) => Number(b.is_essential) - Number(a.is_essential));
     registry.itemsLeft = open.length;
     // Items with a picture first: the preview is a row of pictures.
     registry.items = [...open]
@@ -366,6 +383,42 @@ export async function getGifteeFor(eventId: string, gifteeId: string | null): Pr
   };
 }
 
+// ── Sign-up sheets ───────────────────────────────────────────
+
+/** The event's sign-up sheet with its rows and claims, or null when it has none. */
+export async function getSignupSheet(eventId: string): Promise<SignupSheetWithRows | null> {
+  const { data: sheet } = await supabaseAdmin.from("signup_sheets").select("*").eq("event_id", eventId).maybeSingle();
+  if (!sheet) return null;
+  const { data: items } = await supabaseAdmin
+    .from("signup_items")
+    .select("*")
+    .eq("event_id", eventId)
+    .order("sort_order")
+    .order("created_at");
+  const ids = (items || []).map((i) => i.id as string);
+  const { data: claims } = ids.length
+    ? await supabaseAdmin.from("signup_claims").select("*").in("item_id", ids).order("created_at")
+    : { data: [] };
+  return {
+    sheet: sheet as SignupSheet,
+    items: (items || []) as SignupItem[],
+    claims: (claims || []) as SignupClaim[],
+  };
+}
+
+// ── Messages to guests ───────────────────────────────────────
+
+/** What was emailed to the event's guests after the invitation, newest first. */
+export async function getEventMessages(eventId: string, limit = 20): Promise<EventMessage[]> {
+  const { data } = await supabaseAdmin
+    .from("event_messages")
+    .select("*")
+    .eq("event_id", eventId)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  return (data || []) as EventMessage[];
+}
+
 /** Other events the user can manage, newest first, for "copy guests from". */
 export async function listOtherEventsForCopy(
   userId: string,
@@ -396,26 +449,24 @@ export async function getPendingListRequests(eventId: string): Promise<{ name: s
  * the event links it, or it's the wish list of one of its guests and the
  * event's gift exchange is everyone gives everyone. (A Secret Santa's
  * wishlist is only for the person who drew them; the gift link route checks
- * that on its own.)
+ * that on its own.) With several registries, any one of them counts: an item
+ * can be on several lists.
  */
-export async function eventIncludesRegistry(eventId: string, registryId: string): Promise<boolean> {
-  const [{ data: link }, exchange, { data: wishlists }] = await Promise.all([
-    supabaseAdmin
-      .from("event_registries")
-      .select("registry_id")
-      .eq("event_id", eventId)
-      .eq("registry_id", registryId)
-      .maybeSingle(),
+export async function eventIncludesRegistry(eventId: string, registryIds: string | string[]): Promise<boolean> {
+  const ids = Array.isArray(registryIds) ? registryIds : [registryIds];
+  if (ids.length === 0) return false;
+  const [{ data: links }, exchange, { data: wishlists }] = await Promise.all([
+    supabaseAdmin.from("event_registries").select("registry_id").eq("event_id", eventId).in("registry_id", ids).limit(1),
     getGiftExchange(eventId),
     supabaseAdmin
       .from("event_guests")
       .select("id")
       .eq("event_id", eventId)
-      .eq("wishlist_registry_id", registryId)
+      .in("wishlist_registry_id", ids)
       .eq("in_exchange", true)
       .limit(1),
   ]);
-  if (link) return true;
+  if ((links?.length ?? 0) > 0) return true;
   return exchangeKind(exchange) === "everyone" && (wishlists?.length ?? 0) > 0;
 }
 

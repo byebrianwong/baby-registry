@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ExternalLink, PartyPopper } from "lucide-react";
+import { CookingPot, ExternalLink, PartyPopper } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -60,7 +60,11 @@ export function EventCard({
           <img src={imageUrl} alt="" className="h-full w-full object-cover" />
         ) : (
           <span className="flex size-12 items-center justify-center rounded-full bg-primary">
-            <PartyPopper aria-hidden="true" className={cx("size-6", theme.icon)} />
+            {eventType === "meal_train" ? (
+              <CookingPot aria-hidden="true" className={cx("size-6", theme.icon)} />
+            ) : (
+              <PartyPopper aria-hidden="true" className={cx("size-6", theme.icon)} />
+            )}
           </span>
         )}
         {eventDate && (

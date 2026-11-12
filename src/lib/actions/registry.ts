@@ -25,6 +25,8 @@ import {
   type RetailerRegistry,
 } from "@/lib/retailers";
 import { isUuid } from "@/lib/extension";
+import { listsForItems } from "@/lib/list-items";
+import { removeItemFromList, revalidateLists } from "@/lib/item-placements";
 import { parseStorePerksState, storePerksSettings } from "@/lib/store-perks";
 import { MY_GIFTS_COOKIE, MY_GIFTS_COOKIE_OPTIONS, withGift } from "@/lib/my-gifts-cookie";
 import { readEventGuestCookie } from "@/lib/event-guest-cookie";
@@ -73,17 +75,21 @@ async function recordEventGuestOnGift(
     const guest = await readEventGuestCookie();
     if (!guest || !isUuid(guest.eventId) || !isUuid(guest.guestId)) return { hideGiver: false };
 
-    const { data: owner } =
-      "itemId" in target
-        ? await supabaseAdmin.from("registry_items").select("registry_id").eq("id", target.itemId).single()
-        : await supabaseAdmin.from("cash_funds").select("registry_id").eq("id", target.fundId).single();
-    const registryId = owner?.registry_id as string | undefined;
-    if (!registryId) return { hideGiver: false };
+    // An item can be on several of its owner's lists (src/lib/list-items.ts),
+    // so a gift through any of them counts for each.
+    let registryIds: string[];
+    if ("itemId" in target) {
+      registryIds = (await listsForItems([target.itemId])).get(target.itemId) ?? [];
+    } else {
+      const { data: fund } = await supabaseAdmin.from("cash_funds").select("registry_id").eq("id", target.fundId).single();
+      registryIds = fund?.registry_id ? [fund.registry_id as string] : [];
+    }
+    if (registryIds.length === 0) return { hideGiver: false };
 
     let hideGiver = false;
-    if (guest.santa?.registryId === registryId) {
+    if (guest.santa?.registryId && registryIds.includes(guest.santa.registryId)) {
       hideGiver = true;
-    } else if (!(await eventIncludesRegistry(guest.eventId, registryId))) {
+    } else if (!(await eventIncludesRegistry(guest.eventId, registryIds))) {
       return { hideGiver: false };
     }
 
@@ -351,6 +357,7 @@ export async function addRegistryItem(registryId: string, formData: FormData) {
   }
 
   revalidatePath(`/dashboard/registry/${registryId}`);
+  revalidatePath("/dashboard/saved");
   return { success: true };
 }
 
@@ -379,11 +386,24 @@ export async function updateRegistryItem(
   const minimumCondition = formData.get("minimumCondition") as string;
   const notes = formData.get("notes") as string;
 
-  const { error } = await supabase
+  if (!isUuid(itemId) || !isUuid(registryId)) return { error: "Item not found" };
+
+  // An item can be on several of its owner's lists (src/lib/list-items.ts).
+  // Its details are the same everywhere, but its category on a list it was
+  // placed on belongs to that placement.
+  const lists = (await listsForItems([itemId])).get(itemId) ?? [];
+  if (!lists.includes(registryId)) return { error: "Item not found" };
+  const placedHere = lists[0] !== registryId;
+  if (placedHere) {
+    const { user: manager, error: authError } = await requireManager(registryId);
+    if (authError || !manager) return { error: authError || "Not authorized" };
+  }
+
+  const { data: updated, error } = await supabase
     .from("registry_items")
     .update({
       title,
-      category_id: categoryId || null,
+      ...(placedHere ? {} : { category_id: categoryId || null }),
       external_url: externalUrl || null,
       image_url: imageUrl || null,
       price: price ? parseFloat(price) : null,
@@ -393,16 +413,48 @@ export async function updateRegistryItem(
       minimum_condition: isOpenToUsed ? minimumCondition || null : null,
       notes: notes || null,
     })
-    .eq("id", itemId);
+    .eq("id", itemId)
+    .select("id");
 
   if (error) {
     return { error: error.message };
   }
+  // The access rules match nothing, without an error, for someone who helps
+  // with this list but not with the list the item was first saved to.
+  if (!updated || updated.length === 0) {
+    return { error: "Only the list's owner can change this item." };
+  }
 
-  revalidatePath(`/dashboard/registry/${registryId}`);
+  if (placedHere) {
+    // The service-role client skips the access rules, so the category has to
+    // be one of this list's.
+    let placementCategory: string | null = null;
+    if (categoryId) {
+      const { data: category } = await supabaseAdmin
+        .from("categories")
+        .select("id")
+        .eq("id", categoryId)
+        .eq("registry_id", registryId)
+        .maybeSingle();
+      placementCategory = (category?.id as string | undefined) ?? null;
+    }
+    const { error: placementError } = await supabaseAdmin
+      .from("registry_item_placements")
+      .update({ category_id: placementCategory })
+      .eq("item_id", itemId)
+      .eq("registry_id", registryId);
+    if (placementError) return { error: placementError.message };
+  }
+
+  revalidateLists(lists);
   return { success: true };
 }
 
+/**
+ * Takes an item off this list. An item that's also on the owner's other lists
+ * stays on them: taking it off its home list moves its home to the next list
+ * it's on. Only an item on no other list is deleted.
+ */
 export async function deleteRegistryItem(itemId: string, registryId: string) {
   const supabase = await createClient();
   const {
@@ -413,17 +465,20 @@ export async function deleteRegistryItem(itemId: string, registryId: string) {
     redirect("/login");
   }
 
-  const { error } = await supabase
-    .from("registry_items")
-    .delete()
-    .eq("id", itemId);
+  if (!isUuid(itemId) || !isUuid(registryId)) return { error: "Item not found" };
+  const { user: manager, error: authError } = await requireManager(registryId);
+  if (authError || !manager) return { error: authError || "Not authorized" };
 
-  if (error) {
-    return { error: error.message };
+  const lists = (await listsForItems([itemId])).get(itemId) ?? [];
+  if (!lists.includes(registryId)) return { error: "Item not found" };
+
+  const result = await removeItemFromList(itemId, registryId);
+  if ("error" in result) {
+    return { error: result.error };
   }
 
-  revalidatePath(`/dashboard/registry/${registryId}`);
-  return { success: true };
+  revalidateLists(lists);
+  return { success: true, removed: result.removed };
 }
 
 export async function addCashFund(registryId: string, formData: FormData) {
@@ -1156,24 +1211,30 @@ export async function toggleParentPurchased(
     .eq("id", itemId)
     .single();
 
-  if (!item) {
+  // The item can be on this list through a placement (src/lib/list-items.ts).
+  const lists = item ? (await listsForItems([itemId])).get(itemId) ?? [] : [];
+  if (!item || !lists.includes(registryId)) {
     return { error: "Item not found" };
   }
 
-  const { error } = await supabase
+  const { data: updated, error } = await supabase
     .from("registry_items")
     .update({
       is_parent_purchased: purchased,
       quantity_fulfilled: purchased ? item.quantity_needed : 0,
       updated_at: new Date().toISOString(),
     })
-    .eq("id", itemId);
+    .eq("id", itemId)
+    .select("id");
 
   if (error) {
     return { error: error.message };
   }
+  if (!updated || updated.length === 0) {
+    return { error: "Only the list's owner can change this item." };
+  }
 
-  revalidatePath(`/dashboard/registry/${registryId}`);
+  revalidateLists(lists);
   return { success: true };
 }
 

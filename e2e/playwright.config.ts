@@ -7,12 +7,20 @@ import { localSupabase, REPO_ROOT } from "./local-supabase";
 import { CRON_SECRET, SITE_URL } from "./fixtures";
 
 const supabase = localSupabase();
+// Set by GitHub Actions (.github/workflows/e2e.yml).
+const onCI = !!process.env.CI;
 
 export default defineConfig({
   testDir: ".",
   timeout: 60_000,
   expect: { timeout: 15_000 },
-  reporter: [["list"]],
+  // On CI a test that fails once gets one more try. Playwright reports a
+  // test that passes on the retry as flaky, so it still shows up.
+  retries: onCI ? 1 : 0,
+  // A test.only left in by mistake would skip every other test.
+  forbidOnly: onCI,
+  // On CI, "github" also marks failures on the pull request's changed files.
+  reporter: onCI ? [["list"], ["github"]] : [["list"]],
   outputDir: path.join(REPO_ROOT, "test-results", "e2e"),
   use: {
     ...devices["Desktop Chrome"],

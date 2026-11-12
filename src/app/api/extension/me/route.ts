@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { authenticateExtension, managedRegistryIds } from "@/lib/extension-server";
 import { parseRetailerRegistries, plainLinksByStore, type StoreId } from "@/lib/retailers";
 import type { MeResponse } from "@/lib/extension";
+import { LINK_COLUMNS, loadItemsForLists, type LinkRow } from "@/lib/list-items";
 
 // GET → who the extension is signed in as, and the registries they manage.
 export async function GET(request: Request) {
@@ -28,10 +29,12 @@ export async function GET(request: Request) {
           .in("registry_id", ids)
           .order("sort_order", { ascending: true })
       : Promise.resolve({ data: [] as CategoryRow[] }),
-    // Only the links, to count plain store links.
-    ids.length > 0
-      ? supabase.from("registry_items").select("registry_id, external_url").in("registry_id", ids)
-      : Promise.resolve({ data: [] as ItemRow[] }),
+    // Only the links, to count plain store links. Items placed on a list from
+    // the owner's other lists count too (src/lib/list-items.ts).
+    loadItemsForLists<LinkRow>(ids, LINK_COLUMNS).then(
+      (byList) => ({ data: [...byList.values()].flat() as ItemRow[] }),
+      () => ({ data: [] as ItemRow[] }),
+    ),
   ]);
 
   const categoriesByRegistry = new Map<string, { id: string; name: string }[]>();
