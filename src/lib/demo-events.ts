@@ -6,6 +6,8 @@ import { addDays, DEMO_REGISTRY } from "@/lib/demo-data";
 import type { EventDetails, EventGuest, RsvpStatus } from "@/lib/events";
 
 export interface DemoEvent extends EventDetails {
+  /** The demo registry the event links to, if any. */
+  registryId: string | null;
   guests: EventGuest[];
 }
 
@@ -64,7 +66,7 @@ function babyShower(today: string): DemoEvent {
     // Glinda made the event. Remi & Max manage the registry it links to, so
     // they can manage it too, and see it as co-hosts.
     owner_id: "glinda",
-    registry_id: "baby",
+    registryId: "baby",
     slug: "remi-and-max-baby-shower",
     event_type: "baby_shower",
     title: "Remi & Max's Baby Shower",
@@ -150,7 +152,7 @@ function birthdayDinner(today: string): DemoEvent {
   return {
     id,
     owner_id: DEMO_ME_ID,
-    registry_id: "wishlist",
+    registryId: "wishlist",
     slug: "max-turns-30-dinner",
     event_type: "birthday",
     title: "Max Turns 30",
@@ -191,7 +193,7 @@ function housewarming(today: string): DemoEvent {
   return {
     id,
     owner_id: DEMO_ME_ID,
-    registry_id: null,
+    registryId: null,
     slug: "remi-and-max-housewarming",
     event_type: "housewarming",
     title: "Come See Our New Place",
@@ -238,5 +240,5 @@ export function findDemoEvent(today: string, match: { id?: string; slug?: string
 
 /** Events that link guests to a demo registry, for its banner. */
 export function demoEventsForRegistry(today: string, registryId: string): DemoEvent[] {
-  return demoEvents(today).filter((e) => e.registry_id === registryId);
+  return demoEvents(today).filter((e) => e.registryId === registryId);
 }

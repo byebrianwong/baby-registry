@@ -222,7 +222,7 @@ Fourteen tables, all with Row Level Security turned on:
 | `follows` | Follow requests and approved follows |
 | `user_blocks` | Who has blocked whom |
 | `follow_request_emails` | When each follow request email was last sent, so asking again doesn't send another |
-| `events` | Events: details, invitation picture, RSVP settings and the registry they link to |
+| `events` | Events: details, invitation picture, RSVP settings and questions. The registries an event links are on `event_registries`. |
 | `event_guests` | Each event's guests, their personal RSVP link token, their answer and when they were emailed |
 
 `event_list_requests` holds the emailed requests for someone to make a list for an event. `signup_sheets`, `signup_items` and `signup_claims` hold events' sign-up sheets, their rows and who took each spot. `event_messages` records what was emailed to an event's guests after the invitation. `groups`, `group_members` and `registry_groups` hold groups, their people and the lists shared with them. They, the sign-up tables, `follows`, `user_blocks`, `follow_request_emails`, `events` and `event_guests` have no access policies, so only server code using the service-role key can read or write them. The files in `supabase/migrations` hold the full schema, the access rules, and the database functions that handle reservations.

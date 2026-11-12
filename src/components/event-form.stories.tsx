@@ -1,11 +1,11 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { expect, fireEvent, fn, within } from "storybook/test";
 import { EventForm } from "./event-form";
-import { sampleEvent, sampleLinkedRegistries } from "@/lib/event-sample-data";
+import { SAMPLE_REGISTRY_ID, sampleEvent, sampleLinkedRegistries } from "@/lib/event-sample-data";
 import { defaultQuestions } from "@/lib/rsvp-questions";
 
 const registries = [
-  { id: sampleEvent.registry_id!, title: "Remi & Max's Baby Registry" },
+  { id: SAMPLE_REGISTRY_ID, title: "Remi & Max's Baby Registry" },
   { id: "00000000-0000-4000-8000-000000000003", title: "Max's Birthday Wishlist" },
 ];
 
@@ -37,8 +37,11 @@ export const NewEvent: Story = {
   args: { initial: { time_zone: "America/Los_Angeles" } },
 };
 
+// The edit page always passes the event's linked registries.
+const linkedRegistries = [{ id: registries[0].id, title: registries[0].title }];
+
 export const EditingWithPicture: Story = {
-  args: { eventId: sampleEvent.id, initial: sampleEvent },
+  args: { eventId: sampleEvent.id, initial: sampleEvent, linkedRegistries },
 };
 
 /**
@@ -79,12 +82,13 @@ export const EditingWeddingQuestions: Story = {
       image_url: null,
       rsvp_questions: defaultQuestions(["plus_ones", "meal", "diet"]),
     },
+    linkedRegistries,
   },
 };
 
 /** Changing the place of an event offers to email guests about it. */
 export const ChangingThePlace: Story = {
-  args: { eventId: sampleEvent.id, initial: { ...sampleEvent, image_url: null } },
+  args: { eventId: sampleEvent.id, initial: { ...sampleEvent, image_url: null }, linkedRegistries },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     // Set the whole value at once. Typing into this big form doesn't always
