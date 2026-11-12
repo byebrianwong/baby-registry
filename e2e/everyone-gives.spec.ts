@@ -57,6 +57,8 @@ async function purchasesOwnerCanRead(account: { email: string; password: string 
 }
 
 test("guests see each other's lists and who reserved what, and the owner sees it the day after", async ({ browser }) => {
+  // Four people in four browsers, a sign-in and the daily job: longer than one guest's flow.
+  test.setTimeout(120_000);
   const maya = await createAccount("Maya Owner");
   const ben = await createAccount("Ben Brother");
   const hal = await createAccount("Hal Host");
