@@ -9,7 +9,7 @@ The Regibee app for registry owners, built with Expo (SDK 58) and React Native. 
 - **Paste a link.** On iPhone it's Apple's own Paste button, so there's no "Allow Paste" prompt.
 - **Catches duplicates.** A link already on the registry, matched on the store's product ID the same way as the website and extension, gets a warning first.
 - **Manage registries.** See every registry you own or help manage, with progress, value and the latest gift. Add, edit and delete items. Mark them most wanted, bought it yourself, or open to used. Filter by category and make new categories. Long-press an item on iPhone for quick actions.
-- **Gift activity.** See who reserved or bought what, with their messages and funds' totals. Email a giver, or cancel a reservation.
+- **Gift activity.** See who reserved or bought what, with their messages and funds' totals. Email a giver, or cancel a reservation. An owner who turned on "Hide what's been reserved from me" on the website sees nothing reserved, pledged or given, the same as on the website.
 - **Make a registry.** Baby registries start with the website's 10 categories.
 - **Fast.** Registries are cached on the phone (SQLite), so the app opens straight onto the last data it saw and refreshes in the background. Changes show at once and roll back if they fail.
 - **Look around first.** The sign-in screen offers the website's demo registry, kept in memory. Nothing in the demo is saved.

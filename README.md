@@ -17,6 +17,7 @@ A gift registry app built with Next.js, Supabase, and Tailwind CSS. It started a
 - **Guest suggestions** - Guests can suggest items. You accept or decline them on the registry page.
 - **Co-managers** - Invite a partner or family member by email or with an invite link. Managers can add and edit items, see gift activity and manage categories.
 - **Gift activity** - See who reserved what, and cancel a reservation if you need to.
+- **Hide what's been reserved from me** - A list's owner can choose not to see what people reserve or pledge, on the website and in the app, and gets no gift emails. Guests still see what's taken, so nobody buys the same thing twice, and co-managers still see everything. Regibee turns it on when the owner adds a personal wishlist to a gift exchange. A list marked "I keep this list for my child" always shows reservations, so the parent can plan.
 
 ### Giving gifts
 

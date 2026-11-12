@@ -35,6 +35,8 @@ import { copyFor } from "@/lib/registry-copy";
 import { PhotoUploadButton } from "@/components/photo-upload-button";
 import { RegistryAvatar, monogramFor } from "@/components/registry-avatar";
 import { uploadRegistryPhoto } from "@/lib/upload-registry-photo";
+import { ReservationPrivacyCard } from "@/components/reservation-privacy-card";
+import { readReservationPrivacy } from "@/lib/gifts";
 
 interface Manager {
   id: string;
@@ -510,6 +512,18 @@ export default function RegistrySettingsPage() {
       </Card>
 
       <Separator className="my-8" />
+
+      {currentUserId !== null && (
+        <>
+          <ReservationPrivacyCard
+            registryId={registryId}
+            isOwner={isOwner}
+            isPersonal={registry.registry_type === "personal"}
+            privacy={readReservationPrivacy(registry.settings)}
+          />
+          <Separator className="my-8" />
+        </>
+      )}
 
       <Card>
         <CardHeader>

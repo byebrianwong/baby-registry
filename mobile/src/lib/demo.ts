@@ -104,6 +104,7 @@ function build(): Store {
     items,
     funds: DEMO_CASH_FUNDS.map((f) => ({ ...f, registry_id: "demo" })),
     pendingSuggestions: demoSuggestions(day).filter((s) => s.status === "pending").length,
+    reservationsHidden: false,
   };
   return { details: new Map([["demo", detail]]), gifts: new Map([["demo", gifts]]) };
 }
@@ -126,6 +127,7 @@ function summary(detail: RegistryDetail, gifts: Gift[]): RegistrySummary {
     recentGifts: active
       .slice(0, 3)
       .map((g) => ({ id: g.id, buyer_name: g.buyer_name, created_at: g.created_at, held: isOpenReservation(g) })),
+    reservationsHidden: detail.reservationsHidden,
   };
 }
 
@@ -225,6 +227,7 @@ export const demo = {
       items: [],
       funds: [],
       pendingSuggestions: 0,
+      reservationsHidden: false,
     });
     current().gifts.set(id, []);
     return { id };

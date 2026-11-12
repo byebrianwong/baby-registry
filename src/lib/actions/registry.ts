@@ -875,6 +875,41 @@ export async function updatePaymentMethods(
   return { success: true };
 }
 
+/**
+ * "Hide what's been reserved from me" and "I keep this list for my child".
+ * Only the owner can change them, since they decide what the owner sees.
+ * Co-managers always see what's been reserved.
+ */
+export async function updateReservationPrivacy(
+  registryId: string,
+  input: { hide: boolean; forChild: boolean }
+): Promise<{ error?: string; success?: true }> {
+  const { user, role, error: authError } = await requireManager(registryId);
+  if (authError || !user) return { error: authError || "Not authenticated" };
+  if (role !== "owner") return { error: "Only the list's owner can change this." };
+
+  const { data: registry } = await supabaseAdmin
+    .from("registries")
+    .select("settings")
+    .eq("id", registryId)
+    .single();
+  if (!registry) return { error: "Registry not found" };
+
+  const settings = { ...((registry.settings as Record<string, unknown>) || {}) };
+  // A list kept for a child always shows what's been reserved.
+  settings.for_child = input.forChild;
+  settings.hide_reservations = input.forChild ? false : input.hide;
+  settings.hide_reservations_source = "owner";
+
+  const { error } = await supabaseAdmin.from("registries").update({ settings }).eq("id", registryId);
+  if (error) return { error: error.message };
+
+  revalidatePath("/dashboard");
+  revalidatePath(`/dashboard/registry/${registryId}`);
+  revalidatePath(`/dashboard/registry/${registryId}/settings`);
+  return { success: true };
+}
+
 export async function updateShippingAddress(
   registryId: string,
   address: string
