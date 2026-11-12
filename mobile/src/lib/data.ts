@@ -38,7 +38,10 @@ export const keys = {
 const REGISTRY_FIELDS =
   "id, owner_id, title, slug, event_date, is_public, description, photo_url, registry_type, event_type, honoree_names, settings, created_at";
 
-const CARD_FIELDS = `${REGISTRY_FIELDS}, registry_items(id, quantity_needed, quantity_fulfilled, is_parent_purchased, price, purchases(id, status, reserved_until, created_at, buyer_name, hide_giver))`;
+// The items are the ones whose registry_id is this registry. The link is named
+// because registry_item_placements also joins registries and items, and
+// without the name Supabase refuses the query as ambiguous (PGRST201).
+const CARD_FIELDS = `${REGISTRY_FIELDS}, registry_items!registry_items_registry_id_fkey(id, quantity_needed, quantity_fulfilled, is_parent_purchased, price, purchases(id, status, reserved_until, created_at, buyer_name, hide_giver))`;
 
 type CardRow = Registry & {
   registry_items:
