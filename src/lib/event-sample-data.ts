@@ -3,6 +3,7 @@
 // SAMPLE_TODAY, two weeks before the event.
 
 import type { EventDetails, EventGuest, GiftExchange } from "@/lib/events";
+import type { SignupClaim, SignupItem, SignupSheetWithRows } from "@/lib/signups";
 
 export const SAMPLE_TODAY = "2026-02-28";
 
@@ -210,3 +211,100 @@ export const sampleDrawnExchangeGuests: EventGuest[] = sampleExchangeGuests.map(
   ...g,
   giftee_id: drawnPairs[g.id] ?? null,
 }));
+
+// ── Sign-up sheets ───────────────────────────────────────────
+
+/** A potluck with a sign-up sheet. The guests are the shower's guests. */
+export const samplePotluckEvent: EventDetails = {
+  ...sampleEvent,
+  id: "9f6e3b2a-4d5c-4e7f-9a01-2b3c4d5e6f70",
+  registry_id: null,
+  slug: "friendsgiving-potluck-r7t2m9wq",
+  event_type: "potluck",
+  title: "Friendsgiving Potluck",
+  hosted_by: "Glinda & Elphaba",
+  event_date: "2026-11-21",
+  start_time: "16:00:00",
+  end_time: "21:00:00",
+  location_name: "The Emerald Apartment",
+  location_address: "12 Yellow Brick Rd, Apt 3\nSan Francisco, CA 94110",
+  message: "We'll do the turkey. You bring the rest!",
+  image_url: null,
+  rsvp_by: "2026-11-14",
+  max_party_size: 2,
+};
+
+function signupItem(id: string, label: string, needed: number, sortOrder: number, slotDate: string | null = null): SignupItem {
+  return {
+    id,
+    event_id: samplePotluckEvent.id,
+    label,
+    needed,
+    slot_date: slotDate,
+    sort_order: sortOrder,
+    created_at: "2026-11-01T18:00:00Z",
+  };
+}
+
+function signupClaim(itemId: string, guestId: string, note: string | null, at: string): SignupClaim {
+  return { item_id: itemId, guest_id: guestId, note, created_at: at };
+}
+
+/** Glinda brings a side, Boq the only dessert, and Elphaba (a maybe) some drinks. */
+export const samplePotluckSheet: SignupSheetWithRows = {
+  sheet: {
+    event_id: samplePotluckEvent.id,
+    title: "Bring a dish",
+    note: "Pick what you'll bring and say what it is, so we don't end up with five pasta salads.",
+    created_at: "2026-11-01T18:00:00Z",
+    updated_at: "2026-11-01T18:00:00Z",
+  },
+  items: [
+    signupItem("s1", "Main dish", 2, 0),
+    signupItem("s2", "Side", 3, 1),
+    signupItem("s3", "Dessert", 1, 2),
+    signupItem("s4", "Drinks", 2, 3),
+  ],
+  claims: [
+    signupClaim("s2", "g1", "Mac and cheese", "2026-11-03T18:00:00Z"),
+    signupClaim("s3", "g5", "Pumpkin pie", "2026-11-04T18:00:00Z"),
+    signupClaim("s4", "g2", "Sparkling cider", "2026-11-05T18:00:00Z"),
+  ],
+};
+
+/** A meal train for new parents. Its address shows only to people who sign up. */
+export const sampleMealTrainEvent: EventDetails = {
+  ...sampleEvent,
+  id: "0a7f4c3b-5e6d-4f80-8b12-3c4d5e6f7081",
+  registry_id: null,
+  slug: "meals-for-remi-and-max-c5h8k2pz",
+  event_type: "meal_train",
+  title: "Meals for Remi & Max",
+  hosted_by: "Aunt Linda",
+  event_date: null,
+  start_time: null,
+  end_time: null,
+  location_name: null,
+  location_address: "1450 Sunnyside Ave\nBerkeley, CA 94703",
+  message: "Remi and Max are home with the baby! Drop off between 5 and 6. They're vegetarian.",
+  image_url: null,
+  rsvp_by: null,
+};
+
+/** The first week of dinners, starting the day after SAMPLE_TODAY. Glinda has Monday. */
+export const sampleMealTrainSheet: SignupSheetWithRows = {
+  sheet: {
+    event_id: sampleMealTrainEvent.id,
+    title: "Meals",
+    note: "Pick a day to drop off a meal. You'll see the address once you sign up.",
+    created_at: "2026-02-20T18:00:00Z",
+    updated_at: "2026-02-20T18:00:00Z",
+  },
+  items: [
+    { ...signupItem("m1", "Dinner", 1, 0, "2026-03-01"), event_id: sampleMealTrainEvent.id },
+    { ...signupItem("m2", "Dinner", 1, 1, "2026-03-02"), event_id: sampleMealTrainEvent.id },
+    { ...signupItem("m3", "Dinner", 1, 2, "2026-03-03"), event_id: sampleMealTrainEvent.id },
+    { ...signupItem("m4", "Dinner", 1, 3, "2026-03-04"), event_id: sampleMealTrainEvent.id },
+  ],
+  claims: [signupClaim("m2", "g1", "Veggie lasagna", "2026-02-21T18:00:00Z")],
+};

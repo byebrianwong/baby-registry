@@ -32,6 +32,7 @@ import {
   type GiftExchange,
   type LinkedRegistry,
 } from "./events";
+import { hidesAddressUntilSignup, withAddressFor } from "./signups";
 
 const FROM = "Regibee <notifications@regibee.com>";
 
@@ -605,11 +606,16 @@ export function guestRsvpUrl(slug: string, token: string): string {
   return `${siteUrl()}/e/${slug}?g=${encodeURIComponent(token)}`;
 }
 
-/** What the event emails say about an event. */
+/**
+ * What the event emails say about an event. Pass the event as the reader may
+ * see it: a meal train's address only goes to people who signed up
+ * (withAddressFor in signups.ts).
+ */
 export function eventEmailDetails(
   event: EventDetails,
   registries: LinkedRegistry[],
   exchange: Pick<GiftExchange, "budget" | "draw_by" | "mailed" | "drawn_at"> | null = null,
+  signupTitle: string | null = null,
 ): EventEmailDetails {
   return {
     title: event.title,
@@ -629,6 +635,9 @@ export function eventEmailDetails(
           drawBy: exchange.draw_by ? formatEventDate(exchange.draw_by) : null,
           mailed: exchange.mailed,
         }
+      : null,
+    signup: signupTitle
+      ? { title: signupTitle, mealTrain: hidesAddressUntilSignup(event.event_type) }
       : null,
   };
 }
@@ -652,12 +661,20 @@ export async function sendEventInvitations(opts: {
   event: EventDetails;
   registries: LinkedRegistry[];
   exchange?: GiftExchange | null;
+  /** The sign-up sheet's title, when the event has one. */
+  signupTitle?: string | null;
   hostName: string;
   replyTo: string | null;
   guests: { name: string; email: string; token: string }[];
   reminder?: boolean;
 }): Promise<{ sentTokens: string[]; error: string | null }> {
-  const details = eventEmailDetails(opts.event, opts.registries, opts.exchange);
+  // Nobody has signed up from an invitation yet, so a meal train's address stays out.
+  const details = eventEmailDetails(
+    withAddressFor(opts.event, false),
+    opts.registries,
+    opts.exchange,
+    opts.signupTitle ?? null,
+  );
   const subject = opts.reminder
     ? `Reminder: will you be at ${opts.event.title}?`
     : `You're invited: ${opts.event.title}`;
@@ -706,11 +723,18 @@ export async function confirmRsvpToGuest(opts: {
   guest: { name: string; email: string; token: string };
   status: "yes" | "no" | "maybe";
   partySize: number;
+  /** The event's sign-up sheet and what this guest signed up for, as "Side (Mac and cheese)". */
+  signups?: { title: string; claims: string[] } | null;
 }) {
   try {
+    // A meal train's address goes only to people who signed up for a day.
+    const event = withAddressFor(opts.event, (opts.signups?.claims.length ?? 0) > 0);
     const eventUrl = `${siteUrl()}/e/${opts.event.slug}`;
-    const subject =
-      opts.status === "yes"
+    const subject = hidesAddressUntilSignup(opts.event.event_type)
+      ? opts.status === "no"
+        ? `Your reply for ${opts.event.title}`
+        : `You're signed up: ${opts.event.title}`
+      : opts.status === "yes"
         ? `You're going to ${opts.event.title}`
         : `Your RSVP for ${opts.event.title}`;
     await sendEmail({
@@ -721,10 +745,11 @@ export async function confirmRsvpToGuest(opts: {
         guestName: opts.guest.name,
         status: opts.status,
         partySize: opts.partySize,
-        event: eventEmailDetails(opts.event, opts.registries, opts.exchange),
+        event: eventEmailDetails(event, opts.registries, opts.exchange, opts.signups?.title ?? null),
         rsvpUrl: guestRsvpUrl(opts.event.slug, opts.guest.token),
-        calendarUrl: googleCalendarUrl(opts.event, eventUrl),
+        calendarUrl: googleCalendarUrl(event, eventUrl),
         inExchange: opts.inExchange,
+        signups: opts.signups?.claims ?? [],
       }),
     });
   } catch (err) {
@@ -742,6 +767,8 @@ export async function notifyHostOfRsvp(opts: {
   attending: number;
   pending: number;
   newGuest: boolean;
+  /** What the guest signed up for, as "Side (Mac and cheese)". */
+  signups?: string[];
 }) {
   try {
     const [{ data: userData }, { data: profile }] = await Promise.all([
@@ -751,11 +778,19 @@ export async function notifyHostOfRsvp(opts: {
     const email = userData?.user?.email;
     if (!email) return;
 
-    const answer = opts.status === "yes" ? "is going" : opts.status === "maybe" ? "might come" : "can't make it";
+    const answer = hidesAddressUntilSignup(opts.event.event_type)
+      ? opts.status === "no"
+        ? "can't help this time with"
+        : "signed up to help with"
+      : opts.status === "yes"
+        ? "is going to"
+        : opts.status === "maybe"
+          ? "might come to"
+          : "can't make it to";
     await sendEmail({
       from: FROM,
       to: TEST_RECIPIENT_OVERRIDE || email,
-      subject: `${opts.guestName} ${answer} to ${opts.event.title}`,
+      subject: `${opts.guestName} ${answer} ${opts.event.title}`,
       html: rsvpHostNotificationHtml({
         hostName: profile?.full_name?.trim() || "there",
         guestName: opts.guestName,
@@ -767,6 +802,8 @@ export async function notifyHostOfRsvp(opts: {
         pending: opts.pending,
         manageUrl: `${siteUrl()}/dashboard/events/${opts.event.id}`,
         newGuest: opts.newGuest,
+        signups: opts.signups ?? [],
+        mealTrain: hidesAddressUntilSignup(opts.event.event_type),
       }),
     });
   } catch (err) {

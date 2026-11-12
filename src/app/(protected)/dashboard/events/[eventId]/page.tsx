@@ -9,6 +9,8 @@ import { EventGuestManager } from "@/components/event-guest-manager";
 import { EventCoHosts } from "@/components/event-co-hosts";
 import { ExchangeManager } from "@/components/exchange-manager";
 import { PlanAgainButton } from "@/components/plan-again-button";
+import { SignupSheetManager, SignupSheetStarter } from "@/components/signup-sheet-manager";
+import { claimsByGuest, describeClaim, hidesAddressUntilSignup, signupRowsForHost } from "@/lib/signups";
 import {
   eventTheme,
   eventTypeLabel,
@@ -26,6 +28,7 @@ import {
   getGiftExchange,
   getHostInvites,
   getPendingListRequests,
+  getSignupSheet,
   listOtherEventsForCopy,
 } from "@/lib/events-server";
 import { getViewer } from "@/lib/viewer";
@@ -50,7 +53,7 @@ export default async function ManageEventPage({
   if (!found) notFound();
   const { event, isOwner } = found;
 
-  const [allGuests, registries, exchange, exclusions, hosts, invites, copySources, groups, listRequests] = await Promise.all([
+  const [allGuests, registries, exchange, exclusions, hosts, invites, copySources, groups, listRequests, signupSheet] = await Promise.all([
     getEventGuests(event.id),
     getEventRegistries(event.id),
     getGiftExchange(event.id),
@@ -60,12 +63,18 @@ export default async function ManageEventPage({
     listOtherEventsForCopy(viewer.id, event.id),
     listGroupsForOwner(viewer.id),
     getPendingListRequests(event.id),
+    getSignupSheet(event.id),
   ]);
   // Worked out before the guests are trimmed for the host, since it needs the pairs.
   const status = exchange ? exchangeStatus(allGuests, exchange) : null;
   // The host never sees who drew whom, or the wishlists and addresses guests
   // were told only their Secret Santa sees.
   const guests = allGuests.map(guestForHost);
+  // What each guest signed up for, as their row on the guest list shows it.
+  const signupsByGuest = signupSheet
+    ? Object.fromEntries([...claimsByGuest(signupSheet)].map(([id, claims]) => [id, claims.map(describeClaim)]))
+    : undefined;
+  const mealTrain = hidesAddressUntilSignup(event.event_type);
   const theme = eventTheme(event.event_type);
   const time = formatEventTime(event);
   const publicPath = `/e/${event.slug}`;
@@ -138,6 +147,14 @@ export default async function ManageEventPage({
               editHref={`/dashboard/events/${event.id}/edit`}
             />
           )}
+          {signupSheet && (
+            <SignupSheetManager
+              eventId={event.id}
+              sheet={signupSheet.sheet}
+              rows={signupRowsForHost(signupSheet, allGuests)}
+              mealTrain={mealTrain}
+            />
+          )}
           <EventGuestManager
             eventId={event.id}
             eventSlug={event.slug}
@@ -149,6 +166,7 @@ export default async function ManageEventPage({
             copySources={copySources}
             groups={groups}
             eventTitle={event.title}
+            signups={signupsByGuest}
           />
         </div>
 
@@ -218,6 +236,8 @@ export default async function ManageEventPage({
               </div>
             </CardContent>
           </Card>
+
+          {!signupSheet && <SignupSheetStarter eventId={event.id} />}
 
           <EventCoHosts eventId={event.id} hosts={hosts} invites={invites} viewerId={viewer.id} />
 

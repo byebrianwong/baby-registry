@@ -75,6 +75,10 @@ test("gift plans fit who it's for", () => {
   assert.deepEqual(giftPlansFor("someone"), ["link", "ask", "no_gifts", "later"]);
   assert.ok(giftPlansFor("child").includes("new_list"));
   assert.deepEqual(giftPlansFor("everyone"), ["exchange"]);
+  // A potluck or meal train offers its sign-up sheet first.
+  assert.deepEqual(giftPlansFor("no_one", occasionFor("potluck")), ["signup", "no_gifts", "later"]);
+  assert.equal(giftPlansFor("someone", occasionFor("meal_train"))[0], "signup");
+  assert.ok(!giftPlansFor("someone", occasionFor("baby_shower")).includes("signup"));
   assert.equal(planNeedsEvent("new_list"), false);
   assert.equal(planNeedsEvent("ask"), true);
 });

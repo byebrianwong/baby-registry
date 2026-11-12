@@ -99,6 +99,8 @@ export interface EventTypeOption {
     giftNote?: string;
     askKids?: boolean;
     exchange?: boolean;
+    /** A new event starts with this sign-up sheet (src/lib/signups.ts). */
+    signup?: "potluck" | "meal_train";
   };
 }
 

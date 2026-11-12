@@ -10,6 +10,14 @@ import { NativeSelect } from "@/components/base/select/select-native";
 import { Checkbox } from "@/components/base/checkbox/checkbox";
 import { submitRsvp, type RsvpInput } from "@/lib/actions/events";
 import type { RsvpStatus } from "@/lib/events";
+import {
+  MAX_CLAIM_NOTE_LENGTH,
+  describeClaim,
+  formatSlotDate,
+  rowIsOpen,
+  spotsLabel,
+  type GuestSignupRow,
+} from "@/lib/signups";
 import { cx } from "@/lib/utils/cx";
 
 type Answer = "yes" | "maybe" | "no";
@@ -24,6 +32,12 @@ const PARTY_ANSWERS: { value: Answer; label: string; icon: typeof Check }[] = [
 const EXCHANGE_ANSWERS: { value: Answer; label: string; icon: typeof Check }[] = [
   { value: "yes", label: "I'm in", icon: Check },
   { value: "no", label: "Not this year", icon: X },
+];
+
+// A meal train has no get-together either: guests say whether they can help.
+const MEAL_TRAIN_ANSWERS: { value: Answer; label: string; icon: typeof Check }[] = [
+  { value: "yes", label: "I can help", icon: Check },
+  { value: "no", label: "Not this time", icon: X },
 ];
 
 const SUMMARY: Record<Answer, string> = {
@@ -58,7 +72,15 @@ export interface RsvpFormProps {
   exchange?: { mailed: boolean; drawn: boolean } | null;
   /** The event's day is over. */
   passed: boolean;
+  /** The event's sign-up sheet, as this guest sees it. Guests pick rows here. */
+  signup?: { title: string; rows: GuestSignupRow[] } | null;
+  /** A meal train: guests say whether they can help and pick days, with no party size. */
+  mealTrain?: boolean;
   submitAction?: (input: RsvpInput) => Promise<{ error: string | null; token?: string }>;
+}
+
+function rowName(row: Pick<GuestSignupRow, "label" | "slotDate">) {
+  return row.slotDate ? `${formatSlotDate(row.slotDate)}: ${row.label}` : row.label;
 }
 
 /** The RSVP box on the event page. */
@@ -71,10 +93,18 @@ export function RsvpForm({
   askKids = false,
   exchange = null,
   passed,
+  signup = null,
+  mealTrain = false,
   submitAction = submitRsvp,
 }: RsvpFormProps) {
   const router = useRouter();
   const exchangeOnly = Boolean(exchange?.mailed);
+  // No party to come to: no party size, and answers that fit.
+  const noParty = exchangeOnly || mealTrain;
+  const rows = signup?.rows ?? [];
+  // The rows this guest has, with what they're bringing.
+  const minePicks = () => new Map(rows.filter((r) => r.mine).map((r) => [r.id, r.mine?.note ?? ""]));
+  const [picks, setPicks] = useState<Map<string, string>>(minePicks);
   // The answer just sent, shown until the refreshed page brings it back.
   const [saved, setSaved] = useState<{
     status: Answer;
@@ -82,6 +112,7 @@ export function RsvpForm({
     kidsCount: number;
     note: string | null;
     inExchange: boolean;
+    picks: Map<string, string>;
   } | null>(null);
   const current =
     saved ??
@@ -92,6 +123,7 @@ export function RsvpForm({
           kidsCount: guest.kidsCount ?? 0,
           note: guest.note,
           inExchange: Boolean(guest.inExchange),
+          picks: minePicks(),
         }
       : null);
   const responded = current?.status ?? null;
@@ -110,14 +142,9 @@ export function RsvpForm({
   const [error, setError] = useState("");
   const [sending, setSending] = useState(false);
 
-  const answers = exchangeOnly ? EXCHANGE_ANSWERS : PARTY_ANSWERS;
-  const heading = exchangeOnly
-    ? guest
-      ? `Hi ${guest.name}, are you in?`
-      : "Are you in?"
-    : guest
-      ? `Hi ${guest.name}, can you make it?`
-      : "Can you make it?";
+  const answers = exchangeOnly ? EXCHANGE_ANSWERS : mealTrain ? MEAL_TRAIN_ANSWERS : PARTY_ANSWERS;
+  const question = exchangeOnly ? "are you in?" : mealTrain ? "can you help?" : "can you make it?";
+  const heading = guest ? `Hi ${guest.name}, ${question}` : question[0].toUpperCase() + question.slice(1);
 
   if (!guest && !openRsvp) {
     return (
@@ -131,6 +158,9 @@ export function RsvpForm({
   if (current && !editing) {
     const size = current.partySize;
     const kidsText = askKids && current.kidsCount > 0 ? `, ${current.kidsCount} ${current.kidsCount === 1 ? "kid" : "kids"}` : "";
+    const signedUp = rows
+      .filter((row) => current.picks.has(row.id))
+      .map((row) => describeClaim({ label: row.label, slotDate: row.slotDate, note: current.picks.get(row.id) || null }));
     return (
       <section aria-labelledby="rsvp-heading" className="rounded-2xl border border-secondary p-5">
         <h2 id="rsvp-heading" className="font-display text-xl font-semibold">
@@ -138,7 +168,11 @@ export function RsvpForm({
             ? current.status === "yes"
               ? "You're in the gift exchange"
               : "You're sitting this one out"
-            : `${SUMMARY[current.status]}${current.status !== "no" && size > 1 ? ` (${size} people${kidsText})` : ""}`}
+            : mealTrain
+              ? current.status === "yes"
+                ? "You're signed up to help"
+                : "You're sitting this one out"
+              : `${SUMMARY[current.status]}${current.status !== "no" && size > 1 ? ` (${size} people${kidsText})` : ""}`}
         </h2>
         <p className="mt-1 text-tertiary">
           {current.status === "no" ? "Thanks for letting the host know." : "Thanks! The host has your answer."}
@@ -151,10 +185,24 @@ export function RsvpForm({
         {exchange && current.inExchange && !exchange.drawn && (
           <p className="mt-1 text-sm text-tertiary">We&apos;ll email you who you&apos;re giving to when names are drawn.</p>
         )}
+        {signedUp.length > 0 && (
+          <div className="mt-3">
+            <p className="text-sm font-medium text-primary">You signed up for</p>
+            <ul className="mt-1 list-disc pl-5 text-sm text-secondary">
+              {signedUp.map((line) => (
+                <li key={line}>{line}</li>
+              ))}
+            </ul>
+          </div>
+        )}
         {current.note && <p className="mt-3 text-sm whitespace-pre-line text-secondary">Your note: {current.note}</p>}
         {!passed && (
           <Button variant="outline" className="mt-4" onClick={() => setEditing(true)}>
-            {exchange && current.inExchange ? "Change your answer or wishlist" : "Change RSVP"}
+            {exchange && current.inExchange
+              ? "Change your answer or wishlist"
+              : signup && current.status !== "no"
+                ? "Change RSVP or sign-ups"
+                : "Change RSVP"}
           </Button>
         )}
       </section>
@@ -171,8 +219,9 @@ export function RsvpForm({
   }
 
   const attending = answer === "yes" || answer === "maybe";
-  const showPartySize = !exchangeOnly && maxPartySize > 1 && attending;
-  const showKids = askKids && attending && !exchangeOnly;
+  const showPartySize = !noParty && maxPartySize > 1 && attending;
+  const showKids = askKids && attending && !noParty;
+  const showSignup = Boolean(signup) && attending;
   // After the draw nobody joins or leaves here, but people in it can still
   // update their wishlist and address.
   const alreadyIn = Boolean(guest?.inExchange);
@@ -188,11 +237,21 @@ export function RsvpForm({
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!answer) {
-      setError(exchangeOnly ? "Choose I'm in or Not this year." : "Choose Going, Maybe or Can't go.");
+      setError(
+        exchangeOnly
+          ? "Choose I'm in or Not this year."
+          : mealTrain
+            ? "Choose I can help or Not this time."
+            : "Choose Going, Maybe or Can't go.",
+      );
       return;
     }
     if (exchange?.mailed && inExchange && !address.trim()) {
       setError("Add a shipping address, so your Secret Santa can mail your gift.");
+      return;
+    }
+    if (mealTrain && answer === "yes" && picks.size === 0) {
+      setError("Pick at least one day you can help.");
       return;
     }
     setSending(true);
@@ -209,6 +268,11 @@ export function RsvpForm({
       note,
       exchange: exchange
         ? { join: inExchange, wishlistUrl, giftIdeas, shippingAddress: address }
+        : undefined,
+      signups: signup
+        ? answer === "no"
+          ? []
+          : [...picks].map(([itemId, itemNote]) => ({ itemId, note: itemNote }))
         : undefined,
     });
     if (result.error) {
@@ -228,9 +292,21 @@ export function RsvpForm({
       kidsCount: showKids ? Math.min(Number(kids), size) : 0,
       note: note.trim() || null,
       inExchange,
+      picks: answer === "no" ? new Map() : new Map(picks),
     });
+    if (answer === "no") setPicks(new Map());
     setSending(false);
     setEditing(false);
+  };
+
+  const togglePick = (id: string, on: boolean) => {
+    setError("");
+    setPicks((current) => {
+      const next = new Map(current);
+      if (on) next.set(id, current.get(id) ?? "");
+      else next.delete(id);
+      return next;
+    });
   };
 
   return (
@@ -311,6 +387,55 @@ export function RsvpForm({
           </div>
         )}
 
+        {showSignup && signup && (
+          <fieldset className="flex flex-col gap-3 rounded-xl bg-sunshine-50 p-4">
+            <legend className="sr-only">{signup.title}</legend>
+            <div>
+              <p className="font-medium text-primary">{mealTrain ? "Pick a day" : "I'll bring…"}</p>
+              <p className="text-sm text-tertiary">
+                {mealTrain
+                  ? "Choose one or more. You'll see the drop-off address once you send."
+                  : "Optional. Choose anything you'd like to bring or help with."}
+              </p>
+            </div>
+            {rows.length === 0 ? (
+              <p className="text-sm text-tertiary">The host hasn&apos;t added anything to sign up for yet.</p>
+            ) : (
+              <ul className="flex flex-col gap-3">
+                {rows.map((row) => {
+                  const picked = picks.has(row.id);
+                  const open = rowIsOpen(row);
+                  const status = row.passed && !row.mine ? "Over" : row.mine ? "Yours" : spotsLabel(row);
+                  return (
+                    <li key={row.id} className="flex flex-col gap-2">
+                      <Checkbox
+                        isSelected={picked}
+                        isDisabled={!picked && !open}
+                        onChange={(on) => togglePick(row.id, on)}
+                        label={<span className="font-medium text-primary">{rowName(row)}</span>}
+                        hint={[status, row.bringing.length > 0 ? `Bringing: ${row.bringing.join(", ")}` : null]
+                          .filter(Boolean)
+                          .join(" · ")}
+                      />
+                      {picked && (
+                        <div className="pl-6">
+                          <Input
+                            aria-label={`What you're ${mealTrain ? "making" : "bringing"} for ${rowName(row)}`}
+                            value={picks.get(row.id) ?? ""}
+                            onChange={(value) => setPicks((current) => new Map(current).set(row.id, value))}
+                            maxLength={MAX_CLAIM_NOTE_LENGTH}
+                            placeholder={mealTrain ? "What you're making (optional)" : "What you're bringing (optional)"}
+                          />
+                        </div>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </fieldset>
+        )}
+
         {exchange && (attending || exchangeOnly) && answer !== "no" && (
           <fieldset className="flex flex-col gap-4 rounded-xl bg-mint-50 p-4">
             <legend className="sr-only">Gift exchange</legend>
@@ -381,7 +506,7 @@ export function RsvpForm({
           <Button type="submit" disabled={sending}>
             <span className="inline-flex items-center gap-1.5">
               {sending && <Loader2 className="size-4 animate-spin" />}
-              {sending ? "Sending…" : exchangeOnly ? "Send" : "Send RSVP"}
+              {sending ? "Sending…" : noParty ? "Send" : "Send RSVP"}
             </span>
           </Button>
           {responded && (
