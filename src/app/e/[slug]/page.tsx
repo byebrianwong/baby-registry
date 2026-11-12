@@ -6,10 +6,19 @@ import { Logo } from "@/components/logo";
 import { EventInvitation } from "@/components/event-invitation";
 import { RsvpForm } from "@/components/rsvp-form";
 import { SecretSantaCard } from "@/components/secret-santa-card";
+import { GuestWishLists } from "@/components/guest-wish-lists";
 import { supabaseAdmin } from "@/lib/supabase-admin";
-import { getEventRegistries, getGifteeFor, getGiftExchange, registrySlugFromLink } from "@/lib/events-server";
+import {
+  getEventForManager,
+  getEventRegistries,
+  getGifteeFor,
+  getGiftExchange,
+  getGuestWishLists,
+  registrySlugFromLink,
+} from "@/lib/events-server";
 import {
   eventHasPassed,
+  exchangeKind,
   formatEventDate,
   googleCalendarUrl,
   type EventDetails,
@@ -71,7 +80,7 @@ export default async function PublicEventPage({
       ? supabaseAdmin
           .from("event_guests")
           .select(
-            "name, rsvp_status, party_size, kids_count, rsvp_note, token, in_exchange, wishlist_url, gift_ideas, shipping_address, giftee_id",
+            "id, name, rsvp_status, party_size, kids_count, rsvp_note, token, in_exchange, wishlist_url, gift_ideas, shipping_address, giftee_id",
           )
           .eq("event_id", event.id)
           .eq("token", token)
@@ -80,6 +89,7 @@ export default async function PublicEventPage({
   ]);
   const guest = guestResult.data as Pick<
     EventGuest,
+    | "id"
     | "name"
     | "rsvp_status"
     | "party_size"
@@ -101,6 +111,32 @@ export default async function PublicEventPage({
       ? `/e/${event.slug}/gifts?g=${encodeURIComponent(guest.token)}&to=${encodeURIComponent(gifteeWishlistSlug)}`
       : giftee.wishlistUrl
     : null;
+
+  // Everyone gives everyone: the event's guests and hosts see everyone's
+  // wish lists. A signed-in guest can pick one of their own lists when they
+  // RSVP.
+  const everyone = exchangeKind(exchange) === "everyone";
+  const [isHost, guestLists, waiting, myLists] = everyone
+    ? await Promise.all([
+        viewer ? getEventForManager(event.id, viewer.id).then(Boolean) : false,
+        getGuestWishLists(event.id, guest?.id ?? null),
+        supabaseAdmin
+          .from("event_guests")
+          .select("id", { count: "exact", head: true })
+          .eq("event_id", event.id)
+          .eq("rsvp_status", "pending")
+          .then(({ count }) => count ?? 0),
+        viewer
+          ? supabaseAdmin
+              .from("registries")
+              .select("title, slug")
+              .eq("owner_id", viewer.id)
+              .order("created_at", { ascending: false })
+              .then(({ data }) => (data || []) as { title: string; slug: string }[])
+          : [],
+      ])
+    : [false, [], 0, []];
+  const showGuestLists = everyone && (Boolean(guest) || isHost);
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
   const eventUrl = `${siteUrl}/e/${event.slug}`;
@@ -136,6 +172,15 @@ export default async function PublicEventPage({
               wishlistHref={gifteeWishlistHref}
             />
           )}
+          {showGuestLists && (
+            <GuestWishLists
+              lists={guestLists}
+              eventSlug={event.slug}
+              guestToken={guest?.token ?? null}
+              waitingCount={waiting}
+              hostView={!guest}
+            />
+          )}
           {token && !guest && (
             <p className="rounded-xl bg-sunshine-50 p-4 text-sm text-sunshine-900">
               This RSVP link isn&apos;t on the guest list anymore. Ask the host for a new one.
@@ -162,7 +207,12 @@ export default async function PublicEventPage({
             openRsvp={event.open_rsvp && !(exchange?.drawn_at && exchange.mailed)}
             maxPartySize={event.max_party_size}
             askKids={event.ask_kids}
-            exchange={exchange ? { mailed: exchange.mailed, drawn: Boolean(exchange.drawn_at) } : null}
+            exchange={
+              exchange
+                ? { kind: exchangeKind(exchange), mailed: exchange.mailed, drawn: Boolean(exchange.drawn_at) }
+                : null
+            }
+            myLists={myLists.map((list) => ({ title: list.title, url: `${siteUrl}/r/${list.slug}` }))}
             passed={eventHasPassed(event, yesterday)}
           />
         </EventInvitation>

@@ -4,7 +4,9 @@ import { notFound } from "next/navigation";
 import { cookies } from "next/headers";
 import { Gift } from "lucide-react";
 import { supabaseAdmin } from "@/lib/supabase-admin";
-import { readEventGuestCookie } from "@/lib/event-guest-cookie";
+import { readEventGuestCookie, type EventGuestContext } from "@/lib/event-guest-cookie";
+import { eventIncludesRegistry, getGiftExchange } from "@/lib/events-server";
+import { exchangeKind } from "@/lib/events";
 import { isUuid } from "@/lib/extension";
 import { verifyBuyerLink } from "@/lib/buyer-link";
 import type { PaymentMethods, RegistrySettings } from "@/lib/types";
@@ -33,6 +35,7 @@ import {
   type MyItemGift,
 } from "@/lib/gifts";
 import { ReservationsHiddenNotice } from "@/components/reservations-hidden-notice";
+import { FellowGuestsNotice } from "@/components/fellow-guests-notice";
 import type { OpenGift } from "@/components/reserve-item-dialog";
 import { GuestPrefillProvider, type GuestPrefill } from "@/components/guest-prefill-context";
 
@@ -101,31 +104,114 @@ async function loadOwner(listedOnProfile: boolean, ownerId: string) {
 // guest cookie). When their event links this registry, or they're the Secret
 // Santa of its owner, the gift forms start with their name and email. A
 // Secret Santa also sees a notice that the owners won't see their name.
-async function loadGuestPrefill(
-  registryId: string
-): Promise<{ prefill: GuestPrefill | null; santaFor: string | null }> {
-  const none = { prefill: null, santaFor: null };
+async function loadGuestPrefill(registryId: string): Promise<{
+  prefill: GuestPrefill | null;
+  santaFor: string | null;
+  /** The guest, when this list is part of their event. */
+  guest: EventGuestContext | null;
+}> {
+  const none = { prefill: null, santaFor: null, guest: null };
   try {
     const guest = await readEventGuestCookie();
     if (!guest) return none;
     const isSanta = guest.santa?.registryId === registryId;
     if (!isSanta) {
-      if (!isUuid(guest.eventId)) return none;
-      const { data: link } = await supabaseAdmin
-        .from("event_registries")
-        .select("event_id")
-        .eq("event_id", guest.eventId)
-        .eq("registry_id", registryId)
-        .maybeSingle();
-      if (!link) return none;
+      if (!isUuid(guest.eventId) || !(await eventIncludesRegistry(guest.eventId, registryId))) return none;
     }
     return {
       prefill: { name: guest.name, email: guest.email, secretGiver: isSanta },
       santaFor: isSanta ? guest.santa?.gifteeName || null : null,
+      guest: isSanta ? null : guest,
     };
   } catch (err) {
     console.error("[registry] Failed to read the event guest cookie:", err);
     return none;
+  }
+}
+
+/**
+ * Who's getting what, for a guest of an everyone-gives-everyone event: the
+ * names of the event's guests who reserved each item here, so nobody doubles
+ * up. Only guests of the same event see them, and only names of guests of
+ * that event: a gift is matched to a guest when they reserved it from their
+ * invitation (purchases.event_guest_id). Never on the guest's own list, and
+ * never a Secret Santa's name. Null when the viewer gets none.
+ */
+async function loadFellowGuestClaims(
+  registry: { id: string; owner_id: string },
+  guest: EventGuestContext | null,
+  viewerId: string | null,
+  itemIds: string[]
+): Promise<{
+  claims: Record<string, string[]>;
+  eventTitle: string;
+  eventSlug: string;
+  /** The guest whose wish list this is, when it's a guest's. */
+  listOwner: string | null;
+} | null> {
+  if (!guest || !isUuid(guest.guestId) || viewerId === registry.owner_id) return null;
+  try {
+    const [{ data: me }, { data: event }, exchange, { data: listOwners }] = await Promise.all([
+      supabaseAdmin
+        .from("event_guests")
+        .select("id, email, wishlist_registry_id")
+        .eq("id", guest.guestId)
+        .eq("event_id", guest.eventId)
+        .maybeSingle(),
+      supabaseAdmin.from("events").select("title, slug").eq("id", guest.eventId).maybeSingle(),
+      getGiftExchange(guest.eventId),
+      supabaseAdmin
+        .from("event_guests")
+        .select("name")
+        .eq("event_id", guest.eventId)
+        .eq("wishlist_registry_id", registry.id)
+        .limit(1),
+    ]);
+    // Off the guest list now, or not an everyone-gives-everyone event.
+    if (!me || !event || exchangeKind(exchange) !== "everyone") return null;
+    if (me.wishlist_registry_id === registry.id) return null;
+    if (me.email) {
+      const { data: owner } = await supabaseAdmin.auth.admin.getUserById(registry.owner_id);
+      if (owner.user?.email?.toLowerCase() === me.email.toLowerCase()) return null;
+    }
+
+    const claims: Record<string, string[]> = {};
+    const result = {
+      claims,
+      eventTitle: event.title as string,
+      eventSlug: event.slug as string,
+      listOwner: (listOwners?.[0]?.name as string | undefined) ?? null,
+    };
+    if (itemIds.length === 0) return result;
+    const { data: purchases } = await supabaseAdmin
+      .from("purchases")
+      .select("registry_item_id, event_guest_id, hide_giver, status, reserved_until")
+      .in("registry_item_id", itemIds)
+      .not("event_guest_id", "is", null)
+      .neq("status", "cancelled");
+    const live = (purchases || []).filter(
+      (p) => !p.hide_giver && !isExpiredReservation(p as { status: string; reserved_until: string | null })
+    );
+    const guestIds = [...new Set(live.map((p) => p.event_guest_id as string))];
+    if (guestIds.length === 0) return result;
+    const { data: givers } = await supabaseAdmin
+      .from("event_guests")
+      .select("id, name")
+      .eq("event_id", guest.eventId)
+      .in("id", guestIds);
+    const names = new Map((givers || []).map((g) => [g.id as string, g.name as string]));
+    for (const p of live) {
+      // The guest's own gifts already say "Reserved for you".
+      if (p.event_guest_id === me.id) continue;
+      const name = names.get(p.event_guest_id as string);
+      if (!name || !p.registry_item_id) continue;
+      const list = (claims[p.registry_item_id] ??= []);
+      if (!list.includes(name)) list.push(name);
+    }
+    return result;
+  } catch (err) {
+    console.error("[registry] Failed to load what other guests reserved:", err);
+    return null;
   }
 }
 
@@ -179,7 +265,7 @@ export default async function PublicRegistryPage({
     { data: categories },
     { data: items },
     { data: cashFunds },
-    { prefill: guestPrefill, santaFor },
+    { prefill: guestPrefill, santaFor, guest: eventGuest },
   ] = await Promise.all([
     loadOwner(Boolean(registry.listed_on_profile), registry.owner_id),
     supabaseAdmin
@@ -298,6 +384,7 @@ export default async function PublicRegistryPage({
     { data: buyerItemPurchases },
     { data: buyerFundPurchases },
     { data: openReservations },
+    fellowGuests,
   ] = await Promise.all([
     // How many times each parent-purchased item has been covered
     parentPurchasedIds.length > 0
@@ -325,6 +412,7 @@ export default async function PublicRegistryPage({
           .eq("status", "reserved")
           .not("reserved_until", "is", null)
       : noRows,
+    loadFellowGuestClaims(registry, eventGuest, viewer?.id ?? null, allItems.map((i) => i.id)),
   ]);
 
   const coverCounts = new Map<string, number>();
@@ -462,6 +550,14 @@ export default async function PublicRegistryPage({
             </div>
           </div>
         )}
+        {fellowGuests && (
+          <FellowGuestsNotice
+            className="mb-6"
+            eventTitle={fellowGuests.eventTitle}
+            eventHref={`/e/${fellowGuests.eventSlug}`}
+            ownerName={fellowGuests.listOwner ?? (registry.honoree_names?.trim() || registry.parent_names?.trim() || null)}
+          />
+        )}
         <GuestPrefillProvider value={guestPrefill}>
           <PublicRegistryGrid
             items={shownItems}
@@ -473,6 +569,7 @@ export default async function PublicRegistryPage({
             myGifts={myGifts}
             myItemGifts={myItemGifts}
             reservedCounts={reservedCounts}
+            claims={fellowGuests?.claims}
             openGift={openGift}
             coverCounts={coverCountsObj}
             selfPurchasedLabel={copy.selfPurchasedLabel}

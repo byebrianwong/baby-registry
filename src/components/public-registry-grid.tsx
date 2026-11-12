@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import { Search, Store } from "lucide-react";
+import { Search, Store, Users } from "lucide-react";
 import { TightSelect } from "@/components/ui/tight-select";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -68,6 +68,12 @@ interface Props {
   myItemGifts?: Record<string, MyItemGift>;
   /** How many of each item other guests have reserved but not bought yet. */
   reservedCounts?: Record<string, number>;
+  /**
+   * For a guest of an everyone-gives-everyone event: by item id, the names of
+   * the other guests who reserved it, so nobody doubles up. Never set on the
+   * viewer's own list.
+   */
+  claims?: Record<string, string[]>;
   /** Opens one item's gift dialog on load, from a link in a guest's email. */
   openGift?: OpenGift;
   coverCounts: Record<string, number>;
@@ -123,6 +129,7 @@ export function PublicRegistryGrid({
   myGifts,
   myItemGifts = {},
   reservedCounts = {},
+  claims,
   openGift,
   coverCounts,
   suggestButton,
@@ -423,6 +430,7 @@ export function PublicRegistryGrid({
                     myGifts={myGifts}
                     myItemGift={myItemGifts[item.id]}
                     reservedQty={reservedCounts[item.id] || 0}
+                    claimedBy={claims?.[item.id]}
                     openStep={openGift?.itemId === item.id ? openGift.step : undefined}
                     paymentMethods={paymentMethods}
                     parentName={parentName}
@@ -454,6 +462,7 @@ export function PublicRegistryGrid({
                   myGifts={myGifts}
                   myItemGift={myItemGifts[item.id]}
                   reservedQty={reservedCounts[item.id] || 0}
+                  claimedBy={claims?.[item.id]}
                   openStep={openGift?.itemId === item.id ? openGift.step : undefined}
                   paymentMethods={paymentMethods}
                   parentName={parentName}
@@ -474,6 +483,12 @@ export function PublicRegistryGrid({
   );
 }
 
+/** "Ann", "Ann and Bo", "Ann, Bo and Cy". */
+function joinNames(names: string[]): string {
+  if (names.length <= 1) return names[0] ?? "";
+  return `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`;
+}
+
 function PublicItemCard({
   item,
   categoryName,
@@ -481,6 +496,7 @@ function PublicItemCard({
   myGifts,
   myItemGift,
   reservedQty,
+  claimedBy,
   openStep,
   paymentMethods,
   parentName,
@@ -498,6 +514,7 @@ function PublicItemCard({
   myGifts: Props["myGifts"];
   myItemGift?: MyItemGift;
   reservedQty: number;
+  claimedBy?: string[];
   openStep?: OpenGift["step"];
   paymentMethods?: PaymentMethods;
   parentName: string;
@@ -582,6 +599,12 @@ function PublicItemCard({
               {item.notes && (
                 <p className="text-sm text-secondary whitespace-pre-line">
                   {item.notes}
+                </p>
+              )}
+              {claimedBy && claimedBy.length > 0 && (
+                <p className="flex items-start gap-1.5 text-xs font-medium text-brand-secondary">
+                  <Users className="mt-px h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                  {`${myItemGift ? "Also reserved" : "Reserved"} by ${joinNames(claimedBy)}`}
                 </p>
               )}
             </div>

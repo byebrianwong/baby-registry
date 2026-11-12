@@ -5,9 +5,11 @@
 import { useMutation, useQuery, useQueryClient, type QueryClient } from "@tanstack/react-query";
 
 import {
-  fundAsUnpledged,
+  fundAsRevealed,
   giverNameForOwner,
+  isGiftRevealed,
   isOpenReservation,
+  itemAsRevealed,
   itemAsUnreserved,
   maskGiverForOwner,
   reservationsHiddenFrom,
@@ -123,6 +125,18 @@ export function useRegistries() {
   });
 }
 
+/**
+ * When a list's hidden gifts were last revealed to its owner: the day after
+ * an event it's linked to (gifts_revealed_through, as on the website). The
+ * database already keeps unrevealed gifts from the owner; filtering by this
+ * too keeps the app right if that rule isn't in place yet. Null when nothing
+ * is revealed.
+ */
+async function fetchRevealedThrough(registryId: string): Promise<string | null> {
+  const { data, error } = await supabase.rpc("gifts_revealed_through", { p_registry_id: registryId });
+  return !error && typeof data === "string" ? data : null;
+}
+
 async function fetchRegistry(id: string, userId: string): Promise<RegistryDetail> {
   if (isDemo()) return demo.registry(id);
   const [registry, categories, items, funds, suggestions] = await Promise.all([
@@ -131,7 +145,7 @@ async function fetchRegistry(id: string, userId: string): Promise<RegistryDetail
     supabase
       .from("registry_items")
       .select(
-        "id, registry_id, category_id, title, external_url, image_url, price, quantity_needed, quantity_fulfilled, is_essential, is_parent_purchased, is_open_to_used, minimum_condition, notes, sort_order, created_at, purchases(id, status, reserved_until, buyer_name, quantity)"
+        "id, registry_id, category_id, title, external_url, image_url, price, quantity_needed, quantity_fulfilled, is_essential, is_parent_purchased, is_open_to_used, minimum_condition, notes, sort_order, created_at, purchases(id, status, reserved_until, buyer_name, quantity, created_at)"
       )
       .eq("registry_id", id)
       .order("sort_order")
@@ -155,14 +169,48 @@ async function fetchRegistry(id: string, userId: string): Promise<RegistryDetail
 
   const row = registry.data as Registry;
   const hidden = reservationsHiddenFrom(row, userId);
+  const allItems = (items.data ?? []) as Item[];
+  const allFunds = (funds.data ?? []) as CashFund[];
+  if (!hidden) {
+    return {
+      registry: row,
+      role: row.owner_id === userId ? "owner" : "manager",
+      categories: (categories.data ?? []) as Category[],
+      items: allItems,
+      funds: allFunds,
+      pendingSuggestions: suggestions.count ?? 0,
+      reservationsHidden: false,
+    };
+  }
+
+  // Hidden from the owner: only gifts revealed after an event count.
+  const [through, fundGifts] = await Promise.all([
+    fetchRevealedThrough(id),
+    allFunds.length > 0
+      ? supabase
+          .from("purchases")
+          .select("cash_fund_id, amount, status, created_at")
+          .in("cash_fund_id", allFunds.map((f) => f.id))
+      : Promise.resolve({ data: [] as { cash_fund_id: string; amount: number | null; status: string; created_at: string }[] }),
+  ]);
+  const revealed = <P extends { created_at?: string }>(list: P[]) =>
+    list.filter((p) => p.created_at && isGiftRevealed(p.created_at, through));
+  const shownItems = allItems.map((item) => {
+    const gifts = revealed(item.purchases ?? []);
+    return { ...(gifts.length > 0 ? itemAsRevealed(item, gifts) : itemAsUnreserved(item)), purchases: gifts };
+  });
+  const fundRows = revealed((fundGifts.data ?? []) as { cash_fund_id: string; amount: number | null; status: string; created_at: string }[]);
   return {
     registry: row,
     role: row.owner_id === userId ? "owner" : "manager",
     categories: (categories.data ?? []) as Category[],
-    items: ((items.data ?? []) as Item[]).map((item) => (hidden ? { ...itemAsUnreserved(item), purchases: [] } : item)),
-    funds: ((funds.data ?? []) as CashFund[]).map((fund) => (hidden ? fundAsUnpledged(fund) : fund)),
+    items: shownItems,
+    funds: allFunds.map((fund) => fundAsRevealed(fund, fundRows.filter((p) => p.cash_fund_id === fund.id))),
     pendingSuggestions: suggestions.count ?? 0,
-    reservationsHidden: hidden,
+    reservationsHidden: true,
+    revealedCount:
+      shownItems.reduce((sum, item) => sum + item.purchases.filter((p) => p.status !== "cancelled").length, 0) +
+      fundRows.filter((p) => p.status !== "cancelled").length,
   };
 }
 
@@ -202,13 +250,18 @@ async function fetchGifts(registryId: string, userId: string): Promise<Gift[]> {
   if (registry.error) throw registry.error;
   if (forItems.error) throw forItems.error;
   if (forFunds.error) throw forFunds.error;
-  // An owner who hides what's been reserved from themselves sees no gifts.
-  if (reservationsHiddenFrom(registry.data, userId)) return [];
-
   const gifts: Gift[] = [
     ...((forItems.data ?? []) as unknown as GiftRow[]).map((row) => toGift(row, "item")),
     ...((forFunds.data ?? []) as unknown as GiftRow[]).map((row) => toGift(row, "fund")),
   ];
+  // An owner who hides what's been reserved from themselves sees only the
+  // gifts revealed after an event, as on the website.
+  if (reservationsHiddenFrom(registry.data, userId)) {
+    const through = await fetchRevealedThrough(registryId);
+    return gifts
+      .filter((gift) => isGiftRevealed(gift.created_at, through))
+      .sort((a, b) => b.created_at.localeCompare(a.created_at));
+  }
   return gifts.sort((a, b) => b.created_at.localeCompare(a.created_at));
 }
 

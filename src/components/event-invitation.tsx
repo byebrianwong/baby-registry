@@ -1,4 +1,4 @@
-import { CalendarDays, CalendarPlus, Clock, Gift, MapPin, PartyPopper, Shuffle } from "lucide-react";
+import { CalendarDays, CalendarPlus, Clock, Gift, MapPin, PartyPopper, Shuffle, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   eventTheme,
@@ -47,7 +47,7 @@ export interface EventInvitationProps {
   /** @deprecated One registry, from before events could link several. Use registries. */
   registry?: LinkedRegistry | null;
   /** The event's gift exchange, when it has one. */
-  exchange?: Pick<GiftExchange, "budget" | "draw_by" | "mailed" | "drawn_at"> | null;
+  exchange?: Pick<GiftExchange, "kind" | "budget" | "draw_by" | "mailed" | "drawn_at"> | null;
   /**
    * The event's slug and the guest's RSVP token. With both, gift links go
    * through the event, which tells the registry who the guest is.
@@ -253,7 +253,28 @@ export function EventInvitation({
           </section>
         )}
 
-        {exchange && (
+        {exchange?.kind === "everyone" && (
+          <section aria-labelledby="exchange-heading" className="flex items-start gap-3 rounded-2xl bg-mint-50 p-4">
+            <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary">
+              <Users aria-hidden="true" className="size-4.5 text-mint-800" />
+            </span>
+            <div className="min-w-0 pt-1">
+              <h2 id="exchange-heading" className="font-medium text-primary">
+                Everyone gives everyone
+              </h2>
+              <p className="mt-1 text-secondary">
+                Link your wish list when you RSVP, and shop from everyone else&apos;s
+                {exchange.budget ? `, about ${exchange.budget} a gift` : ""}. You&apos;ll see what the others
+                reserved, so nobody doubles up.
+              </p>
+              <p className="mt-1 text-sm text-tertiary">
+                Nobody sees what&apos;s been reserved from their own list until the day after.
+              </p>
+            </div>
+          </section>
+        )}
+
+        {exchange && exchange.kind !== "everyone" && (
           <section aria-labelledby="exchange-heading" className="flex items-start gap-3 rounded-2xl bg-mint-50 p-4">
             <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary">
               <Shuffle aria-hidden="true" className="size-4.5 text-mint-800" />

@@ -9,7 +9,7 @@ import { TextArea } from "@/components/base/textarea/textarea";
 import { NativeSelect } from "@/components/base/select/select-native";
 import { Checkbox } from "@/components/base/checkbox/checkbox";
 import { submitRsvp, type RsvpInput } from "@/lib/actions/events";
-import type { RsvpStatus } from "@/lib/events";
+import type { ExchangeKind, RsvpStatus } from "@/lib/events";
 import { cx } from "@/lib/utils/cx";
 
 type Answer = "yes" | "maybe" | "no";
@@ -54,8 +54,13 @@ export interface RsvpFormProps {
   maxPartySize: number;
   /** Ask how many of the party are kids. */
   askKids?: boolean;
-  /** The event's gift exchange, when it has one. */
-  exchange?: { mailed: boolean; drawn: boolean } | null;
+  /** The event's gift exchange, when it has one. A missing kind is a draw. */
+  exchange?: { kind?: ExchangeKind; mailed: boolean; drawn: boolean } | null;
+  /**
+   * The signed-in guest's own lists, for an everyone-gives-everyone event's
+   * wish list menu. Each url is the list's share link.
+   */
+  myLists?: { title: string; url: string }[];
   /** The event's day is over. */
   passed: boolean;
   submitAction?: (input: RsvpInput) => Promise<{ error: string | null; token?: string }>;
@@ -70,11 +75,14 @@ export function RsvpForm({
   maxPartySize,
   askKids = false,
   exchange = null,
+  myLists = [],
   passed,
   submitAction = submitRsvp,
 }: RsvpFormProps) {
   const router = useRouter();
-  const exchangeOnly = Boolean(exchange?.mailed);
+  // Everyone gives everyone: everyone who's coming takes part, with a wish list.
+  const everyone = exchange?.kind === "everyone";
+  const exchangeOnly = Boolean(exchange?.mailed) && !everyone;
   // The answer just sent, shown until the refreshed page brings it back.
   const [saved, setSaved] = useState<{
     status: Answer;
@@ -105,11 +113,23 @@ export function RsvpForm({
   // New guests join the exchange unless they say otherwise.
   const [join, setJoin] = useState(guest?.status === "pending" || !guest ? true : Boolean(guest.inExchange));
   const [wishlistUrl, setWishlistUrl] = useState(guest?.wishlistUrl ?? "");
+  // The menu of the guest's own lists: one of them, or "other" to paste a link.
+  const [listChoice, setListChoice] = useState(() =>
+    myLists.length === 0
+      ? "other"
+      : guest?.wishlistUrl
+        ? myLists.some((l) => l.url === guest.wishlistUrl)
+          ? guest.wishlistUrl
+          : "other"
+        : myLists[0].url,
+  );
   const [giftIdeas, setGiftIdeas] = useState(guest?.giftIdeas ?? "");
   const [address, setAddress] = useState(guest?.shippingAddress ?? "");
   const [error, setError] = useState("");
   const [sending, setSending] = useState(false);
 
+  // The wish list sent: the one picked from the guest's own lists, or the pasted link.
+  const chosenWishlist = everyone && listChoice !== "other" ? listChoice : wishlistUrl;
   const answers = exchangeOnly ? EXCHANGE_ANSWERS : PARTY_ANSWERS;
   const heading = exchangeOnly
     ? guest
@@ -143,18 +163,29 @@ export function RsvpForm({
         <p className="mt-1 text-tertiary">
           {current.status === "no" ? "Thanks for letting the host know." : "Thanks! The host has your answer."}
         </p>
-        {exchange && !exchangeOnly && current.status !== "no" && (
+        {everyone && current.status !== "no" && (
+          <p className="mt-2 text-sm text-secondary">
+            {(saved ? chosenWishlist.trim() : guest?.wishlistUrl)
+              ? "Your wish list is on the invitation for the other guests."
+              : "Add your wish list, so everyone knows what you'd like."}
+          </p>
+        )}
+        {exchange && !everyone && !exchangeOnly && current.status !== "no" && (
           <p className="mt-2 text-sm text-secondary">
             {current.inExchange ? "You're in the gift exchange." : "You're not in the gift exchange."}
           </p>
         )}
-        {exchange && current.inExchange && !exchange.drawn && (
+        {exchange && !everyone && current.inExchange && !exchange.drawn && (
           <p className="mt-1 text-sm text-tertiary">We&apos;ll email you who you&apos;re giving to when names are drawn.</p>
         )}
         {current.note && <p className="mt-3 text-sm whitespace-pre-line text-secondary">Your note: {current.note}</p>}
         {!passed && (
           <Button variant="outline" className="mt-4" onClick={() => setEditing(true)}>
-            {exchange && current.inExchange ? "Change your answer or wishlist" : "Change RSVP"}
+            {exchange && current.inExchange
+              ? everyone
+                ? "Change your RSVP or wish list"
+                : "Change your answer or wishlist"
+              : "Change RSVP"}
           </Button>
         )}
       </section>
@@ -176,13 +207,15 @@ export function RsvpForm({
   // After the draw nobody joins or leaves here, but people in it can still
   // update their wishlist and address.
   const alreadyIn = Boolean(guest?.inExchange);
-  const canChooseJoin = Boolean(exchange) && !exchangeOnly && !exchange?.drawn && attending;
+  const canChooseJoin = Boolean(exchange) && !everyone && !exchangeOnly && !exchange?.drawn && attending;
   const inExchange = exchange
-    ? exchange.drawn
-      ? alreadyIn
-      : exchangeOnly
-        ? answer === "yes"
-        : attending && join
+    ? everyone
+      ? attending
+      : exchange.drawn
+        ? alreadyIn
+        : exchangeOnly
+          ? answer === "yes"
+          : attending && join
     : false;
 
   const handleSubmit = async (event: React.FormEvent) => {
@@ -208,7 +241,7 @@ export function RsvpForm({
       kidsCount: showKids ? Math.min(Number(kids), size) : 0,
       note,
       exchange: exchange
-        ? { join: inExchange, wishlistUrl, giftIdeas, shippingAddress: address }
+        ? { join: inExchange, wishlistUrl: chosenWishlist, giftIdeas, shippingAddress: address }
         : undefined,
     });
     if (result.error) {
@@ -311,7 +344,66 @@ export function RsvpForm({
           </div>
         )}
 
-        {exchange && (attending || exchangeOnly) && answer !== "no" && (
+        {everyone && attending && (
+          <fieldset className="flex flex-col gap-4 rounded-xl bg-mint-50 p-4">
+            <legend className="sr-only">Your wish list</legend>
+            <div>
+              <p className="font-medium text-primary">Your wish list</p>
+              <p className="text-sm text-tertiary">
+                Everyone gives everyone. The other guests see your list and what they&apos;ve each reserved from
+                it. You won&apos;t, so your gifts stay a surprise until the day after.
+              </p>
+            </div>
+            {myLists.length > 0 && (
+              <NativeSelect
+                label="Your list"
+                value={listChoice}
+                onChange={(e) => setListChoice(e.target.value)}
+                options={[
+                  ...myLists.map((list) => ({ value: list.url, label: list.title })),
+                  { value: "other", label: "A link to another list…" },
+                ]}
+              />
+            )}
+            {listChoice === "other" && (
+              <Input
+                label={myLists.length > 0 ? "Link to your list" : "Link to your wish list (optional)"}
+                value={wishlistUrl}
+                onChange={setWishlistUrl}
+                placeholder="regibee.com/r/your-wishlist or any store's list"
+                hint={
+                  myLists.length > 0
+                    ? "A Regibee list or a list at any store."
+                    : "A Regibee list works best: the others see what's been reserved, so nobody doubles up."
+                }
+              />
+            )}
+            {myLists.length === 0 && (
+              <p className="text-sm text-secondary">
+                No list yet?{" "}
+                <a
+                  href="/dashboard/registry/new"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-medium text-brand-600 hover:underline max-sm:inline-flex max-sm:min-h-11 max-sm:items-center"
+                >
+                  Make one on Regibee
+                </a>
+                , then paste its link here.
+              </p>
+            )}
+            <TextArea
+              label="Gift ideas (optional)"
+              value={giftIdeas}
+              onChange={setGiftIdeas}
+              rows={2}
+              maxLength={1000}
+              placeholder="Cozy socks (size M), anything with cats, a good mystery novel"
+            />
+          </fieldset>
+        )}
+
+        {exchange && !everyone && (attending || exchangeOnly) && answer !== "no" && (
           <fieldset className="flex flex-col gap-4 rounded-xl bg-mint-50 p-4">
             <legend className="sr-only">Gift exchange</legend>
             {canChooseJoin ? (

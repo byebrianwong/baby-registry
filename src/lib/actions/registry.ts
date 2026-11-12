@@ -28,6 +28,7 @@ import { isUuid } from "@/lib/extension";
 import { parseStorePerksState, storePerksSettings } from "@/lib/store-perks";
 import { MY_GIFTS_COOKIE, MY_GIFTS_COOKIE_OPTIONS, withGift } from "@/lib/my-gifts-cookie";
 import { readEventGuestCookie } from "@/lib/event-guest-cookie";
+import { eventIncludesRegistry } from "@/lib/events-server";
 import { GIFT_HOLD_DAYS, isOpenReservation, SECRET_GIVER_NAME } from "@/lib/gifts";
 import {
   releaseExpiredOnItem,
@@ -55,7 +56,9 @@ async function addToMyGiftsCookie(
  * - On the list of the person the guest drew in a gift exchange, the gift is
  *   a Secret Santa's: hide_giver is set, so the list's owners see "Secret
  *   Santa" instead of the giver's name and email.
- * - On another list the guest's event links, only the event guest is saved.
+ * - On another list the guest's event links, or another guest's wish list
+ *   when everyone gives everyone, only the event guest is saved. The other
+ *   guests then see who reserved it (src/app/r/[slug]/page.tsx).
  * - Anywhere else, nothing changes.
  *
  * Call it once the purchase exists and before any owner emails go out, since
@@ -80,14 +83,8 @@ async function recordEventGuestOnGift(
     let hideGiver = false;
     if (guest.santa?.registryId === registryId) {
       hideGiver = true;
-    } else {
-      const { data: link } = await supabaseAdmin
-        .from("event_registries")
-        .select("event_id")
-        .eq("event_id", guest.eventId)
-        .eq("registry_id", registryId)
-        .maybeSingle();
-      if (!link) return { hideGiver: false };
+    } else if (!(await eventIncludesRegistry(guest.eventId, registryId))) {
+      return { hideGiver: false };
     }
 
     if (hideGiver) {

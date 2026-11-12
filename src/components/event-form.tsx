@@ -15,11 +15,14 @@ import type { PhotoUploadResult } from "@/lib/upload-registry-photo";
 import {
   COMMON_TIME_ZONES,
   EVENT_TYPE_OPTIONS,
+  EXCHANGE_KINDS,
+  exchangeKind,
   GIFT_NOTE_PRESETS,
   MAX_GIFT_NOTE_LENGTH,
   MAX_PARTY_SIZE_LIMIT,
   type EventDetails,
   type EventType,
+  type ExchangeKind,
   type GiftExchange,
 } from "@/lib/events";
 import { cx } from "@/lib/utils/cx";
@@ -71,7 +74,7 @@ export interface EventFormProps {
   /** The registries the event links now, in order. */
   linkedRegistries?: FormRegistry[];
   /** The event's gift exchange, when it has one. */
-  exchange?: Pick<GiftExchange, "budget" | "draw_by" | "mailed" | "drawn_at"> | null;
+  exchange?: Pick<GiftExchange, "kind" | "budget" | "draw_by" | "mailed" | "drawn_at"> | null;
   createAction?: (formData: FormData) => Promise<ActionResult & { id?: string }>;
   lookupAction?: LookupAction;
   updateAction?: (eventId: string, formData: FormData) => Promise<ActionResult>;
@@ -133,6 +136,11 @@ export function EventForm({
 
   // The gift exchange.
   const [exchangeOn, setExchangeOn] = useState(Boolean(exchange));
+  // A Secret Santa occasion draws names. Anything else, like a family
+  // Christmas, starts with everyone giving everyone.
+  const [kind, setKind] = useState<ExchangeKind>(
+    exchange ? exchangeKind(exchange) : initial.event_type === "gift_exchange" ? "draw" : "everyone",
+  );
   const [budget, setBudget] = useState(exchange?.budget ?? "");
   const [drawBy, setDrawBy] = useState(exchange?.draw_by ?? "");
   const [mailed, setMailed] = useState(exchange?.mailed ?? false);
@@ -181,7 +189,10 @@ export function EventForm({
     setEventType(type);
     if (editing) return;
     const defaults = EVENT_TYPE_OPTIONS.find((o) => o.value === type)?.defaults ?? {};
-    if (!touched.exchange) setExchangeOn(Boolean(defaults.exchange));
+    if (!touched.exchange) {
+      setExchangeOn(Boolean(defaults.exchange));
+      setKind(type === "gift_exchange" ? "draw" : "everyone");
+    }
     if (!touched.askKids) setAskKids(Boolean(defaults.askKids));
   };
 
@@ -232,6 +243,7 @@ export function EventForm({
     data.set("giftNote", giftNote);
     data.set("registryLinks", JSON.stringify(linked.map((r) => (r.link ? { link: r.link } : { id: r.id }))));
     data.set("exchangeEnabled", String(exchangeOn));
+    data.set("exchangeKind", kind);
     data.set("exchangeBudget", budget);
     data.set("exchangeDrawBy", drawBy);
     data.set("exchangeMailed", String(mailed));
@@ -588,8 +600,8 @@ export function EventForm({
       </Section>
 
       <Section
-        title="Gift exchange"
-        description="Draw names, so everyone gives one gift and gets one. Good for Secret Santa with family, friends or coworkers."
+        title="Gifts among the guests"
+        description="For a family Christmas or a Secret Santa, when the guests give gifts to each other."
       >
         <Checkbox
           isSelected={exchangeOn}
@@ -598,31 +610,67 @@ export function EventForm({
             setExchangeOn(value);
             setTouched((t) => ({ ...t, exchange: true }));
           }}
-          label={<span className="font-normal">Draw names for a gift exchange</span>}
+          label={<span className="font-normal">Guests give gifts to each other</span>}
           hint={
             drawn
-              ? "Names have been drawn. To turn the exchange off, undo the draw on the event's page first."
-              : "Guests join when they RSVP and add a wishlist or gift ideas. You draw names on the event's page."
+              ? "Names have been drawn. To turn this off, undo the draw on the event's page first."
+              : "Guests add a wish list or gift ideas when they RSVP."
           }
         />
         {exchangeOn && (
           <>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Input label="Budget (optional)" value={budget} onChange={setBudget} maxLength={40} placeholder="$25" />
-              <Input
-                label="Draw names by (optional)"
-                type="date"
-                value={drawBy}
-                onChange={setDrawBy}
-                hint="Guests see this, so they know when to join by."
-              />
+            <div role="group" aria-label="How gifts work" className="grid gap-2 sm:grid-cols-2">
+              {EXCHANGE_KINDS.map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  aria-pressed={kind === option.value}
+                  disabled={drawn && kind !== option.value}
+                  onClick={() => setKind(option.value)}
+                  className={cx(
+                    "flex cursor-pointer flex-col gap-1 rounded-xl border p-3 text-left transition outline-none focus-visible:ring-2 focus-visible:ring-brand-600 disabled:cursor-not-allowed disabled:opacity-50",
+                    kind === option.value
+                      ? "border-brand-600 bg-brand-50 ring-1 ring-brand-600"
+                      : "border-secondary hover:border-primary",
+                  )}
+                >
+                  <span className="font-medium text-primary">{option.label}</span>
+                  <span className="text-sm text-tertiary">{option.hint}</span>
+                </button>
+              ))}
             </div>
-            <Checkbox
-              isSelected={mailed}
-              onChange={setMailed}
-              label={<span className="font-normal">There&apos;s no get-together: gifts are mailed</span>}
-              hint="Guests answer “I'm in” instead of RSVPing, and give a shipping address that only the person who draws them sees."
-            />
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Input
+                label={kind === "everyone" ? "Budget per gift (optional)" : "Budget (optional)"}
+                value={budget}
+                onChange={setBudget}
+                maxLength={40}
+                placeholder="$25"
+              />
+              {kind === "draw" && (
+                <Input
+                  label="Draw names by (optional)"
+                  type="date"
+                  value={drawBy}
+                  onChange={setDrawBy}
+                  hint="Guests see this, so they know when to join by."
+                />
+              )}
+            </div>
+            {kind === "everyone" && (
+              <p className="text-sm text-tertiary">
+                Each list hides what&apos;s been reserved from its owner, and shows it to them the day after the
+                event, so they know who to thank.
+              </p>
+            )}
+            {kind === "draw" && (
+              <Checkbox
+                isSelected={mailed}
+                onChange={setMailed}
+                label={<span className="font-normal">There&apos;s no get-together: gifts are mailed</span>}
+                hint="Guests answer “I'm in” instead of RSVPing, and give a shipping address that only the person who draws them sees."
+              />
+            )}
           </>
         )}
       </Section>

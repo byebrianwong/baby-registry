@@ -59,7 +59,8 @@ export interface Item {
 }
 
 /** A gift as an item's row reads it. */
-export type ItemGift = Pick<Gift, "id" | "status" | "reserved_until" | "buyer_name" | "quantity">;
+export type ItemGift = Pick<Gift, "id" | "status" | "reserved_until" | "buyer_name" | "quantity"> &
+  Partial<Pick<Gift, "created_at">>;
 
 export interface CashFund {
   id: string;
@@ -132,10 +133,13 @@ export interface RegistryDetail {
   funds: CashFund[];
   pendingSuggestions: number;
   /**
-   * The owner hides what's been reserved from themselves. Then items show
-   * nothing reserved, funds nothing pledged, and there are no gifts.
+   * The owner hides what's been reserved from themselves. Then items, funds
+   * and gifts show only the gifts revealed the day after an event the list
+   * is linked to, and nothing else.
    */
   reservationsHidden: boolean;
+  /** With reservations hidden: how many gifts have been revealed. */
+  revealedCount?: number;
 }
 
 /** The fields of the add and edit item forms. */

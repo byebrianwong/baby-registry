@@ -71,6 +71,8 @@ export interface EventGuest {
   /** Joined the gift exchange. */
   in_exchange: boolean;
   wishlist_url: string | null;
+  /** The Regibee list behind wishlist_url, when it is one. */
+  wishlist_registry_id?: string | null;
   gift_ideas: string | null;
   shipping_address: string | null;
   /** The guest this one drew in the gift exchange. Only they see it. */
@@ -124,8 +126,37 @@ export const MAX_GIFT_NOTE_LENGTH = 500;
 
 // ── Gift exchanges ───────────────────────────────────────────
 
+/**
+ * How an event's gift exchange works.
+ * - draw: names are drawn, and each person gives one gift to the person they
+ *   drew (a Secret Santa).
+ * - everyone: everyone gives everyone, like a family Christmas. Each guest
+ *   links a wish list, the event page shows everyone's lists to the guests,
+ *   and guests see what the others reserved so nobody doubles up.
+ */
+export type ExchangeKind = "draw" | "everyone";
+
+export const EXCHANGE_KINDS: { value: ExchangeKind; label: string; hint: string }[] = [
+  {
+    value: "everyone",
+    label: "Everyone gives everyone",
+    hint: "Each guest links a wish list. Guests see each other's lists and what's been reserved, so nobody doubles up.",
+  },
+  {
+    value: "draw",
+    label: "Draw names (Secret Santa)",
+    hint: "Each person draws one name and gives that person a gift. Nobody knows who drew them.",
+  },
+];
+
+export function isExchangeKind(value: unknown): value is ExchangeKind {
+  return value === "draw" || value === "everyone";
+}
+
 export interface GiftExchange {
   event_id: string;
+  /** Missing on rows read before the kind existed, which are draws. */
+  kind?: ExchangeKind;
   /** As the host wrote it: "$25", "$20 to $30". */
   budget: string | null;
   /** YYYY-MM-DD: the day the host plans to draw names. */
@@ -148,6 +179,24 @@ export interface ExchangeGiftee {
 }
 
 export const MIN_EXCHANGE_PARTICIPANTS = 3;
+
+/** An exchange's kind, for rows from before kinds existed. */
+export function exchangeKind(exchange: Pick<GiftExchange, "kind"> | null | undefined): ExchangeKind {
+  return exchange?.kind === "everyone" ? "everyone" : "draw";
+}
+
+/** A guest's wish list, as the other guests of an everyone-gives-everyone event see it. */
+export interface GuestWishList {
+  guestId: string;
+  name: string;
+  /** The viewer's own entry. */
+  isYou: boolean;
+  /** The link: a Regibee list on this site, or any store's list. Null when they haven't added one. */
+  url: string | null;
+  /** When it's a Regibee list: its title and slug. */
+  registry: { title: string; slug: string } | null;
+  giftIdeas: string | null;
+}
 
 export function isEventType(value: unknown): value is EventType {
   return typeof value === "string" && (EVENT_TYPES as readonly string[]).includes(value);
@@ -490,6 +539,7 @@ export function guestForHost(guest: EventGuest): EventGuest {
     giftee_id: null,
     shipping_address: guest.shipping_address ? "added" : null,
     wishlist_url: guest.wishlist_url ? "added" : null,
+    wishlist_registry_id: null,
     gift_ideas: guest.gift_ideas ? "added" : null,
   };
 }

@@ -2,7 +2,7 @@
 // snapshots don't change from day to day. Stories that need "today" use
 // SAMPLE_TODAY, two weeks before the event.
 
-import type { EventDetails, EventGuest, GiftExchange } from "@/lib/events";
+import type { EventDetails, EventGuest, GiftExchange, GuestWishList } from "@/lib/events";
 
 export const SAMPLE_TODAY = "2026-02-28";
 
@@ -210,3 +210,41 @@ export const sampleDrawnExchangeGuests: EventGuest[] = sampleExchangeGuests.map(
   ...g,
   giftee_id: drawnPairs[g.id] ?? null,
 }));
+
+// ── Everyone gives everyone ──────────────────────────────────
+
+/** The same holiday party, where everyone gives everyone instead of drawing names. */
+export const sampleEveryoneExchange: GiftExchange = {
+  ...sampleExchange,
+  kind: "everyone",
+  draw_by: null,
+};
+
+/** Everyone's wish lists, as Glinda sees them on her own invitation link. */
+export const sampleGuestWishLists: GuestWishList[] = [
+  {
+    guestId: "g1",
+    name: "Glinda",
+    isYou: true,
+    url: "https://regibee.com/r/glindas-wishlist-8h3m",
+    registry: { title: "Glinda's Christmas List", slug: "glindas-wishlist-8h3m" },
+    giftIdeas: null,
+  },
+  {
+    guestId: "g2",
+    name: "Elphaba Thropp",
+    isYou: false,
+    url: "https://regibee.com/r/elphabas-list-2k9d",
+    registry: { title: "Elphaba's Christmas List", slug: "elphabas-list-2k9d" },
+    giftIdeas: "Books about animals, green tea, a sturdy umbrella",
+  },
+  {
+    guestId: "g4",
+    name: "Fiyero",
+    isYou: false,
+    url: "https://www.amazon.com/hz/wishlist/ls/EXAMPLE123",
+    registry: null,
+    giftIdeas: null,
+  },
+  { guestId: "g5", name: "Boq", isYou: false, url: null, registry: null, giftIdeas: null },
+];

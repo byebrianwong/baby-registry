@@ -11,6 +11,7 @@ import {
   itemCoveredOwnerHtml,
   cashFundContributionOwnerHtml,
   newSuggestionOwnerHtml,
+  giftsRevealedOwnerHtml,
   completionDiscountOwnerHtml,
   managerInviteHtml,
   followRequestHtml,
@@ -251,6 +252,21 @@ export const OwnerNewSuggestion: Story = {
       title: "Baby Monitor Pro",
       price: 129.99,
       notes: "This is the one we used and it's amazing!",
+    }),
+  },
+};
+
+/** The day after a family Christmas, to the owner of a list that hid what was reserved. */
+export const OwnerGiftsRevealed: Story = {
+  args: {
+    subject: "🎁 Your gifts from Christmas at Aunt Linda's are revealed",
+    to: "elphaba@example.com",
+    html: giftsRevealedOwnerHtml({
+      ownerName: "Elphaba",
+      registryTitle: "Elphaba's Christmas List",
+      eventTitle: "Christmas at Aunt Linda's",
+      giftCount: 5,
+      listUrl: "https://regibee.com/dashboard/registry/abc?tab=purchases",
     }),
   },
 };

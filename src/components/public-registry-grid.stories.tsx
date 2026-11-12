@@ -208,3 +208,34 @@ export const NoItemsYet: Story = {
     suggestButton: suggestButton([]),
   },
 };
+
+// A guest of an everyone-gives-everyone Christmas, on another guest's wish
+// list (src/app/r/[slug]/page.tsx). Each item another guest reserved says who,
+// so nobody doubles up. The guest's own reservation says "Reserved for you",
+// and a second copy of the same item reserved by someone else says "Also".
+export const FellowGuestsReserved: Story = {
+  args: {
+    parentName: "Elphaba Thropp",
+    categories: [],
+    cashFunds: [],
+    myGifts: {},
+    coverCounts: {},
+    suggestButton: null,
+    myItemGifts: {
+      c3: { purchaseId: "p3", status: "reserved", reservedUntil: "2026-12-14T12:00:00Z", quantity: 1 },
+    },
+    reservedCounts: { c1: 1, c3: 2 },
+    claims: { c1: ["Glinda"], c2: ["Boq", "Nessarose"], c3: ["Fiyero"] },
+    items: [
+      { ...base, category_id: null, id: "c1", title: "The Secret Life of Trees", price: 18, quantity_fulfilled: 1, external_url: null },
+      { ...base, category_id: null, id: "c2", title: "Green tea sampler", price: 32, quantity_needed: 2, quantity_fulfilled: 2, external_url: null },
+      { ...base, category_id: null, id: "c3", title: "Sturdy travel umbrella", price: 29, quantity_needed: 3, quantity_fulfilled: 2, external_url: null },
+      { ...base, category_id: null, id: "c4", title: "Wool hiking socks", price: 24, external_url: null },
+    ],
+  },
+};
+
+export const FellowGuestsReservedPhone: Story = {
+  ...FellowGuestsReserved,
+  globals: { viewport: { value: "mobile1" } },
+};

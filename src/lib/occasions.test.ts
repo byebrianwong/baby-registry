@@ -74,7 +74,7 @@ test("titles read naturally, with or without a name", () => {
 test("gift plans fit who it's for", () => {
   assert.deepEqual(giftPlansFor("someone"), ["link", "ask", "no_gifts", "later"]);
   assert.ok(giftPlansFor("child").includes("new_list"));
-  assert.deepEqual(giftPlansFor("everyone"), ["exchange"]);
+  assert.deepEqual(giftPlansFor("everyone"), ["everyone", "exchange"]);
   assert.equal(planNeedsEvent("new_list"), false);
   assert.equal(planNeedsEvent("ask"), true);
 });

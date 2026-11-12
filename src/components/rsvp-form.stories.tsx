@@ -46,6 +46,37 @@ export const PartyWithExchange: Story = {
 };
 
 /**
+ * Everyone gives everyone, for a guest signed in with lists of their own.
+ * Choosing Going shows a menu of their lists, with their newest picked.
+ */
+export const EveryoneGivesEveryone: Story = {
+  args: {
+    exchange: { kind: "everyone", mailed: false, drawn: false },
+    myLists: [
+      { title: "Fiyero's Christmas List", url: "https://regibee.com/r/fiyeros-list-5j2c" },
+      { title: "Fiyero's Birthday Wishlist", url: "https://regibee.com/r/fiyero-birthday-9x1q" },
+    ],
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByRole("button", { name: "Going" }));
+    await expect(canvas.getByLabelText("Your list")).toHaveValue("https://regibee.com/r/fiyeros-list-5j2c");
+    await expect(canvas.queryByRole("checkbox", { name: /Join the gift exchange/ })).toBeNull();
+  },
+};
+
+/** Everyone gives everyone, for a guest with no Regibee list: they paste a link, or make one. */
+export const EveryoneGivesEveryoneNoList: Story = {
+  args: { exchange: { kind: "everyone", mailed: false, drawn: false } },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByRole("button", { name: "Maybe" }));
+    await expect(canvas.getByLabelText(/Link to your wish list/)).toBeVisible();
+    await expect(canvas.getByRole("link", { name: "Make one on Regibee" })).toBeVisible();
+  },
+};
+
+/**
  * An exchange with no get-together: gifts are mailed. Guests answer "I'm in"
  * or "Not this year", and joining asks for a shipping address.
  */

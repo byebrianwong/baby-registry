@@ -321,8 +321,9 @@ function RegistryHeader({
         <View style={[styles.hiddenNotice, { backgroundColor: theme.surfaceAlt, marginHorizontal: spacing.lg }]}>
           <Icon name="eyeSlash" size={16} color={theme.textSecondary} />
           <Text variant="footnote" tone="secondary" style={{ flex: 1 }}>
-            What&apos;s been reserved is hidden from you, so your gifts stay a surprise. Guests still see what&apos;s
-            taken.
+            {detail.revealedCount
+              ? "New reservations are hidden from you. The gifts from your last event are revealed, so you know who to thank."
+              : "What's been reserved is hidden from you, so your gifts stay a surprise until the day after your event. Guests still see what's taken."}
           </Text>
         </View>
       ) : null}

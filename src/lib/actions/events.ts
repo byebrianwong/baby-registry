@@ -18,8 +18,10 @@ import {
   resolveRegistryLink,
 } from "@/lib/events-server";
 import {
+  exchangeKind,
   isEmail,
   isEventType,
+  isExchangeKind,
   isTimeZone,
   MAX_GIFT_NOTE_LENGTH,
   MAX_GUESTS_PER_EVENT,
@@ -28,6 +30,7 @@ import {
   summarizeRsvps,
   type EventDetails,
   type EventGuest,
+  type ExchangeKind,
   type GiftExchange,
   type ParsedGuest,
   type RsvpStatus,
@@ -145,7 +148,7 @@ function readEventForm(formData: FormData): { fields: EventFields } | { error: s
 
 type ExchangeForm =
   | { enabled: false }
-  | { enabled: true; budget: string | null; draw_by: string | null; mailed: boolean };
+  | { enabled: true; kind: ExchangeKind; budget: string | null; draw_by: string | null; mailed: boolean };
 
 // The gift exchange settings. Missing fields mean the form didn't include
 // them, which leaves the exchange as it is.
@@ -153,13 +156,17 @@ function readExchangeForm(formData: FormData): ExchangeForm | null | { error: st
   const enabled = formData.get("exchangeEnabled");
   if (enabled === null) return null;
   if (enabled !== "true") return { enabled: false };
+  const rawKind = formData.get("exchangeKind");
+  const kind: ExchangeKind = isExchangeKind(rawKind) ? rawKind : "draw";
   const drawBy = dateField(formData, "exchangeDrawBy");
   if (drawBy === "invalid") return { error: "The draw date doesn't look right." };
+  // Everyone gives everyone has no draw, and guests bring their gifts.
   return {
     enabled: true,
+    kind,
     budget: text(formData, "exchangeBudget", 40),
-    draw_by: drawBy,
-    mailed: formData.get("exchangeMailed") === "true",
+    draw_by: kind === "draw" ? drawBy : null,
+    mailed: kind === "draw" && formData.get("exchangeMailed") === "true",
   };
 }
 
@@ -284,7 +291,17 @@ async function saveExchange(eventId: string, form: ExchangeForm): Promise<{ erro
     await supabaseAdmin.from("gift_exchanges").delete().eq("event_id", eventId);
     return { error: null };
   }
-  const values = { budget: form.budget, draw_by: form.draw_by, mailed: form.mailed };
+  if (existing?.drawn_at && exchangeKind(existing) !== form.kind) {
+    return { error: "Names have been drawn. To change how gifts work, undo the draw first." };
+  }
+  // kind is only sent when it matters, so a draw still saves on a database
+  // the 20261112063128 migration hasn't reached yet.
+  const values = {
+    budget: form.budget,
+    draw_by: form.draw_by,
+    mailed: form.mailed,
+    ...(form.kind !== "draw" || existing?.kind !== undefined ? { kind: form.kind } : {}),
+  };
   const { error } = existing
     ? await supabaseAdmin.from("gift_exchanges").update(values).eq("event_id", eventId)
     : await supabaseAdmin.from("gift_exchanges").insert({ event_id: eventId, ...values });
@@ -726,6 +743,12 @@ function siteUrl() {
   return process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
 }
 
+/** The Regibee list a cleaned-up wishlist link points to, or null for any other link. */
+async function wishlistRegistryId(url: string | null): Promise<string | null> {
+  if (!url?.startsWith(`${siteUrl()}/r/`)) return null;
+  return (await resolveRegistryLink(url))?.id ?? null;
+}
+
 /**
  * When a guest adds their own Regibee wishlist to a gift exchange, the list
  * starts hiding what's been reserved from them, so their gifts stay a
@@ -812,19 +835,27 @@ export async function submitRsvp(input: RsvpInput): Promise<Result<{ token: stri
   }
 
   if (exchange && input.exchange) {
-    const wantsIn = exchange.mailed ? input.status === "yes" : input.exchange.join && input.status !== "no";
-    const inExchange = exchange.drawn_at ? Boolean(existing?.in_exchange) : wantsIn;
-    if (!exchange.drawn_at) response.in_exchange = inExchange;
+    // Everyone gives everyone: every guest who's coming takes part, with no
+    // draw to close it. A draw: guests choose, until names are drawn.
+    const everyone = exchangeKind(exchange) === "everyone";
+    const wantsIn = everyone
+      ? input.status !== "no"
+      : exchange.mailed
+        ? input.status === "yes"
+        : input.exchange.join && input.status !== "no";
+    const inExchange = !everyone && exchange.drawn_at ? Boolean(existing?.in_exchange) : wantsIn;
+    if (everyone || !exchange.drawn_at) response.in_exchange = inExchange;
     if (inExchange) {
       const wishlist = readWishlistUrl(input.exchange.wishlistUrl);
       if ("error" in wishlist) return { error: wishlist.error };
       const address = input.exchange.shippingAddress?.trim().slice(0, 300) || null;
-      if (exchange.mailed && !address) {
+      if (!everyone && exchange.mailed && !address) {
         return { error: "Add a shipping address, so your Secret Santa can mail your gift." };
       }
       response.wishlist_url = wishlist.url;
+      response.wishlist_registry_id = await wishlistRegistryId(wishlist.url);
       response.gift_ideas = input.exchange.giftIdeas?.trim().slice(0, 1000) || null;
-      response.shipping_address = exchange.mailed ? address : null;
+      response.shipping_address = !everyone && exchange.mailed ? address : null;
     }
   }
 
@@ -1155,6 +1186,7 @@ async function copyEventForNextYear(
       budget: exchange.budget,
       draw_by: nextYear(exchange.draw_by),
       mailed: exchange.mailed,
+      ...(exchange.kind ? { kind: exchange.kind } : {}),
     });
     const pairs = exclusions
       .map((x) => [newIdFor(x.guest_a), newIdFor(x.guest_b)] as const)
@@ -1386,6 +1418,9 @@ export async function drawExchangeNames(
 ): Promise<Result<{ emailed: number; withoutEmail: number }>> {
   const access = await requireExchange(eventId);
   if (access.error !== null) return { error: access.error };
+  if (exchangeKind(access.exchange) === "everyone") {
+    return { error: "Everyone gives everyone, so there are no names to draw." };
+  }
   if (access.exchange.drawn_at && !again) return { error: "Names have already been drawn." };
 
   const guests = await getEventGuests(eventId);
@@ -1575,8 +1610,10 @@ export async function startPlan(input: PlanInput): Promise<Result<{ href: string
   // on its page, where the host can add it from Edit.
   const linkIds = [list?.id, linked?.id].filter((id): id is string => Boolean(id));
   if (linkIds.length > 0) await saveRegistryLinks(saved, linkIds, user.id);
-  if (input.gifts === "exchange" || defaults?.exchange) {
-    await saveExchange(saved.id, { enabled: true, budget: null, draw_by: null, mailed: false });
+  if (input.gifts === "everyone") {
+    await saveExchange(saved.id, { enabled: true, kind: "everyone", budget: null, draw_by: null, mailed: false });
+  } else if (input.gifts === "exchange" || defaults?.exchange) {
+    await saveExchange(saved.id, { enabled: true, kind: "draw", budget: null, draw_by: null, mailed: false });
   }
   if (input.gifts === "ask") {
     const token = crypto.randomBytes(24).toString("hex");

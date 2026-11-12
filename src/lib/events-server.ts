@@ -1,5 +1,13 @@
 import { supabaseAdmin } from "@/lib/supabase-admin";
-import type { EventDetails, EventGuest, ExchangeGiftee, GiftExchange, LinkedRegistry } from "@/lib/events";
+import {
+  exchangeKind,
+  type EventDetails,
+  type EventGuest,
+  type ExchangeGiftee,
+  type GiftExchange,
+  type GuestWishList,
+  type LinkedRegistry,
+} from "@/lib/events";
 
 // Reads for the event pages. The event tables have no access rules for the
 // API roles (see 015_events.sql), so everything goes through the service-role
@@ -379,4 +387,99 @@ export async function getPendingListRequests(eventId: string): Promise<{ name: s
     .is("fulfilled_at", null)
     .order("created_at");
   return (data || []) as { name: string; email: string }[];
+}
+
+// ── Everyone gives everyone ──────────────────────────────────
+
+/**
+ * Whether guests of this event can shop this registry as part of the event:
+ * the event links it, or it's the wish list of one of its guests and the
+ * event's gift exchange is everyone gives everyone. (A Secret Santa's
+ * wishlist is only for the person who drew them; the gift link route checks
+ * that on its own.)
+ */
+export async function eventIncludesRegistry(eventId: string, registryId: string): Promise<boolean> {
+  const [{ data: link }, exchange, { data: wishlists }] = await Promise.all([
+    supabaseAdmin
+      .from("event_registries")
+      .select("registry_id")
+      .eq("event_id", eventId)
+      .eq("registry_id", registryId)
+      .maybeSingle(),
+    getGiftExchange(eventId),
+    supabaseAdmin
+      .from("event_guests")
+      .select("id")
+      .eq("event_id", eventId)
+      .eq("wishlist_registry_id", registryId)
+      .eq("in_exchange", true)
+      .limit(1),
+  ]);
+  if (link) return true;
+  return exchangeKind(exchange) === "everyone" && (wishlists?.length ?? 0) > 0;
+}
+
+/**
+ * Everyone's wish lists for an everyone-gives-everyone event: each guest
+ * taking part, with their list or null when they haven't added one. The
+ * viewer's own entry comes first. Only the event's guests and hosts get this.
+ */
+export async function getGuestWishLists(eventId: string, viewerGuestId: string | null): Promise<GuestWishList[]> {
+  const { data } = await supabaseAdmin
+    .from("event_guests")
+    .select("id, name, wishlist_url, wishlist_registry_id, gift_ideas")
+    .eq("event_id", eventId)
+    .eq("in_exchange", true)
+    .order("name");
+  const guests = (data || []) as Pick<EventGuest, "id" | "name" | "wishlist_url" | "wishlist_registry_id" | "gift_ideas">[];
+  const registryIds = [...new Set(guests.map((g) => g.wishlist_registry_id).filter((id): id is string => Boolean(id)))];
+  const { data: registries } = registryIds.length
+    ? await supabaseAdmin.from("registries").select("id, title, slug").in("id", registryIds)
+    : { data: [] as { id: string; title: string; slug: string }[] };
+  const byId = new Map((registries || []).map((r) => [r.id as string, { title: r.title as string, slug: r.slug as string }]));
+
+  return guests
+    .map((g) => ({
+      guestId: g.id,
+      name: g.name,
+      isYou: g.id === viewerGuestId,
+      url: g.wishlist_url,
+      registry: g.wishlist_registry_id ? (byId.get(g.wishlist_registry_id) ?? null) : null,
+      giftIdeas: g.gift_ideas,
+    }))
+    .sort((a, b) => Number(b.isYou) - Number(a.isYou));
+}
+
+// ── Reveals ──────────────────────────────────────────────────
+
+/**
+ * The events a registry is linked to, by the event's own links or as a
+ * guest's wish list. A list that hides reservations from its owner reveals
+ * them the day after each one (src/lib/reveal.ts).
+ */
+export async function getEventsForReveal(
+  registryId: string,
+): Promise<Pick<EventDetails, "id" | "slug" | "title" | "event_date">[]> {
+  const [{ data: links }, { data: wishlists }] = await Promise.all([
+    supabaseAdmin.from("event_registries").select("event_id").eq("registry_id", registryId),
+    supabaseAdmin.from("event_guests").select("event_id").eq("wishlist_registry_id", registryId),
+  ]);
+  const ids = [...new Set([...(links || []), ...(wishlists || [])].map((row) => row.event_id as string))];
+  if (ids.length === 0) return [];
+  const { data } = await supabaseAdmin.from("events").select("id, slug, title, event_date").in("id", ids);
+  return (data || []) as Pick<EventDetails, "id" | "slug" | "title" | "event_date">[];
+}
+
+/**
+ * The moment up to which a list's hidden gifts are revealed to its owner, or
+ * null. The database works it out (gifts_revealed_through), the same as for
+ * the owner's own reads. Before that function exists, nothing is revealed.
+ */
+export async function getGiftsRevealedThrough(registryId: string): Promise<string | null> {
+  const { data, error } = await supabaseAdmin.rpc("gifts_revealed_through", { p_registry_id: registryId });
+  if (error) {
+    console.error("[reveal] Failed to read when gifts are revealed:", error.message);
+    return null;
+  }
+  return typeof data === "string" ? data : null;
 }

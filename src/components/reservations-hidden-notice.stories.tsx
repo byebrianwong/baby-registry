@@ -19,6 +19,17 @@ export const AllStates: Story = {
       <ReservationsHiddenNotice settingsHref="/dashboard/registry/reg-1/settings" turnedOnByExchange />
       {/* On the public page, which has no settings link. */}
       <ReservationsHiddenNotice />
+      {/* Linked to an event: its gifts are revealed the day after. */}
+      <ReservationsHiddenNotice
+        settingsHref="/dashboard/registry/reg-1/settings"
+        turnedOnByExchange
+        reveal={{ next: { date: "Dec 26", eventTitle: "Christmas at Grandma's" } }}
+      />
+      {/* After the event: its gifts are revealed, and the next event's are coming. */}
+      <ReservationsHiddenNotice
+        settingsHref="/dashboard/registry/reg-1/settings"
+        reveal={{ revealedCount: 6, next: { date: "Mar 3, 2027", eventTitle: "Max Turns 30" } }}
+      />
     </div>
   ),
 };

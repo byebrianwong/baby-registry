@@ -41,15 +41,17 @@ import { copyForRegistry } from "@/lib/registry-copy";
 import { formatDollars, formatPrice } from "@/lib/money";
 import {
   formatReservedUntil,
-  fundAsUnpledged,
+  fundAsRevealed,
+  isGiftRevealed,
   isOpenReservation,
-  itemAsUnreserved,
+  itemAsRevealed,
   maskGiverForOwner,
   readReservationPrivacy,
   reservationsHiddenFrom,
 } from "@/lib/gifts";
+import { formatRevealDate, nextReveal } from "@/lib/reveal";
 import { ReservationsHiddenNotice } from "@/components/reservations-hidden-notice";
-import { listEventsForRegistry } from "@/lib/events-server";
+import { getEventsForReveal, getGiftsRevealedThrough, listEventsForRegistry } from "@/lib/events-server";
 import { RegistryEventsBanner } from "@/components/registry-events-banner";
 import { findSharedLink } from "@/lib/shared-link";
 import { getSessionUser } from "@/lib/viewer";
@@ -152,8 +154,22 @@ export default async function RegistryManagePage({
     isOwner = true;
   }
 
-  const [{ data: categories }, { data: items }, purchases, { data: suggestions }, { data: cashFunds }, linkedEvents] =
-    await Promise.all([
+  // The owner can hide what's been reserved from themselves (src/lib/gifts.ts).
+  // Then the page shows only the gifts revealed after an event the list is
+  // linked to (src/lib/reveal.ts): nothing reserved, pledged or given
+  // otherwise. Co-managers still see it all.
+  const hideReservations = reservationsHiddenFrom(registry, user.id);
+
+  const [
+    { data: categories },
+    { data: items },
+    purchases,
+    { data: suggestions },
+    { data: cashFunds },
+    linkedEvents,
+    revealedThrough,
+    revealEvents,
+  ] = await Promise.all([
       supabase
         .from("categories")
         .select("*")
@@ -176,17 +192,32 @@ export default async function RegistryManagePage({
         .eq("registry_id", registryId)
         .order("created_at"),
       listEventsForRegistry(registryId, user.id),
+      hideReservations ? getGiftsRevealedThrough(registryId) : null,
+      hideReservations ? getEventsForReveal(registryId) : [],
     ]);
 
-  // The owner can hide what's been reserved from themselves (src/lib/gifts.ts).
-  // Then the page shows every item as not yet reserved, no pledges and no gift
-  // activity. Co-managers still see it all.
-  const hideReservations = reservationsHiddenFrom(registry, user.id);
+  // The database already keeps unrevealed gifts from the owner. This filter
+  // keeps the page right before that rule is in place, too.
+  const visiblePurchases = hideReservations
+    ? purchases.filter((p) => isGiftRevealed(p.created_at, revealedThrough))
+    : purchases;
+  const visibleFor = (key: "registry_item_id" | "cash_fund_id", id: string) =>
+    visiblePurchases.filter((p) => p[key] === id);
+  const today = new Date().toISOString().slice(0, 10);
+  const upcomingReveal = hideReservations ? nextReveal(revealEvents) : null;
+  const revealInfo = hideReservations
+    ? {
+        revealedCount: visiblePurchases.filter((p) => p.status !== "cancelled").length,
+        next: upcomingReveal
+          ? { date: formatRevealDate(upcomingReveal.date, today), eventTitle: upcomingReveal.event.title }
+          : null,
+      }
+    : undefined;
   const turnedOnByExchange = readReservationPrivacy(registry.settings).hide_reservations_source === "exchange";
   const settingsHref = `/dashboard/registry/${registryId}/settings`;
 
   const allItems = ((items || []) as RegistryItem[]).map((item) =>
-    hideReservations ? itemAsUnreserved(item) : item
+    hideReservations ? itemAsRevealed(item, visibleFor("registry_item_id", item.id)) : item
   );
   const allCategories = (categories || []) as Category[];
   const dismissedChecklistItems = (registry.settings as Record<string, unknown> | null)?.checklist_dismissed as string[] | undefined;
@@ -197,7 +228,7 @@ export default async function RegistryManagePage({
   // A Secret Santa's gift shows "Secret Santa" with no email. It's masked
   // here, on the server, so the giver's name and email never reach the
   // browser in the page data, including the item and fund cards below.
-  const allPurchases = (hideReservations ? [] : purchases).map((p: any) => ({
+  const allPurchases = visiblePurchases.map((p: any) => ({
     ...maskGiverForOwner(p),
     item_title: p.registry_items?.title || p.cash_funds?.title || "Unknown item",
   }));
@@ -276,7 +307,7 @@ export default async function RegistryManagePage({
       goal_amount: number | null;
       current_amount: number;
     }[]
-  ).map((fund) => (hideReservations ? fundAsUnpledged(fund) : fund));
+  ).map((fund) => (hideReservations ? fundAsRevealed(fund, visibleFor("cash_fund_id", fund.id)) : fund));
   if (allFunds.length > 0) {
     navItems.unshift({
       id: "gift-funds",
@@ -365,6 +396,7 @@ export default async function RegistryManagePage({
           className="mt-6"
           settingsHref={settingsHref}
           turnedOnByExchange={turnedOnByExchange}
+          reveal={revealInfo}
         />
       )}
 
@@ -554,9 +586,17 @@ export default async function RegistryManagePage({
               </p>
             </div>
 
-            {hideReservations ? (
-              <ReservationsHiddenNotice settingsHref={settingsHref} turnedOnByExchange={turnedOnByExchange} />
-            ) : allPurchases.length === 0 ? (
+            {/* With reservations hidden, only revealed gifts are listed. */}
+            {hideReservations && (
+              <ReservationsHiddenNotice
+                className={allPurchases.length > 0 ? "mb-4" : undefined}
+                settingsHref={settingsHref}
+                turnedOnByExchange={turnedOnByExchange}
+                reveal={revealInfo}
+              />
+            )}
+            {allPurchases.length === 0 ? (
+              hideReservations ? null : (
               <Card>
                 <CardContent className="flex flex-col items-center justify-center py-12">
                   <p className="text-tertiary">
@@ -564,6 +604,7 @@ export default async function RegistryManagePage({
                   </p>
                 </CardContent>
               </Card>
+              )
             ) : (
               <div className="space-y-3">
                 {allPurchases.map((purchase: any) => {
