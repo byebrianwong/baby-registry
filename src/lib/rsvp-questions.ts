@@ -203,6 +203,11 @@ export function answerLines(
   return lines;
 }
 
+/** A question as a label before its answer: "Meal choice:", but "Who's coming with you?" as it is. */
+export function answerLabel(label: string): string {
+  return /[?:.!]$/.test(label.trim()) ? label.trim() : `${label.trim()}:`;
+}
+
 /** For each meal question, how many people chose each option, among guests who are going. */
 export function mealCounts(
   questions: RsvpQuestion[],

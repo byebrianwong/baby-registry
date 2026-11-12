@@ -19,6 +19,7 @@ import {
   type GuestSignupRow,
 } from "@/lib/signups";
 import {
+  answerLabel,
   answerLines,
   plusOneCount,
   readAnswers,
@@ -205,7 +206,7 @@ export function RsvpForm({
           <dl className="mt-3 flex flex-col gap-1 text-sm">
             {answerLines(questions, current.answers, "You").map((line) => (
               <div key={line.label}>
-                <dt className="inline font-medium text-primary">{line.label}: </dt>
+                <dt className="inline font-medium text-primary">{answerLabel(line.label)} </dt>
                 <dd className="inline text-secondary">{line.value}</dd>
               </div>
             ))}

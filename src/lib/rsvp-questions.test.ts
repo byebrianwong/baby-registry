@@ -4,6 +4,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
+  answerLabel,
   answerLines,
   cleanQuestions,
   defaultQuestions,
@@ -71,6 +72,8 @@ test("answers read naturally, naming each person's meal", () => {
     { label: "Allergies or dietary needs", value: "No nuts" },
   ]);
   assert.deepEqual(storedAnswers({ meal: ["Fish", 3], diet: "x", junk: { a: 1 } }), { meal: ["Fish"], diet: "x" });
+  assert.equal(answerLabel("Meal choice"), "Meal choice:");
+  assert.equal(answerLabel("Who's coming with you? "), "Who's coming with you?");
 });
 
 test("meal counts add up everyone going, and count RSVPs with no answer", () => {

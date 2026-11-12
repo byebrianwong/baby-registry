@@ -38,7 +38,7 @@ import {
 } from "@/lib/events";
 import { initialsFor } from "@/lib/initials";
 import { memberCountLabel, type GroupSummary } from "@/lib/groups";
-import { answerLines, mealCounts, storedAnswers, type RsvpQuestion } from "@/lib/rsvp-questions";
+import { answerLabel, answerLines, mealCounts, storedAnswers, type RsvpQuestion } from "@/lib/rsvp-questions";
 import { cx } from "@/lib/utils/cx";
 
 type ActionResult = { error: string | null };
@@ -678,7 +678,7 @@ export function EventGuestManager({
                   {(guest.rsvp_status === "yes" || guest.rsvp_status === "maybe") &&
                     answerLines(questions, storedAnswers(guest.answers), guest.name).map((line) => (
                       <p key={line.label} className="mt-1 text-sm text-secondary">
-                        <span className="font-medium text-primary">{line.label}:</span> {line.value}
+                        <span className="font-medium text-primary">{answerLabel(line.label)}</span> {line.value}
                       </p>
                     ))}
                   {signups?.[guest.id] && signups[guest.id].length > 0 && (

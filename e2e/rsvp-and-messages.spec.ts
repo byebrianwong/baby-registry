@@ -122,7 +122,7 @@ test("the host adds a question of their own, and guests must answer it", async (
   await expect(page.getByRole("alert").filter({ hasText: 'Answer "What song gets you dancing?".' })).toBeVisible();
   await page.getByLabel("What song gets you dancing?").fill("September");
   await page.getByRole("button", { name: "Send RSVP" }).click();
-  await expect(page.getByText("What song gets you dancing?: September")).toBeVisible();
+  await expect(page.getByText("What song gets you dancing? September")).toBeVisible();
 });
 
 test("a new time emails everyone who might come, unless the host unticks it", async ({ page }) => {

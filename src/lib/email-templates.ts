@@ -3,6 +3,7 @@
  * Used by email.ts for sending and by Storybook for visual preview.
  */
 
+import { answerLabel } from "@/lib/rsvp-questions";
 import { formatPrice } from "@/lib/money";
 
 // Every value that goes into an email is escaped: guests type names, messages
@@ -481,7 +482,7 @@ function signupLine(event: EventEmailDetails): string {
 function answersBlock(heading: string, answers: { label: string; value: string }[] | undefined): string {
   if (!answers || answers.length === 0) return "";
   const rows = answers
-    .map((a) => `<li><strong>${escapeHtml(a.label)}:</strong> ${escapeHtml(a.value)}</li>`)
+    .map((a) => `<li><strong>${escapeHtml(answerLabel(a.label))}</strong> ${escapeHtml(a.value)}</li>`)
     .join("");
   return `<p style="margin-bottom:0;">${escapeHtml(heading)}</p><ul style="margin:4px 0 16px;padding-left:20px;">${rows}</ul>`;
 }
