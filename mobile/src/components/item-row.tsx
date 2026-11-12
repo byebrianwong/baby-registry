@@ -4,6 +4,7 @@ import { memo } from "react";
 import { Alert, Platform, Pressable, StyleSheet, View } from "react-native";
 
 import { isOpenReservation } from "@shared/gifts";
+import { registryStoreFor, type StoreId } from "@shared/retailers";
 
 import { Icon } from "@/components/icon";
 import { ItemImage } from "@/components/item-image";
@@ -62,17 +63,33 @@ function showActions(item: Item, actions: ItemActions) {
   ]);
 }
 
-export const ItemRow = memo(function ItemRow({ item, actions }: { item: Item; actions: ItemActions }) {
+export const ItemRow = memo(function ItemRow({
+  item,
+  actions,
+  linkedStores,
+}: {
+  item: Item;
+  actions: ItemActions;
+  /**
+   * The stores the owner linked in settings, for baby registries. With them, a
+   * link that counts toward a store registry reads "Amazon registry", by the
+   * guest page's rule. Null or unset shows just the store.
+   */
+  linkedStores?: StoreId[] | null;
+}) {
   const theme = useTheme();
   const s = status(item);
-  const store = storeLabel(item.external_url);
+  // Gifts of an item the owner bought go as money, not through the link.
+  const registryStore =
+    linkedStores && !item.is_parent_purchased ? registryStoreFor(item.external_url, linkedStores) : null;
+  const store = registryStore ? `${registryStore.name} registry` : storeLabel(item.external_url);
   const href = { pathname: "/item/[id]", params: { id: item.id } } as const;
 
   const ios = Platform.OS === "ios";
   const content = (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`${item.title}${item.price ? `, ${formatPrice(item.price)}` : ""}, ${s.label}${item.is_essential ? ", most wanted" : ""}`}
+      accessibilityLabel={`${item.title}${item.price ? `, ${formatPrice(item.price)}` : ""}${registryStore ? `, counts toward your ${registryStore.name} registry` : ""}, ${s.label}${item.is_essential ? ", most wanted" : ""}`}
       accessibilityHint="Opens the item to edit it"
       // On iPhone the Link below opens it and adds the long-press menu.
       onPress={ios ? undefined : () => router.push(href)}

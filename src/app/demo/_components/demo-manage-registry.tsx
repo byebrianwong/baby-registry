@@ -70,7 +70,8 @@ import { StorePerksCard } from "@/components/store-perks-card";
 import { ProgressCircle } from "@/components/ui/progress-circle";
 import { getChecklistProgress } from "@/lib/checklist-matching";
 import { copyForRegistry } from "@/lib/registry-copy";
-import { parseRetailerRegistries, plainLinksByStore } from "@/lib/retailers";
+import { parseRetailerRegistries, plainLinksByStore, type StoreId } from "@/lib/retailers";
+import { StoreRegistryLine } from "@/components/store-registry-line";
 import { buildStorePerks, parseStorePerksState, readyPerkCount } from "@/lib/store-perks";
 import { demoEventsForRegistry } from "@/lib/demo-events";
 import { DEMO_ME } from "@/lib/demo-people";
@@ -678,6 +679,7 @@ function DemoItemCard({
   onToggleParentPurchased,
   onClick,
   selfPurchaseButton,
+  linkedStores,
 }: {
   item: DemoItem;
   categoryName?: string;
@@ -685,6 +687,8 @@ function DemoItemCard({
   onClick: () => void;
   /** "Mark as bought by parent", or the personal registry's wording. */
   selfPurchaseButton: string;
+  /** The stores the owner linked, for baby registries. Unset hides the store registry line. */
+  linkedStores?: StoreId[];
 }) {
   const isFulfilled = item.quantity_fulfilled >= item.quantity_needed;
   const remaining = item.quantity_needed - item.quantity_fulfilled;
@@ -753,6 +757,10 @@ function DemoItemCard({
                   : `${remaining} of ${item.quantity_needed} still needed`}
               </span>
             </div>
+
+            {linkedStores && !item.is_parent_purchased && (
+              <StoreRegistryLine url={item.external_url} linkedStores={linkedStores} />
+            )}
 
             {item.notes && (
               <p className="text-sm whitespace-pre-line line-clamp-2">{item.notes}</p>
@@ -1304,6 +1312,7 @@ export function DemoManageRegistry({ registryId }: { registryId: string }) {
       onToggleParentPurchased={handleToggleParentPurchased}
       onClick={() => setEditingItem(item)}
       selfPurchaseButton={copy.selfPurchaseButton}
+      linkedStores={registry.registry_type === "baby" ? linkedRegistries.map((r) => r.store) : undefined}
     />
   );
 

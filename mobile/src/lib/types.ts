@@ -18,7 +18,8 @@ export interface Registry {
   honoree_names: string | null;
   /**
    * The registry's settings. The app reads only "Hide what's been reserved
-   * from me" from it, with reservationsHiddenFrom (src/lib/gifts.ts).
+   * from me", with reservationsHiddenFrom (src/lib/gifts.ts), and the owner's
+   * store registries, with storeRegistries (src/lib/data.ts).
    */
   settings?: Record<string, unknown> | null;
   created_at: string;

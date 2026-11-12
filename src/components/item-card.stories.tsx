@@ -95,3 +95,26 @@ export const Phone: Story = {
   ...WithImage,
   globals: { viewport: { value: "mobile1" } },
 };
+
+// The link is a registry item link from the owner's Amazon registry, so a
+// quiet line under the price says gifts bought through it count there.
+export const CountsTowardStoreRegistry: Story = {
+  args: {
+    linkedRegistries: [{ store: "amazon", url: "https://www.amazon.com/baby-reg/your-registry" }],
+    item: {
+      id: "4",
+      title: "Philips Avent Natural Baby Bottles, 4 pack",
+      external_url: "https://www.amazon.com/dp/B0EXAMPLE1?colid=EXAMPLECOLID&coliid=IEXAMPLEITEM",
+      image_url: null,
+      price: 32.99,
+      quantity_needed: 2,
+      quantity_fulfilled: 0,
+      is_essential: false,
+      is_parent_purchased: false,
+      notes: null,
+      is_open_to_used: false,
+      minimum_condition: null,
+      category_id: null,
+    },
+  },
+};
