@@ -85,9 +85,24 @@ export async function planAccountDeletion(userId: string): Promise<AccountDeleti
   if (coManagers.error) fail("reading co-managers", coManagers.error);
   if (others.error) fail("reading managed registries", others.error);
 
+  // A registry only goes to a real account. Guests have anonymous sessions,
+  // and nothing should hand them a registry.
+  const coManagerRows = (coManagers.data ?? []) as { registry_id: string; user_id: string }[];
+  const candidates = [...new Set(coManagerRows.map((row) => row.user_id))];
+  const accounts = new Set<string>();
+  await Promise.all(
+    candidates.map(async (id) => {
+      const { data, error } = await supabaseAdmin.auth.admin.getUserById(id);
+      if (error) fail("reading co-managers", error);
+      if (data.user && !data.user.is_anonymous) accounts.add(id);
+    }),
+  );
+
   const newOwnerByRegistry = new Map<string, string>();
-  for (const row of (coManagers.data ?? []) as { registry_id: string; user_id: string }[]) {
-    if (!newOwnerByRegistry.has(row.registry_id)) newOwnerByRegistry.set(row.registry_id, row.user_id);
+  for (const row of coManagerRows) {
+    if (accounts.has(row.user_id) && !newOwnerByRegistry.has(row.registry_id)) {
+      newOwnerByRegistry.set(row.registry_id, row.user_id);
+    }
   }
 
   const newOwnerIds = [...new Set(newOwnerByRegistry.values())];
