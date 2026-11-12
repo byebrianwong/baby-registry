@@ -478,6 +478,14 @@ function signupLine(event: EventEmailDetails): string {
   return `<p><strong>${escapeHtml(event.signup.title)}:</strong> ${what}</p>`;
 }
 
+function answersBlock(heading: string, answers: { label: string; value: string }[] | undefined): string {
+  if (!answers || answers.length === 0) return "";
+  const rows = answers
+    .map((a) => `<li><strong>${escapeHtml(a.label)}:</strong> ${escapeHtml(a.value)}</li>`)
+    .join("");
+  return `<p style="margin-bottom:0;">${escapeHtml(heading)}</p><ul style="margin:4px 0 16px;padding-left:20px;">${rows}</ul>`;
+}
+
 function signupList(claims: string[]): string {
   if (claims.length === 0) return "";
   return `<ul style="margin:4px 0 16px;padding-left:20px;">${claims.map((c) => `<li>${escapeHtml(c)}</li>`).join("")}</ul>`;
@@ -554,6 +562,8 @@ export function rsvpGuestConfirmationHtml(opts: {
   inExchange?: boolean;
   /** What the guest signed up for on the event's sign-up sheet. */
   signups?: string[];
+  /** The guest's answers to the host's RSVP questions. */
+  answers?: { label: string; value: string }[];
 }): string {
   const { event } = opts;
   const signups = opts.signups ?? [];
@@ -592,6 +602,7 @@ export function rsvpGuestConfirmationHtml(opts: {
     <p>Hi ${escapeHtml(opts.guestName)},</p>
     ${headline}
     ${signedUp}
+    ${answersBlock("Your answers:", opts.answers)}
     ${opts.status !== "no" ? eventFactsBlock(event) : ""}
     ${calendar}
     ${exchange}
@@ -619,6 +630,8 @@ export function rsvpHostNotificationHtml(opts: {
   signups?: string[];
   /** A meal train: guests sign up to help instead of coming to something. */
   mealTrain?: boolean;
+  /** The guest's answers to the RSVP questions. */
+  answers?: { label: string; value: string }[];
 }): string {
   const signups = opts.signups ?? [];
   const answer = opts.mealTrain
@@ -643,10 +656,98 @@ export function rsvpHostNotificationHtml(opts: {
     <p><strong>${escapeHtml(opts.guestName)}</strong> ${answer}${to} <em>${escapeHtml(opts.eventTitle)}</em>.</p>
     ${opts.newGuest ? `<p style="color:#555;">They RSVPed from the event link, so they're now on your guest list.</p>` : ""}
     ${signedUp}
+    ${answersBlock("Their answers:", opts.answers)}
     ${opts.note ? `<p>Their note: "${escapeHtml(opts.note)}"</p>` : ""}
     ${counts}
     <p style="margin: 16px 0;"><a href="${escapeHtml(opts.manageUrl)}" style="color:#004659;">See your guest list</a></p>
     <p style="color:#888;font-size:13px;">You're getting this because you asked to hear about RSVPs. You can turn these emails off on the event's Edit page.</p>
+  `;
+}
+
+// ── Updates to guests (#100) ─────────────────────────────────
+
+/** A message the host wrote to some of their guests. */
+export function guestMessageHtml(opts: {
+  guestName: string;
+  hostName: string;
+  eventTitle: string;
+  /** The host's own words, shown as they wrote them. */
+  body: string;
+  rsvpUrl: string;
+}): string {
+  return `
+    <div style="max-width:560px;margin:0 auto;">
+      <p>Hi ${escapeHtml(opts.guestName)},</p>
+      <p><strong>${escapeHtml(opts.hostName)}</strong> sent a message about <strong>${escapeHtml(opts.eventTitle)}</strong>:</p>
+      <div style="border-left:3px solid #004659;padding:4px 0 4px 14px;margin:16px 0;">${multiline(opts.body)}</div>
+      <p style="margin:16px 0;"><a href="${escapeHtml(opts.rsvpUrl)}" style="color:#004659;">See the invitation or change your RSVP</a></p>
+      <p style="color:#888;font-size:13px;">Reply to this email to reach ${escapeHtml(opts.hostName)}. You're getting this because you're on the guest list for ${escapeHtml(opts.eventTitle)} on Regibee.</p>
+    </div>
+  `;
+}
+
+/** Sent when the host changes the date, time or place. */
+export function eventChangedHtml(opts: {
+  guestName: string;
+  hostName: string;
+  event: EventEmailDetails;
+  /** What changed, as "Date: Saturday, March 14, 2026 → Sunday, March 15, 2026". */
+  changes: { label: string; before: string; after: string }[];
+  rsvpUrl: string;
+  calendarUrl?: string | null;
+}): string {
+  const { event } = opts;
+  const rows = opts.changes
+    .map(
+      (c) =>
+        `<li><strong>${escapeHtml(c.label)}:</strong> ${multiline(c.after)} <span style="color:#888;">(was ${escapeHtml(c.before.replace(/\n/g, ", "))})</span></li>`,
+    )
+    .join("");
+  const calendar = opts.calendarUrl
+    ? `<p><a href="${escapeHtml(opts.calendarUrl)}" style="color:#004659;">Add the new time to Google Calendar</a></p>`
+    : "";
+  return `
+    <div style="max-width:560px;margin:0 auto;">
+      <p>Hi ${escapeHtml(opts.guestName)},</p>
+      <p><strong>${escapeHtml(opts.hostName)}</strong> changed the details of <strong>${escapeHtml(event.title)}</strong>.</p>
+      <ul style="padding-left:20px;line-height:1.6;">${rows}</ul>
+      ${eventFactsBlock(event)}
+      ${calendar}
+      <p>If this changes your plans, <a href="${escapeHtml(opts.rsvpUrl)}" style="color:#004659;">change your RSVP</a> so the host knows.</p>
+      <p style="color:#888;font-size:13px;">Reply to this email to reach ${escapeHtml(opts.hostName)}. You're getting this because you're on the guest list for ${escapeHtml(event.title)} on Regibee.</p>
+    </div>
+  `;
+}
+
+/** The day before the event, to everyone who said they're going. */
+export function dayBeforeReminderHtml(opts: {
+  guestName: string;
+  hostName: string;
+  event: EventEmailDetails;
+  rsvpUrl: string;
+  calendarUrl?: string | null;
+  /** What the guest signed up to bring, as "Side (Mac and cheese)". */
+  signups?: string[];
+}): string {
+  const { event } = opts;
+  const signups = opts.signups ?? [];
+  const calendar = opts.calendarUrl
+    ? `<p><a href="${escapeHtml(opts.calendarUrl)}" style="color:#004659;">Add to Google Calendar</a></p>`
+    : "";
+  const bringing =
+    signups.length > 0
+      ? `<p style="margin-bottom:0;"><strong>You're bringing:</strong></p>${signupList(signups)}`
+      : "";
+  return `
+    <div style="max-width:560px;margin:0 auto;">
+      <p>Hi ${escapeHtml(opts.guestName)},</p>
+      <p><strong>${escapeHtml(event.title)}</strong> is tomorrow. See you there!</p>
+      ${eventFactsBlock(event)}
+      ${bringing}
+      ${calendar}
+      <p>Can't make it after all? <a href="${escapeHtml(opts.rsvpUrl)}" style="color:#004659;">Change your RSVP</a> so ${escapeHtml(opts.hostName)} knows.</p>
+      <p style="color:#888;font-size:13px;">You're getting this because you said you're going to ${escapeHtml(event.title)} on Regibee.</p>
+    </div>
   `;
 }
 

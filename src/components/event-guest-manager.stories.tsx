@@ -10,6 +10,7 @@ import {
   samplePotluckSheet,
 } from "@/lib/event-sample-data";
 import { claimsByGuest, describeClaim } from "@/lib/signups";
+import { defaultQuestions } from "@/lib/rsvp-questions";
 
 const ok = fn(async () => ({ error: null }));
 
@@ -122,5 +123,24 @@ export const WithSignups: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await expect(canvas.getByText("Side (Mac and cheese)")).toBeVisible();
+  },
+};
+
+/** A wedding's questions: meal counts for everyone going, and each guest's answers. */
+export const WithAnswers: Story = {
+  args: {
+    maxPartySize: 2,
+    questions: defaultQuestions(["plus_ones", "meal", "diet"]),
+    guests: sampleGuests.map((g) =>
+      g.id === "g1"
+        ? { ...g, answers: { meal: ["Chicken", "Vegetarian"], plus_ones: ["Galinda"], diet: "No shellfish" } }
+        : g.id === "g5"
+          ? { ...g, answers: { meal: ["Fish"] } }
+          : g,
+    ),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByText("Chicken: 1 · Fish: 1 · Vegetarian: 1")).toBeVisible();
   },
 };

@@ -15,6 +15,7 @@ import {
   registrySlugFromLink,
 } from "@/lib/events-server";
 import { hidesAddressUntilSignup, signupRowsForGuest, withAddressFor } from "@/lib/signups";
+import { storedAnswers, storedQuestions } from "@/lib/rsvp-questions";
 import {
   eventHasPassed,
   formatEventDate,
@@ -79,7 +80,7 @@ export default async function PublicEventPage({
       ? supabaseAdmin
           .from("event_guests")
           .select(
-            "id, name, rsvp_status, party_size, kids_count, rsvp_note, token, in_exchange, wishlist_url, gift_ideas, shipping_address, giftee_id",
+            "id, name, rsvp_status, party_size, kids_count, rsvp_note, token, in_exchange, wishlist_url, gift_ideas, shipping_address, giftee_id, answers",
           )
           .eq("event_id", event.id)
           .eq("token", token)
@@ -100,6 +101,7 @@ export default async function PublicEventPage({
     | "gift_ideas"
     | "shipping_address"
     | "giftee_id"
+    | "answers"
   > | null;
 
   // Who this guest drew, once names are drawn. Only their own link shows it.
@@ -179,6 +181,7 @@ export default async function PublicEventPage({
                     wishlistUrl: guest.wishlist_url,
                     giftIdeas: guest.gift_ideas,
                     shippingAddress: guest.shipping_address,
+                    answers: storedAnswers(guest.answers),
                   }
                 : null
             }
@@ -189,6 +192,7 @@ export default async function PublicEventPage({
             passed={eventHasPassed(event, yesterday)}
             signup={signupSheet ? { title: signupSheet.sheet.title, rows: signupRows } : null}
             mealTrain={mealTrain}
+            questions={storedQuestions(event.rsvp_questions)}
           />
         </EventInvitation>
       </main>

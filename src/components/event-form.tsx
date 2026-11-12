@@ -23,6 +23,9 @@ import {
   type GiftExchange,
 } from "@/lib/events";
 import { hidesAddressUntilSignup } from "@/lib/signups";
+import { RsvpQuestionsEditor } from "@/components/rsvp-questions-editor";
+import { defaultQuestions, storedQuestions, type RsvpQuestion } from "@/lib/rsvp-questions";
+import { changedParts, changeSummary } from "@/lib/event-updates";
 import { cx } from "@/lib/utils/cx";
 
 type Values = Pick<
@@ -45,6 +48,8 @@ type Values = Pick<
   | "registry_id"
   | "gift_note"
   | "ask_kids"
+  | "rsvp_questions"
+  | "remind_day_before"
 >;
 
 /** A registry on the form's list of links. */
@@ -121,6 +126,14 @@ export function EventForm({
   const [emailHost, setEmailHost] = useState(initial.email_host_on_rsvp ?? true);
   const [askKids, setAskKids] = useState(initial.ask_kids ?? false);
   const [giftNote, setGiftNote] = useState(initial.gift_note ?? "");
+  // A new event starts with its occasion's questions; an existing one keeps its own.
+  const [questions, setQuestions] = useState<RsvpQuestion[]>(() =>
+    eventId
+      ? storedQuestions(initial.rsvp_questions)
+      : defaultQuestions(EVENT_TYPE_OPTIONS.find((o) => o.value === (initial.event_type ?? "baby_shower"))?.defaults?.questions),
+  );
+  const [remindDayBefore, setRemindDayBefore] = useState(initial.remind_day_before ?? true);
+  const [notifyGuests, setNotifyGuests] = useState(true);
 
   // Linked registries. "Plan an event" on a registry's page starts with that one.
   const [linked, setLinked] = useState<FormRegistry[]>(() => {
@@ -140,7 +153,7 @@ export function EventForm({
   const drawn = Boolean(exchange?.drawn_at);
   // Choosing an occasion on a new event sets its defaults, but never undoes
   // a choice the host made themselves.
-  const [touched, setTouched] = useState({ exchange: false, askKids: false });
+  const [touched, setTouched] = useState({ exchange: false, askKids: false, questions: false });
 
   // The picture: the saved one, or a new file waiting to upload on save.
   const [imageUrl, setImageUrl] = useState<string | null>(initial.image_url ?? null);
@@ -184,7 +197,30 @@ export function EventForm({
     const defaults = EVENT_TYPE_OPTIONS.find((o) => o.value === type)?.defaults ?? {};
     if (!touched.exchange) setExchangeOn(Boolean(defaults.exchange));
     if (!touched.askKids) setAskKids(Boolean(defaults.askKids));
+    if (!touched.questions) setQuestions(defaultQuestions(defaults.questions));
   };
+
+  // On an existing event, a new date, time or place can email guests.
+  const changes = editing
+    ? changedParts(
+        {
+          event_date: initial.event_date ?? null,
+          start_time: initial.start_time ?? null,
+          end_time: initial.end_time ?? null,
+          time_zone: initial.time_zone ?? null,
+          location_name: initial.location_name ?? null,
+          location_address: initial.location_address ?? null,
+        },
+        {
+          event_date: eventDate || null,
+          start_time: startTime || null,
+          end_time: endTime || null,
+          time_zone: timeZone || null,
+          location_name: locationName || null,
+          location_address: locationAddress || null,
+        },
+      )
+    : [];
 
   const addPastedLink = async () => {
     const link = pasted.trim();
@@ -230,6 +266,9 @@ export function EventForm({
     data.set("openRsvp", String(openRsvp));
     data.set("emailHostOnRsvp", String(emailHost));
     data.set("askKids", String(askKids));
+    data.set("rsvpQuestions", JSON.stringify(questions));
+    data.set("remindDayBefore", String(remindDayBefore));
+    data.set("notifyGuests", String(notifyGuests && changes.length > 0));
     data.set("giftNote", giftNote);
     data.set("registryLinks", JSON.stringify(linked.map((r) => (r.link ? { link: r.link } : { id: r.id }))));
     data.set("exchangeEnabled", String(exchangeOn));
@@ -482,6 +521,19 @@ export function EventForm({
           onChange={setEmailHost}
           label={<span className="font-normal">Email me when someone RSVPs</span>}
         />
+        <Checkbox
+          isSelected={remindDayBefore}
+          onChange={setRemindDayBefore}
+          label={<span className="font-normal">Email everyone going a reminder the day before</span>}
+          hint="With the time, the place and anything they signed up to bring."
+        />
+        <RsvpQuestionsEditor
+          questions={questions}
+          onChange={(next) => {
+            setQuestions(next);
+            setTouched((t) => ({ ...t, questions: true }));
+          }}
+        />
       </Section>
 
       <Section title="Gifts" description="What guests see about gifts, under the details on the invitation.">
@@ -641,6 +693,17 @@ export function EventForm({
           </>
         )}
       </Section>
+
+      {changes.length > 0 && (
+        <div className="rounded-xl bg-brand-50 p-4">
+          <Checkbox
+            isSelected={notifyGuests}
+            onChange={setNotifyGuests}
+            label={<span className="font-medium">Email guests about the {changeSummary(changes).replace(/^New /, "new ")}</span>}
+            hint="Everyone who said yes or maybe, and everyone invited who hasn't answered, gets the new details. Untick this for a small fix, like a typo."
+          />
+        </div>
+      )}
 
       {error && (
         <p role="alert" className="text-sm text-error-primary">
