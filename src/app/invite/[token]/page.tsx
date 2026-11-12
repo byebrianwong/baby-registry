@@ -2,8 +2,8 @@ import Link from "next/link";
 import { AlertCircle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { createClient } from "@/utils/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase-admin";
+import { getViewer } from "@/lib/viewer";
 import { AcceptInviteButton } from "./accept-invite-button";
 import { Logo } from "@/components/logo";
 
@@ -13,7 +13,6 @@ export default async function InvitePage({
   params: Promise<{ token: string }>;
 }) {
   const { token } = await params;
-  const supabase = await createClient();
 
   // Fetch invite details using admin client (no RLS)
   const { data: invite } = await supabaseAdmin
@@ -91,10 +90,9 @@ export default async function InvitePage({
   const registryTitle = registry?.title || "a registry";
   const ownerName = registry?.parent_names || "Someone";
 
-  // Check if user is logged in
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // Guests who reserved a gift have an anonymous session. That isn't an
+  // account, so they count as signed out here and get the sign-in links.
+  const user = await getViewer();
 
   if (!user) {
     // Not logged in — show invite info with login/signup links
@@ -139,12 +137,7 @@ export default async function InvitePage({
     <div className="flex min-h-screen items-center justify-center px-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          {/* Guests have anonymous sessions and no registries, so their logo
-              goes to the home page. */}
-          <Link
-            href={user.is_anonymous ? "/" : "/dashboard"}
-            className="mx-auto flex items-center gap-2 font-semibold mb-4"
-          >
+          <Link href="/dashboard" className="mx-auto flex items-center gap-2 font-semibold mb-4">
             <Logo size="lg" />
           </Link>
           <CardTitle className="text-2xl">You&apos;re Invited!</CardTitle>
