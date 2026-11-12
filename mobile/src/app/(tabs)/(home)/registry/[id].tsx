@@ -14,7 +14,7 @@ import {
   View,
 } from "react-native";
 
-import { formatReservedUntil, isOpenReservation } from "@shared/gifts";
+import { formatReservedUntil, isHeldUntilBought, isOpenReservation } from "@shared/gifts";
 
 import { Icon } from "@/components/icon";
 import { ItemRow, type ItemActions } from "@/components/item-row";
@@ -433,7 +433,9 @@ function GiftRow({ gift, onPress }: { gift: Gift; onPress: () => void }) {
     gift.kind === "fund"
       ? `gave${gift.amount ? ` ${formatPrice(gift.amount)}` : ""} to ${gift.for_title}`
       : isOpenReservation(gift)
-        ? `reserved ${item} until ${formatReservedUntil(gift.reserved_until!, "short")}`
+        ? isHeldUntilBought(gift)
+          ? `reserved ${item}`
+          : `reserved ${item} until ${formatReservedUntil(gift.reserved_until!, "short")}`
         : `bought ${item}`;
   return (
     <Pressable

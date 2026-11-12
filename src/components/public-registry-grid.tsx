@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import { Search, Store } from "lucide-react";
+import Link from "next/link";
+import { Search, Store, Users } from "lucide-react";
 import { TightSelect } from "@/components/ui/tight-select";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -18,6 +19,9 @@ import { ReservationBanner, type ReservationBannerEntry } from "@/components/res
 import { formatReservedUntil, type MyItemGift } from "@/lib/gifts";
 import { CoverItemDialog, type CoverActions } from "@/components/cover-item-dialog";
 import { ContributeFundDialog } from "@/components/contribute-fund-dialog";
+import { StartGroupGiftDialog } from "@/components/start-group-gift-dialog";
+import { buttonVariants } from "@/components/ui/button";
+import { groupGiftPath } from "@/lib/group-gifts";
 import { CategoryNav, type CategoryNavItem } from "@/components/category-nav";
 import { ItemImage } from "@/components/item-image";
 import { getCategorySectionId } from "@/lib/category-section-id";
@@ -84,6 +88,22 @@ interface Props {
   actions?: GiftActions;
   /** The demo registry: the cover dialog's pay buttons don't open anything. */
   demo?: boolean;
+  /** Group gifts (src/lib/group-gifts.ts). Left out for the list's own managers. */
+  groupGifts?: GroupGiftOptions;
+}
+
+/** What the list's page needs for group gifts. */
+export interface GroupGiftOptions {
+  /** The list this page shows. */
+  registryId: string;
+  /** Starting one needs an account. Signed-out visitors are asked to sign in. */
+  signedIn: boolean;
+  /** Where signing in comes back to. */
+  returnTo: string;
+  /** The viewer's own group gifts, by item id. */
+  mine: Record<string, { token: string; organizer: boolean }>;
+  /** The event the viewer came from, whose guests will see a new group gift. */
+  eventTitle?: string | null;
 }
 
 /** Stand-ins for the gift dialogs' server actions, for the demo. */
@@ -132,6 +152,7 @@ export function PublicRegistryGrid({
   showStoreRegistries = false,
   actions,
   demo = false,
+  groupGifts,
 }: Props) {
   const [search, setSearch] = useState("");
   const [priceBucket, setPriceBucket] = useState("any");
@@ -433,6 +454,7 @@ export function PublicRegistryGrid({
                     showStoreRegistries={showStoreRegistries}
                     actions={actions}
                     demo={demo}
+                    groupGifts={groupGifts}
                   />
                 ))}
               </div>
@@ -464,6 +486,7 @@ export function PublicRegistryGrid({
                   showStoreRegistries={showStoreRegistries}
                   actions={actions}
                   demo={demo}
+                  groupGifts={groupGifts}
                 />
               ))}
             </div>
@@ -491,6 +514,7 @@ function PublicItemCard({
   showStoreRegistries,
   actions,
   demo,
+  groupGifts,
 }: {
   item: RegistryItem;
   categoryName: string | null;
@@ -508,6 +532,7 @@ function PublicItemCard({
   showStoreRegistries: boolean;
   actions?: GiftActions;
   demo: boolean;
+  groupGifts?: GroupGiftOptions;
 }) {
   const storeLink = classifyStoreLink(item.external_url);
   const store = storeLink?.store;
@@ -527,7 +552,10 @@ function PublicItemCard({
     ? item.quantity_needed - coveredQty
     : remaining;
   const isFullyCovered = item.is_parent_purchased && coveredQty >= item.quantity_needed;
-  const looksDone = (isFulfilled && !item.is_parent_purchased && !myReservation) || isFullyCovered;
+  const myGroupGift = item.is_parent_purchased ? undefined : groupGifts?.mine[item.id];
+  const looksDone = (isFulfilled && !item.is_parent_purchased && !myReservation && !myGroupGift) || isFullyCovered;
+  // Anyone but the list's managers can start a group gift on an open item.
+  const canStartGroupGift = Boolean(groupGifts) && !item.is_parent_purchased && remaining > 0 && !myItemGift && !myGroupGift;
 
   return (
     <Card
@@ -590,6 +618,8 @@ function PublicItemCard({
           <div className="flex w-full min-w-0 flex-wrap gap-2.5 empty:hidden">
             {item.is_parent_purchased ? (
               <Tag variant="parent-purchased">{selfPurchasedLabel}</Tag>
+            ) : myGroupGift ? (
+              <Tag variant="reserved">{myGroupGift.organizer ? "Your group gift" : "You're chipping in"}</Tag>
             ) : myReservation ? (
               <Tag variant="reserved">
                 {/* One text node: the tag is a flex box, which would drop the space between pieces. */}
@@ -618,9 +648,16 @@ function PublicItemCard({
 
         {(item.is_parent_purchased
           ? availableToGift > 0 || !!myItemGift || openStep === "ended"
-          : !isFulfilled || !!myItemGift || openStep === "ended") && (
+          : !isFulfilled || !!myItemGift || !!myGroupGift || openStep === "ended") && (
           <div className="flex flex-wrap items-center justify-end gap-2">
-            {item.is_parent_purchased ? (
+            {myGroupGift ? (
+              <Link href={groupGiftPath(myGroupGift.token)} className={buttonVariants({ variant: "outline" })}>
+                <span className="inline-flex items-center gap-1.5">
+                  <Users className="h-4 w-4 shrink-0" aria-hidden="true" />
+                  Open group gift
+                </span>
+              </Link>
+            ) : item.is_parent_purchased ? (
               // Pay first, then say so: the gift is saved as given at once.
               <CoverItemDialog
                 item={item}
@@ -636,16 +673,29 @@ function PublicItemCard({
             ) : (
               // One way in: the dialog takes the guest through reserving,
               // buying and confirming, with the store link in the Buy step.
-              <ReserveItemDialog
-                item={item}
-                parentName={parentName}
-                registryStoreName={registryStoreName}
-                storeName={store?.name}
-                gift={myItemGift}
-                shippingAddress={shippingAddress}
-                initialStep={openStep}
-                actions={actions?.reserve?.(item.id)}
-              />
+              // Group gift sits beside it, for going in on it together.
+              <>
+                {canStartGroupGift && groupGifts && (
+                  <StartGroupGiftDialog
+                    registryId={groupGifts.registryId}
+                    item={item}
+                    recipientName={parentName}
+                    signedIn={groupGifts.signedIn}
+                    returnTo={groupGifts.returnTo}
+                    eventTitle={groupGifts.eventTitle}
+                  />
+                )}
+                <ReserveItemDialog
+                  item={item}
+                  parentName={parentName}
+                  registryStoreName={registryStoreName}
+                  storeName={store?.name}
+                  gift={myItemGift}
+                  shippingAddress={shippingAddress}
+                  initialStep={openStep}
+                  actions={actions?.reserve?.(item.id)}
+                />
+              </>
             )}
           </div>
         )}

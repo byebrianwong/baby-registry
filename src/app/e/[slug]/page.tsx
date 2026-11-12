@@ -7,6 +7,8 @@ import { EventInvitation } from "@/components/event-invitation";
 import { RsvpForm } from "@/components/rsvp-form";
 import { PoweredByFooter } from "@/components/site-footer";
 import { SecretSantaCard } from "@/components/secret-santa-card";
+import { EventGroupGifts } from "@/components/event-group-gifts";
+import { groupGiftsForEvent, listsOfViewer } from "@/lib/group-gifts-server";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import {
   getEventRegistries,
@@ -81,7 +83,7 @@ export default async function PublicEventPage({
       ? supabaseAdmin
           .from("event_guests")
           .select(
-            "id, name, rsvp_status, party_size, kids_count, rsvp_note, token, in_exchange, wishlist_url, gift_ideas, shipping_address, giftee_id, answers",
+            "id, name, email, rsvp_status, party_size, kids_count, rsvp_note, token, in_exchange, wishlist_url, gift_ideas, shipping_address, giftee_id, answers",
           )
           .eq("event_id", event.id)
           .eq("token", token)
@@ -92,6 +94,7 @@ export default async function PublicEventPage({
     EventGuest,
     | "id"
     | "name"
+    | "email"
     | "rsvp_status"
     | "party_size"
     | "kids_count"
@@ -104,6 +107,20 @@ export default async function PublicEventPage({
     | "giftee_id"
     | "answers"
   > | null;
+
+  // Group gifts started from this event, on a guest's own link only. Gifts
+  // for lists the guest manages stay hidden, so their surprise holds.
+  const groupGifts = guest
+    ? await listsOfViewer(
+        registries.map((r) => r.id),
+        { viewerId: viewer?.id ?? null, guestEmail: guest.email },
+      )
+        .then((own) => groupGiftsForEvent(event.id, { hideRegistryIds: own }))
+        .catch((err) => {
+          console.error("[event] Failed to load group gifts:", err);
+          return [];
+        })
+    : [];
 
   // Who this guest drew, once names are drawn. Only their own link shows it.
   const giftee = exchange?.drawn_at && guest ? await getGifteeFor(event.id, guest.giftee_id) : null;
@@ -195,6 +212,7 @@ export default async function PublicEventPage({
             mealTrain={mealTrain}
             questions={storedQuestions(event.rsvp_questions)}
           />
+          <EventGroupGifts gifts={groupGifts} />
         </EventInvitation>
       </main>
 
