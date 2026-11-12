@@ -9,7 +9,11 @@ import { Input } from "@/components/base/input/input";
 import { Checkbox } from "@/components/base/checkbox/checkbox";
 import { CopyLinkButton } from "@/components/copy-link-button";
 import { FollowLists } from "@/components/follow-lists";
+import { GiftProfileForm, type SaveGiftProfile } from "@/components/gift-profile-form";
+import { BirthdayEmailsSetting } from "@/components/birthday-emails-setting";
 import { saveProfile, setRegistryListed } from "@/lib/actions/profile";
+import { saveGiftProfile } from "@/lib/actions/gift-profile";
+import type { GiftProfile } from "@/lib/gift-profile";
 import { occasionLabel } from "@/lib/registry-copy";
 import { profilePath } from "@/lib/profile-link";
 import type { FollowPerson, PersonSummary } from "@/lib/follows";
@@ -76,6 +80,10 @@ export function AccountSettings({
   listAction = setRegistryListed,
   follows,
   followActions,
+  giftProfile,
+  giftProfileAction = saveGiftProfile,
+  birthdayEmails,
+  birthdayEmailsAction,
   basePath = "",
 }: {
   profile: {
@@ -97,8 +105,14 @@ export function AccountSettings({
   /** Stand-ins for the follow lists' server actions. The demo passes them. */
   followActions?: Pick<
     React.ComponentProps<typeof FollowLists>,
-    "approveAction" | "removeAction" | "cancelAction" | "blockAction" | "unblockAction"
+    "approveAction" | "removeAction" | "cancelAction" | "blockAction" | "unblockAction" | "followAction"
   >;
+  /** The account's gift profile. Without it, the Gift profile card is left out. */
+  giftProfile?: GiftProfile;
+  giftProfileAction?: SaveGiftProfile;
+  /** Whether birthday reminder emails are on. Without it, the switch is left out. */
+  birthdayEmails?: boolean;
+  birthdayEmailsAction?: React.ComponentProps<typeof BirthdayEmailsSetting>["action"];
   /** Put in front of every link. The demo passes "/demo". */
   basePath?: string;
 }) {
@@ -210,6 +224,21 @@ export function AccountSettings({
           </CardContent>
         </Card>
 
+        {giftProfile && (
+          <Card id="gift-profile" className="scroll-mt-20">
+            <CardHeader>
+              <CardTitle>Gift profile</CardTitle>
+              <CardDescription>
+                Help people pick gifts you&apos;ll love. Sizes, likes and the rest show on your wish lists
+                and your profile, so anyone with those links sees them.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <GiftProfileForm initial={giftProfile} onSave={giftProfileAction} />
+            </CardContent>
+          </Card>
+        )}
+
         {/* Requests come first: the dashboard notice links straight here. */}
         {follows && (
           <div id="follows" className="scroll-mt-20 space-y-6">
@@ -222,6 +251,17 @@ export function AccountSettings({
               {...followActions}
             />
           </div>
+        )}
+
+        {birthdayEmails !== undefined && (
+          <Card id="birthday-emails" className="scroll-mt-20">
+            <CardHeader>
+              <CardTitle>Birthday emails</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <BirthdayEmailsSetting initial={birthdayEmails} action={birthdayEmailsAction} />
+            </CardContent>
+          </Card>
         )}
 
         <Card>

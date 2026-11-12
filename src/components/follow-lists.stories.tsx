@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
+import { fireEvent } from "storybook/test";
 import { FollowLists } from "./follow-lists";
 
 const mockAction = async () => {
@@ -16,6 +17,7 @@ const meta: Meta<typeof FollowLists> = {
     cancelAction: mockAction,
     blockAction: mockAction,
     unblockAction: mockAction,
+    followAction: mockAction,
   },
 };
 export default meta;
@@ -27,7 +29,12 @@ export const WithEverything: Story = {
       { public_id: "r4d8w2nb6h", full_name: "Grandma Dorothy", status: "pending" },
       { public_id: "s6g2t8vy3j", full_name: null, status: "pending" },
     ],
-    followers: [{ public_id: "a3f9c2xz7e", full_name: "Alex Kim", status: "approved" }],
+    // Alex follows back with one tap. Jordan and the account follow each
+    // other, so they're friends.
+    followers: [
+      { public_id: "a3f9c2xz7e", full_name: "Alex Kim", status: "approved" },
+      { public_id: "h5n7b4ce9w", full_name: "Jordan Lee", status: "approved" },
+    ],
     following: [
       { public_id: "h5n7b4ce9w", full_name: "Jordan Lee", status: "approved" },
       { public_id: "u2q6r8kd3m", full_name: "Tin Man", status: "pending" },
@@ -36,3 +43,18 @@ export const WithEverything: Story = {
   },
 };
 
+
+// Right after approving a request, on a phone: the request stays put with a
+// Follow back button.
+export const AfterApproving: Story = {
+  args: {
+    requests: [{ public_id: "r4d8w2nb6h", full_name: "Grandma Dorothy", status: "pending" }],
+    followers: [],
+    following: [],
+  },
+  globals: { viewport: { value: "mobile1" } },
+  play: async ({ canvas }) => {
+    fireEvent.click(canvas.getByRole("button", { name: "Approve" }));
+    await canvas.findByRole("button", { name: "Follow back Grandma Dorothy" });
+  },
+};

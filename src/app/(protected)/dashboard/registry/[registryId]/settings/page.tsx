@@ -38,6 +38,9 @@ import { uploadRegistryPhoto } from "@/lib/upload-registry-photo";
 import { ReservationPrivacyCard } from "@/components/reservation-privacy-card";
 import { RegistryGroupsCard } from "@/components/registry-groups-card";
 import { readReservationPrivacy } from "@/lib/gifts";
+import { GiftProfileForm } from "@/components/gift-profile-form";
+import { saveListGiftProfile } from "@/lib/actions/gift-profile";
+import { parseGiftProfile } from "@/lib/gift-profile";
 
 interface Manager {
   id: string;
@@ -75,7 +78,14 @@ export default function RegistrySettingsPage() {
     owner_id: string;
     registry_type: RegistryType;
     event_type: PersonalEventType | null;
-    settings: { payment_methods?: PaymentMethods; shipping_address?: string; zip_code?: string; tax_enabled?: boolean };
+    settings: {
+      payment_methods?: PaymentMethods;
+      shipping_address?: string;
+      zip_code?: string;
+      tax_enabled?: boolean;
+      for_child?: boolean;
+      gift_profile?: unknown;
+    };
   } | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -521,8 +531,38 @@ export default function RegistrySettingsPage() {
             isOwner={isOwner}
             isPersonal={registry.registry_type === "personal"}
             privacy={readReservationPrivacy(registry.settings)}
+            onSaved={({ forChild }) =>
+              setRegistry((current) =>
+                current ? { ...current, settings: { ...current.settings, for_child: forChild } } : current,
+              )
+            }
           />
           <Separator className="my-8" />
+          {/* A list kept for a child has its own gift profile. Other lists
+              show their owner's, from the Account page. */}
+          {hasProfile && registry.registry_type === "personal" && registry.settings?.for_child === true && (
+            <>
+              <Card id="gift-profile" className="scroll-mt-20">
+                <CardHeader>
+                  <CardTitle>
+                    About {registry.honoree_names?.trim() || "your child"}
+                  </CardTitle>
+                  <CardDescription>
+                    Help people pick gifts. Sizes, likes and the rest show on this list, so anyone with its
+                    link sees them.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <GiftProfileForm
+                    initial={parseGiftProfile(registry.settings.gift_profile)}
+                    onSave={(profile) => saveListGiftProfile(registryId, profile)}
+                    child={{ name: registry.honoree_names }}
+                  />
+                </CardContent>
+              </Card>
+              <Separator className="my-8" />
+            </>
+          )}
           {isOwner && hasProfile && (
             <>
               <RegistryGroupsCard registryId={registryId} />

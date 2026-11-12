@@ -85,3 +85,29 @@ export const OwnProfileNothingListed: Story = {
   args: { registries: [], isOwnProfile: true },
 };
 
+
+// A friend's profile: they follow each other, so the button says so, and the
+// gift profile shows the birthday. Anyone else sees it without the birthday.
+export const FriendWithGiftProfile: Story = {
+  args: {
+    giftProfile: {
+      birthday: { month: 3, day: 3 },
+      sizes: { tops: "M", shoes: "8.5" },
+      colors: "Soft pink, silver",
+      likes: ["Bubbles", "Tea", "Gardening"],
+      skip: ["Candles"],
+    },
+    showBirthday: true,
+    followAction: (
+      <FollowButton
+        publicId="k7m2p9qx4t"
+        name="Remi & Max"
+        state="approved"
+        followsYou
+        returnTo="/u/remi-max-k7m2p9qx4t"
+        cancelAction={mockFollow}
+      />
+    ),
+  },
+  globals: { viewport: { value: "mobile1" } },
+};

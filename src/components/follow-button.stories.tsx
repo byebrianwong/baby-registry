@@ -42,3 +42,26 @@ export const AllStates: Story = {
     </div>
   ),
 };
+
+// Someone who follows the viewer: "Follow back" instead of "Follow", and
+// "friends" once both follows are approved.
+export const FollowsYou: Story = {
+  render: () => (
+    <div className="grid grid-cols-2 gap-x-8 gap-y-10">
+      {(["none", "approved"] as const).map((state) => (
+        <div key={state} className="flex flex-col items-center gap-2">
+          <span className="text-xs font-mono text-tertiary">{state}</span>
+          <FollowButton
+            publicId="k7m2p9qx4t"
+            name="Remi & Max"
+            state={state}
+            followsYou
+            returnTo="/u/remi-max-k7m2p9qx4t"
+            requestAction={mockAction}
+            cancelAction={mockAction}
+          />
+        </div>
+      ))}
+    </div>
+  ),
+};

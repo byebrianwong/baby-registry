@@ -64,20 +64,83 @@ export function useFollow<State extends FollowButtonState>({
   return { state, busy, error, toggle };
 }
 
-/** Follow, Requested or Following, for a signed-in viewer. */
+/**
+ * Follow, Requested or Following, for a signed-in viewer. "Follow back" when
+ * the person already follows the viewer.
+ */
 export function FollowToggle({
   state,
   busy,
   onClick,
+  followsYou = false,
 }: {
   state: FollowToggleState;
   busy: boolean;
   onClick: () => void;
+  followsYou?: boolean;
 }) {
   return (
     <Button size="sm" variant={state === "none" ? "default" : "outline"} onClick={onClick} disabled={busy}>
-      {state === "none" ? "Follow" : state === "pending" ? "Requested" : "Following"}
+      {state === "none" ? (followsYou ? "Follow back" : "Follow") : state === "pending" ? "Requested" : "Following"}
     </Button>
+  );
+}
+
+/**
+ * One tap to follow back someone who follows you. Two people who follow each
+ * other are friends, so once both follows are approved this says "Friends".
+ * Following back is a request like any other: the other person approves it.
+ */
+export function FollowBackButton({
+  publicId,
+  name,
+  status: initialStatus,
+  requestAction = requestFollow,
+  onFollowed,
+}: {
+  publicId: string;
+  name: string;
+  /** How the viewer follows this person now: null when they don't. */
+  status: "pending" | "approved" | null;
+  requestAction?: typeof requestFollow;
+  /** Called once the request is sent, so a list can show it too. */
+  onFollowed?: () => void;
+}) {
+  const [status, setStatus] = useState(initialStatus);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+
+  if (status === "approved") {
+    return (
+      <span className="inline-flex items-center self-center rounded-full bg-brand-primary px-2.5 py-0.5 text-xs font-medium text-brand-secondary">
+        Friends
+      </span>
+    );
+  }
+  if (status === "pending") {
+    return <span className="self-center text-sm text-tertiary">Requested</span>;
+  }
+
+  const followBack = async () => {
+    setBusy(true);
+    setError("");
+    const result = await requestAction(publicId);
+    if (result?.error) {
+      setError(result.error);
+    } else {
+      setStatus("pending");
+      onFollowed?.();
+    }
+    setBusy(false);
+  };
+
+  return (
+    <span className="inline-flex flex-col items-start gap-1">
+      <Button size="sm" onClick={followBack} disabled={busy}>
+        Follow back<span className="sr-only"> {name}</span>
+      </Button>
+      {error && <span className="text-xs text-error-primary">{error}</span>}
+    </span>
   );
 }
 
@@ -115,6 +178,7 @@ export function FollowButton({
   returnTo,
   requestAction,
   cancelAction,
+  followsYou = false,
   basePath = "",
 }: {
   /** The id from the person's profile link. */
@@ -126,6 +190,8 @@ export function FollowButton({
   returnTo: string;
   requestAction?: typeof requestFollow;
   cancelAction?: typeof cancelFollow;
+  /** The person follows the viewer, with the viewer's approval. */
+  followsYou?: boolean;
   /** Put in front of every link. The demo passes "/demo". */
   basePath?: string;
 }) {
@@ -165,14 +231,16 @@ export function FollowButton({
   }
 
   const hint = {
-    none: `${name} approves every follower.`,
+    none: followsYou ? `${name} follows you. They approve every follower.` : `${name} approves every follower.`,
     pending: `Waiting for ${name} to approve.`,
-    approved: `You can see ${name}'s private registries.`,
+    approved: followsYou
+      ? `You follow each other, so you're friends.`
+      : `You can see ${name}'s private registries.`,
   }[state];
 
   return (
     <div className="flex flex-col items-center gap-1">
-      <FollowToggle state={state} busy={busy} onClick={toggle} />
+      <FollowToggle state={state} busy={busy} onClick={toggle} followsYou={followsYou} />
       <p className="text-xs text-tertiary">
         {hint}
         {state === "pending" && (

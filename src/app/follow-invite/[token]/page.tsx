@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { FollowInviteCard, type FollowInviteView } from "@/components/follow-invite-card";
 import { getFollowInvite } from "@/lib/follow-invites";
+import { getFollowStatus } from "@/lib/follows";
 import { getViewer } from "@/lib/viewer";
 
 export const metadata: Metadata = {
@@ -27,12 +28,18 @@ export default async function FollowInvitePage({
   else if (viewer.id === invite.inviterId) view = "own";
   else view = "open";
 
+  // After saying yes, the page offers to follow the inviter back, unless the
+  // viewer already does.
+  const followingInviter =
+    view === "open" && viewer && invite ? await getFollowStatus(viewer.id, invite.inviterId) : null;
+
   return (
     <FollowInviteCard
       view={view}
       inviter={invite?.inviter ?? null}
       token={token}
       logoHref={viewer ? "/dashboard" : "/"}
+      followingInviter={followingInviter}
     />
   );
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { AccountSettings } from "@/components/account-settings";
-import { DEMO_FOLLOWS, DEMO_ME, demoOk } from "@/lib/demo-people";
+import { DEMO_FOLLOWS, DEMO_GIFT_PROFILE, DEMO_ME, demoOk } from "@/lib/demo-people";
 import { demoOwnRegistries } from "@/lib/demo-registries";
 import { useDemoToday } from "../../demo-today";
 import { DemoOwnerShell } from "../../_components/demo-shell";
@@ -38,7 +38,12 @@ export default function DemoAccountPage() {
           cancelAction: demoOk,
           blockAction: demoOk,
           unblockAction: demoOk,
+          followAction: demoOk,
         }}
+        giftProfile={DEMO_GIFT_PROFILE}
+        giftProfileAction={demoOk}
+        birthdayEmails
+        birthdayEmailsAction={demoOk}
         basePath="/demo"
       />
     </DemoOwnerShell>

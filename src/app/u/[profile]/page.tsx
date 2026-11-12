@@ -6,7 +6,8 @@ import { Nav } from "@/components/nav";
 import { FollowButton } from "@/components/follow-button";
 import { PublicProfile } from "@/components/public-profile";
 import { supabaseAdmin } from "@/lib/supabase-admin";
-import { getViewer, getViewerRelation } from "@/lib/viewer";
+import { getViewer, getViewerRelation, seesBirthday } from "@/lib/viewer";
+import { parseGiftProfile, withoutBirthday } from "@/lib/gift-profile";
 import { sharedRegistrySlugsFrom } from "@/lib/groups-server";
 import {
   LISTED_REGISTRY_COLUMNS,
@@ -88,7 +89,8 @@ export default async function ProfilePage({
   }
 
   // Someone this person blocked doesn't see their profile while signed in.
-  const { state: followState, isOwner: isOwnProfile, hidden } = await getViewerRelation(profile.id);
+  const relation = await getViewerRelation(profile.id);
+  const { state: followState, isOwner: isOwnProfile, hidden } = relation;
   if (hidden) {
     notFound();
   }
@@ -98,7 +100,7 @@ export default async function ProfilePage({
   // email). Someone who blocked the owner doesn't get the group's lists.
   const seesAllPrivate = isOwnProfile || followState === "approved";
   const viewer = seesAllPrivate || followState === "blocked" ? null : await getViewer();
-  const [{ data: listed }, sharedSlugs] = await Promise.all([
+  const [{ data: listed }, sharedSlugs, giftRow] = await Promise.all([
     supabaseAdmin
       .from("registries")
       .select(LISTED_REGISTRY_COLUMNS)
@@ -107,7 +109,14 @@ export default async function ProfilePage({
     viewer
       ? sharedRegistrySlugsFrom(profile.id, { id: viewer.id, email: viewer.email_confirmed_at ? viewer.email : null })
       : Promise.resolve(new Set<string>()),
+    // Separate from getProfile, so the page still works before
+    // 20261112062844_gift_profiles_and_birthday_reminders.sql has run.
+    supabaseAdmin.from("profiles").select("gift_profile").eq("id", profile.id).maybeSingle(),
   ]);
+  // The birthday never leaves the server for anyone else.
+  const showBirthday = seesBirthday(relation);
+  const fullGiftProfile = parseGiftProfile(giftRow.error ? null : giftRow.data?.gift_profile);
+  const giftProfile = showBirthday ? fullGiftProfile : withoutBirthday(fullGiftProfile);
   const registries = ((listed || []) as ListedRegistry[]).filter(
     (registry) => seesAllPrivate || registry.is_public || sharedSlugs.has(registry.slug),
   );
@@ -121,11 +130,14 @@ export default async function ProfilePage({
           registries={registries}
           today={new Date().toISOString().slice(0, 10)}
           isOwnProfile={isOwnProfile}
+          giftProfile={giftProfile}
+          showBirthday={showBirthday}
           followAction={
             <FollowButton
               publicId={profile.public_id}
               name={displayName(profile)}
               state={followState}
+              followsYou={relation.followsYou}
               returnTo={canonicalPath}
             />
           }

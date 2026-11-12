@@ -4,11 +4,13 @@ import { useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { FollowBackButton } from "@/components/follow-button";
 import {
   approveFollower,
   blockUser,
   cancelFollow,
   removeFollower,
+  requestFollow,
   unblockUser,
 } from "@/lib/actions/follows";
 import type { FollowPerson, PersonSummary } from "@/lib/follows";
@@ -18,7 +20,9 @@ function PersonLabel({ person, basePath }: { person: PersonSummary; basePath: st
   return (
     <Link
       href={`${basePath}${profilePath(person)}`}
-      className="min-w-0 flex-1 break-words text-sm font-medium text-primary hover:underline"
+      // At least 8rem, so on a narrow screen the buttons wrap under the name
+      // instead of squeezing it.
+      className="min-w-0 grow basis-32 break-words text-sm font-medium text-primary hover:underline"
     >
       {displayName(person)}
     </Link>
@@ -52,6 +56,7 @@ export function FollowLists({
   cancelAction = cancelFollow,
   blockAction = blockUser,
   unblockAction = unblockUser,
+  followAction = requestFollow,
   basePath = "",
 }: {
   requests: FollowPerson[];
@@ -63,6 +68,8 @@ export function FollowLists({
   cancelAction?: typeof cancelFollow;
   blockAction?: typeof blockUser;
   unblockAction?: typeof unblockUser;
+  /** Follows someone back. */
+  followAction?: typeof requestFollow;
   /** Put in front of every link. The demo passes "/demo". */
   basePath?: string;
 }) {
@@ -70,6 +77,9 @@ export function FollowLists({
   const [followers, setFollowers] = useState(initialFollowers);
   const [following, setFollowing] = useState(initialFollowing);
   const [blocked, setBlocked] = useState(initialBlocked);
+  // Requests approved on this page. They stay in the requests card with a
+  // Follow back button, since that's where the approver is looking.
+  const [justApproved, setJustApproved] = useState<FollowPerson[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState("");
 
@@ -98,11 +108,34 @@ export function FollowLists({
     }
     act(`block-${person.public_id}`, () => blockAction(person.public_id), () => {
       setRequests((list) => without(list, person));
+      setJustApproved((list) => without(list, person));
       setFollowers((list) => without(list, person));
       setFollowing((list) => without(list, person));
       setBlocked((list) => [{ public_id: person.public_id, full_name: person.full_name }, ...without(list, person)]);
     });
   };
+
+  // How the account follows this person: null when it doesn't.
+  const followingStatus = (person: PersonSummary) =>
+    following.find((p) => p.public_id === person.public_id)?.status ?? null;
+
+  // Keyed by status, so the button starts over when the status changes
+  // somewhere else on the page, like after unfollowing.
+  const followBack = (person: PersonSummary) => (
+    <FollowBackButton
+      key={followingStatus(person) ?? "none"}
+      publicId={person.public_id}
+      name={displayName(person)}
+      status={followingStatus(person)}
+      requestAction={followAction}
+      onFollowed={() =>
+        setFollowing((list) => [
+          { public_id: person.public_id, full_name: person.full_name, status: "pending" },
+          ...without(list, person),
+        ])
+      }
+    />
+  );
 
   const blockButton = (person: PersonSummary) => (
     <Button size="sm" variant="ghost" disabled={busy !== null} onClick={() => block(person)}>
@@ -112,15 +145,28 @@ export function FollowLists({
 
   return (
     <>
-      {requests.length > 0 && (
+      {requests.length + justApproved.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle>Follow requests</CardTitle>
             <CardDescription>
-              People you approve can see the private registries on your profile.
+              People you approve can see the private registries on your profile, and your birthday.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            {justApproved.map((person) => (
+              <PersonRow
+                basePath={basePath}
+                key={person.public_id}
+                person={person}
+                actions={
+                  <>
+                    <span className="self-center text-sm text-tertiary">Approved</span>
+                    {followBack(person)}
+                  </>
+                }
+              />
+            ))}
             {requests.map((person) => (
               <PersonRow
                 basePath={basePath}
@@ -134,6 +180,7 @@ export function FollowLists({
                       onClick={() =>
                         act(`approve-${person.public_id}`, () => approveAction(person.public_id), () => {
                           setRequests(without(requests, person));
+                          setJustApproved((list) => [...list, { ...person, status: "approved" }]);
                           setFollowers([{ ...person, status: "approved" }, ...followers]);
                         })
                       }
@@ -164,7 +211,10 @@ export function FollowLists({
       <Card>
         <CardHeader>
           <CardTitle>Followers</CardTitle>
-          <CardDescription>They can see your private registries as well as your public ones.</CardDescription>
+          <CardDescription>
+            They can see your private registries and your birthday. Follow them back to see theirs. When you
+            follow each other, you&apos;re friends.
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           {followers.length === 0 ? (
@@ -179,6 +229,7 @@ export function FollowLists({
                 person={person}
                 actions={
                   <>
+                    {followBack(person)}
                     <Button
                       size="sm"
                       variant="outline"
@@ -186,14 +237,15 @@ export function FollowLists({
                       onClick={() => {
                         if (
                           !confirm(
-                            `Remove ${displayName(person)}? They'll stop seeing your private registries.`,
+                            `Remove ${displayName(person)}? They'll stop seeing your private registries and your birthday.`,
                           )
                         ) {
                           return;
                         }
-                        act(`remove-${person.public_id}`, () => removeAction(person.public_id), () =>
-                          setFollowers(without(followers, person)),
-                        );
+                        act(`remove-${person.public_id}`, () => removeAction(person.public_id), () => {
+                          setFollowers(without(followers, person));
+                          setJustApproved((list) => without(list, person));
+                        });
                       }}
                     >
                       Remove

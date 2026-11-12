@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { AccountSettings, type AccountRegistry } from "@/components/account-settings";
 import { listFollows } from "@/lib/follows";
+import { parseGiftProfile } from "@/lib/gift-profile";
 import { getSessionUser } from "@/lib/viewer";
 import { createClient } from "@/utils/supabase/server";
 
@@ -17,7 +18,7 @@ export default async function AccountPage() {
     redirect("/signup?redirect=/dashboard/account");
   }
 
-  const [{ data: profile }, { data: registries }, follows] = await Promise.all([
+  const [{ data: profile }, { data: registries }, follows, giftRow] = await Promise.all([
     supabase
       .from("profiles")
       .select("public_id, full_name, discoverable, findable_by_email, email_follow_requests")
@@ -29,7 +30,12 @@ export default async function AccountPage() {
       .eq("owner_id", user.id)
       .order("created_at", { ascending: false }),
     listFollows(user.id),
+    // Separate, so the page still works before
+    // 20261112062844_gift_profiles_and_birthday_reminders.sql has run. Until
+    // then this errors, which counts as an empty profile with emails on.
+    supabase.from("profiles").select("gift_profile, email_birthday_reminders").eq("id", user.id).maybeSingle(),
   ]);
+  const gift = giftRow.error ? null : giftRow.data;
 
   const accountRegistries: AccountRegistry[] = (registries || []).map(
     ({ settings, ...registry }) => ({
@@ -49,6 +55,8 @@ export default async function AccountPage() {
       }}
       registries={accountRegistries}
       follows={follows}
+      giftProfile={parseGiftProfile(gift?.gift_profile)}
+      birthdayEmails={gift?.email_birthday_reminders ?? true}
     />
   );
 }

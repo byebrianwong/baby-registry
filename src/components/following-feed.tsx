@@ -1,11 +1,13 @@
 import Link from "next/link";
 import { PeopleSearch } from "@/components/people-search";
+import { BirthdaysComingUp } from "@/components/birthdays-coming-up";
 import { ProfileRegistryCard } from "@/components/profile-registry-card";
 import { PandaMark } from "@/components/panda-mark";
 import type { FollowActions } from "@/components/follow-button";
 import type { searchPeople } from "@/lib/actions/follows";
 import type { sendFollowInvite } from "@/lib/actions/follow-invites";
 import type { FeedRegistry, FollowPerson } from "@/lib/follows";
+import type { UpcomingBirthday } from "@/lib/gift-profile";
 import type { SharedRegistry } from "@/lib/groups-server";
 import { displayName, profilePath } from "@/lib/profile-link";
 import { isPastEvent, sortListedRegistries } from "@/lib/registry-listing";
@@ -55,6 +57,7 @@ export function FollowingFeed({
   people,
   registries,
   shared = [],
+  birthdays = [],
   today,
   searchAction,
   inviteAction,
@@ -65,6 +68,8 @@ export function FollowingFeed({
   registries: FeedRegistry[];
   /** Lists other people shared with groups the viewer is in (src/lib/groups.ts). */
   shared?: SharedRegistry[];
+  /** Birthdays in the next 30 days of people who approved the viewer (src/lib/birthdays-server.ts). */
+  birthdays?: UpcomingBirthday[];
   today: string;
   searchAction?: typeof searchPeople;
   inviteAction?: typeof sendFollowInvite;
@@ -96,6 +101,8 @@ export function FollowingFeed({
             basePath={basePath}
           />
         </div>
+
+        <BirthdaysComingUp birthdays={birthdays} today={today} basePath={basePath} />
 
         {shared.length > 0 && (
           <section className="mt-8">

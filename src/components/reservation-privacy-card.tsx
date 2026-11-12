@@ -23,6 +23,7 @@ export function ReservationPrivacyCard({
   isPersonal,
   privacy,
   saveAction = updateReservationPrivacy,
+  onSaved,
 }: {
   registryId: string;
   isOwner: boolean;
@@ -31,6 +32,8 @@ export function ReservationPrivacyCard({
   privacy: ReservationPrivacy;
   /** Saves the choice. Stories pass a stand-in. */
   saveAction?: SaveAction;
+  /** Called after a save, so the page can show or hide what depends on it. */
+  onSaved?: (input: { hide: boolean; forChild: boolean }) => void;
 }) {
   const [hide, setHide] = useState(privacy.hide_reservations === true && !privacy.for_child);
   const [forChild, setForChild] = useState(Boolean(privacy.for_child));
@@ -43,12 +46,14 @@ export function ReservationPrivacyCard({
   async function save() {
     setSaving(true);
     setError("");
-    const result = await saveAction(registryId, { hide: forChild ? false : hide, forChild });
+    const input = { hide: forChild ? false : hide, forChild };
+    const result = await saveAction(registryId, input);
     setSaving(false);
     if (result.error) {
       setError(result.error);
       return;
     }
+    onSaved?.(input);
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   }
