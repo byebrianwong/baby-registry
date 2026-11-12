@@ -146,6 +146,13 @@ function SignupForm() {
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? "Creating account..." : "Create Account"}
             </Button>
+            <p className="text-center text-xs text-tertiary">
+              Our{" "}
+              <Link href="/privacy" target="_blank" className="text-brand-600 underline underline-offset-4 hover:text-brand-700">
+                privacy policy
+              </Link>{" "}
+              says what we keep and how to delete it.
+            </p>
           </form>
           <p className="mt-4 text-center text-sm text-tertiary">
             Already have an account?{" "}

@@ -61,7 +61,8 @@ The root `tsconfig.json` leaves out `mobile/`, so the website's checks don't rea
 
 ## Before the stores
 
-- **Privacy policy.** Both stores ask for a link. The extension needs one too.
+The privacy policy URL for both store listings is https://www.regibee.com/privacy. Its "The Regibee app" section says what the app reads and keeps on the phone, so update it when that changes. Apple's privacy questions and Google Play's data safety form should match it.
+
 - **Store accounts.** An Apple Developer account and a Google Play developer account. The bundle id is `com.regibee.app` for both, set in `app.config.ts`. Change it before the first upload if you want another.
 - **Real phones.** Sharing from Amazon, Target, Walmart and Safari, and reading in the hidden web view, have only been checked in code and in a browser so far. Try each on an iPhone and an Android phone.
 - **App group.** The iPhone share extension shares data with the app through `group.com.regibee.app`. EAS sets it up when it manages your credentials.
