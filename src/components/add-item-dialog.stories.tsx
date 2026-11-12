@@ -44,3 +44,25 @@ export const Phone: Story = {
   ...Default,
   globals: { viewport: { value: "mobile1" } },
 };
+
+// From the Saved tab: "Save an item" asks which list first, starting on the
+// owner's wishlist. Each list brings its own categories.
+export const SaveTo: Story = {
+  name: "Save to a list",
+  args: {
+    registryId: "wishlist",
+    categories: [],
+    registryType: "personal",
+    eventType: "other",
+    saveTo: [
+      { id: "wishlist", title: "Sam's Wishlist", categories: [], registryType: "personal", eventType: "other" },
+      { id: "birthday", title: "Sam Turns 30", categories: [], registryType: "personal", eventType: "birthday" },
+      { id: "baby", title: "Sam & Alex's Baby Registry", categories: DEMO_CATEGORIES, registryType: "baby", eventType: null },
+    ],
+    trigger: <button type="button">Save an item</button>,
+  },
+  play: async ({ canvas, userEvent }) => {
+    await userEvent.click(canvas.getByRole("button", { name: /save an item/i }));
+    await screen.findByRole("dialog");
+  },
+};

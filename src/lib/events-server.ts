@@ -1,4 +1,5 @@
 import { supabaseAdmin } from "@/lib/supabase-admin";
+import { loadItemsForLists } from "@/lib/list-items";
 import type { EventDetails, EventGuest, ExchangeGiftee, GiftExchange, LinkedRegistry } from "@/lib/events";
 
 // Reads for the event pages. The event tables have no access rules for the
@@ -237,16 +238,30 @@ export async function getEventRegistries(eventId: string, { withItems = false } 
   }));
   if (!withItems || registries.length === 0) return registries;
 
-  const { data: items } = await supabaseAdmin
-    .from("registry_items")
-    .select("id, registry_id, title, image_url, price, quantity_needed, quantity_fulfilled, is_essential, sort_order")
-    .in("registry_id", registries.map((r) => r.id))
-    .order("is_essential", { ascending: false })
-    .order("sort_order");
+  // Each list's own items and the ones its owner placed on it from their
+  // other lists (src/lib/list-items.ts).
+  type PreviewItem = {
+    id: string;
+    registry_id: string;
+    category_id: string | null;
+    created_at: string;
+    title: string;
+    image_url: string | null;
+    price: number | null;
+    quantity_needed: number;
+    quantity_fulfilled: number;
+    is_essential: boolean;
+    sort_order: number;
+  };
+  const itemsByList = await loadItemsForLists<PreviewItem>(
+    registries.map((r) => r.id),
+    "id, registry_id, category_id, created_at, title, image_url, price, quantity_needed, quantity_fulfilled, is_essential, sort_order",
+  ).catch(() => new Map<string, PreviewItem[]>());
   for (const registry of registries) {
-    const open = (items || []).filter(
-      (item) => item.registry_id === registry.id && item.quantity_fulfilled < item.quantity_needed,
-    );
+    const open = (itemsByList.get(registry.id) ?? [])
+      .filter((item) => item.quantity_fulfilled < item.quantity_needed)
+      // Most wanted first, then in list order.
+      .sort((a, b) => Number(b.is_essential) - Number(a.is_essential));
     registry.itemsLeft = open.length;
     // Items with a picture first: the preview is a row of pictures.
     registry.items = [...open]

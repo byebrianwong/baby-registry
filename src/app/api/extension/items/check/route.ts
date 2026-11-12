@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { authenticateExtension, isRegistryManager, jsonError, readJson } from "@/lib/extension-server";
 import { isUuid, itemMatchKey, MAX_ITEMS_PER_REQUEST, type CheckResponse } from "@/lib/extension";
 import { classifyStoreLink } from "@/lib/retailers";
+import { LINK_COLUMNS, loadListItems, type LinkRow } from "@/lib/list-items";
 
 // POST { registryId, urls } → which of those items are already on the
 // registry, and which of those have only a plain store link. At stores we
@@ -10,7 +11,7 @@ import { classifyStoreLink } from "@/lib/retailers";
 export async function POST(request: Request) {
   const auth = await authenticateExtension(request);
   if (auth.response) return auth.response;
-  const { user, supabase } = auth;
+  const { user } = auth;
 
   const body = await readJson(request);
   const registryId = body?.registryId;
@@ -24,11 +25,14 @@ export async function POST(request: Request) {
 
   const wanted = new Set(urls.map((u) => (typeof u === "string" ? itemMatchKey(u) : null)).filter(Boolean));
 
-  const { data: items, error } = await supabase
-    .from("registry_items")
-    .select("external_url")
-    .eq("registry_id", registryId);
-  if (error) return jsonError("Couldn't read the registry.", 500);
+  // Items placed on this list from the owner's other lists count too
+  // (src/lib/list-items.ts). The manager check above has passed.
+  let items: { external_url: string | null }[];
+  try {
+    items = await loadListItems<LinkRow>(registryId, LINK_COLUMNS);
+  } catch {
+    return jsonError("Couldn't read the registry.", 500);
+  }
 
   const existing = new Set<string>();
   const plain = new Set<string>();
