@@ -21,7 +21,7 @@ import {
   confirmSignupHtml,
   resetPasswordHtml,
 } from "@/lib/email-templates";
-import { coHostInviteHtml, exchangeAssignmentHtml, registryLinkedHtml } from "@/lib/event-email-templates";
+import { coHostInviteHtml, exchangeAssignmentHtml, listRequestHtml, registryLinkedHtml } from "@/lib/event-email-templates";
 import { sampleLinkedRegistries } from "@/lib/event-sample-data";
 
 const meta: Meta<typeof EmailPreview> = {
@@ -389,6 +389,24 @@ export const CoHostInvite: Story = {
       inviterName: "Linda Upland",
       eventTitle: "Remi's Baby Shower",
       inviteUrl: "https://regibee.com/host-invite/abc123token",
+    }),
+  },
+};
+
+// Sent to the person a shower is for when the host chose "Ask them to make
+// one" in the "What are you planning?" picker.
+export const ListRequest: Story = {
+  args: {
+    subject: "Linda Upland asked you to make a baby registry for Remi's Baby Shower",
+    from: '"Linda Upland via Regibee" <notifications@regibee.com>',
+    to: "remi@example.com",
+    html: listRequestHtml({
+      honoreeName: "Remi",
+      hostName: "Linda Upland",
+      eventTitle: "Remi's Baby Shower",
+      eventDate: "Saturday, December 5, 2026",
+      listNoun: "baby registry",
+      requestUrl: "https://regibee.com/list-request/abc123token",
     }),
   },
 };

@@ -28,6 +28,7 @@ A gift registry app built with Next.js, Supabase, and Tailwind CSS. It started a
 
 ### Planning events
 
+- **One New button** - "New" on the dashboard and the Events tab asks three questions: what you're planning (16 occasions, from a baby shower to a get-together), who it's for (you, a couple, your child, someone else, everyone, or no one) and how gifts work. Then it makes everything in one go: the event, a gift list for you or your child linked to it, a link to someone else's list, a Secret Santa draw, or a "No gifts" note. "Ask them to make one" emails the person the event is for a link (`/list-request/<token>`); the list they make is linked to the invitation as soon as it exists. "Make just a wishlist" skips the event. The full registry and event forms are still a link away.
 - **Events with invitations** - Plan a baby shower, birthday, kid's birthday, gift exchange, Christmas party, bridal shower, wedding, retirement or any other event on the Events tab (`/dashboard/events`). Add the date, time, place, who's hosting and a message for guests. Choosing an occasion sets sensible defaults: a gift exchange turns on the name draw, a kid's birthday asks how many kids are coming.
 - **Your own invitation** - Upload a picture of the invitation you designed, or a photo. Guests see it at the top of the event page and in their email.
 - **Guest list and emails** - Add guests one at a time, paste a list from a spreadsheet, or copy the guests of another event you host. Regibee emails each guest the invitation with their own RSVP link, and can remind guests who haven't replied (at most once a day each). Replies to the email go to the host.
@@ -176,6 +177,7 @@ src/
 │   │   ├── scrape.ts     # Reads the title, price and pictures from a product link
 │   │   └── tax.ts        # Sales tax estimate
 │   ├── email.ts          # Notification emails (Resend)
+│   ├── occasions.ts      # Every occasion: names, colors, defaults and the kind of list that goes with it
 │   ├── events.ts         # Event types, labels, dates and calendar links
 │   ├── events-server.ts  # Reads for the event pages
 │   ├── retailers.ts      # Store registry link rules, shared with the extension
@@ -220,7 +222,7 @@ Fourteen tables, all with Row Level Security turned on:
 | `events` | Events: details, invitation picture, RSVP settings and the registry they link to |
 | `event_guests` | Each event's guests, their personal RSVP link token, their answer and when they were emailed |
 
-`groups`, `group_members` and `registry_groups` hold groups, their people and the lists shared with them. They, `follows`, `user_blocks`, `follow_request_emails`, `events` and `event_guests` have no access policies, so only server code using the service-role key can read or write them. The files in `supabase/migrations` hold the full schema, the access rules, and the database functions that handle reservations.
+`event_list_requests` holds the emailed requests for someone to make a list for an event. `groups`, `group_members` and `registry_groups` hold groups, their people and the lists shared with them. They, `follows`, `user_blocks`, `follow_request_emails`, `events` and `event_guests` have no access policies, so only server code using the service-role key can read or write them. The files in `supabase/migrations` hold the full schema, the access rules, and the database functions that handle reservations.
 
 ## Deployment
 

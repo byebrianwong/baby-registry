@@ -39,7 +39,18 @@ import { getGroupForOwner, getGroupMembers, listGroupEvents } from "@/lib/groups
 import { createGroup } from "@/lib/actions/groups";
 import { getSessionUser } from "@/lib/viewer";
 import { confirmRsvpToGuest, notifyHostOfRsvp, sendEventInvitations } from "@/lib/email";
-import { notifyRegistryLinked, sendCoHostInvite, sendExchangeAssignments } from "@/lib/event-email";
+import { notifyRegistryLinked, sendCoHostInvite, sendExchangeAssignments, sendListRequest } from "@/lib/event-email";
+import {
+  NO_GIFTS_NOTE,
+  giftPlansFor,
+  isOccasionId,
+  listTitleFor,
+  nameLabelFor,
+  occasionFor,
+  type Audience,
+  type GiftPlan,
+} from "@/lib/occasions";
+import { insertRegistry } from "@/lib/registry-create";
 
 type Result<T = object> = ({ error: null } & T) | { error: string };
 
@@ -1456,4 +1467,208 @@ export async function undoExchangeDraw(eventId: string): Promise<Result> {
   await clearDraw(eventId);
   revalidateEvent(access.event);
   return { error: null };
+}
+
+// ── "What are you planning?" ─────────────────────────────────
+
+export interface PlanInput {
+  /** An occasion id from src/lib/occasions.ts. */
+  occasion: string;
+  audience: Audience;
+  /** Who it's for: "Remi", "Alex & Sam". Not asked for everyone or no one. */
+  name?: string;
+  gifts: GiftPlan;
+  /** With a new gift list: also make an invitation. Every other plan has one. */
+  invitation?: boolean;
+  /** The share link to link, for "link". */
+  linkUrl?: string;
+  /** Who to ask, for "ask". */
+  askEmail?: string;
+  /** The event's title, or the list's when there's no event. */
+  title: string;
+  /** YYYY-MM-DD, or empty. */
+  date?: string;
+}
+
+/**
+ * The picker's last step: makes everything a plan needs in one go. That's an
+ * event, a gift list, or both, linked together, with the gift plan set up: a
+ * linked list, an emailed request for the honoree's list, a name draw, or a
+ * "No gifts" note. Returns where to go next: the event's page, or the list's
+ * when there's no event.
+ */
+export async function startPlan(input: PlanInput): Promise<Result<{ href: string }>> {
+  const { user, supabase, error: authError } = await requireAccount();
+  if (authError || !user) return { error: authError ?? "You need an account to do this." };
+
+  if (!isOccasionId(input.occasion)) return { error: "Choose what you're planning." };
+  const occasion = occasionFor(input.occasion);
+  if (!(occasion.audiences as readonly Audience[]).includes(input.audience)) return { error: "Choose who it's for." };
+  if (!giftPlansFor(input.audience).includes(input.gifts)) return { error: "Choose how gifts work." };
+
+  const name = input.name?.trim().slice(0, 100) ?? "";
+  if (nameLabelFor(input.audience) && !name && input.gifts === "ask") return { error: "Add their name." };
+  const title = input.title.trim().slice(0, 120);
+  if (!title) return { error: "Give it a name." };
+  const date = input.date?.trim() ?? "";
+  if (date && (!DATE_PATTERN.test(date) || Number(date.slice(0, 4)) < 1000)) {
+    return { error: "That date doesn't look right." };
+  }
+  const withEvent = input.gifts !== "new_list" || input.invitation !== false;
+
+  // Check what can fail before anything is saved.
+  let linked: { id: string } | null = null;
+  if (input.gifts === "link") {
+    const link = input.linkUrl?.trim() ?? "";
+    if (!registrySlugFromLink(link)) return { error: "Paste a registry link, like regibee.com/r/remi-and-max-1a2b." };
+    linked = await resolveRegistryLink(link);
+    if (!linked) return { error: "No registry has that link. Check it and try again." };
+  }
+  const askEmail = input.askEmail?.trim().toLowerCase() ?? "";
+  if (input.gifts === "ask" && !isEmail(askEmail)) return { error: "Add their email address, so we can ask them." };
+
+  // A new gift list, owned by whoever is making the plan.
+  let list: { id: string } | null = null;
+  if (input.gifts === "new_list") {
+    const settings: Record<string, unknown> = { tax_enabled: false };
+    // A parent keeps their child's list and sees what's been reserved (#97).
+    if (input.audience === "child") settings.for_child = true;
+    const made = await insertRegistry(supabase, {
+      ownerId: user.id,
+      title: withEvent ? listTitleFor(occasion, name).slice(0, 120) : title,
+      registryType: occasion.list.registryType,
+      eventType: occasion.list.eventType,
+      eventDate: date || null,
+      honoreeNames: name || null,
+      settings,
+    });
+    if ("error" in made) {
+      console.error("[plan] Failed to make a list:", made.error);
+      return { error: "Your list wasn't made. Try again." };
+    }
+    list = made;
+    revalidatePath("/dashboard");
+    if (!withEvent) return { error: null, href: `/dashboard/registry/${made.id}` };
+  }
+
+  const defaults = "defaults" in occasion ? occasion.defaults : undefined;
+  const { data: event, error } = await supabaseAdmin
+    .from("events")
+    .insert({
+      owner_id: user.id,
+      slug: generateEventSlug(title),
+      event_type: occasion.id,
+      title,
+      event_date: date || null,
+      ask_kids: Boolean(defaults?.askKids),
+      gift_note: input.gifts === "no_gifts" ? NO_GIFTS_NOTE : (defaults?.giftNote ?? null),
+    })
+    .select("*")
+    .single();
+  if (error || !event) {
+    console.error("[plan] Failed to make an event:", error);
+    return { error: list ? "Your list was made, but the event wasn't. Plan the event from the list's page." : "The event wasn't made. Try again." };
+  }
+  const saved = event as EventDetails;
+
+  // From here the event exists. Anything that fails to save shows as missing
+  // on its page, where the host can add it from Edit.
+  const linkIds = [list?.id, linked?.id].filter((id): id is string => Boolean(id));
+  if (linkIds.length > 0) await saveRegistryLinks(saved, linkIds, user.id);
+  if (input.gifts === "exchange" || defaults?.exchange) {
+    await saveExchange(saved.id, { enabled: true, budget: null, draw_by: null, mailed: false });
+  }
+  if (input.gifts === "ask") {
+    const token = crypto.randomBytes(24).toString("hex");
+    const { error: requestError } = await supabaseAdmin.from("event_list_requests").insert({
+      event_id: saved.id,
+      requested_by: user.id,
+      name: name || askEmail,
+      email: askEmail,
+      token,
+    });
+    if (requestError) {
+      console.error("[plan] Failed to save a list request:", requestError);
+    } else {
+      const hostName = await hostNameFor(saved, user.id);
+      after(() =>
+        sendListRequest({
+          toEmail: askEmail,
+          honoreeName: name || "there",
+          hostName,
+          eventTitle: saved.title,
+          eventDate: saved.event_date,
+          listNoun: occasion.list.noun,
+          token,
+          replyTo: user.email ?? null,
+        }),
+      );
+    }
+  }
+
+  revalidateEvent(saved);
+  return { error: null, href: `/dashboard/events/${saved.id}` };
+}
+
+/**
+ * Someone an event is for makes the gift list its host asked for. The list is
+ * theirs, of the kind the occasion calls for, and it's linked to the event at
+ * once. Each request makes one list. Returns the new list's id.
+ */
+export async function acceptListRequest(token: string): Promise<Result<{ registryId: string }>> {
+  const { user, supabase, error: authError } = await requireAccount();
+  if (authError || !user) return { error: authError ?? "You need an account to do this." };
+
+  const { data: request } = await supabaseAdmin
+    .from("event_list_requests")
+    .select("id, event_id, requested_by, name, registry_id, fulfilled_at")
+    .eq("token", token)
+    .maybeSingle();
+  if (!request) return { error: "This link doesn't work anymore. Ask the host to send it again." };
+  if (request.fulfilled_at) return { error: "A list was already made from this link." };
+
+  const { data: eventRow } = await supabaseAdmin.from("events").select("*").eq("id", request.event_id).maybeSingle();
+  if (!eventRow) return { error: "That event isn't on Regibee anymore." };
+  const event = eventRow as EventDetails;
+  const occasion = occasionFor(event.event_type);
+
+  // Claim the request first, so two clicks can't make two lists.
+  const { data: claimed } = await supabaseAdmin
+    .from("event_list_requests")
+    .update({ fulfilled_at: new Date().toISOString() })
+    .eq("id", request.id)
+    .is("fulfilled_at", null)
+    .select("id");
+  if (!claimed || claimed.length === 0) return { error: "A list was already made from this link." };
+
+  const made = await insertRegistry(supabase, {
+    ownerId: user.id,
+    title: listTitleFor(occasion, request.name).slice(0, 120),
+    registryType: occasion.list.registryType,
+    eventType: occasion.list.eventType,
+    eventDate: event.event_date,
+    honoreeNames: request.name,
+    settings: { tax_enabled: false },
+  });
+  if ("error" in made) {
+    console.error("[plan] Failed to make a requested list:", made.error);
+    await supabaseAdmin.from("event_list_requests").update({ fulfilled_at: null }).eq("id", request.id);
+    return { error: "Your list wasn't made. Try again." };
+  }
+
+  const { count } = await supabaseAdmin
+    .from("event_registries")
+    .select("registry_id", { count: "exact", head: true })
+    .eq("event_id", event.id);
+  await supabaseAdmin.from("event_registries").insert({
+    event_id: event.id,
+    registry_id: made.id,
+    linked_by: request.requested_by,
+    sort_order: count ?? 0,
+  });
+  await supabaseAdmin.from("event_list_requests").update({ registry_id: made.id }).eq("id", request.id);
+
+  revalidateEvent(event);
+  revalidatePath("/dashboard");
+  return { error: null, registryId: made.id };
 }

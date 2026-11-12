@@ -1,4 +1,5 @@
 import type { RetailerRegistry } from "@/lib/retailers";
+import type { ListOccasion } from "@/lib/occasions";
 
 export interface PaymentMethods {
   venmo?: string;
@@ -16,13 +17,8 @@ export interface RegistrySettings {
 
 export type RegistryType = "baby" | "personal";
 
-export type PersonalEventType =
-  | "birthday"
-  | "christmas"
-  | "wedding"
-  | "housewarming"
-  | "graduation"
-  | "other";
+/** A registry's occasion, besides "baby" (see src/lib/occasions.ts). */
+export type PersonalEventType = ListOccasion;
 
 export interface Registry {
   id: string;
