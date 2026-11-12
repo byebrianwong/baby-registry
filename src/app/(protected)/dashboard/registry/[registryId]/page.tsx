@@ -53,6 +53,7 @@ import { listEventsForRegistry } from "@/lib/events-server";
 import { RegistryEventsBanner } from "@/components/registry-events-banner";
 import { findSharedLink } from "@/lib/shared-link";
 import { getSessionUser } from "@/lib/viewer";
+import { itemsHiddenFromOwner, listsForItems, loadListItems, type ListItem } from "@/lib/list-items";
 
 type ServerClient = Awaited<ReturnType<typeof createClient>>;
 
@@ -78,6 +79,71 @@ async function loadRegistryPurchases(supabase: ServerClient, registryId: string)
       .filter((p) => !itemPurchaseIds.has(p.id))
       .map((p) => ({ ...p, registry_items: null })),
   ].sort((a, b) => (a.created_at < b.created_at ? 1 : a.created_at > b.created_at ? -1 : 0));
+}
+
+/**
+ * For the items placed on this list from the owner's other lists, and items
+ * of this list placed on others: their purchases (the access rules only show
+ * purchases of a list's own items), the titles of the other lists each item
+ * is on, and, for the owner, the items another list hides gifts on.
+ */
+async function loadPlacementDetails(
+  items: ListItem<{ id: string; registry_id: string; category_id: string | null; sort_order: number; created_at: string }>[],
+  registryId: string,
+  ownerId: string | null,
+) {
+  const none = {
+    purchases: [] as any[],
+    otherListsByItem: new Map<string, string[]>(),
+    hiddenItemIds: new Set<string>(),
+  };
+  if (items.length === 0) return none;
+
+  const lists = await listsForItems(items.map((i) => i.id));
+  const shared = [...lists.entries()].filter(([, ids]) => ids.length > 1);
+  if (shared.length === 0) return none;
+
+  const placedIds = items.filter((i) => i.placed).map((i) => i.id);
+  const otherIds = [...new Set(shared.flatMap(([, ids]) => ids))].filter((id) => id !== registryId);
+  const [{ data: placedPurchases }, { data: otherLists }, hiddenItemIds] = await Promise.all([
+    placedIds.length > 0
+      ? supabaseAdmin
+          .from("purchases")
+          .select("*, registry_items!registry_item_id!inner(title, registry_id, price, is_parent_purchased)")
+          .in("registry_item_id", placedIds)
+      : Promise.resolve({ data: [] as any[] }),
+    supabaseAdmin.from("registries").select("id, title").in("id", otherIds),
+    ownerId ? itemsHiddenFromOwner(shared.map(([id]) => id), ownerId) : Promise.resolve(new Set<string>()),
+  ]);
+
+  const titles = new Map((otherLists ?? []).map((r) => [r.id as string, r.title as string]));
+  const otherListsByItem = new Map<string, string[]>();
+  for (const [itemId, ids] of shared) {
+    otherListsByItem.set(
+      itemId,
+      ids.filter((id) => id !== registryId).map((id) => titles.get(id)).filter((t): t is string => Boolean(t)),
+    );
+  }
+  return {
+    purchases: (placedPurchases ?? []).map((p) => ({ ...p, cash_funds: null })),
+    otherListsByItem,
+    hiddenItemIds,
+  };
+}
+
+/** This list's purchases and its placed items' purchases, newest first. */
+function mergePurchases(own: any[], placed: any[]) {
+  if (placed.length === 0) return own;
+  const seen = new Set(own.map((p) => p.id));
+  return [...own, ...placed.filter((p) => !seen.has(p.id))].sort((a, b) =>
+    a.created_at < b.created_at ? 1 : a.created_at > b.created_at ? -1 : 0,
+  );
+}
+
+/** What the list loader needs besides the page's own columns. */
+interface ListItemColumns {
+  registry_id: string;
+  created_at: string;
 }
 
 interface RegistryItem {
@@ -159,11 +225,9 @@ export default async function RegistryManagePage({
         .select("*")
         .eq("registry_id", registryId)
         .order("sort_order"),
-      supabase
-        .from("registry_items")
-        .select("*")
-        .eq("registry_id", registryId)
-        .order("sort_order"),
+      // Its own items and the ones the owner placed on it from their other
+      // lists (src/lib/list-items.ts). The access check above has passed.
+      loadListItems<RegistryItem & ListItemColumns>(registryId).then((data) => ({ data })),
       loadRegistryPurchases(supabase, registryId),
       supabase
         .from("suggestions")
@@ -185,9 +249,17 @@ export default async function RegistryManagePage({
   const turnedOnByExchange = readReservationPrivacy(registry.settings).hide_reservations_source === "exchange";
   const settingsHref = `/dashboard/registry/${registryId}/settings`;
 
-  const allItems = ((items || []) as RegistryItem[]).map((item) =>
-    hideReservations ? itemAsUnreserved(item) : item
+  const listItems = (items || []) as ListItem<RegistryItem & ListItemColumns>[];
+  const { purchases: placedPurchases, otherListsByItem, hiddenItemIds } = await loadPlacementDetails(
+    listItems,
+    registryId,
+    isOwner && registry.owner_id === user.id && !hideReservations ? user.id : null,
   );
+  // A gift belongs to the item. If another list it's on hides what's been
+  // reserved from the owner, this page hides that item's gifts too.
+  const hidesItem = (id: string | null | undefined) => hideReservations || (!!id && hiddenItemIds.has(id));
+
+  const allItems = listItems.map((item) => (hidesItem(item.id) ? itemAsUnreserved(item) : item));
   const allCategories = (categories || []) as Category[];
   const dismissedChecklistItems = (registry.settings as Record<string, unknown> | null)?.checklist_dismissed as string[] | undefined;
   const checklistProgress = getChecklistProgress(allItems.map((i) => i.title), dismissedChecklistItems);
@@ -197,10 +269,12 @@ export default async function RegistryManagePage({
   // A Secret Santa's gift shows "Secret Santa" with no email. It's masked
   // here, on the server, so the giver's name and email never reach the
   // browser in the page data, including the item and fund cards below.
-  const allPurchases = (hideReservations ? [] : purchases).map((p: any) => ({
-    ...maskGiverForOwner(p),
-    item_title: p.registry_items?.title || p.cash_funds?.title || "Unknown item",
-  }));
+  const allPurchases = (hideReservations ? [] : mergePurchases(purchases, placedPurchases))
+    .filter((p: any) => !hidesItem(p.registry_item_id))
+    .map((p: any) => ({
+      ...maskGiverForOwner(p),
+      item_title: p.registry_items?.title || p.cash_funds?.title || "Unknown item",
+    }));
 
   // Build purchase lookup maps for item/fund cards
   const purchasesByItemId = new Map<string, typeof allPurchases>();
@@ -508,6 +582,7 @@ export default async function RegistryManagePage({
                               eventType={registry.event_type}
                               linkedRegistries={linkedRegistries}
                               storesWithRegistryLinks={registryLinkStores}
+                              otherLists={otherListsByItem.get(item.id)}
                             />
                           ))}
                         </div>
@@ -535,6 +610,7 @@ export default async function RegistryManagePage({
                             eventType={registry.event_type}
                             linkedRegistries={linkedRegistries}
                             storesWithRegistryLinks={registryLinkStores}
+                            otherLists={otherListsByItem.get(item.id)}
                           />
                         ))}
                       </div>

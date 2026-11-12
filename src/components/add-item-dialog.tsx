@@ -35,6 +35,15 @@ interface Category {
   name: string;
 }
 
+/** A list the Saved tab's "Save an item" can save to. */
+export interface SaveToList {
+  id: string;
+  title: string;
+  categories: Category[];
+  registryType: RegistryType;
+  eventType: PersonalEventType | null;
+}
+
 interface AddItemDialogProps {
   registryId: string;
   categories: Category[];
@@ -59,6 +68,14 @@ interface AddItemDialogProps {
    * then read the link. For links shared to the site from a phone (/share).
    */
   openWithLink?: { url: string; title?: string };
+  /**
+   * Lets the owner pick which of their lists to save to, starting with
+   * `registryId`. The Saved tab passes their lists. Each list brings its own
+   * categories and kind, in place of the props above.
+   */
+  saveTo?: SaveToList[];
+  /** Called after the item is saved. */
+  onAdded?: (registryId: string) => void;
 }
 
 const currencySymbols: Record<string, string> = {
@@ -71,17 +88,27 @@ const currencySymbols: Record<string, string> = {
 };
 
 export function AddItemDialog({
-  registryId,
-  categories: initialCategories,
+  registryId: defaultRegistryId,
+  categories: defaultCategories,
   zipCode,
-  registryType = "baby",
-  eventType = null,
+  registryType: defaultRegistryType = "baby",
+  eventType: defaultEventType = null,
   defaultValues,
   trigger,
   linkedRegistries,
   storesWithRegistryLinks,
   openWithLink,
+  saveTo,
+  onAdded,
 }: AddItemDialogProps) {
+  // With saveTo, the owner picks the list. Everything below works on the
+  // chosen one.
+  const [chosenListId, setChosenListId] = useState(defaultRegistryId);
+  const chosenList = saveTo?.find((list) => list.id === chosenListId) ?? null;
+  const registryId = chosenList?.id ?? defaultRegistryId;
+  const initialCategories = chosenList?.categories ?? defaultCategories;
+  const registryType = chosenList?.registryType ?? defaultRegistryType;
+  const eventType = chosenList ? chosenList.eventType : defaultEventType;
   const copy = copyFor({ registryType, eventType });
   const isBaby = registryType === "baby";
   const [open, setOpen] = useState(Boolean(openWithLink));
@@ -310,6 +337,22 @@ export function AddItemDialog({
     setCategoryId(defaultValues?.categoryId);
     setExternalUrl("");
     setError("");
+    if (saveTo) {
+      setChosenListId(defaultRegistryId);
+      setCategories(saveTo.find((list) => list.id === defaultRegistryId)?.categories ?? defaultCategories);
+    }
+  };
+
+  /** Saving to another list: its categories replace the last list's. */
+  const chooseList = (id: string) => {
+    const list = saveTo?.find((l) => l.id === id);
+    if (!list) return;
+    setChosenListId(id);
+    setCategories(list.categories);
+    setCategoryId(undefined);
+    setAddingCategory(false);
+    setNewCategoryName("");
+    setCategoryError("");
   };
 
   const handleSubmit = async (formData: FormData) => {
@@ -326,8 +369,10 @@ export function AddItemDialog({
     if (result?.error) {
       setError(result.error);
     } else {
+      const savedTo = registryId;
       resetForm();
       setOpen(false);
+      onAdded?.(savedTo);
     }
     setLoading(false);
   };
@@ -346,12 +391,23 @@ export function AddItemDialog({
       </DialogTrigger>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg" showCloseButton={false}>
         <DialogHeader>
-          <DialogTitle>Add item to registry</DialogTitle>
+          <DialogTitle>{saveTo ? "Save an item" : "Add item to registry"}</DialogTitle>
           <DialogDescription>
             Add anything from any store, in two taps.
           </DialogDescription>
         </DialogHeader>
         <form action={handleSubmit} className="min-w-0 space-y-5">
+          {saveTo && saveTo.length > 0 && (
+            <Select
+              label="Save to"
+              selectedKey={registryId}
+              onSelectionChange={(key) => key && chooseList(key.toString())}
+              items={saveTo.map((list) => ({ id: list.id, label: list.title }))}
+              hint="You can put it on more of your lists from Saved."
+            >
+              {(item) => <Select.Item id={item.id} label={item.label} />}
+            </Select>
+          )}
           {/* Step 1 — URL hero */}
           <div className="rounded-xl border border-brand-200 bg-brand-50 p-4 space-y-2">
             <div className="flex items-center gap-2">
@@ -713,7 +769,7 @@ export function AddItemDialog({
               Cancel
             </Button>
             <Button type="submit" disabled={loading}>
-              {loading ? "Adding..." : "Add item"}
+              {loading ? (saveTo ? "Saving..." : "Adding...") : saveTo ? "Save item" : "Add item"}
             </Button>
           </DialogFooter>
         </form>

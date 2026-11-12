@@ -65,6 +65,17 @@ interface EditItemDialogProps {
   linkedRegistries?: RetailerRegistry[];
   /** Stores that other items on this registry have registry links from. */
   storesWithRegistryLinks?: StoreId[];
+  /**
+   * The titles of the owner's other lists this item is on. Then changes show
+   * on those lists too, and removing it here keeps it there.
+   */
+  otherLists?: string[];
+}
+
+/** "Wishlist", "Wishlist and Birthday", "Wishlist, Birthday and 2 more". */
+function listNames(titles: string[]): string {
+  if (titles.length <= 2) return titles.join(" and ");
+  return `${titles[0]}, ${titles[1]} and ${titles.length - 2} more`;
 }
 
 const currencySymbols: Record<string, string> = {
@@ -87,6 +98,7 @@ export function EditItemDialog({
   onOpenChange,
   linkedRegistries,
   storesWithRegistryLinks,
+  otherLists = [],
 }: EditItemDialogProps) {
   const isBaby = registryType === "baby";
   const copy = copyFor({ registryType, eventType });
@@ -224,8 +236,12 @@ export function EditItemDialog({
     setLoading(false);
   };
 
+  const onOtherLists = otherLists.length > 0;
   const handleDelete = async () => {
-    if (!confirm(`Delete "${item.title}"? This cannot be undone.`)) return;
+    const question = onOtherLists
+      ? `Remove "${item.title}" from this list? It stays on ${listNames(otherLists)}.`
+      : `Delete "${item.title}"? This cannot be undone.`;
+    if (!confirm(question)) return;
     setDeleting(true);
     const result = await deleteRegistryItem(item.id, registryId);
     if (result?.error) {
@@ -242,7 +258,9 @@ export function EditItemDialog({
         <DialogHeader>
           <DialogTitle>Edit item in registry</DialogTitle>
           <DialogDescription>
-            Update the details for this registry item.
+            {onOtherLists
+              ? `It's also on ${listNames(otherLists)}, so changes show there too. Its category is only for this list.`
+              : "Update the details for this registry item."}
           </DialogDescription>
         </DialogHeader>
         <form action={handleSubmit} className="space-y-4">
@@ -511,7 +529,7 @@ export function EditItemDialog({
             disabled={deleting}
             className="w-full sm:hidden"
           >
-            {deleting ? "Removing..." : "Remove item"}
+            {deleting ? "Removing..." : onOtherLists ? "Remove from list" : "Remove item"}
           </Button>
           <DialogFooter sticky>
             <Button
@@ -528,7 +546,7 @@ export function EditItemDialog({
               disabled={deleting}
               className="max-sm:hidden"
             >
-              {deleting ? "Removing..." : "Remove item"}
+              {deleting ? "Removing..." : onOtherLists ? "Remove from list" : "Remove item"}
             </Button>
             <Button type="submit" disabled={loading}>
               {loading ? "Saving..." : "Save changes"}

@@ -35,6 +35,7 @@ import {
 import { ReservationsHiddenNotice } from "@/components/reservations-hidden-notice";
 import type { OpenGift } from "@/components/reserve-item-dialog";
 import { GuestPrefillProvider, type GuestPrefill } from "@/components/guest-prefill-context";
+import { itemsHiddenFromOwner, loadListItems } from "@/lib/list-items";
 
 const PURCHASE_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
@@ -52,6 +53,13 @@ interface RegistryItem {
   minimum_condition: string | null;
   notes: string | null;
   category_id: string | null;
+}
+
+/** What the list loader needs besides the page's own columns. */
+interface ListItemColumns {
+  registry_id: string;
+  sort_order: number;
+  created_at: string;
 }
 
 interface Category {
@@ -187,11 +195,9 @@ export default async function PublicRegistryPage({
       .select("*")
       .eq("registry_id", registry.id)
       .order("sort_order"),
-    supabaseAdmin
-      .from("registry_items")
-      .select("*")
-      .eq("registry_id", registry.id)
-      .order("sort_order"),
+    // Its own items and the ones its owner placed on it from their other
+    // lists, each in its category here (src/lib/list-items.ts).
+    loadListItems<RegistryItem & ListItemColumns>(registry.id).then((data) => ({ data })),
     supabaseAdmin
       .from("cash_funds")
       .select("*")
@@ -205,6 +211,14 @@ export default async function PublicRegistryPage({
   const hideReservations = reservationsHiddenFrom(registry, viewer?.id);
 
   const allItems = (items || []) as RegistryItem[];
+  // A gift belongs to the item, and an item can be on several of the owner's
+  // lists. If another of them hides what's been reserved, the owner doesn't
+  // see this item's gifts here either.
+  const hiddenItemIds =
+    viewer && viewer.id === registry.owner_id && !hideReservations
+      ? await itemsHiddenFromOwner(allItems.map((i) => i.id), viewer.id).catch(() => new Set<string>())
+      : new Set<string>();
+  const hidesItem = (id: string) => hideReservations || hiddenItemIds.has(id);
   const allCategories = (categories || []) as Category[];
   const allFunds = ((cashFunds || []) as CashFund[]).map((fund) =>
     hideReservations ? fundAsUnpledged(fund) : fund
@@ -373,15 +387,17 @@ export default async function PublicRegistryPage({
     counts[p.registry_item_id] = (counts[p.registry_item_id] || 0) + (p.quantity || 1);
   }
   const shownItems = allItems.map((i) =>
-    hideReservations
+    hidesItem(i.id)
       ? itemAsUnreserved(i)
       : expiredCounts[i.id]
         ? { ...i, quantity_fulfilled: Math.max(0, i.quantity_fulfilled - expiredCounts[i.id]) }
         : i
   );
-  if (hideReservations) {
-    for (const id of Object.keys(reservedCounts)) delete reservedCounts[id];
-    coverCounts.clear();
+  for (const id of Object.keys(reservedCounts)) {
+    if (hidesItem(id)) delete reservedCounts[id];
+  }
+  for (const id of [...coverCounts.keys()]) {
+    if (hidesItem(id)) coverCounts.delete(id);
   }
 
   // A link from a guest's email opens the gift dialog at a step. The link

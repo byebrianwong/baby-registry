@@ -2,6 +2,7 @@ import { getMailer, sendEmail } from "./mailer";
 import { supabaseAdmin } from "./supabase-admin";
 import { formatPrice } from "./money";
 import { SECRET_GIVER_NAME, hidesReservations } from "./gifts";
+import { itemsHiddenFromOwner } from "./list-items";
 import {
   itemReservedBuyerHtml,
   itemReservationReminderBuyerHtml,
@@ -91,7 +92,14 @@ async function getRegistryManagerEmails(opts: {
     .single();
 
   if (!registry) return null;
-  const skipOwner = Boolean(opts.giftNews) && hidesReservations(registry.settings);
+  // An item can be on several of its owner's lists, and its gifts show on all
+  // of them. If any of them hides what's been reserved, the owner isn't told.
+  const skipOwner =
+    Boolean(opts.giftNews) &&
+    (hidesReservations(registry.settings) ||
+      (opts.itemId
+        ? (await itemsHiddenFromOwner([opts.itemId], registry.owner_id).catch(() => new Set<string>())).has(opts.itemId)
+        : false));
 
   const parentNames =
     registry.honoree_names || registry.parent_names || "there";

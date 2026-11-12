@@ -11,6 +11,7 @@ import {
   type UndoResponse,
 } from "@/lib/extension";
 import { storeItemKey } from "@/lib/retailers";
+import { LINK_COLUMNS, loadListItems, type LinkRow } from "@/lib/list-items";
 
 // Undo only removes items the extension could just have added: no gifts
 // against them yet, and added in the last day.
@@ -32,11 +33,14 @@ export async function POST(request: Request) {
     return jsonError("You don't manage that registry.", 403);
   }
 
-  const { data: existingItems, error: readError } = await supabase
-    .from("registry_items")
-    .select("external_url")
-    .eq("registry_id", registryId);
-  if (readError) return jsonError("Couldn't read the registry.", 500);
+  // Items placed on this list from the owner's other lists count too
+  // (src/lib/list-items.ts). The manager check above has passed.
+  let existingItems: { external_url: string | null }[];
+  try {
+    existingItems = await loadListItems<LinkRow>(registryId, LINK_COLUMNS);
+  } catch {
+    return jsonError("Couldn't read the registry.", 500);
+  }
 
   const taken = new Set<string>();
   for (const item of existingItems ?? []) {
@@ -111,14 +115,18 @@ export async function PATCH(request: Request) {
   }
 
   const items = rawItems.map(parseStoreItem).filter((item) => item !== null);
-  const { data: existingItems, error: readError } = await supabase
-    .from("registry_items")
-    .select("id, title, external_url")
-    .eq("registry_id", registryId);
-  if (readError) return jsonError("Couldn't read the registry.", 500);
+  // Items placed on this list from the owner's other lists count too
+  // (src/lib/list-items.ts). The manager check above has passed.
+  let existingItems: LinkRow[];
+  try {
+    existingItems = await loadListItems<LinkRow>(registryId, LINK_COLUMNS);
+  } catch {
+    return jsonError("Couldn't read the registry.", 500);
+  }
+  const onThisList = new Set(existingItems.map((row) => row.id));
 
   const swaps = planLinkSwaps(
-    (existingItems ?? []).map((row) => ({
+    existingItems.map((row) => ({
       id: row.id as string,
       title: row.title as string,
       external_url: row.external_url as string | null,
@@ -128,10 +136,12 @@ export async function PATCH(request: Request) {
 
   const results = await Promise.all(
     swaps.map(async (swap) => {
+      if (!onThisList.has(swap.id)) return null;
+      // Not filtered by this list: a placed item's row belongs to its home
+      // list. The access rules still only let the owner change it.
       const { data, error } = await supabase
         .from("registry_items")
         .update({ external_url: swap.to })
-        .eq("registry_id", registryId)
         .eq("id", swap.id)
         // Leave it if the owner changed the link since it was read.
         .eq("external_url", swap.from)
