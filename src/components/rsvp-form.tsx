@@ -18,6 +18,14 @@ import {
   spotsLabel,
   type GuestSignupRow,
 } from "@/lib/signups";
+import {
+  answerLabel,
+  answerLines,
+  plusOneCount,
+  readAnswers,
+  type RsvpAnswers,
+  type RsvpQuestion,
+} from "@/lib/rsvp-questions";
 import { cx } from "@/lib/utils/cx";
 
 type Answer = "yes" | "maybe" | "no";
@@ -56,6 +64,8 @@ export interface RsvpGuest {
   wishlistUrl?: string | null;
   giftIdeas?: string | null;
   shippingAddress?: string | null;
+  /** Their answers to the host's questions. */
+  answers?: RsvpAnswers;
 }
 
 export interface RsvpFormProps {
@@ -76,6 +86,8 @@ export interface RsvpFormProps {
   signup?: { title: string; rows: GuestSignupRow[] } | null;
   /** A meal train: guests say whether they can help and pick days, with no party size. */
   mealTrain?: boolean;
+  /** What the host asks besides how many are coming (src/lib/rsvp-questions.ts). */
+  questions?: RsvpQuestion[];
   submitAction?: (input: RsvpInput) => Promise<{ error: string | null; token?: string }>;
 }
 
@@ -95,6 +107,7 @@ export function RsvpForm({
   passed,
   signup = null,
   mealTrain = false,
+  questions = [],
   submitAction = submitRsvp,
 }: RsvpFormProps) {
   const router = useRouter();
@@ -113,6 +126,7 @@ export function RsvpForm({
     note: string | null;
     inExchange: boolean;
     picks: Map<string, string>;
+    answers: RsvpAnswers;
   } | null>(null);
   const current =
     saved ??
@@ -124,6 +138,7 @@ export function RsvpForm({
           note: guest.note,
           inExchange: Boolean(guest.inExchange),
           picks: minePicks(),
+          answers: guest.answers ?? {},
         }
       : null);
   const responded = current?.status ?? null;
@@ -139,6 +154,8 @@ export function RsvpForm({
   const [wishlistUrl, setWishlistUrl] = useState(guest?.wishlistUrl ?? "");
   const [giftIdeas, setGiftIdeas] = useState(guest?.giftIdeas ?? "");
   const [address, setAddress] = useState(guest?.shippingAddress ?? "");
+  // Answers to the host's questions.
+  const [replies, setReplies] = useState<RsvpAnswers>(guest?.answers ?? {});
   const [error, setError] = useState("");
   const [sending, setSending] = useState(false);
 
@@ -184,6 +201,16 @@ export function RsvpForm({
         )}
         {exchange && current.inExchange && !exchange.drawn && (
           <p className="mt-1 text-sm text-tertiary">We&apos;ll email you who you&apos;re giving to when names are drawn.</p>
+        )}
+        {current.status !== "no" && answerLines(questions, current.answers, "You").length > 0 && (
+          <dl className="mt-3 flex flex-col gap-1 text-sm">
+            {answerLines(questions, current.answers, "You").map((line) => (
+              <div key={line.label}>
+                <dt className="inline font-medium text-primary">{answerLabel(line.label)} </dt>
+                <dd className="inline text-secondary">{line.value}</dd>
+              </div>
+            ))}
+          </dl>
         )}
         {signedUp.length > 0 && (
           <div className="mt-3">
@@ -254,9 +281,15 @@ export function RsvpForm({
       setError("Pick at least one day you can help.");
       return;
     }
+    const size = showPartySize ? Number(partySize) : 1;
+    // The same check the server makes, so a missing answer shows at once.
+    const checked = attending && questions.length > 0 ? readAnswers(questions, replies, size) : { answers: {} };
+    if ("error" in checked) {
+      setError(checked.error);
+      return;
+    }
     setSending(true);
     setError("");
-    const size = showPartySize ? Number(partySize) : 1;
     const result = await submitAction({
       slug,
       token,
@@ -274,6 +307,7 @@ export function RsvpForm({
           ? []
           : [...picks].map(([itemId, itemNote]) => ({ itemId, note: itemNote }))
         : undefined,
+      answers: checked.answers,
     });
     if (result.error) {
       setError(result.error);
@@ -293,6 +327,7 @@ export function RsvpForm({
       note: note.trim() || null,
       inExchange,
       picks: answer === "no" ? new Map() : new Map(picks),
+      answers: checked.answers,
     });
     if (answer === "no") setPicks(new Map());
     setSending(false);
@@ -385,6 +420,18 @@ export function RsvpForm({
               />
             )}
           </div>
+        )}
+
+        {attending && questions.length > 0 && (
+          <QuestionFields
+            questions={questions}
+            answers={replies}
+            onChange={(id, value) => {
+              setError("");
+              setReplies((current) => ({ ...current, [id]: value }));
+            }}
+            partySize={showPartySize ? Number(partySize) : 1}
+          />
         )}
 
         {showSignup && signup && (
@@ -493,7 +540,7 @@ export function RsvpForm({
           onChange={setNote}
           rows={2}
           maxLength={1000}
-          placeholder={answer === "no" ? "Sorry to miss it!" : "Can't wait!"}
+          placeholder={answer === "no" ? "Sorry to miss it!" : mealTrain ? "Happy to help!" : "Can't wait!"}
         />
 
         {error && (
@@ -517,5 +564,107 @@ export function RsvpForm({
         </div>
       </form>
     </section>
+  );
+}
+
+/**
+ * The host's RSVP questions. A meal question asks once for each person coming,
+ * and a plus-ones question asks for the name of each person but the guest.
+ */
+function QuestionFields({
+  questions,
+  answers,
+  onChange,
+  partySize,
+}: {
+  questions: RsvpQuestion[];
+  answers: RsvpAnswers;
+  onChange: (id: string, value: string | string[]) => void;
+  partySize: number;
+}) {
+  const label = (question: RsvpQuestion) => (question.required ? question.label : `${question.label} (optional)`);
+  const plusOnes = questions.find((q) => q.kind === "plus_ones");
+  const names = plusOnes && Array.isArray(answers[plusOnes.id]) ? (answers[plusOnes.id] as string[]) : [];
+  const listOf = (id: string, length: number) => {
+    const value = answers[id];
+    return Array.from({ length }, (_, i) => (Array.isArray(value) ? (value[i] ?? "") : ""));
+  };
+  const setAt = (id: string, length: number, index: number, value: string) => {
+    const next = listOf(id, length);
+    next[index] = value;
+    onChange(id, next);
+  };
+
+  // Names first, so each meal can say who it's for.
+  const ordered = [...questions].sort((a, b) => Number(b.kind === "plus_ones") - Number(a.kind === "plus_ones"));
+
+  return (
+    <div className="flex flex-col gap-4">
+      {ordered.map((question) => {
+        if (question.kind === "plus_ones") {
+          const count = plusOneCount(partySize);
+          if (count === 0) return null;
+          return (
+            <fieldset key={question.id} className="flex flex-col gap-2">
+              <legend className="mb-1.5 text-sm font-medium text-secondary">{label(question)}</legend>
+              {listOf(question.id, count).map((name, i) => (
+                <Input
+                  key={i}
+                  aria-label={`Name of guest ${i + 2}`}
+                  placeholder={`Guest ${i + 2}'s name`}
+                  value={name}
+                  onChange={(value) => setAt(question.id, count, i, value)}
+                  maxLength={100}
+                />
+              ))}
+            </fieldset>
+          );
+        }
+        if (question.kind === "meal") {
+          const people = Math.max(partySize, 1);
+          return (
+            <fieldset key={question.id} className="flex flex-col gap-2">
+              <legend className="mb-1.5 text-sm font-medium text-secondary">{label(question)}</legend>
+              <div className={cx("grid gap-2", people > 1 && "sm:grid-cols-2")}>
+                {listOf(question.id, people).map((pick, i) => (
+                  <NativeSelect
+                    key={i}
+                    // Alone, the group's legend says what it is. With others, each says who it's for.
+                    aria-label={question.label}
+                    label={people > 1 ? `For ${i === 0 ? "you" : names[i - 1]?.trim() || `guest ${i + 1}`}` : undefined}
+                    value={pick}
+                    onChange={(e) => setAt(question.id, people, i, e.target.value)}
+                    options={[
+                      { value: "", label: "Choose…" },
+                      ...question.options.map((option) => ({ value: option, label: option })),
+                    ]}
+                  />
+                ))}
+              </div>
+            </fieldset>
+          );
+        }
+        const value = typeof answers[question.id] === "string" ? (answers[question.id] as string) : "";
+        return question.kind === "diet" ? (
+          <TextArea
+            key={question.id}
+            label={label(question)}
+            value={value}
+            onChange={(next) => onChange(question.id, next)}
+            rows={2}
+            maxLength={500}
+            placeholder="Vegetarian, no nuts"
+          />
+        ) : (
+          <Input
+            key={question.id}
+            label={label(question)}
+            value={value}
+            onChange={(next) => onChange(question.id, next)}
+            maxLength={500}
+          />
+        );
+      })}
+    </div>
   );
 }

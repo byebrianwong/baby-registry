@@ -8,6 +8,7 @@ import {
   samplePotluckSheet,
 } from "@/lib/event-sample-data";
 import { signupRowsForGuest } from "@/lib/signups";
+import { defaultQuestions } from "@/lib/rsvp-questions";
 
 // The RSVP box on its own, for the questions that only some events ask. The
 // Event Invitation stories show it inside the whole page.
@@ -117,5 +118,34 @@ export const SignedUp: Story = {
   args: {
     guest: { name: "Glinda", status: "yes", partySize: 2, note: null },
     signup: { title: samplePotluckSheet.sheet.title, rows: signupRowsForGuest(samplePotluckSheet, "g1", SAMPLE_TODAY) },
+  },
+};
+
+/**
+ * A wedding's questions. Coming with someone asks their name, then a meal for
+ * each of you. Dietary needs are optional.
+ */
+export const WeddingQuestions: Story = {
+  args: { maxPartySize: 2, questions: defaultQuestions(["plus_ones", "meal", "diet"]) },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByRole("button", { name: "Going" }));
+    await userEvent.selectOptions(canvas.getByLabelText(/How many people, including you/), "2");
+    await userEvent.type(canvas.getByRole("textbox", { name: "Name of guest 2" }), "Elphaba");
+    await expect(canvas.getByRole("combobox", { name: "For Elphaba" })).toBeVisible();
+  },
+};
+
+/** A guest who answered sees their answers, with each person's meal. */
+export const WeddingAnswered: Story = {
+  args: {
+    guest: {
+      name: "Fiyero",
+      status: "yes",
+      partySize: 2,
+      note: null,
+      answers: { meal: ["Fish", "Vegetarian"], plus_ones: ["Elphaba"], diet: "Elphaba is allergic to water" },
+    },
+    questions: defaultQuestions(["plus_ones", "meal", "diet"]),
   },
 };

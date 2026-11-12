@@ -38,6 +38,7 @@ import {
 } from "@/lib/events";
 import { initialsFor } from "@/lib/initials";
 import { memberCountLabel, type GroupSummary } from "@/lib/groups";
+import { answerLabel, answerLines, mealCounts, storedAnswers, type RsvpQuestion } from "@/lib/rsvp-questions";
 import { cx } from "@/lib/utils/cx";
 
 type ActionResult = { error: string | null };
@@ -96,6 +97,8 @@ export interface EventGuestManagerProps {
    * "Side (Mac and cheese)". Undefined when the event has no sheet.
    */
   signups?: Record<string, string[]>;
+  /** The event's RSVP questions, to show each guest's answers. */
+  questions?: RsvpQuestion[];
 }
 
 type Filter = "all" | RsvpStatus;
@@ -130,7 +133,12 @@ function csvCell(value: string | number | null) {
 
 function downloadCsv(
   guests: EventGuest[],
-  { askKids = false, hasExchange = false, signups }: { askKids?: boolean; hasExchange?: boolean; signups?: Record<string, string[]> } = {},
+  {
+    askKids = false,
+    hasExchange = false,
+    signups,
+    questions = [],
+  }: { askKids?: boolean; hasExchange?: boolean; signups?: Record<string, string[]>; questions?: RsvpQuestion[] } = {},
 ) {
   const coming = (g: EventGuest) => g.rsvp_status === "yes" || g.rsvp_status === "maybe";
   const rows = [
@@ -142,6 +150,7 @@ function downloadCsv(
       ...(askKids ? ["Kids"] : []),
       ...(hasExchange ? ["Gift exchange"] : []),
       ...(signups ? ["Signed up for"] : []),
+      ...questions.map((q) => q.label),
       "Note",
       "Invited",
     ],
@@ -153,6 +162,10 @@ function downloadCsv(
       ...(askKids ? [coming(g) ? g.kids_count : ""] : []),
       ...(hasExchange ? [g.in_exchange ? "In" : ""] : []),
       ...(signups ? [(signups[g.id] ?? []).join("; ")] : []),
+      ...questions.map((q) => {
+        const answer = storedAnswers(g.answers)[q.id];
+        return Array.isArray(answer) ? answer.filter(Boolean).join("; ") : (answer ?? "");
+      }),
       g.rsvp_note,
       g.invited_at ? new Date(g.invited_at).toISOString().slice(0, 10) : "",
     ]),
@@ -182,6 +195,7 @@ export function EventGuestManager({
   groups = [],
   eventTitle = "",
   signups,
+  questions = [],
 }: EventGuestManagerProps) {
   const router = useRouter();
   const actions = { ...DEFAULT_ACTIONS, ...actionOverrides };
@@ -318,6 +332,10 @@ export function EventGuestManager({
     router.refresh();
   };
 
+  const meals = mealCounts(
+    questions,
+    guests.map((g) => ({ rsvp_status: g.rsvp_status, answers: storedAnswers(g.answers) })),
+  );
   const kidsComing = guests
     .filter((g) => g.rsvp_status === "yes")
     .reduce((sum, g) => sum + (g.kids_count ?? 0), 0);
@@ -346,6 +364,21 @@ export function EventGuestManager({
           detail={`${summary.invited} of ${summary.guests} invited`}
         />
       </div>
+
+      {meals.map(({ question, counts, unanswered }) => (
+        <div key={question.id} className="rounded-xl border border-secondary p-4 text-sm">
+          <p className="font-medium text-primary">{question.label}, for everyone going</p>
+          <p className="mt-1 text-secondary">
+            {counts.map((c) => `${c.option}: ${c.count}`).join(" · ")}
+            {unanswered > 0 && (
+              <span className="text-tertiary">
+                {" "}
+                · {unanswered === 1 ? "1 RSVP" : `${unanswered} RSVPs`} without an answer
+              </span>
+            )}
+          </p>
+        </div>
+      ))}
 
       {/* Sending */}
       {(uninvited.length > 0 || remindable.length > 0) && (
@@ -553,7 +586,7 @@ export function EventGuestManager({
                   Save as a group
                 </span>
               </Button>
-              <Button variant="outline" size="sm" onClick={() => downloadCsv(guests, { askKids, hasExchange, signups })}>
+              <Button variant="outline" size="sm" onClick={() => downloadCsv(guests, { askKids, hasExchange, signups, questions })}>
                 <span className="inline-flex items-center gap-1.5">
                   <Download className="size-4" />
                   Download CSV
@@ -642,6 +675,12 @@ export function EventGuestManager({
                         ? `Invited ${formatShortDate(guest.invited_at)}${guest.reminded_at ? `, reminded ${formatShortDate(guest.reminded_at)}` : ""}`
                         : "Not sent yet"}
                   </p>
+                  {(guest.rsvp_status === "yes" || guest.rsvp_status === "maybe") &&
+                    answerLines(questions, storedAnswers(guest.answers), guest.name).map((line) => (
+                      <p key={line.label} className="mt-1 text-sm text-secondary">
+                        <span className="font-medium text-primary">{answerLabel(line.label)}</span> {line.value}
+                      </p>
+                    ))}
                   {signups?.[guest.id] && signups[guest.id].length > 0 && (
                     <p className="mt-1 text-sm text-secondary">
                       <span className="font-medium text-primary">Signed up for:</span> {signups[guest.id].join(" · ")}

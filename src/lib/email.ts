@@ -20,10 +20,14 @@ import {
   eventInvitationHtml,
   rsvpGuestConfirmationHtml,
   rsvpHostNotificationHtml,
+  guestMessageHtml,
+  eventChangedHtml,
+  dayBeforeReminderHtml,
   type EventEmailDetails,
 } from "./email-templates";
 import { displayName, profilePath } from "./profile-link";
 import {
+  eventLocationText,
   formatEventDate,
   formatEventTime,
   googleCalendarUrl,
@@ -33,6 +37,7 @@ import {
   type LinkedRegistry,
 } from "./events";
 import { hidesAddressUntilSignup, withAddressFor } from "./signups";
+import type { ChangedPart } from "./event-updates";
 
 const FROM = "Regibee <notifications@regibee.com>";
 
@@ -725,6 +730,8 @@ export async function confirmRsvpToGuest(opts: {
   partySize: number;
   /** The event's sign-up sheet and what this guest signed up for, as "Side (Mac and cheese)". */
   signups?: { title: string; claims: string[] } | null;
+  /** The guest's answers to the RSVP questions. */
+  answers?: { label: string; value: string }[];
 }) {
   try {
     // A meal train's address goes only to people who signed up for a day.
@@ -750,6 +757,7 @@ export async function confirmRsvpToGuest(opts: {
         calendarUrl: googleCalendarUrl(event, eventUrl),
         inExchange: opts.inExchange,
         signups: opts.signups?.claims ?? [],
+        answers: opts.answers,
       }),
     });
   } catch (err) {
@@ -769,6 +777,8 @@ export async function notifyHostOfRsvp(opts: {
   newGuest: boolean;
   /** What the guest signed up for, as "Side (Mac and cheese)". */
   signups?: string[];
+  /** The guest's answers to the RSVP questions. */
+  answers?: { label: string; value: string }[];
 }) {
   try {
     const [{ data: userData }, { data: profile }] = await Promise.all([
@@ -804,9 +814,158 @@ export async function notifyHostOfRsvp(opts: {
         newGuest: opts.newGuest,
         signups: opts.signups ?? [],
         mealTrain: hidesAddressUntilSignup(opts.event.event_type),
+        answers: opts.answers,
       }),
     });
   } catch (err) {
     console.error("[email] Failed to send RSVP notification:", err);
   }
+}
+
+// ── Updates to guests (#100) ─────────────────────────────────
+
+type GuestEmail = { to: string; subject: string; html: string };
+
+/**
+ * Sends one email per guest, in batches, from the host's name. Returns how
+ * many Resend accepted, and an error to show when a batch failed.
+ */
+async function sendGuestEmails(
+  emails: GuestEmail[],
+  opts: { hostName: string; replyTo: string | null },
+): Promise<{ sent: number; error: string | null }> {
+  let sent = 0;
+  for (let start = 0; start < emails.length; start += BATCH_SIZE) {
+    const chunk = emails.slice(start, start + BATCH_SIZE);
+    try {
+      const { error } = await getMailer().sendBatch(
+        chunk.map((email) => ({
+          from: fromHost(opts.hostName),
+          to: TEST_RECIPIENT_OVERRIDE || email.to,
+          ...(opts.replyTo ? { replyTo: opts.replyTo } : {}),
+          subject: email.subject,
+          html: email.html,
+        })),
+      );
+      if (error) {
+        console.error("[email] Failed to send to guests:", error);
+        return { sent, error: "Some emails didn't send. Try again in a few minutes." };
+      }
+      sent += chunk.length;
+    } catch (err) {
+      console.error("[email] Failed to send to guests:", err);
+      return { sent, error: "Some emails didn't send. Try again in a few minutes." };
+    }
+  }
+  return { sent, error: null };
+}
+
+/** A message the host wrote, to the guests they chose. */
+export async function sendGuestMessage(opts: {
+  event: EventDetails;
+  hostName: string;
+  replyTo: string | null;
+  subject: string;
+  body: string;
+  guests: { name: string; email: string; token: string }[];
+}): Promise<{ sent: number; error: string | null }> {
+  return sendGuestEmails(
+    opts.guests.map((guest) => ({
+      to: guest.email,
+      subject: opts.subject,
+      html: guestMessageHtml({
+        guestName: guest.name,
+        hostName: opts.hostName,
+        eventTitle: opts.event.title,
+        body: opts.body,
+        rsvpUrl: guestRsvpUrl(opts.event.slug, guest.token),
+      }),
+    })),
+    opts,
+  );
+}
+
+const PART_LABELS: Record<ChangedPart, string> = { date: "Date", time: "Time", place: "Place" };
+
+function describePart(event: EventDetails, part: ChangedPart): string {
+  if (part === "date") return event.event_date ? formatEventDate(event.event_date) : "No date";
+  if (part === "time") return formatEventTime(event) ?? "No time";
+  return eventLocationText(event) || "No place";
+}
+
+/**
+ * Tells guests the date, time or place changed. A meal train's address goes
+ * only to guests who signed up for a day (withAddressFor in signups.ts), so a
+ * place change on a meal train reaches only them.
+ */
+export async function sendEventChangeEmails(opts: {
+  before: EventDetails;
+  after: EventDetails;
+  parts: ChangedPart[];
+  registries: LinkedRegistry[];
+  hostName: string;
+  replyTo: string | null;
+  guests: { name: string; email: string; token: string; signedUp: boolean }[];
+}): Promise<{ sent: number; error: string | null }> {
+  const what = opts.parts.map((p) => PART_LABELS[p].toLowerCase());
+  const subject = `New ${what.length === 1 ? what[0] : `${what.slice(0, -1).join(", ")} and ${what[what.length - 1]}`}: ${opts.after.title}`;
+  const siteEventUrl = `${siteUrl()}/e/${opts.after.slug}`;
+  const emails: GuestEmail[] = [];
+  for (const guest of opts.guests) {
+    const before = withAddressFor(opts.before, guest.signedUp);
+    const after = withAddressFor(opts.after, guest.signedUp);
+    // Only the parts this guest can see: a meal train's place is for helpers.
+    const parts = opts.parts.filter(
+      (part) => part !== "place" || guest.signedUp || !hidesAddressUntilSignup(opts.after.event_type),
+    );
+    if (parts.length === 0) continue;
+    emails.push({
+      to: guest.email,
+      subject,
+      html: eventChangedHtml({
+        guestName: guest.name,
+        hostName: opts.hostName,
+        event: eventEmailDetails(after, opts.registries),
+        changes: parts.map((part) => ({
+          label: PART_LABELS[part],
+          before: describePart(before, part),
+          after: describePart(after, part),
+        })),
+        rsvpUrl: guestRsvpUrl(opts.after.slug, guest.token),
+        calendarUrl: parts.includes("date") || parts.includes("time") ? googleCalendarUrl(after, siteEventUrl) : null,
+      }),
+    });
+  }
+  return sendGuestEmails(emails, opts);
+}
+
+/** The day before the event, to everyone going. Returns how many were sent. */
+export async function sendDayBeforeReminders(opts: {
+  event: EventDetails;
+  registries: LinkedRegistry[];
+  hostName: string;
+  /** Where guests' replies go: the host's own address. */
+  replyTo: string | null;
+  guests: { name: string; email: string; token: string; signups: string[] }[];
+}): Promise<number> {
+  const eventUrl = `${siteUrl()}/e/${opts.event.slug}`;
+  const { sent } = await sendGuestEmails(
+    opts.guests.map((guest) => {
+      const event = withAddressFor(opts.event, guest.signups.length > 0);
+      return {
+        to: guest.email,
+        subject: `Tomorrow: ${opts.event.title}`,
+        html: dayBeforeReminderHtml({
+          guestName: guest.name,
+          hostName: opts.hostName,
+          event: eventEmailDetails(event, opts.registries),
+          rsvpUrl: guestRsvpUrl(opts.event.slug, guest.token),
+          calendarUrl: googleCalendarUrl(event, eventUrl),
+          signups: guest.signups,
+        }),
+      };
+    }),
+    { hostName: opts.hostName, replyTo: opts.replyTo },
+  );
+  return sent;
 }

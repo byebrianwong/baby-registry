@@ -47,8 +47,16 @@ export interface Occasion {
   /**
    * What a new event of this kind starts with. The host can change all of it.
    * `signup` starts a sign-up sheet from that preset (src/lib/signups.ts).
+   * `questions` are what the RSVP asks besides how many are coming
+   * (src/lib/rsvp-questions.ts).
    */
-  defaults?: { giftNote?: string; askKids?: boolean; exchange?: boolean; signup?: "potluck" | "meal_train" };
+  defaults?: {
+    giftNote?: string;
+    askKids?: boolean;
+    exchange?: boolean;
+    signup?: "potluck" | "meal_train";
+    questions?: ("meal" | "diet" | "plus_ones")[];
+  };
 }
 
 function possessive(name: string): string {
@@ -98,7 +106,7 @@ export const OCCASIONS = [
     titleFor: (name) => named(name, "Birthday Party"),
     list: BIRTHDAY_LIST,
     audiences: ["child", "someone"],
-    defaults: { askKids: true },
+    defaults: { askKids: true, questions: ["diet"] },
   },
   {
     id: "gift_exchange",
@@ -136,6 +144,7 @@ export const OCCASIONS = [
     titleFor: (name) => named(name, "Wedding"),
     list: WEDDING_LIST,
     audiences: ["us", "someone"],
+    defaults: { questions: ["plus_ones", "meal", "diet"] },
   },
   {
     id: "engagement",
@@ -208,7 +217,7 @@ export const OCCASIONS = [
     titleFor: (name) => named(name, "Potluck"),
     list: WISHLIST,
     audiences: ["no_one"],
-    defaults: { signup: "potluck" },
+    defaults: { signup: "potluck", questions: ["diet"] },
   },
   {
     id: "meal_train",
@@ -228,6 +237,7 @@ export const OCCASIONS = [
     titleFor: () => "Get-Together",
     list: WISHLIST,
     audiences: ["no_one"],
+    defaults: { questions: ["diet"] },
   },
   {
     id: "other",
