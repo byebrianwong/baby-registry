@@ -12,6 +12,7 @@ import {
   maskGiverForOwner,
   reservationsHiddenFrom,
 } from "@shared/gifts";
+import { parseRetailerRegistries, type RetailerRegistry } from "@shared/retailers";
 
 import { useSession } from "@/lib/auth";
 import { demo, isDemo } from "@/lib/demo";
@@ -164,6 +165,17 @@ async function fetchRegistry(id: string, userId: string): Promise<RegistryDetail
     pendingSuggestions: suggestions.count ?? 0,
     reservationsHidden: hidden,
   };
+}
+
+/**
+ * The owner's registries at stores, from the registry's settings, as the
+ * website's dashboard reads them. The owner and co-managers can read settings
+ * (the registries row, under RLS), and fetchRegistry already does. Null for
+ * registries other than baby registries, which don't show store registries,
+ * as on the website.
+ */
+export function storeRegistries(registry: Registry): RetailerRegistry[] | null {
+  return registry.registry_type === "baby" ? parseRetailerRegistries(registry.settings) : null;
 }
 
 export function useRegistry(id: string | undefined) {

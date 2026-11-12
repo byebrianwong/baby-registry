@@ -31,7 +31,15 @@ import {
   ProgressBar,
   Text,
 } from "@/components/ui";
-import { errorMessage, useCancelGift, useDeleteItem, useGifts, useRegistry, useToggleItem } from "@/lib/data";
+import {
+  errorMessage,
+  storeRegistries,
+  useCancelGift,
+  useDeleteItem,
+  useGifts,
+  useRegistry,
+  useToggleItem,
+} from "@/lib/data";
 import { formatDollars, formatEventDate, formatPrice, initials, plural, relativeDay, timeAgo } from "@/lib/format";
 import { occasionLabel } from "@/lib/occasion";
 import { registryShareUrl, SITE_URL } from "@/lib/supabase";
@@ -80,6 +88,13 @@ export default function RegistryScreen() {
   const activeGifts = (gifts.data ?? []).filter((g) => g.status !== "cancelled");
 
   const sections = useMemo(() => (data ? itemSections(data, categoryFilter) : []), [data, categoryFilter]);
+  // One array for every row, kept while the registry row is unchanged, so
+  // changing an item doesn't redraw them all.
+  const registryRow = data?.registry;
+  const linkedStores = useMemo(
+    () => (registryRow ? (storeRegistries(registryRow)?.map((r) => r.store) ?? null) : null),
+    [registryRow]
+  );
 
   if (!data) {
     return (
@@ -187,7 +202,7 @@ export default function RegistryScreen() {
                 index === section.data.length - 1 && styles.groupLast,
               ]}
             >
-              <ItemRow item={item} actions={actions} />
+              <ItemRow item={item} actions={actions} linkedStores={linkedStores} />
               {index < section.data.length - 1 ? <Divider inset={92} /> : null}
             </View>
           )}

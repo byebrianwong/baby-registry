@@ -12,7 +12,16 @@ import {
   StyleSheet,
   View,
 } from "react-native";
+import * as WebBrowser from "expo-web-browser";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+
+import {
+  classifyStoreLink,
+  copyLinkSteps,
+  storesWithRegistryLinks,
+  type RetailerRegistry,
+  type StoreId,
+} from "@shared/retailers";
 
 import { Icon } from "@/components/icon";
 import { ItemImage } from "@/components/item-image";
@@ -30,7 +39,15 @@ import {
   SwitchRow,
   Text,
 } from "@/components/ui";
-import { errorMessage, useAddItem, useCreateCategory, useDeleteItem, useRegistry, useUpdateItem } from "@/lib/data";
+import {
+  errorMessage,
+  storeRegistries,
+  useAddItem,
+  useCreateCategory,
+  useDeleteItem,
+  useRegistry,
+  useUpdateItem,
+} from "@/lib/data";
 import { parsePrice } from "@/lib/format";
 import { itemMatchKey, normalizeLink, parseSharedText, storeLabel, type ReadProduct } from "@/lib/product";
 import { radius, spacing, useTheme } from "@/lib/theme";
@@ -123,6 +140,14 @@ export function ItemEditor({
   const [confirmedDuplicate, setConfirmedDuplicate] = useState(false);
 
   const categories = detail.data?.categories ?? [];
+  // Store registries are for baby registries only, as on the website.
+  const linkedRegistries = detail.data ? storeRegistries(detail.data.registry) : null;
+  // A registry link on any item shows the owner has a registry at that store,
+  // even before they link it in settings, as on the website's dashboard.
+  const registryLinkStores = useMemo(
+    () => storesWithRegistryLinks((detail.data?.items ?? []).map((i) => i.external_url)),
+    [detail.data?.items]
+  );
   const duplicate = useMemo(() => {
     const key = itemMatchKey(link);
     if (!key) return null;
@@ -258,6 +283,7 @@ export function ItemEditor({
 
   const saving = addItem.isPending;
   const store = storeLabel(link);
+  const openUrl = normalizeLink(link);
   const saveTitle =
     mode === "edit" ? "Save changes" : duplicate && confirmedDuplicate ? "Add it again" : "Add to registry";
 
@@ -318,17 +344,20 @@ export function ItemEditor({
             returnKeyType="go"
             trailing={
               link ? (
-                <IconButton
-                  icon="close"
-                  size={16}
-                  color={theme.textTertiary}
-                  accessibilityLabel="Clear link"
-                  onPress={() => {
-                    setLink("");
-                    setReadingUrl(null);
-                    setReadState("idle");
-                  }}
-                />
+                <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.xs }}>
+                  {openUrl ? <OpenLinkButton url={openUrl} /> : null}
+                  <IconButton
+                    icon="close"
+                    size={16}
+                    color={theme.textTertiary}
+                    accessibilityLabel="Clear link"
+                    onPress={() => {
+                      setLink("");
+                      setReadingUrl(null);
+                      setReadState("idle");
+                    }}
+                  />
+                </View>
               ) : null
             }
           />
@@ -341,6 +370,9 @@ export function ItemEditor({
             </View>
           ) : null}
           <ReadStatus state={readState} store={store} />
+          {linkedRegistries ? (
+            <StoreLinkStatus link={link} linkedRegistries={linkedRegistries} registryLinkStores={registryLinkStores} />
+          ) : null}
           {duplicate && mode === "add" ? (
             <View style={[styles.notice, { backgroundColor: theme.accentSoft }]}>
               <Icon name="error" size={16} color={theme.onAccentSoft} />
@@ -525,6 +557,118 @@ export function ItemEditor({
   );
 }
 
+/** Opens the link as typed in the in-app browser, to check it's the right page. */
+function OpenLinkButton({ url }: { url: string }) {
+  const theme = useTheme();
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel="Open link"
+      accessibilityHint="Opens the page in a browser"
+      hitSlop={6}
+      onPress={() => {
+        haptic();
+        WebBrowser.openBrowserAsync(url);
+      }}
+      style={({ pressed }) => [styles.openButton, { backgroundColor: theme.tintSoft, opacity: pressed ? 0.6 : 1 }]}
+    >
+      <Icon name="external" size={13} color={theme.tint} weight="semibold" />
+      <Text variant="footnote" tone="tint" style={{ fontWeight: "600" }}>
+        Open
+      </Text>
+    </Pressable>
+  );
+}
+
+/**
+ * Whether gifts bought through the link count toward the owner's store
+ * registry, worded as the website's StoreLinkNotice
+ * (src/components/store-link-notice.tsx). It shows only the two clear cases: a
+ * registry link, and a plain link at a store where the owner has a registry.
+ */
+function StoreLinkStatus({
+  link,
+  linkedRegistries,
+  registryLinkStores,
+}: {
+  link: string;
+  linkedRegistries: RetailerRegistry[];
+  registryLinkStores: StoreId[];
+}) {
+  const theme = useTheme();
+  // Remember which link the owner dismissed, so a new one shows the warning again.
+  const [dismissedFor, setDismissedFor] = useState<string | null>(null);
+
+  const result = classifyStoreLink(link);
+  if (!result || dismissedFor === link) return null;
+  const { store, kind } = result;
+
+  if (kind === "registry") {
+    return (
+      <View style={[styles.notice, { backgroundColor: theme.successSoft }]} accessibilityLiveRegion="polite">
+        <Icon name="checkCircle" size={16} color={theme.success} />
+        <Text variant="footnote" tone="success" style={{ flex: 1 }}>
+          <Text variant="footnote" tone="success" style={{ fontWeight: "600" }}>
+            {store.name} registry link.
+          </Text>{" "}
+          Gifts bought through this link count toward your {store.name} registry.
+        </Text>
+      </View>
+    );
+  }
+
+  // Only warn when the owner has a registry at this store. Otherwise the
+  // warning would be noise.
+  const linked = linkedRegistries.find((r) => r.store === store.id);
+  if (kind !== "plain" || (!linked && !registryLinkStores.includes(store.id))) return null;
+
+  const color = { color: theme.onAccentSoft };
+  return (
+    <View style={[styles.notice, { backgroundColor: theme.accentSoft }]} accessibilityLiveRegion="polite">
+      <Icon name="error" size={16} color={theme.onAccentSoft} />
+      <View style={{ flex: 1, gap: spacing.sm }}>
+        <Text variant="footnote" style={color}>
+          <Text variant="footnote" style={[color, { fontWeight: "600" }]}>
+            This looks like a regular {store.name} link.
+          </Text>{" "}
+          Gifts bought through it may not count toward your {store.name} registry.
+        </Text>
+        <View style={{ gap: 2 }}>
+          <Text variant="footnote" style={[color, { fontWeight: "600" }]}>
+            To use your registry link instead
+          </Text>
+          {copyLinkSteps(store).map((step, index) => (
+            <Text key={step} variant="footnote" style={color}>
+              {index + 1}. {step}
+            </Text>
+          ))}
+        </View>
+        <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "center", columnGap: spacing.md, rowGap: spacing.xs }}>
+          {linked ? (
+            <Button
+              title={`Open my ${store.name} registry`}
+              icon="external"
+              variant="secondary"
+              size="small"
+              onPress={() => WebBrowser.openBrowserAsync(linked.url)}
+            />
+          ) : null}
+          <Pressable
+            accessibilityRole="button"
+            hitSlop={8}
+            onPress={() => setDismissedFor(link)}
+            style={({ pressed }) => ({ minHeight: 36, justifyContent: "center", opacity: pressed ? 0.6 : 1 })}
+          >
+            <Text variant="footnote" style={[color, { fontWeight: "600", textDecorationLine: "underline" }]}>
+              Use this link anyway
+            </Text>
+          </Pressable>
+        </View>
+      </View>
+    </View>
+  );
+}
+
 function ReadStatus({ state, store }: { state: ReadState; store: string | null }) {
   const theme = useTheme();
   if (state === "reading") {
@@ -562,6 +706,14 @@ function ReadStatus({ state, store }: { state: ReadState; store: string | null }
 
 const styles = StyleSheet.create({
   status: { flexDirection: "row", alignItems: "center", gap: spacing.sm, minHeight: 20 },
+  openButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: radius.pill,
+  },
   notice: {
     flexDirection: "row",
     gap: spacing.sm,
