@@ -52,6 +52,15 @@ jobs:
         with:
           version: 3.0.0
 
+      # Local Supabase listens on ports 54321 to 54329, which sit inside the
+      # range Linux picks from for outgoing connections (32768 to 60999). While
+      # the runner downloads Supabase's images, one of those connections can
+      # hold a port just as a container tries to listen on it, and the start
+      # fails with "address already in use". Moving outgoing connections to
+      # 60000 and up keeps them out of the way.
+      - name: Keep outgoing connections off local Supabase's ports
+        run: sudo sysctl -w net.ipv4.ip_local_port_range="60000 65000"
+
       - name: Start local Supabase and run the migrations
         run: npm run e2e:db
 
