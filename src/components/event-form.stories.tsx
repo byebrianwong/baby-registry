@@ -37,8 +37,11 @@ export const NewEvent: Story = {
   args: { initial: { time_zone: "America/Los_Angeles" } },
 };
 
+// The edit page always passes the event's linked registries.
+const linkedRegistries = [{ id: registries[0].id, title: registries[0].title }];
+
 export const EditingWithPicture: Story = {
-  args: { eventId: sampleEvent.id, initial: sampleEvent },
+  args: { eventId: sampleEvent.id, initial: sampleEvent, linkedRegistries },
 };
 
 /**
@@ -79,12 +82,13 @@ export const EditingWeddingQuestions: Story = {
       image_url: null,
       rsvp_questions: defaultQuestions(["plus_ones", "meal", "diet"]),
     },
+    linkedRegistries,
   },
 };
 
 /** Changing the place of an event offers to email guests about it. */
 export const ChangingThePlace: Story = {
-  args: { eventId: sampleEvent.id, initial: { ...sampleEvent, image_url: null } },
+  args: { eventId: sampleEvent.id, initial: { ...sampleEvent, image_url: null }, linkedRegistries },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     // Set the whole value at once. Typing into this big form doesn't always
