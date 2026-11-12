@@ -75,7 +75,9 @@ export const WritingAMessage: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await userEvent.click(canvas.getByRole("button", { name: "Message everyone going" }));
-    const dialog = await screen.findByRole("dialog");
-    await expect(within(dialog).getByRole("button", { name: "Send to 12 guests" })).toBeVisible();
+    const dialog = within(await screen.findByRole("dialog"));
+    // In the document, not "visible": the dialog fades in, and Chromatic
+    // snapshots the end of the fade.
+    await expect(dialog.getByRole("button", { name: "Send to 12 guests" })).toBeInTheDocument();
   },
 };
