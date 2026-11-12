@@ -110,9 +110,12 @@ async function withPlacedItems(registries: any[], viewerId: string): Promise<Set
 }
 
 // What each registry card needs: the registry, its items, and their purchases.
+// The items are the ones whose registry_id is this registry. Naming that link
+// matters: registry_item_placements also joins registries and items, and
+// without the name Supabase refuses the query as ambiguous (PGRST201).
 const REGISTRY_CARD_FIELDS = `
   *,
-  registry_items(${CARD_ITEM_FIELDS})
+  registry_items!registry_items_registry_id_fkey(${CARD_ITEM_FIELDS})
 `;
 
 // Registries the user helps manage but doesn't own. Pending email invites are
