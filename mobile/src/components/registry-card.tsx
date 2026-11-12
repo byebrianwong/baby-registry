@@ -18,7 +18,11 @@ export function RegistryCard({ registry, onPress }: { registry: RegistrySummary;
     <Card
       onPress={onPress}
       accessibilityRole="button"
-      accessibilityLabel={`${registry.title}. ${registry.fulfilledCount} of ${registry.itemCount} items given.`}
+      accessibilityLabel={
+        registry.reservationsHidden
+          ? `${registry.title}. What's been reserved is hidden from you.`
+          : `${registry.title}. ${registry.fulfilledCount} of ${registry.itemCount} items given.`
+      }
     >
       <View style={styles.top}>
         {registry.photo_url ? (
@@ -43,13 +47,22 @@ export function RegistryCard({ registry, onPress }: { registry: RegistrySummary;
       </View>
 
       <View style={{ gap: 6 }}>
-        <ProgressBar value={progress} />
-        <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-          <Text variant="footnote" tone="secondary">
-            {registry.itemCount === 0
-              ? "No items yet"
-              : `${registry.fulfilledCount} of ${plural(registry.itemCount, "item")} given`}
-          </Text>
+        {registry.reservationsHidden ? null : <ProgressBar value={progress} />}
+        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+          {registry.reservationsHidden ? (
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flexShrink: 1 }}>
+              <Icon name="eyeSlash" size={14} color={theme.textSecondary} />
+              <Text variant="footnote" tone="secondary" numberOfLines={1} style={{ flexShrink: 1 }}>
+                What&apos;s been reserved is hidden
+              </Text>
+            </View>
+          ) : (
+            <Text variant="footnote" tone="secondary">
+              {registry.itemCount === 0
+                ? "No items yet"
+                : `${registry.fulfilledCount} of ${plural(registry.itemCount, "item")} given`}
+            </Text>
+          )}
           {registry.totalValue > 0 ? (
             <Text variant="footnote" tone="tertiary">
               {formatDollars(registry.totalValue)}

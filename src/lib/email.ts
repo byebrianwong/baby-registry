@@ -1,7 +1,7 @@
 import { getMailer, sendEmail } from "./mailer";
 import { supabaseAdmin } from "./supabase-admin";
 import { formatPrice } from "./money";
-import { SECRET_GIVER_NAME } from "./gifts";
+import { SECRET_GIVER_NAME, hidesReservations } from "./gifts";
 import {
   itemReservedBuyerHtml,
   itemReservationReminderBuyerHtml,
@@ -51,6 +51,12 @@ async function getRegistryManagerEmails(opts: {
   itemId?: string;
   fundId?: string;
   registryId?: string;
+  /**
+   * The email is about a gift: a reservation, a purchase or a pledge. An
+   * owner who hides what's been reserved from themselves doesn't get these.
+   * Co-managers still do.
+   */
+  giftNews?: boolean;
 }): Promise<ManagerEmailInfo[] | null> {
   let registryId = opts.registryId;
 
@@ -74,11 +80,12 @@ async function getRegistryManagerEmails(opts: {
 
   const { data: registry } = await supabaseAdmin
     .from("registries")
-    .select("title, parent_names, honoree_names, owner_id, registry_type, event_type")
+    .select("title, parent_names, honoree_names, owner_id, registry_type, event_type, settings")
     .eq("id", registryId)
     .single();
 
   if (!registry) return null;
+  const skipOwner = Boolean(opts.giftNews) && hidesReservations(registry.settings);
 
   const parentNames =
     registry.honoree_names || registry.parent_names || "there";
@@ -90,9 +97,10 @@ async function getRegistryManagerEmails(opts: {
     .eq("registry_id", registryId);
 
   // Fall back to the registry owner if registry_managers has no rows
-  const userIds = managers && managers.length > 0
+  const userIds = (managers && managers.length > 0
     ? managers.map((m) => m.user_id)
-    : [registry.owner_id];
+    : [registry.owner_id]
+  ).filter((uid) => !(skipOwner && uid === registry.owner_id));
 
   // Look up each manager's email and name
   const results: ManagerEmailInfo[] = [];
@@ -287,7 +295,7 @@ export async function notifyItemGiven(opts: {
   welcomeBox?: { storeName: string; boxName: string } | null;
 }) {
   try {
-    const managers = await getRegistryManagerEmails({ itemId: opts.itemId });
+    const managers = await getRegistryManagerEmails({ itemId: opts.itemId, giftNews: true });
     if (!managers) return;
 
     const buyerName = opts.hideGiver ? SECRET_GIVER_NAME : opts.buyerName;
@@ -371,7 +379,7 @@ export async function notifyCashFundContribution(opts: {
   message?: string | null;
 }) {
   try {
-    const managers = await getRegistryManagerEmails({ fundId: opts.fundId });
+    const managers = await getRegistryManagerEmails({ fundId: opts.fundId, giftNews: true });
     if (!managers) return;
 
     const buyerName = opts.hideGiver ? SECRET_GIVER_NAME : opts.buyerName;
@@ -416,7 +424,7 @@ export async function notifyItemCovered(opts: {
   message?: string | null;
 }) {
   try {
-    const managers = await getRegistryManagerEmails({ itemId: opts.itemId });
+    const managers = await getRegistryManagerEmails({ itemId: opts.itemId, giftNews: true });
     if (!managers) return;
 
     const buyerName = opts.hideGiver ? SECRET_GIVER_NAME : opts.buyerName;

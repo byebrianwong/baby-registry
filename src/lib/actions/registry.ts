@@ -13,6 +13,7 @@ import {
   getRegistryInfoForBuyer,
 } from "@/lib/email";
 import { supabaseAdmin } from "@/lib/supabase-admin";
+import { insertRegistry } from "@/lib/registry-create";
 import { registryPhotoUrlPrefix } from "@/lib/registry-photos";
 import { buildBuyerRegistryUrl } from "@/lib/buyer-link";
 import {
@@ -129,17 +130,6 @@ async function recordEventGuestOnGift(
   }
 }
 
-function generateSlug(title: string): string {
-  return (
-    title
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/(^-|-$)/g, "") +
-    "-" +
-    Math.random().toString(36).substring(2, 8)
-  );
-}
-
 async function requireManager(registryId: string) {
   const supabase = await createClient();
   const {
@@ -176,19 +166,6 @@ async function requireManager(registryId: string) {
   return { user, role: null, error: "Not authorized" } as const;
 }
 
-const BABY_DEFAULT_CATEGORIES = [
-  "Nursery & Sleep",
-  "Feeding",
-  "Diapering",
-  "Gear & Travel",
-  "Bath",
-  "Clothing",
-  "Health & Safety",
-  "Toys & Books",
-  "Maternity & Postpartum",
-  "Gifts & Extras",
-];
-
 const VALID_REGISTRY_TYPES = ["baby", "personal"] as const;
 const VALID_EVENT_TYPES = [
   "birthday",
@@ -219,7 +196,6 @@ export async function createRegistry(formData: FormData) {
   const venmo = formData.get("venmo") as string;
   const paypal = formData.get("paypal") as string;
   const zelle = formData.get("zelle") as string;
-  const slug = generateSlug(title);
 
   const rawRegistryType = (formData.get("registryType") as string) || "baby";
   const registryType = (VALID_REGISTRY_TYPES as readonly string[]).includes(
@@ -245,37 +221,21 @@ export async function createRegistry(formData: FormData) {
   if (zelle) paymentMethods.zelle = zelle;
   if (Object.keys(paymentMethods).length > 0) settings.payment_methods = paymentMethods;
 
-  const { data: registry, error } = await supabase
-    .from("registries")
-    .insert({
-      owner_id: user.id,
-      title,
-      slug,
-      event_date: eventDate || null,
-      description: description || null,
-      is_public: isPublic,
-      listed_on_profile: listedOnProfile,
-      registry_type: registryType,
-      event_type: eventType,
-      settings: Object.keys(settings).length > 0 ? settings : null,
-    })
-    .select()
-    .single();
-
-  if (error) {
-    return { error: error.message };
-  }
-
-  // Baby registries get the curated 10-category seed; personal registries start
-  // empty and the owner adds categories as they go.
-  if (registryType === "baby") {
-    await supabase.from("categories").insert(
-      BABY_DEFAULT_CATEGORIES.map((name, index) => ({
-        registry_id: registry.id,
-        name,
-        sort_order: index,
-      })),
-    );
+  // Baby registries get the curated 10-category seed; personal registries
+  // start empty and the owner adds categories as they go.
+  const registry = await insertRegistry(supabase, {
+    ownerId: user.id,
+    title,
+    registryType,
+    eventType,
+    eventDate,
+    description,
+    isPublic,
+    listedOnProfile,
+    settings,
+  });
+  if ("error" in registry) {
+    return { error: registry.error };
   }
 
   redirect(`/dashboard/registry/${registry.id}`);
@@ -872,6 +832,41 @@ export async function updatePaymentMethods(
   }
 
   revalidatePath(`/dashboard/registry/${registryId}`);
+  return { success: true };
+}
+
+/**
+ * "Hide what's been reserved from me" and "I keep this list for my child".
+ * Only the owner can change them, since they decide what the owner sees.
+ * Co-managers always see what's been reserved.
+ */
+export async function updateReservationPrivacy(
+  registryId: string,
+  input: { hide: boolean; forChild: boolean }
+): Promise<{ error?: string; success?: true }> {
+  const { user, role, error: authError } = await requireManager(registryId);
+  if (authError || !user) return { error: authError || "Not authenticated" };
+  if (role !== "owner") return { error: "Only the list's owner can change this." };
+
+  const { data: registry } = await supabaseAdmin
+    .from("registries")
+    .select("settings")
+    .eq("id", registryId)
+    .single();
+  if (!registry) return { error: "Registry not found" };
+
+  const settings = { ...((registry.settings as Record<string, unknown>) || {}) };
+  // A list kept for a child always shows what's been reserved.
+  settings.for_child = input.forChild;
+  settings.hide_reservations = input.forChild ? false : input.hide;
+  settings.hide_reservations_source = "owner";
+
+  const { error } = await supabaseAdmin.from("registries").update({ settings }).eq("id", registryId);
+  if (error) return { error: error.message };
+
+  revalidatePath("/dashboard");
+  revalidatePath(`/dashboard/registry/${registryId}`);
+  revalidatePath(`/dashboard/registry/${registryId}/settings`);
   return { success: true };
 }
 

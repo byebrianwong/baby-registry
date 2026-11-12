@@ -17,6 +17,7 @@ A gift registry app built with Next.js, Supabase, and Tailwind CSS. It started a
 - **Guest suggestions** - Guests can suggest items. You accept or decline them on the registry page.
 - **Co-managers** - Invite a partner or family member by email or with an invite link. Managers can add and edit items, see gift activity and manage categories.
 - **Gift activity** - See who reserved what, and cancel a reservation if you need to.
+- **Hide what's been reserved from me** - A list's owner can choose not to see what people reserve or pledge, on the website and in the app, and gets no gift emails. Guests still see what's taken, so nobody buys the same thing twice, and co-managers still see everything. Regibee turns it on when the owner adds a personal wishlist to a gift exchange. A list marked "I keep this list for my child" always shows reservations, so the parent can plan.
 
 ### Giving gifts
 
@@ -27,6 +28,7 @@ A gift registry app built with Next.js, Supabase, and Tailwind CSS. It started a
 
 ### Planning events
 
+- **One New button** - "New" on the dashboard and the Events tab asks three questions: what you're planning (16 occasions, from a baby shower to a get-together), who it's for (you, a couple, your child, someone else, everyone, or no one) and how gifts work. Then it makes everything in one go: the event, a gift list for you or your child linked to it, a link to someone else's list, a Secret Santa draw, or a "No gifts" note. "Ask them to make one" emails the person the event is for a link (`/list-request/<token>`); the list they make is linked to the invitation as soon as it exists. "Make just a wishlist" skips the event. The full registry and event forms are still a link away.
 - **Events with invitations** - Plan a baby shower, birthday, kid's birthday, gift exchange, Christmas party, bridal shower, wedding, retirement or any other event on the Events tab (`/dashboard/events`). Add the date, time, place, who's hosting and a message for guests. Choosing an occasion sets sensible defaults: a gift exchange turns on the name draw, a kid's birthday asks how many kids are coming.
 - **Your own invitation** - Upload a picture of the invitation you designed, or a photo. Guests see it at the top of the event page and in their email.
 - **Guest list and emails** - Add guests one at a time, paste a list from a spreadsheet, or copy the guests of another event you host. Regibee emails each guest the invitation with their own RSVP link, and can remind guests who haven't replied (at most once a day each). Replies to the email go to the host.
@@ -35,6 +37,7 @@ A gift registry app built with Next.js, Supabase, and Tailwind CSS. It started a
 - **Gifts on the invitation** - Link any number of registries: your own, or anyone's by pasting its share link, like the parents' registry for a shower a friend is throwing. Linking a registry gives no rights over it, and the registry's owners get an email saying it was linked and can unlink it from their registry's page. Guests see a few gifts still needed right on the invitation, and a gift note like "Bring a book instead of a card". When a guest follows a gift link from their invitation, the gift form already has their name and email, and the gift is matched to their RSVP.
 - **Gift exchanges** - Turn on a gift exchange (Secret Santa) with a budget and a draw date. Guests join when they RSVP and add a wishlist link or gift ideas, plus a shipping address when there's no get-together and gifts are mailed. The host sets pairs who won't draw each other, then draws names. Each person gets an email with their person, and sees them on their own RSVP link. Nobody else, the host included, can see who drew whom. A Secret Santa who reserves a gift on their person's Regibee wishlist shows up as "Secret Santa" to the wishlist's owner, everywhere.
 - **Plan it again** - Copy an event to the same date next year, with its guests, co-hosts, registries and gift exchange settings. A gift exchange avoids last year's pairs.
+- **Groups** - Keep a guest list as a group, like "The Chens" or "Book club": save an event's guest list as a group, or make one on the Events tab. "Invite a group" on an event's Add guests adds everyone at once. A group's page starts its gift exchange, and the next one copies it a year later with whoever is in the group then, keeping its budget and exclusions and avoiding last year's pairs. Share a wishlist with a group from its Settings page, and people in the group who have an account see it on their Following page, and on your profile when it's shown there, even when it's private.
 - **Celebrating you** - When someone else's event links your registry, your Events tab shows it, and your registry's page lists it with an Unlink button.
 - **Calendars and maps** - The event page has Google Calendar and .ics links, and a map link for the address. Event pages are always hidden from search engines.
 
@@ -174,6 +177,7 @@ src/
 │   │   ├── scrape.ts     # Reads the title, price and pictures from a product link
 │   │   └── tax.ts        # Sales tax estimate
 │   ├── email.ts          # Notification emails (Resend)
+│   ├── occasions.ts      # Every occasion: names, colors, defaults and the kind of list that goes with it
 │   ├── events.ts         # Event types, labels, dates and calendar links
 │   ├── events-server.ts  # Reads for the event pages
 │   ├── retailers.ts      # Store registry link rules, shared with the extension
@@ -218,7 +222,7 @@ Fourteen tables, all with Row Level Security turned on:
 | `events` | Events: details, invitation picture, RSVP settings and the registry they link to |
 | `event_guests` | Each event's guests, their personal RSVP link token, their answer and when they were emailed |
 
-`follows`, `user_blocks`, `follow_request_emails`, `events` and `event_guests` have no access policies, so only server code using the service-role key can read or write them. The files in `supabase/migrations` hold the full schema, the access rules, and the database functions that handle reservations.
+`event_list_requests` holds the emailed requests for someone to make a list for an event. `groups`, `group_members` and `registry_groups` hold groups, their people and the lists shared with them. They, `follows`, `user_blocks`, `follow_request_emails`, `events` and `event_guests` have no access policies, so only server code using the service-role key can read or write them. The files in `supabase/migrations` hold the full schema, the access rules, and the database functions that handle reservations.
 
 ## Deployment
 

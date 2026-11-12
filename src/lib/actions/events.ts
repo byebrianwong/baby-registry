@@ -33,8 +33,24 @@ import {
   type RsvpStatus,
 } from "@/lib/events";
 import { drawNames, orderedPair, type Pair } from "@/lib/gift-exchange";
+import { settingsAfterJoiningExchange } from "@/lib/gifts";
+import { newPeople, personKey, type Person } from "@/lib/groups";
+import { getGroupForOwner, getGroupMembers, listGroupEvents } from "@/lib/groups-server";
+import { createGroup } from "@/lib/actions/groups";
+import { getSessionUser } from "@/lib/viewer";
 import { confirmRsvpToGuest, notifyHostOfRsvp, sendEventInvitations } from "@/lib/email";
-import { notifyRegistryLinked, sendCoHostInvite, sendExchangeAssignments } from "@/lib/event-email";
+import { notifyRegistryLinked, sendCoHostInvite, sendExchangeAssignments, sendListRequest } from "@/lib/event-email";
+import {
+  NO_GIFTS_NOTE,
+  giftPlansFor,
+  isOccasionId,
+  listTitleFor,
+  nameLabelFor,
+  occasionFor,
+  type Audience,
+  type GiftPlan,
+} from "@/lib/occasions";
+import { insertRegistry } from "@/lib/registry-create";
 
 type Result<T = object> = ({ error: null } & T) | { error: string };
 
@@ -711,6 +727,40 @@ function siteUrl() {
 }
 
 /**
+ * When a guest adds their own Regibee wishlist to a gift exchange, the list
+ * starts hiding what's been reserved from them, so their gifts stay a
+ * surprise (settingsAfterJoiningExchange in src/lib/gifts.ts says which lists
+ * qualify). It's their own list when the account they're signed in with, or
+ * the email on their RSVP, is the list owner's. Anyone else's list is left
+ * alone, since a share link can be pasted by anyone.
+ */
+async function hideReservationsOnOwnWishlist(wishlistUrl: string | null, guestEmail: string | null) {
+  if (!wishlistUrl?.startsWith(`${siteUrl()}/r/`)) return;
+  const slug = registrySlugFromLink(wishlistUrl);
+  if (!slug) return;
+  const { data: registry } = await supabaseAdmin
+    .from("registries")
+    .select("id, owner_id, registry_type, settings")
+    .eq("slug", slug)
+    .maybeSingle();
+  if (!registry) return;
+  const settings = settingsAfterJoiningExchange(registry);
+  if (!settings) return;
+
+  const viewer = await getSessionUser();
+  let isOwner = viewer?.id === registry.owner_id;
+  if (!isOwner && guestEmail) {
+    const { data } = await supabaseAdmin.auth.admin.getUserById(registry.owner_id);
+    isOwner = data.user?.email?.toLowerCase() === guestEmail.toLowerCase();
+  }
+  if (!isOwner) return;
+
+  await supabaseAdmin.from("registries").update({ settings }).eq("id", registry.id);
+  revalidatePath("/dashboard");
+  revalidatePath(`/dashboard/registry/${registry.id}`);
+}
+
+/**
  * A guest's RSVP. Needs no account: a guest with a personal link is found by
  * its token, and anyone else can add themselves when the host left open RSVPs
  * on. Returns the guest's token, so the page can show their own link.
@@ -826,6 +876,12 @@ export async function submitRsvp(input: RsvpInput): Promise<Result<{ token: stri
     if (error || !data) return { error: "Your RSVP wasn't saved. Try again." };
     guest = data;
     newGuest = true;
+  }
+
+  if (guest.in_exchange && typeof response.wishlist_url === "string") {
+    await hideReservationsOnOwnWishlist(response.wishlist_url, guest.email).catch((err) =>
+      console.error("[events] Failed to hide reservations on a wishlist:", err),
+    );
   }
 
   after(async () => {
@@ -997,19 +1053,28 @@ function nextYear(date: string | null): string | null {
 }
 
 /**
- * "Plan it again": a copy of the event a year later, with the same guests
- * (their answers cleared), co-hosts, registries and gift exchange settings.
- * A gift exchange avoids this time's pairs when it draws next time.
+ * A copy of an event a year later, owned by `ownerId`, with the same co-hosts,
+ * registries and gift exchange settings. Its guests are `guests` (their
+ * answers cleared), the old event's guests unless given. A gift exchange
+ * keeps its exclusions between people who are still invited, and avoids this
+ * time's pairs when it draws next time (repeated_from).
  */
-export async function planEventAgain(eventId: string): Promise<Result<{ id: string }>> {
-  const access = await requireEventManager(eventId);
-  if (access.error !== null) return { error: access.error };
-  const old = access.event;
-
+async function copyEventForNextYear(
+  old: EventDetails,
+  ownerId: string,
+  opts: { guests?: Person[]; groupId?: string | null } = {},
+): Promise<Result<{ id: string }>> {
+  // The copy keeps its group only when its new owner owns that group.
+  const groupId =
+    opts.groupId !== undefined
+      ? opts.groupId
+      : old.group_id && (await getGroupForOwner(old.group_id, ownerId))
+        ? old.group_id
+        : null;
   const { data: copy, error } = await supabaseAdmin
     .from("events")
     .insert({
-      owner_id: access.user.id,
+      owner_id: ownerId,
       slug: generateEventSlug(old.title),
       event_type: old.event_type,
       title: old.title,
@@ -1029,6 +1094,7 @@ export async function planEventAgain(eventId: string): Promise<Result<{ id: stri
       gift_note: old.gift_note,
       ask_kids: old.ask_kids,
       repeated_from: old.id,
+      group_id: groupId,
     })
     .select("id, slug")
     .single();
@@ -1037,7 +1103,7 @@ export async function planEventAgain(eventId: string): Promise<Result<{ id: stri
     return { error: "The new event wasn't made. Try again." };
   }
 
-  const [guests, registries, exchange, exclusions, hostRows] = await Promise.all([
+  const [oldGuests, registries, exchange, exclusions, hostRows] = await Promise.all([
     getEventGuests(old.id),
     getEventRegistries(old.id),
     getGiftExchange(old.id),
@@ -1045,28 +1111,41 @@ export async function planEventAgain(eventId: string): Promise<Result<{ id: stri
     supabaseAdmin.from("event_hosts").select("user_id").eq("event_id", old.id),
   ]);
 
+  // The new guest ids for the old guests, to carry exclusions over. Copied
+  // guests match by position. A new list matches by email, or by name.
+  const people = opts.guests ? newPeople([], opts.guests) : oldGuests.map((g) => ({ name: g.name, email: g.email }));
   const newIds = new Map<string, string>();
-  if (guests.length > 0) {
+  if (people.length > 0) {
     const { data: inserted } = await supabaseAdmin
       .from("event_guests")
-      .insert(guests.map((g) => ({ event_id: copy.id, name: g.name, email: g.email, token: generateGuestToken() })))
+      .insert(people.map((g) => ({ event_id: copy.id, name: g.name, email: g.email, token: generateGuestToken() })))
       .select("id, name, email");
-    // Rows come back in insert order.
-    (inserted || []).forEach((row, index) => newIds.set(guests[index].id, row.id as string));
+    const rows = (inserted || []) as { id: string; name: string; email: string | null }[];
+    if (opts.guests) {
+      const byKey = new Map(rows.map((row) => [personKey(row), row.id]));
+      for (const guest of oldGuests) {
+        const id = byKey.get(personKey(guest));
+        if (id) newIds.set(guest.id, id);
+      }
+    } else {
+      // Rows come back in insert order.
+      rows.forEach((row, index) => newIds.set(oldGuests[index].id, row.id));
+    }
   }
+  const newIdFor = (oldId: string) => newIds.get(oldId);
 
   // Co-hosts carry over. Whoever made the copy owns it; if that was a
   // co-host, the old owner becomes a co-host of the new one.
   const hostIds = new Set((hostRows.data || []).map((h) => h.user_id as string));
   hostIds.add(old.owner_id);
-  hostIds.delete(access.user.id);
+  hostIds.delete(ownerId);
   if (hostIds.size > 0) {
     await supabaseAdmin.from("event_hosts").insert([...hostIds].map((id) => ({ event_id: copy.id, user_id: id })));
   }
 
   if (registries.length > 0) {
     await supabaseAdmin.from("event_registries").insert(
-      registries.map((r, index) => ({ event_id: copy.id, registry_id: r.id, linked_by: access.user.id, sort_order: index })),
+      registries.map((r, index) => ({ event_id: copy.id, registry_id: r.id, linked_by: ownerId, sort_order: index })),
     );
   }
 
@@ -1078,7 +1157,7 @@ export async function planEventAgain(eventId: string): Promise<Result<{ id: stri
       mailed: exchange.mailed,
     });
     const pairs = exclusions
-      .map((x) => [newIds.get(x.guest_a), newIds.get(x.guest_b)] as const)
+      .map((x) => [newIdFor(x.guest_a), newIdFor(x.guest_b)] as const)
       .filter((pair): pair is readonly [string, string] => Boolean(pair[0] && pair[1]))
       .map(([a, b]) => orderedPair(a, b));
     if (pairs.length > 0) {
@@ -1090,6 +1169,129 @@ export async function planEventAgain(eventId: string): Promise<Result<{ id: stri
 
   revalidatePath("/dashboard/events");
   return { error: null, id: copy.id };
+}
+
+/**
+ * "Plan it again": a copy of the event a year later, with the same guests
+ * (their answers cleared), co-hosts, registries and gift exchange settings.
+ * A gift exchange avoids this time's pairs when it draws next time.
+ */
+export async function planEventAgain(eventId: string): Promise<Result<{ id: string }>> {
+  const access = await requireEventManager(eventId);
+  if (access.error !== null) return { error: access.error };
+  return copyEventForNextYear(access.event, access.user.id);
+}
+
+// ── Groups ───────────────────────────────────────────────────
+
+/**
+ * "Save as a group": a new group with this event's guests in it. The event
+ * remembers the group, so the group's page lists it.
+ */
+export async function saveGuestListAsGroup(eventId: string, name: string): Promise<Result<{ groupId: string }>> {
+  const access = await requireEventManager(eventId);
+  if (access.error !== null) return { error: access.error };
+  const guests = await getEventGuests(eventId);
+  if (guests.length === 0) return { error: "Add guests first." };
+  const created = await createGroup(
+    name,
+    guests.map((g) => ({ name: g.name, email: g.email })),
+  );
+  if (created.error !== null) return { error: created.error };
+  // The event remembers the group only when its owner made it, so a
+  // co-host's group never gets a hold on someone else's event.
+  if (!access.event.group_id && access.event.owner_id === access.user.id) {
+    await supabaseAdmin.from("events").update({ group_id: created.id }).eq("id", eventId);
+  }
+  revalidateEvent(access.event);
+  return { error: null, groupId: created.id };
+}
+
+/** "Invite a group": adds a group's people to the guest list, skipping anyone already on it. */
+export async function inviteGroupToEvent(
+  eventId: string,
+  groupId: string,
+): Promise<Result<{ added: number; alreadyListed: number }>> {
+  const access = await requireEventManager(eventId);
+  if (access.error !== null) return { error: access.error };
+  const group = await getGroupForOwner(groupId, access.user.id);
+  if (!group) return { error: "You can only invite your own groups." };
+
+  const [members, existing] = await Promise.all([getGroupMembers(groupId), getEventGuests(eventId)]);
+  const toAdd = newPeople(existing, members);
+  if (existing.length + toAdd.length > MAX_GUESTS_PER_EVENT) {
+    return { error: `An event can have up to ${MAX_GUESTS_PER_EVENT} guests.` };
+  }
+  if (toAdd.length > 0) {
+    const { error } = await supabaseAdmin.from("event_guests").insert(
+      toAdd.map((g) => ({ event_id: eventId, name: g.name, email: g.email, token: generateGuestToken() })),
+    );
+    if (error) return { error: "The guests weren't added. Try again." };
+  }
+  if (!access.event.group_id && access.event.owner_id === access.user.id) {
+    await supabaseAdmin.from("events").update({ group_id: groupId }).eq("id", eventId);
+  }
+  revalidateEvent(access.event);
+  revalidatePath(`/dashboard/groups/${groupId}`);
+  return { error: null, added: toAdd.length, alreadyListed: members.length - toAdd.length };
+}
+
+/**
+ * Starts this year's gift exchange inside a group: an event with the group's
+ * people as guests and a gift exchange turned on. When the group had an
+ * exchange before, this copies the newest one a year later, so it keeps its
+ * budget, exclusions and co-hosts and avoids last year's pairs. The guests
+ * are whoever is in the group now. Returns the new event's id.
+ */
+export async function startGroupExchange(groupId: string): Promise<Result<{ id: string }>> {
+  const { user, error: authError } = await requireAccount();
+  if (authError || !user) return { error: authError ?? "You need an account to do this." };
+  const group = await getGroupForOwner(groupId, user.id);
+  if (!group) return { error: "That group wasn't found." };
+  const members = await getGroupMembers(groupId);
+  if (members.length === 0) return { error: "Add people to the group first." };
+
+  // The group's newest exchange that this person still hosts. One that
+  // hasn't drawn names yet is this year's: open it instead of starting another.
+  let last: EventDetails | null = null;
+  for (const candidate of (await listGroupEvents(groupId)).filter((e) => e.hasExchange)) {
+    const found = await getEventForManager(candidate.id, user.id);
+    if (!found) continue;
+    if (!candidate.drawn) return { error: null, id: candidate.id };
+    last = found.event;
+    break;
+  }
+  if (last) {
+    const copied = await copyEventForNextYear(last, user.id, { guests: members, groupId });
+    if (copied.error === null) revalidatePath(`/dashboard/groups/${groupId}`);
+    return copied;
+  }
+
+  const title = `${group.name} gift exchange`.slice(0, 120);
+  const { data: event, error } = await supabaseAdmin
+    .from("events")
+    .insert({
+      owner_id: user.id,
+      slug: generateEventSlug(title),
+      event_type: "gift_exchange",
+      title,
+      group_id: groupId,
+      // The group is the guest list, so only invited people can RSVP.
+      open_rsvp: false,
+    })
+    .select("id")
+    .single();
+  if (error || !event) {
+    console.error("[events] Failed to start a group exchange:", error);
+    return { error: "The gift exchange wasn't made. Try again." };
+  }
+  await supabaseAdmin.from("gift_exchanges").insert({ event_id: event.id });
+  await supabaseAdmin.from("event_guests").insert(
+    newPeople([], members).map((m) => ({ event_id: event.id, name: m.name, email: m.email, token: generateGuestToken() })),
+  );
+  revalidatePath("/dashboard/events");
+  revalidatePath(`/dashboard/groups/${groupId}`);
+  return { error: null, id: event.id };
 }
 
 // ── Gift exchange ────────────────────────────────────────────
@@ -1265,4 +1467,208 @@ export async function undoExchangeDraw(eventId: string): Promise<Result> {
   await clearDraw(eventId);
   revalidateEvent(access.event);
   return { error: null };
+}
+
+// ── "What are you planning?" ─────────────────────────────────
+
+export interface PlanInput {
+  /** An occasion id from src/lib/occasions.ts. */
+  occasion: string;
+  audience: Audience;
+  /** Who it's for: "Remi", "Alex & Sam". Not asked for everyone or no one. */
+  name?: string;
+  gifts: GiftPlan;
+  /** With a new gift list: also make an invitation. Every other plan has one. */
+  invitation?: boolean;
+  /** The share link to link, for "link". */
+  linkUrl?: string;
+  /** Who to ask, for "ask". */
+  askEmail?: string;
+  /** The event's title, or the list's when there's no event. */
+  title: string;
+  /** YYYY-MM-DD, or empty. */
+  date?: string;
+}
+
+/**
+ * The picker's last step: makes everything a plan needs in one go. That's an
+ * event, a gift list, or both, linked together, with the gift plan set up: a
+ * linked list, an emailed request for the honoree's list, a name draw, or a
+ * "No gifts" note. Returns where to go next: the event's page, or the list's
+ * when there's no event.
+ */
+export async function startPlan(input: PlanInput): Promise<Result<{ href: string }>> {
+  const { user, supabase, error: authError } = await requireAccount();
+  if (authError || !user) return { error: authError ?? "You need an account to do this." };
+
+  if (!isOccasionId(input.occasion)) return { error: "Choose what you're planning." };
+  const occasion = occasionFor(input.occasion);
+  if (!(occasion.audiences as readonly Audience[]).includes(input.audience)) return { error: "Choose who it's for." };
+  if (!giftPlansFor(input.audience).includes(input.gifts)) return { error: "Choose how gifts work." };
+
+  const name = input.name?.trim().slice(0, 100) ?? "";
+  if (nameLabelFor(input.audience) && !name && input.gifts === "ask") return { error: "Add their name." };
+  const title = input.title.trim().slice(0, 120);
+  if (!title) return { error: "Give it a name." };
+  const date = input.date?.trim() ?? "";
+  if (date && (!DATE_PATTERN.test(date) || Number(date.slice(0, 4)) < 1000)) {
+    return { error: "That date doesn't look right." };
+  }
+  const withEvent = input.gifts !== "new_list" || input.invitation !== false;
+
+  // Check what can fail before anything is saved.
+  let linked: { id: string } | null = null;
+  if (input.gifts === "link") {
+    const link = input.linkUrl?.trim() ?? "";
+    if (!registrySlugFromLink(link)) return { error: "Paste a registry link, like regibee.com/r/remi-and-max-1a2b." };
+    linked = await resolveRegistryLink(link);
+    if (!linked) return { error: "No registry has that link. Check it and try again." };
+  }
+  const askEmail = input.askEmail?.trim().toLowerCase() ?? "";
+  if (input.gifts === "ask" && !isEmail(askEmail)) return { error: "Add their email address, so we can ask them." };
+
+  // A new gift list, owned by whoever is making the plan.
+  let list: { id: string } | null = null;
+  if (input.gifts === "new_list") {
+    const settings: Record<string, unknown> = { tax_enabled: false };
+    // A parent keeps their child's list and sees what's been reserved (#97).
+    if (input.audience === "child") settings.for_child = true;
+    const made = await insertRegistry(supabase, {
+      ownerId: user.id,
+      title: withEvent ? listTitleFor(occasion, name).slice(0, 120) : title,
+      registryType: occasion.list.registryType,
+      eventType: occasion.list.eventType,
+      eventDate: date || null,
+      honoreeNames: name || null,
+      settings,
+    });
+    if ("error" in made) {
+      console.error("[plan] Failed to make a list:", made.error);
+      return { error: "Your list wasn't made. Try again." };
+    }
+    list = made;
+    revalidatePath("/dashboard");
+    if (!withEvent) return { error: null, href: `/dashboard/registry/${made.id}` };
+  }
+
+  const defaults = "defaults" in occasion ? occasion.defaults : undefined;
+  const { data: event, error } = await supabaseAdmin
+    .from("events")
+    .insert({
+      owner_id: user.id,
+      slug: generateEventSlug(title),
+      event_type: occasion.id,
+      title,
+      event_date: date || null,
+      ask_kids: Boolean(defaults?.askKids),
+      gift_note: input.gifts === "no_gifts" ? NO_GIFTS_NOTE : (defaults?.giftNote ?? null),
+    })
+    .select("*")
+    .single();
+  if (error || !event) {
+    console.error("[plan] Failed to make an event:", error);
+    return { error: list ? "Your list was made, but the event wasn't. Plan the event from the list's page." : "The event wasn't made. Try again." };
+  }
+  const saved = event as EventDetails;
+
+  // From here the event exists. Anything that fails to save shows as missing
+  // on its page, where the host can add it from Edit.
+  const linkIds = [list?.id, linked?.id].filter((id): id is string => Boolean(id));
+  if (linkIds.length > 0) await saveRegistryLinks(saved, linkIds, user.id);
+  if (input.gifts === "exchange" || defaults?.exchange) {
+    await saveExchange(saved.id, { enabled: true, budget: null, draw_by: null, mailed: false });
+  }
+  if (input.gifts === "ask") {
+    const token = crypto.randomBytes(24).toString("hex");
+    const { error: requestError } = await supabaseAdmin.from("event_list_requests").insert({
+      event_id: saved.id,
+      requested_by: user.id,
+      name: name || askEmail,
+      email: askEmail,
+      token,
+    });
+    if (requestError) {
+      console.error("[plan] Failed to save a list request:", requestError);
+    } else {
+      const hostName = await hostNameFor(saved, user.id);
+      after(() =>
+        sendListRequest({
+          toEmail: askEmail,
+          honoreeName: name || "there",
+          hostName,
+          eventTitle: saved.title,
+          eventDate: saved.event_date,
+          listNoun: occasion.list.noun,
+          token,
+          replyTo: user.email ?? null,
+        }),
+      );
+    }
+  }
+
+  revalidateEvent(saved);
+  return { error: null, href: `/dashboard/events/${saved.id}` };
+}
+
+/**
+ * Someone an event is for makes the gift list its host asked for. The list is
+ * theirs, of the kind the occasion calls for, and it's linked to the event at
+ * once. Each request makes one list. Returns the new list's id.
+ */
+export async function acceptListRequest(token: string): Promise<Result<{ registryId: string }>> {
+  const { user, supabase, error: authError } = await requireAccount();
+  if (authError || !user) return { error: authError ?? "You need an account to do this." };
+
+  const { data: request } = await supabaseAdmin
+    .from("event_list_requests")
+    .select("id, event_id, requested_by, name, registry_id, fulfilled_at")
+    .eq("token", token)
+    .maybeSingle();
+  if (!request) return { error: "This link doesn't work anymore. Ask the host to send it again." };
+  if (request.fulfilled_at) return { error: "A list was already made from this link." };
+
+  const { data: eventRow } = await supabaseAdmin.from("events").select("*").eq("id", request.event_id).maybeSingle();
+  if (!eventRow) return { error: "That event isn't on Regibee anymore." };
+  const event = eventRow as EventDetails;
+  const occasion = occasionFor(event.event_type);
+
+  // Claim the request first, so two clicks can't make two lists.
+  const { data: claimed } = await supabaseAdmin
+    .from("event_list_requests")
+    .update({ fulfilled_at: new Date().toISOString() })
+    .eq("id", request.id)
+    .is("fulfilled_at", null)
+    .select("id");
+  if (!claimed || claimed.length === 0) return { error: "A list was already made from this link." };
+
+  const made = await insertRegistry(supabase, {
+    ownerId: user.id,
+    title: listTitleFor(occasion, request.name).slice(0, 120),
+    registryType: occasion.list.registryType,
+    eventType: occasion.list.eventType,
+    eventDate: event.event_date,
+    honoreeNames: request.name,
+    settings: { tax_enabled: false },
+  });
+  if ("error" in made) {
+    console.error("[plan] Failed to make a requested list:", made.error);
+    await supabaseAdmin.from("event_list_requests").update({ fulfilled_at: null }).eq("id", request.id);
+    return { error: "Your list wasn't made. Try again." };
+  }
+
+  const { count } = await supabaseAdmin
+    .from("event_registries")
+    .select("registry_id", { count: "exact", head: true })
+    .eq("event_id", event.id);
+  await supabaseAdmin.from("event_registries").insert({
+    event_id: event.id,
+    registry_id: made.id,
+    linked_by: request.requested_by,
+    sort_order: count ?? 0,
+  });
+  await supabaseAdmin.from("event_list_requests").update({ registry_id: made.id }).eq("id", request.id);
+
+  revalidateEvent(event);
+  revalidatePath("/dashboard");
+  return { error: null, registryId: made.id };
 }

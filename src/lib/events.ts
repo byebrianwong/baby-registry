@@ -3,28 +3,13 @@
 // browser. The tables are in supabase/migrations/015_events.sql and the server
 // actions are in src/lib/actions/events.ts.
 
-import type { OccasionTheme } from "@/lib/occasion-theme";
+import { themeForTint, type OccasionTheme } from "@/lib/occasion-theme";
+import { OCCASIONS, OCCASION_IDS, occasionFor, type OccasionId } from "@/lib/occasions";
 
-export const EVENT_TYPES = [
-  "baby_shower",
-  "sip_and_see",
-  "bridal_shower",
-  "wedding",
-  "engagement",
-  "bachelor",
-  "birthday",
-  "kids_birthday",
-  "christmas",
-  "gift_exchange",
-  "holiday",
-  "housewarming",
-  "graduation",
-  "retirement",
-  "gathering",
-  "other",
-] as const;
+/** Every event type: the occasions in src/lib/occasions.ts, in order. */
+export const EVENT_TYPES = OCCASION_IDS;
 
-export type EventType = (typeof EVENT_TYPES)[number];
+export type EventType = OccasionId;
 
 export type RsvpStatus = "pending" | "yes" | "no" | "maybe";
 
@@ -62,6 +47,8 @@ export interface EventDetails {
   ask_kids: boolean;
   /** The event this was copied from with "Plan it again". */
   repeated_from: string | null;
+  /** The group its guests came from (src/lib/groups.ts), or null. */
+  group_id?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -115,40 +102,13 @@ export interface EventTypeOption {
   };
 }
 
-// The order is the order of the buttons on the event form: the most common
-// first, then the rest roughly by family.
-export const EVENT_TYPE_OPTIONS: EventTypeOption[] = [
-  {
-    value: "baby_shower",
-    label: "Baby shower",
-    titlePlaceholder: "Remi's Baby Shower",
-  },
-  { value: "birthday", label: "Birthday", titlePlaceholder: "Max Turns 30" },
-  {
-    value: "kids_birthday",
-    label: "Kid's birthday",
-    titlePlaceholder: "Jordan's 6th Birthday",
-    defaults: { askKids: true },
-  },
-  {
-    value: "gift_exchange",
-    label: "Gift exchange",
-    titlePlaceholder: "Chen Family Secret Santa",
-    defaults: { exchange: true },
-  },
-  { value: "christmas", label: "Christmas", titlePlaceholder: "The Chens' Christmas Party" },
-  { value: "bridal_shower", label: "Bridal shower", titlePlaceholder: "Sam's Bridal Shower" },
-  { value: "wedding", label: "Wedding", titlePlaceholder: "Alex & Sam's Wedding" },
-  { value: "engagement", label: "Engagement party", titlePlaceholder: "Alex & Sam Are Engaged!" },
-  { value: "bachelor", label: "Bachelor or bachelorette", titlePlaceholder: "Sam's Last Weekend Out" },
-  { value: "sip_and_see", label: "Sip and see", titlePlaceholder: "Come Meet Baby Remi" },
-  { value: "housewarming", label: "Housewarming", titlePlaceholder: "Come See Our New Place" },
-  { value: "graduation", label: "Graduation", titlePlaceholder: "Jordan's Graduation Party" },
-  { value: "retirement", label: "Retirement", titlePlaceholder: "Linda's Retirement Lunch" },
-  { value: "holiday", label: "Other holiday", titlePlaceholder: "Lunar New Year Dinner" },
-  { value: "gathering", label: "Get-together", titlePlaceholder: "Game Night" },
-  { value: "other", label: "Something else", titlePlaceholder: "Summer Get-Together" },
-];
+// The buttons on the event form, in the order of src/lib/occasions.ts.
+export const EVENT_TYPE_OPTIONS: EventTypeOption[] = OCCASIONS.map((occasion) => ({
+  value: occasion.id,
+  label: occasion.label,
+  titlePlaceholder: occasion.titlePlaceholder,
+  ...("defaults" in occasion ? { defaults: occasion.defaults } : {}),
+}));
 
 /** Ready-made gift notes the host can pick and then edit. */
 export const GIFT_NOTE_PRESETS: { label: string; text: string }[] = [
@@ -198,18 +158,9 @@ export function eventTypeLabel(type: EventType): string {
   return EVENT_TYPE_OPTIONS.find((o) => o.value === type)?.label ?? "Event";
 }
 
-// The same tints as registries (src/lib/occasion-theme.ts): showers are
-// blush, birthdays sunshine, Christmas mint, everything else teal.
-const BLUSH: OccasionTheme = { bg: "bg-blush-100", icon: "text-blush-700", text: "text-blush-700" };
-const SUNSHINE: OccasionTheme = { bg: "bg-sunshine-100", icon: "text-sunshine-700", text: "text-sunshine-900" };
-const MINT: OccasionTheme = { bg: "bg-mint-100", icon: "text-mint-800", text: "text-mint-800" };
-const TEAL: OccasionTheme = { bg: "bg-brand-100", icon: "text-brand-600", text: "text-brand-700" };
-
+/** An event's colors, from its occasion (src/lib/occasions.ts). */
 export function eventTheme(type: EventType): OccasionTheme {
-  if (type === "baby_shower" || type === "bridal_shower" || type === "sip_and_see") return BLUSH;
-  if (type === "birthday" || type === "kids_birthday") return SUNSHINE;
-  if (type === "christmas" || type === "gift_exchange" || type === "holiday") return MINT;
-  return TEAL;
+  return themeForTint(occasionFor(type).tint);
 }
 
 // ── Guests ───────────────────────────────────────────────────

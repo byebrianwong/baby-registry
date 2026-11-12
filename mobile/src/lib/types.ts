@@ -16,6 +16,11 @@ export interface Registry {
   registry_type: RegistryType | null;
   event_type: EventType | null;
   honoree_names: string | null;
+  /**
+   * The registry's settings. The app reads only "Hide what's been reserved
+   * from me" from it, with reservationsHiddenFrom (src/lib/gifts.ts).
+   */
+  settings?: Record<string, unknown> | null;
   created_at: string;
 }
 
@@ -112,6 +117,11 @@ export interface RegistrySummary extends Registry {
   totalValue: number;
   /** `held` is true while the guest's reservation waits for them to buy it. */
   recentGifts: { id: string; buyer_name: string; created_at: string; held: boolean }[];
+  /**
+   * The owner hides what's been reserved from themselves. Then fulfilledCount
+   * counts only items they bought, and recentGifts is empty.
+   */
+  reservationsHidden: boolean;
 }
 
 export interface RegistryDetail {
@@ -121,6 +131,11 @@ export interface RegistryDetail {
   items: Item[];
   funds: CashFund[];
   pendingSuggestions: number;
+  /**
+   * The owner hides what's been reserved from themselves. Then items show
+   * nothing reserved, funds nothing pledged, and there are no gifts.
+   */
+  reservationsHidden: boolean;
 }
 
 /** The fields of the add and edit item forms. */

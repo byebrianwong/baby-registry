@@ -369,3 +369,14 @@ export async function listOtherEventsForCopy(
     .sort((a, b) => b.created_at.localeCompare(a.created_at))
     .map((e) => ({ id: e.id, title: e.title, guestCount: e.event_guests.length }));
 }
+
+/** People the host asked to make a gift list, who haven't yet (see startPlan). */
+export async function getPendingListRequests(eventId: string): Promise<{ name: string; email: string }[]> {
+  const { data } = await supabaseAdmin
+    .from("event_list_requests")
+    .select("name, email")
+    .eq("event_id", eventId)
+    .is("fulfilled_at", null)
+    .order("created_at");
+  return (data || []) as { name: string; email: string }[];
+}

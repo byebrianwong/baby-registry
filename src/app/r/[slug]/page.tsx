@@ -23,12 +23,17 @@ import { Logo } from "@/components/logo";
 import { parseRetailerRegistries, type StoreId } from "@/lib/retailers";
 import {
   SECRET_GIVER_NAME,
+  fundAsUnpledged,
   isExpiredReservation,
   isGiftLinkStep,
   isOpenReservation,
+  itemAsUnreserved,
+  readReservationPrivacy,
+  reservationsHiddenFrom,
   toMyItemGift,
   type MyItemGift,
 } from "@/lib/gifts";
+import { ReservationsHiddenNotice } from "@/components/reservations-hidden-notice";
 import type { OpenGift } from "@/components/reserve-item-dialog";
 import { GuestPrefillProvider, type GuestPrefill } from "@/components/guest-prefill-context";
 
@@ -195,9 +200,16 @@ export default async function PublicRegistryPage({
     loadGuestPrefill(registry.id),
   ]);
 
+  // The owner can hide what's been reserved from themselves (src/lib/gifts.ts).
+  // When they open their own list's page, it shows nothing reserved, the same
+  // as their dashboard. Everyone else sees what's taken.
+  const hideReservations = reservationsHiddenFrom(registry, viewer?.id);
+
   const allItems = (items || []) as RegistryItem[];
   const allCategories = (categories || []) as Category[];
-  const allFunds = (cashFunds || []) as CashFund[];
+  const allFunds = ((cashFunds || []) as CashFund[]).map((fund) =>
+    hideReservations ? fundAsUnpledged(fund) : fund
+  );
   const parentName = honoreeDisplayName(registry);
   const copy = copyForRegistry(registry);
   const registryType = (registry.registry_type as RegistryType | undefined) || "baby";
@@ -362,10 +374,16 @@ export default async function PublicRegistryPage({
     counts[p.registry_item_id] = (counts[p.registry_item_id] || 0) + (p.quantity || 1);
   }
   const shownItems = allItems.map((i) =>
-    expiredCounts[i.id]
-      ? { ...i, quantity_fulfilled: Math.max(0, i.quantity_fulfilled - expiredCounts[i.id]) }
-      : i
+    hideReservations
+      ? itemAsUnreserved(i)
+      : expiredCounts[i.id]
+        ? { ...i, quantity_fulfilled: Math.max(0, i.quantity_fulfilled - expiredCounts[i.id]) }
+        : i
   );
+  if (hideReservations) {
+    for (const id of Object.keys(reservedCounts)) delete reservedCounts[id];
+    coverCounts.clear();
+  }
 
   // A link from a guest's email opens the gift dialog at a step. The link
   // route has already put the gift in this browser's cookie.
@@ -426,6 +444,13 @@ export default async function PublicRegistryPage({
       {/* Items. With no items or funds yet, the grid says so and still offers
           "Suggest an item". */}
       <main className="container mx-auto px-4 py-8">
+        {hideReservations && (
+          <ReservationsHiddenNotice
+            className="mb-6"
+            settingsHref={`/dashboard/registry/${registry.id}/settings`}
+            turnedOnByExchange={readReservationPrivacy(registry.settings).hide_reservations_source === "exchange"}
+          />
+        )}
         {santaFor && (
           <div className="mb-6 flex items-start gap-3 rounded-2xl border border-sunshine-200 bg-sunshine-50 p-4">
             <Gift className="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden="true" />

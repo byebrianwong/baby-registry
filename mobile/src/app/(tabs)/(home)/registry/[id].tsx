@@ -241,6 +241,12 @@ export default function RegistryScreen() {
               <LoadingState />
             ) : gifts.isError ? (
               <ErrorState message={errorMessage(gifts.error)} onRetry={() => gifts.refetch()} />
+            ) : data.reservationsHidden ? (
+              <EmptyState
+                icon="eyeSlash"
+                title="What's been reserved is hidden from you"
+                message="Your gifts stay a surprise. Guests still see what's taken, so nobody buys the same thing twice. You can change this in the registry's settings on the website."
+              />
             ) : (
               <EmptyState
                 icon="gift"
@@ -310,6 +316,16 @@ function RegistryHeader({
           <Pill label={r.is_public ? "Public" : "Private"} icon={r.is_public ? "public" : "lock"} />
         </View>
       </View>
+
+      {detail.reservationsHidden ? (
+        <View style={[styles.hiddenNotice, { backgroundColor: theme.surfaceAlt, marginHorizontal: spacing.lg }]}>
+          <Icon name="eyeSlash" size={16} color={theme.textSecondary} />
+          <Text variant="footnote" tone="secondary" style={{ flex: 1 }}>
+            What&apos;s been reserved is hidden from you, so your gifts stay a surprise. Guests still see what&apos;s
+            taken.
+          </Text>
+        </View>
+      ) : null}
 
       <View style={[styles.stats, { backgroundColor: theme.surface, borderColor: theme.border }]}>
         <Stat label="Items" value={String(detail.items.length)} />
@@ -463,6 +479,13 @@ function giftActions(gift: Gift, cancel: (gift: Gift) => void) {
 }
 
 const styles = StyleSheet.create({
+  hiddenNotice: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+    padding: spacing.md,
+    borderRadius: radius.md,
+  },
   sectionHeader: {
     flexDirection: "row",
     alignItems: "baseline",

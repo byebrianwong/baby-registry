@@ -6,7 +6,8 @@ import { FollowButton } from "@/components/follow-button";
 import { PublicProfile } from "@/components/public-profile";
 import { PoweredByFooter } from "@/components/site-footer";
 import { supabaseAdmin } from "@/lib/supabase-admin";
-import { getViewerRelation } from "@/lib/viewer";
+import { getViewer, getViewerRelation } from "@/lib/viewer";
+import { sharedRegistrySlugsFrom } from "@/lib/groups-server";
 import {
   LISTED_REGISTRY_COLUMNS,
   type ListedRegistry,
@@ -92,16 +93,24 @@ export default async function ProfilePage({
     notFound();
   }
 
-  // Private registries are only for the owner and approved followers.
-  let registriesQuery = supabaseAdmin
-    .from("registries")
-    .select(LISTED_REGISTRY_COLUMNS)
-    .eq("owner_id", profile.id)
-    .eq("listed_on_profile", true);
-  if (!isOwnProfile && followState !== "approved") {
-    registriesQuery = registriesQuery.eq("is_public", true);
-  }
-  const { data: registries } = await registriesQuery;
+  // Private registries are only for the owner, approved followers, and
+  // people in a group the owner shared that registry with (by a confirmed
+  // email). Someone who blocked the owner doesn't get the group's lists.
+  const seesAllPrivate = isOwnProfile || followState === "approved";
+  const viewer = seesAllPrivate || followState === "blocked" ? null : await getViewer();
+  const [{ data: listed }, sharedSlugs] = await Promise.all([
+    supabaseAdmin
+      .from("registries")
+      .select(LISTED_REGISTRY_COLUMNS)
+      .eq("owner_id", profile.id)
+      .eq("listed_on_profile", true),
+    viewer
+      ? sharedRegistrySlugsFrom(profile.id, { id: viewer.id, email: viewer.email_confirmed_at ? viewer.email : null })
+      : Promise.resolve(new Set<string>()),
+  ]);
+  const registries = ((listed || []) as ListedRegistry[]).filter(
+    (registry) => seesAllPrivate || registry.is_public || sharedSlugs.has(registry.slug),
+  );
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -109,7 +118,7 @@ export default async function ProfilePage({
       <main id="main-content" className="flex-1">
         <PublicProfile
           fullName={profile.full_name}
-          registries={(registries || []) as ListedRegistry[]}
+          registries={registries}
           today={new Date().toISOString().slice(0, 10)}
           isOwnProfile={isOwnProfile}
           followAction={

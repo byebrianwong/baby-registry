@@ -6,6 +6,7 @@ import type { FollowActions } from "@/components/follow-button";
 import type { searchPeople } from "@/lib/actions/follows";
 import type { sendFollowInvite } from "@/lib/actions/follow-invites";
 import type { FeedRegistry, FollowPerson } from "@/lib/follows";
+import type { SharedRegistry } from "@/lib/groups-server";
 import { displayName, profilePath } from "@/lib/profile-link";
 import { isPastEvent, sortListedRegistries } from "@/lib/registry-listing";
 
@@ -53,6 +54,7 @@ function RegistryGroup({
 export function FollowingFeed({
   people,
   registries,
+  shared = [],
   today,
   searchAction,
   inviteAction,
@@ -61,6 +63,8 @@ export function FollowingFeed({
 }: {
   people: FollowPerson[];
   registries: FeedRegistry[];
+  /** Lists other people shared with groups the viewer is in (src/lib/groups.ts). */
+  shared?: SharedRegistry[];
   today: string;
   searchAction?: typeof searchPeople;
   inviteAction?: typeof sendFollowInvite;
@@ -92,6 +96,24 @@ export function FollowingFeed({
             basePath={basePath}
           />
         </div>
+
+        {shared.length > 0 && (
+          <section className="mt-8">
+            <h2 className="text-lg font-semibold">Shared with your groups</h2>
+            <div className="mt-3 flex flex-col gap-3">
+              {sortListedRegistries(shared, today).map((registry) => (
+                <ProfileRegistryCard
+                  key={registry.slug}
+                  registry={registry}
+                  isPast={isPastEvent(registry, today)}
+                  ownerName={`${displayName(registry.owner)} · ${registry.groupNames.join(", ")}`}
+                  privateLabel="Your group only"
+                  basePath={basePath}
+                />
+              ))}
+            </div>
+          </section>
+        )}
 
         {people.length === 0 ? (
           <EmptyState

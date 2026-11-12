@@ -1,4 +1,5 @@
 import type { PersonalEventType, Registry, RegistryType } from "./types";
+import { LIST_OCCASION_OPTIONS } from "./occasions";
 
 export interface RegistryCopy {
   registryNoun: string;
@@ -139,14 +140,8 @@ export function occasionLabel(
   );
 }
 
+/** The registry form's occasion menu, from src/lib/occasions.ts. */
 export const PERSONAL_EVENT_TYPE_OPTIONS: Array<{
   value: PersonalEventType;
   label: string;
-}> = [
-  { value: "birthday", label: "Birthday" },
-  { value: "christmas", label: "Christmas" },
-  { value: "wedding", label: "Wedding" },
-  { value: "housewarming", label: "Housewarming" },
-  { value: "graduation", label: "Graduation" },
-  { value: "other", label: "Other" },
-];
+}> = LIST_OCCASION_OPTIONS;

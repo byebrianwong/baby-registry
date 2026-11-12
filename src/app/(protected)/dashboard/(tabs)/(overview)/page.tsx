@@ -10,12 +10,13 @@ import { createClient } from "@/utils/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { countFollowRequests } from "@/lib/follows";
 import { getSessionUser } from "@/lib/viewer";
-import { giverNameForOwner } from "@/lib/gifts";
+import { giverNameForOwner, itemAsUnreserved, reservationsHiddenFrom } from "@/lib/gifts";
 
 type CardPurchase = { id: string; status: string; created_at: string; buyer_name: string; hide_giver?: boolean | null };
 type CardItem = {
   quantity_needed: number;
   quantity_fulfilled: number;
+  is_parent_purchased: boolean;
   price: number | null;
   purchases: CardPurchase[] | null;
 };
@@ -29,17 +30,23 @@ function activePurchases(registry: any): CardPurchase[] {
 
 function RegistryCard({
   registry,
+  viewerId,
   today,
   badge,
   headingLevel,
 }: {
   registry: any;
+  viewerId: string;
   today: string;
   badge?: string;
   headingLevel?: 2 | 3;
 }) {
-  const items: CardItem[] = registry.registry_items || [];
-  const recentPurchases = activePurchases(registry)
+  // An owner who hides what's been reserved sees nothing reserved yet.
+  const hidden = reservationsHiddenFrom(registry, viewerId);
+  const items: CardItem[] = ((registry.registry_items as CardItem[] | null) || []).map((item) =>
+    hidden ? itemAsUnreserved(item) : item
+  );
+  const recentPurchases = (hidden ? [] : activePurchases(registry))
     .sort((a, b) => b.created_at.localeCompare(a.created_at))
     .slice(0, 3);
 
@@ -56,6 +63,7 @@ function RegistryCard({
       recentActivity={recentPurchases.map((p) => ({ id: p.id, name: giverNameForOwner(p), action: "reserved an item" }))}
       manageHref={`/dashboard/registry/${registry.id}`}
       publicHref={`/r/${registry.slug}`}
+      reservationsHidden={hidden}
       badge={badge}
       headingLevel={headingLevel}
     />
@@ -67,7 +75,7 @@ type ServerClient = Awaited<ReturnType<typeof createClient>>;
 // What each registry card needs: the registry, its items, and their purchases.
 const REGISTRY_CARD_FIELDS = `
   *,
-  registry_items(id, quantity_needed, quantity_fulfilled, price, purchases(id, status, created_at, buyer_name, hide_giver))
+  registry_items(id, quantity_needed, quantity_fulfilled, is_parent_purchased, price, purchases(id, status, created_at, buyer_name, hide_giver))
 `;
 
 // Registries the user helps manage but doesn't own. Pending email invites are
@@ -163,10 +171,10 @@ export default async function DashboardPage() {
           )}
         </div>
         <Button asChild>
-          <Link href="/dashboard/registry/new">
+          <Link href="/dashboard/new">
             <span className="inline-flex items-center gap-1.5">
               <Plus className="h-4 w-4 shrink-0" />
-              New Registry
+              New
             </span>
           </Link>
         </Button>
@@ -223,10 +231,10 @@ export default async function DashboardPage() {
               Create your first registry to start adding items.
             </p>
             <Button className="mt-6" asChild>
-              <Link href="/dashboard/registry/new">
+              <Link href="/dashboard/new">
                 <span className="inline-flex items-center gap-1.5">
                   <Plus className="h-4 w-4 shrink-0" />
-                  Create Registry
+                  Start something new
                 </span>
               </Link>
             </Button>
@@ -237,7 +245,7 @@ export default async function DashboardPage() {
           {registries && registries.length > 0 && (
             <div className="mt-8 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
               {registries.map((registry) => (
-                <RegistryCard key={registry.id} registry={registry} today={today} />
+                <RegistryCard key={registry.id} registry={registry} viewerId={user.id} today={today} />
               ))}
             </div>
           )}
@@ -255,7 +263,7 @@ export default async function DashboardPage() {
               </div>
               <div className="mt-4 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                 {sharedRegistries.map((registry) => (
-                  <RegistryCard key={registry.id} registry={registry} today={today} badge="Manager" headingLevel={3} />
+                  <RegistryCard key={registry.id} registry={registry} viewerId={user.id} today={today} badge="Manager" headingLevel={3} />
                 ))}
               </div>
             </>

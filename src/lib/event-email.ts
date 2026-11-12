@@ -1,7 +1,7 @@
 import { getMailer, sendEmail } from "./mailer";
 import { supabaseAdmin } from "./supabase-admin";
 import { formatEventDate, type EventDetails, type EventGuest, type GiftExchange } from "./events";
-import { coHostInviteHtml, exchangeAssignmentHtml, registryLinkedHtml } from "./event-email-templates";
+import { coHostInviteHtml, exchangeAssignmentHtml, listRequestHtml, registryLinkedHtml } from "./event-email-templates";
 import { resolveRegistryLink } from "./events-server";
 
 // Emails about co-hosts, linked registries and gift exchanges. The invitation
@@ -97,6 +97,37 @@ export async function sendCoHostInvite(opts: {
     });
   } catch (err) {
     console.error("[email] Failed to send co-host invite:", err);
+  }
+}
+
+/** Asks the person an event is for to make a gift list (see acceptListRequest). */
+export async function sendListRequest(opts: {
+  toEmail: string;
+  honoreeName: string;
+  hostName: string;
+  eventTitle: string;
+  eventDate: string | null;
+  listNoun: string;
+  token: string;
+  replyTo: string | null;
+}) {
+  try {
+    await sendEmail({
+      from: fromHost(opts.hostName),
+      to: TEST_RECIPIENT_OVERRIDE || opts.toEmail,
+      ...(opts.replyTo ? { replyTo: opts.replyTo } : {}),
+      subject: `${opts.hostName} asked you to make a ${opts.listNoun} for ${opts.eventTitle}`,
+      html: listRequestHtml({
+        honoreeName: opts.honoreeName,
+        hostName: opts.hostName,
+        eventTitle: opts.eventTitle,
+        eventDate: opts.eventDate ? formatEventDate(opts.eventDate) : null,
+        listNoun: opts.listNoun,
+        requestUrl: `${siteUrl()}/list-request/${opts.token}`,
+      }),
+    });
+  } catch (err) {
+    console.error("[email] Failed to send a list request:", err);
   }
 }
 
