@@ -44,8 +44,19 @@ export interface Occasion {
   list: { registryType: "baby" | "personal"; eventType: ListOccasion | null; noun: string };
   /** Who it's usually for, first one first. The picker offers these. */
   audiences: Audience[];
-  /** What a new event of this kind starts with. The host can change all of it. */
-  defaults?: { giftNote?: string; askKids?: boolean; exchange?: boolean };
+  /**
+   * What a new event of this kind starts with. The host can change all of it.
+   * `signup` starts a sign-up sheet from that preset (src/lib/signups.ts).
+   * `questions` are what the RSVP asks besides how many are coming
+   * (src/lib/rsvp-questions.ts).
+   */
+  defaults?: {
+    giftNote?: string;
+    askKids?: boolean;
+    exchange?: boolean;
+    signup?: "potluck" | "meal_train";
+    questions?: ("meal" | "diet" | "plus_ones")[];
+  };
 }
 
 function possessive(name: string): string {
@@ -95,7 +106,7 @@ export const OCCASIONS = [
     titleFor: (name) => named(name, "Birthday Party"),
     list: BIRTHDAY_LIST,
     audiences: ["child", "someone"],
-    defaults: { askKids: true },
+    defaults: { askKids: true, questions: ["diet"] },
   },
   {
     id: "gift_exchange",
@@ -133,6 +144,7 @@ export const OCCASIONS = [
     titleFor: (name) => named(name, "Wedding"),
     list: WEDDING_LIST,
     audiences: ["us", "someone"],
+    defaults: { questions: ["plus_ones", "meal", "diet"] },
   },
   {
     id: "engagement",
@@ -198,6 +210,26 @@ export const OCCASIONS = [
     audiences: ["no_one", "me", "us", "child"],
   },
   {
+    id: "potluck",
+    label: "Potluck",
+    tint: "sunshine",
+    titlePlaceholder: "Friendsgiving Potluck",
+    titleFor: (name) => named(name, "Potluck"),
+    list: WISHLIST,
+    audiences: ["no_one"],
+    defaults: { signup: "potluck", questions: ["diet"] },
+  },
+  {
+    id: "meal_train",
+    label: "Meal train",
+    tint: "teal",
+    titlePlaceholder: "Meals for the Parks",
+    titleFor: (name) => (name.trim() ? `Meals for ${name.trim()}` : "Meal Train"),
+    list: WISHLIST,
+    audiences: ["someone", "us", "me"],
+    defaults: { signup: "meal_train" },
+  },
+  {
     id: "gathering",
     label: "Get-together",
     tint: "teal",
@@ -205,6 +237,7 @@ export const OCCASIONS = [
     titleFor: () => "Get-Together",
     list: WISHLIST,
     audiences: ["no_one"],
+    defaults: { questions: ["diet"] },
   },
   {
     id: "other",
@@ -266,34 +299,44 @@ export function listTitleFor(occasion: Occasion, name: string): string {
  * - link: link a list that already exists, by its share link.
  * - ask: email the honoree an invitation to make a list, linked once it exists.
  * - exchange: draw names (a Secret Santa).
+ * - signup: a sign-up sheet, for things to bring or days to help (src/lib/signups.ts).
  * - no_gifts: a "No gifts, please" note.
  * - later: decide later.
  */
-export type GiftPlan = "new_list" | "link" | "ask" | "exchange" | "no_gifts" | "later";
+export type GiftPlan = "new_list" | "link" | "ask" | "exchange" | "signup" | "no_gifts" | "later";
 
 export const GIFT_PLAN_LABELS: Record<GiftPlan, { label: string; hint: string }> = {
   new_list: { label: "Make a gift list", hint: "Add things from any store, and guests reserve them." },
   link: { label: "Link a list", hint: "Paste the share link of a Regibee registry or wishlist." },
   ask: { label: "Ask them to make one", hint: "We email them an invitation, and their list is linked as soon as it exists." },
   exchange: { label: "Draw names", hint: "Everyone who joins gives one gift to one person." },
+  signup: { label: "A sign-up sheet", hint: "Guests pick what they'll bring, or a day to help." },
   no_gifts: { label: "No gifts", hint: "The invitation says \"No gifts, please.\"" },
   later: { label: "Decide later", hint: "Add a list or a gift note any time from the event." },
 };
 
-/** The gift plans that make sense for who it's for, the usual one first. */
-export function giftPlansFor(audience: Audience): GiftPlan[] {
-  switch (audience) {
-    case "me":
-    case "us":
-    case "child":
-      return ["new_list", "link", "no_gifts", "later"];
-    case "someone":
-      return ["link", "ask", "no_gifts", "later"];
-    case "everyone":
-      return ["exchange"];
-    case "no_one":
-      return ["no_gifts", "later"];
-  }
+/**
+ * The gift plans that make sense for who it's for, the usual one first. An
+ * occasion that starts with a sign-up sheet (a potluck, a meal train) puts
+ * that first. A party for no one in particular can have one too.
+ */
+export function giftPlansFor(audience: Audience, occasion?: Pick<Occasion, "defaults"> | null): GiftPlan[] {
+  const plans = ((): GiftPlan[] => {
+    switch (audience) {
+      case "me":
+      case "us":
+      case "child":
+        return ["new_list", "link", "no_gifts", "later"];
+      case "someone":
+        return ["link", "ask", "no_gifts", "later"];
+      case "everyone":
+        return ["exchange"];
+      case "no_one":
+        return ["no_gifts", "signup", "later"];
+    }
+  })();
+  if (occasion?.defaults?.signup) return ["signup", ...plans.filter((p) => p !== "signup")];
+  return plans;
 }
 
 /**

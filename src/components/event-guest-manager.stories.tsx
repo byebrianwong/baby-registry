@@ -2,7 +2,15 @@ import type { Meta, StoryObj } from "@storybook/react";
 import { expect, fn, screen, userEvent, within } from "storybook/test";
 import { EventGuestManager } from "./event-guest-manager";
 import { guestForHost } from "@/lib/events";
-import { sampleEvent, sampleExchangeEvent, sampleExchangeGuests, sampleGuests } from "@/lib/event-sample-data";
+import {
+  sampleEvent,
+  sampleExchangeEvent,
+  sampleExchangeGuests,
+  sampleGuests,
+  samplePotluckSheet,
+} from "@/lib/event-sample-data";
+import { claimsByGuest, describeClaim } from "@/lib/signups";
+import { defaultQuestions } from "@/lib/rsvp-questions";
 
 const ok = fn(async () => ({ error: null }));
 
@@ -102,5 +110,37 @@ export const SavingAsGroup: Story = {
     // In the document, not "visible": the dialog fades in, and Chromatic
     // snapshots the end of the fade.
     await expect(dialog.getByRole("textbox", { name: "Group name" })).toHaveValue(sampleEvent.title);
+  },
+};
+
+/** A potluck: each guest's row says what they signed up to bring. */
+export const WithSignups: Story = {
+  args: {
+    signups: Object.fromEntries(
+      [...claimsByGuest(samplePotluckSheet)].map(([id, claims]) => [id, claims.map(describeClaim)]),
+    ),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByText("Side (Mac and cheese)")).toBeVisible();
+  },
+};
+
+/** A wedding's questions: meal counts for everyone going, and each guest's answers. */
+export const WithAnswers: Story = {
+  args: {
+    maxPartySize: 2,
+    questions: defaultQuestions(["plus_ones", "meal", "diet"]),
+    guests: sampleGuests.map((g) =>
+      g.id === "g1"
+        ? { ...g, answers: { meal: ["Chicken", "Vegetarian"], plus_ones: ["Galinda"], diet: "No shellfish" } }
+        : g.id === "g5"
+          ? { ...g, answers: { meal: ["Fish"] } }
+          : g,
+    ),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByText("Chicken: 1 · Fish: 1 · Vegetarian: 1")).toBeVisible();
   },
 };

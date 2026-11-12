@@ -34,7 +34,7 @@ export default async function NewEventPage({
         Add the details now. You&apos;ll add guests and send the invitation next.
       </p>
       <div className="mt-6">
-        <EventForm registries={registries} initial={{ registry_id: linked }} />
+        <EventForm registries={registries} startRegistryId={linked} />
       </div>
     </div>
   );
