@@ -159,7 +159,7 @@ export function PrivacyPolicy({ nav }: { nav: React.ReactNode }) {
               <li>
                 Anyone with a registry&apos;s link can open it. Public registries can also show up in search engines.
                 Private ones are hidden from search engines, and show on your profile only to people you&apos;ve let
-                follow you.
+                follow you, or to people in a group you&apos;ve shared them with.
               </li>
               <li>
                 Photos you upload for a registry or an item can be seen by anyone with the registry&apos;s link.
@@ -206,7 +206,20 @@ export function PrivacyPolicy({ nav }: { nav: React.ReactNode }) {
                 In a gift exchange, you see who has joined and how many have added a wishlist or address, but not
                 who drew whom or what anyone added.
               </li>
+              <li>
+                You can ask the person an event is for to make a gift list. We email them a link, and keep their name
+                and email address with the event.
+              </li>
             </List>
+
+            <H3>Your groups</H3>
+            <P>
+              A group is a list of people you keep, like a family or a book club, with their names and, if you add
+              them, email addresses. Only you see who&apos;s in it, and we don&apos;t email people when you add them.
+              We match members to Regibee accounts by email address. When you share a registry with a group,
+              members who have an account see it, with the group&apos;s name, on their Following page and your
+              profile, even if the registry is private.
+            </P>
 
             <H3>Following and blocking</H3>
             <P>
@@ -327,6 +340,7 @@ export function PrivacyPolicy({ nav }: { nav: React.ReactNode }) {
                 follow;
               </li>
               <li>to gift exchange members, with the name they drew;</li>
+              <li>to the person an event is for, when its host asks them to make a gift list;</li>
               <li>
                 to owners when someone links their registry to an event, or when a store&apos;s completion discount
                 for their registry may be open.
@@ -431,7 +445,7 @@ export function PrivacyPolicy({ nav }: { nav: React.ReactNode }) {
                   Account page
                 </Link>
                 , or on the Account tab in the app. That deletes your sign-in and profile, your follows, follow
-                requests and blocks, and the events you made with their guest lists and RSVPs. It signs you out of
+                requests and blocks, your groups, and the events you made with their guest lists and RSVPs. It signs you out of
                 the website, the app and the extension.
               </li>
               <li>
@@ -470,7 +484,7 @@ export function PrivacyPolicy({ nav }: { nav: React.ReactNode }) {
           <Section id="security">
             <P>
               Every connection to Regibee is encrypted. Access rules in the database let each person reach only what
-              they&apos;re allowed to. Guest lists, gift exchanges, follows and blocks can be read only by our server. No system
+              they&apos;re allowed to. Guest lists, gift exchanges, groups, follows and blocks can be read only by our server. No system
               is perfectly secure, so if you find a problem, please email us at <ContactEmail />.
             </P>
           </Section>
