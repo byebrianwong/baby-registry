@@ -18,7 +18,9 @@ or comment on the PR from this skill.
 ## 1. Wait for the checks
 
 `gh pr checks <n> --repo dango-design/regibee`. Wait until `chromatic` (GitHub
-Actions) and `Vercel` have finished. If you opened the PR, the app wakes you
+Actions), `Vercel` and `End-to-end tests` (GitHub Actions, only on pull requests
+that change the site) have finished. A failed `End-to-end tests` makes the verdict
+**Check first**: name the failing test and link its run. If you opened the PR, the app wakes you
 when CI finishes; don't poll. `UI Tests` and `UI Review` stay pending until
 someone reviews in Chromatic, so don't wait for those.
 

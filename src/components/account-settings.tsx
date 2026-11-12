@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/base/input/input";
 import { Checkbox } from "@/components/base/checkbox/checkbox";
 import { CopyLinkButton } from "@/components/copy-link-button";
+import { DeleteAccountCard } from "@/components/delete-account-card";
 import { FollowLists } from "@/components/follow-lists";
 import { saveProfile, setRegistryListed } from "@/lib/actions/profile";
 import { occasionLabel } from "@/lib/registry-copy";
@@ -76,6 +77,7 @@ export function AccountSettings({
   listAction = setRegistryListed,
   follows,
   followActions,
+  deleteAccountActions,
   basePath = "",
 }: {
   profile: {
@@ -99,6 +101,8 @@ export function AccountSettings({
     React.ComponentProps<typeof FollowLists>,
     "approveAction" | "removeAction" | "cancelAction" | "blockAction" | "unblockAction"
   >;
+  /** Stand-ins for the account API in the Delete account card. The demo passes them. */
+  deleteAccountActions?: React.ComponentProps<typeof DeleteAccountCard>;
   /** Put in front of every link. The demo passes "/demo". */
   basePath?: string;
 }) {
@@ -245,6 +249,8 @@ export function AccountSettings({
             )}
           </CardContent>
         </Card>
+
+        <DeleteAccountCard {...deleteAccountActions} />
       </div>
     </div>
   );
