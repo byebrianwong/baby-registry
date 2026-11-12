@@ -419,6 +419,8 @@ export interface EventEmailDetails {
   /** "No gifts, please", as the host wrote it. */
   giftNote?: string | null;
   exchange?: { budget?: string | null; drawBy?: string | null; mailed: boolean } | null;
+  /** The event's sign-up sheet. A meal train has no get-together: guests pick a day to help. */
+  signup?: { title: string; mealTrain: boolean } | null;
 }
 
 const BUTTON_STYLE =
@@ -468,6 +470,19 @@ function exchangeLine(event: EventEmailDetails): string {
   return `<p><strong>Gift exchange:</strong> everyone who joins draws one name and gives that person a gift${budget}.${when}${how} Join when you RSVP.</p>`;
 }
 
+function signupLine(event: EventEmailDetails): string {
+  if (!event.signup) return "";
+  const what = event.signup.mealTrain
+    ? "Pick a day to help when you reply. You'll get the drop-off address once you sign up."
+    : "Pick what you'll bring when you RSVP.";
+  return `<p><strong>${escapeHtml(event.signup.title)}:</strong> ${what}</p>`;
+}
+
+function signupList(claims: string[]): string {
+  if (claims.length === 0) return "";
+  return `<ul style="margin:4px 0 16px;padding-left:20px;">${claims.map((c) => `<li>${escapeHtml(c)}</li>`).join("")}</ul>`;
+}
+
 /**
  * The invitation a host emails to a guest, and the reminder to guests who
  * haven't replied. The picture and the button both open the guest's own RSVP
@@ -487,8 +502,11 @@ export function eventInvitationHtml(opts: {
   const image = event.imageUrl
     ? `<p style="margin:0 0 20px;"><a href="${escapeHtml(opts.rsvpUrl)}"><img src="${escapeHtml(event.imageUrl)}" alt="${escapeHtml(event.title)} invitation" style="display:block;width:100%;max-width:560px;height:auto;border-radius:12px;" /></a></p>`
     : "";
+  const mealTrain = Boolean(event.signup?.mealTrain);
   const intro = opts.reminder
-    ? `<p>Just a reminder: <strong>${escapeHtml(opts.hostName)}</strong> would love to know if you can make it to <strong>${escapeHtml(event.title)}</strong>.</p>`
+    ? mealTrain
+      ? `<p>Just a reminder: <strong>${escapeHtml(opts.hostName)}</strong> is still looking for help with <strong>${escapeHtml(event.title)}</strong>.</p>`
+      : `<p>Just a reminder: <strong>${escapeHtml(opts.hostName)}</strong> would love to know if you can make it to <strong>${escapeHtml(event.title)}</strong>.</p>`
     : `<p><strong>${escapeHtml(opts.hostName)}</strong> invited you to <strong>${escapeHtml(event.title)}</strong>.</p>`;
   const hosted =
     event.hostedBy && event.hostedBy !== opts.hostName
@@ -506,8 +524,9 @@ export function eventInvitationHtml(opts: {
       ${hosted}
       ${eventFactsBlock(event)}
       ${opts.message ? `<p>${multiline(opts.message)}</p>` : ""}
-      <p style="margin:24px 0 8px;"><a href="${escapeHtml(opts.rsvpUrl)}" style="${BUTTON_STYLE}">RSVP</a></p>
+      <p style="margin:24px 0 8px;"><a href="${escapeHtml(opts.rsvpUrl)}" style="${BUTTON_STYLE}">${mealTrain ? "Pick a day" : "RSVP"}</a></p>
       ${rsvpBy}
+      ${signupLine(event)}
       ${registryLine(event)}
       ${exchangeLine(event)}
       <p style="color:#888;font-size:13px;">This link is just for you, so you can change your answer later. Or copy it: ${escapeHtml(opts.rsvpUrl)}</p>
@@ -533,8 +552,12 @@ export function rsvpGuestConfirmationHtml(opts: {
   calendarUrl?: string | null;
   /** Whether the guest is in the event's gift exchange. */
   inExchange?: boolean;
+  /** What the guest signed up for on the event's sign-up sheet. */
+  signups?: string[];
 }): string {
   const { event } = opts;
+  const signups = opts.signups ?? [];
+  const mealTrain = Boolean(event.signup?.mealTrain);
   const exchange =
     event.exchange && opts.inExchange
       ? `<p><strong>You're in the gift exchange.</strong> ${
@@ -553,10 +576,22 @@ export function rsvpGuestConfirmationHtml(opts: {
     opts.status !== "no" && opts.calendarUrl
       ? `<p><a href="${escapeHtml(opts.calendarUrl)}" style="color:#004659;">Add to Google Calendar</a></p>`
       : "";
+  const headline = mealTrain
+    ? opts.status === "no"
+      ? `<p><strong>You can't help this time</strong> with <em>${escapeHtml(event.title)}</em>. Thanks for letting the host know.</p>`
+      : `<p><strong>You're signed up</strong> for <em>${escapeHtml(event.title)}</em>. Thank you for helping!</p>`
+    : `<p><strong>${RSVP_PHRASES[opts.status]}${party}</strong> to <em>${escapeHtml(event.title)}</em>. ${thanks}</p>`;
+  const signedUp =
+    signups.length > 0
+      ? `<p style="margin-bottom:0;"><strong>You signed up for:</strong></p>${signupList(signups)}${
+          mealTrain ? "<p>The drop-off address is below. Only people who signed up see it.</p>" : ""
+        }`
+      : "";
 
   return `
     <p>Hi ${escapeHtml(opts.guestName)},</p>
-    <p><strong>${RSVP_PHRASES[opts.status]}${party}</strong> to <em>${escapeHtml(event.title)}</em>. ${thanks}</p>
+    ${headline}
+    ${signedUp}
     ${opts.status !== "no" ? eventFactsBlock(event) : ""}
     ${calendar}
     ${exchange}
@@ -580,21 +615,36 @@ export function rsvpHostNotificationHtml(opts: {
   manageUrl: string;
   /** True when the guest wasn't on the list and added themselves from the event link. */
   newGuest?: boolean;
+  /** What the guest signed up for on the sign-up sheet. */
+  signups?: string[];
+  /** A meal train: guests sign up to help instead of coming to something. */
+  mealTrain?: boolean;
 }): string {
-  const answer =
-    opts.status === "yes"
+  const signups = opts.signups ?? [];
+  const answer = opts.mealTrain
+    ? opts.status === "no"
+      ? "can't help this time with"
+      : "signed up to help with"
+    : opts.status === "yes"
       ? `is going${opts.partySize > 1 ? ` (${opts.partySize} people)` : ""}`
       : opts.status === "maybe"
         ? `might come${opts.partySize > 1 ? ` (${opts.partySize} people)` : ""}`
         : "can't make it";
   const pendingText = opts.pending === 1 ? "1 guest hasn't" : `${opts.pending} guests haven't`;
+  const to = opts.mealTrain ? "" : " to";
+  const signedUp =
+    signups.length > 0 ? `<p style="margin-bottom:0;">They signed up for:</p>${signupList(signups)}` : "";
+  const counts = opts.mealTrain
+    ? ""
+    : `<p>So far, ${opts.attending === 1 ? "1 person is" : `${opts.attending} people are`} coming and ${pendingText} replied.</p>`;
 
   return `
     <p>Hi ${escapeHtml(opts.hostName)},</p>
-    <p><strong>${escapeHtml(opts.guestName)}</strong> ${answer} to <em>${escapeHtml(opts.eventTitle)}</em>.</p>
+    <p><strong>${escapeHtml(opts.guestName)}</strong> ${answer}${to} <em>${escapeHtml(opts.eventTitle)}</em>.</p>
     ${opts.newGuest ? `<p style="color:#555;">They RSVPed from the event link, so they're now on your guest list.</p>` : ""}
+    ${signedUp}
     ${opts.note ? `<p>Their note: "${escapeHtml(opts.note)}"</p>` : ""}
-    <p>So far, ${opts.attending === 1 ? "1 person is" : `${opts.attending} people are`} coming and ${pendingText} replied.</p>
+    ${counts}
     <p style="margin: 16px 0;"><a href="${escapeHtml(opts.manageUrl)}" style="color:#004659;">See your guest list</a></p>
     <p style="color:#888;font-size:13px;">You're getting this because you asked to hear about RSVPs. You can turn these emails off on the event's Edit page.</p>
   `;

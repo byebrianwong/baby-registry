@@ -22,6 +22,7 @@ import {
   type EventType,
   type GiftExchange,
 } from "@/lib/events";
+import { hidesAddressUntilSignup } from "@/lib/signups";
 import { cx } from "@/lib/utils/cx";
 
 type Values = Pick<
@@ -403,24 +404,38 @@ export function EventForm({
         </div>
       </Section>
 
-      <Section title="Where">
-        <Input
-          label="Place"
-          value={locationName}
-          onChange={setLocationName}
-          maxLength={120}
-          placeholder={`e.g., "Grandma's house" or "The Garden Room"`}
-        />
-        <TextArea
-          label="Address"
-          value={locationAddress}
-          onChange={setLocationAddress}
-          maxLength={300}
-          rows={2}
-          placeholder={"123 Main St\nSan Francisco, CA 94102"}
-          hint="Only people with the event link see it. Guests get a map link."
-        />
-      </Section>
+      {hidesAddressUntilSignup(eventType) ? (
+        <Section title="Where to drop off">
+          <TextArea
+            label="Drop-off address"
+            value={locationAddress}
+            onChange={setLocationAddress}
+            maxLength={300}
+            rows={2}
+            placeholder={"123 Main St\nSan Francisco, CA 94102"}
+            hint="Only people who sign up for a day see it, on their own link and in their email."
+          />
+        </Section>
+      ) : (
+        <Section title="Where">
+          <Input
+            label="Place"
+            value={locationName}
+            onChange={setLocationName}
+            maxLength={120}
+            placeholder={`e.g., "Grandma's house" or "The Garden Room"`}
+          />
+          <TextArea
+            label="Address"
+            value={locationAddress}
+            onChange={setLocationAddress}
+            maxLength={300}
+            rows={2}
+            placeholder={"123 Main St\nSan Francisco, CA 94102"}
+            hint="Only people with the event link see it. Guests get a map link."
+          />
+        </Section>
+      )}
 
       <Section title="Message to guests" description="Parking, dress code, what to bring: anything guests should know.">
         <TextArea

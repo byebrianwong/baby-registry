@@ -14,9 +14,21 @@ import {
   getEventRegistries,
   getExchangeExclusions,
   getGiftExchange,
+  getSignupSheet,
   registrySlugFromLink,
   resolveRegistryLink,
 } from "@/lib/events-server";
+import { copySignupSheet, insertSignupSheet } from "@/lib/signups-server";
+import {
+  MAX_CLAIM_NOTE_LENGTH,
+  claimsByGuest,
+  describeClaim,
+  formatSlotDate,
+  hidesAddressUntilSignup,
+  rowsForDays,
+  signupRowsForGuest,
+  type GuestClaim,
+} from "@/lib/signups";
 import {
   isEmail,
   isEventType,
@@ -274,6 +286,13 @@ async function saveRegistryLinks(event: Pick<EventDetails, "id" | "owner_id" | "
   return { error: null };
 }
 
+/** The sign-up sheet a new event of this occasion starts with, if any. */
+function occasionSignupPreset(eventType: string) {
+  if (!isOccasionId(eventType)) return null;
+  const occasion = occasionFor(eventType);
+  return occasion.defaults?.signup ?? null;
+}
+
 async function saveExchange(eventId: string, form: ExchangeForm): Promise<{ error: string | null }> {
   const existing = await getGiftExchange(eventId);
   if (!form.enabled) {
@@ -387,6 +406,9 @@ export async function createEvent(formData: FormData): Promise<Result<{ id: stri
   // which beats a second copy of the event from trying again.
   if (links.ids && links.ids.length > 0) await saveRegistryLinks(data, links.ids, user.id);
   if (exchange?.enabled) await saveExchange(data.id, exchange);
+  // A potluck or a meal train starts with its sign-up sheet.
+  const signupPreset = occasionSignupPreset(form.fields.event_type);
+  if (signupPreset) await insertSignupSheet(data.id, signupPreset);
 
   revalidateEvent(data);
   return { error: null, id: data.id };
@@ -566,8 +588,17 @@ export async function setGuestRsvp(
     .eq("id", guestId)
     .eq("event_id", eventId);
   if (error) return { error: "The RSVP wasn't saved. Try again." };
+  // Someone who isn't coming isn't bringing anything: free their spots.
+  if (status === "no") await releaseSignups(eventId, guestId);
   revalidateEvent(access.event);
   return { error: null };
+}
+
+/** Takes a guest off every row of the event's sign-up sheet. */
+async function releaseSignups(eventId: string, guestId: string) {
+  const { data: items } = await supabaseAdmin.from("signup_items").select("id").eq("event_id", eventId);
+  const ids = (items || []).map((i) => i.id as string);
+  if (ids.length > 0) await supabaseAdmin.from("signup_claims").delete().eq("guest_id", guestId).in("item_id", ids);
 }
 
 export async function removeEventGuest(eventId: string, guestId: string): Promise<Result> {
@@ -606,15 +637,17 @@ export async function sendEventInvites(eventId: string, guestIds?: string[]): Pr
   ) as (typeof guests[number] & { email: string })[];
   if (recipients.length === 0) return { error: "There's no one to send it to. Add guests with email addresses." };
 
-  const [registries, exchange, hostName] = await Promise.all([
+  const [registries, exchange, hostName, signups] = await Promise.all([
     getEventRegistries(eventId),
     getGiftExchange(eventId),
     hostNameFor(access.event, access.user.id),
+    getSignupSheet(eventId),
   ]);
   const { sentTokens, error } = await sendEventInvitations({
     event: access.event,
     registries,
     exchange,
+    signupTitle: signups?.sheet.title ?? null,
     hostName,
     replyTo: access.user.email ?? null,
     guests: recipients,
@@ -650,15 +683,17 @@ export async function sendEventReminders(eventId: string): Promise<Result<{ sent
     return { error: "Everyone invited has replied or got a reminder in the last day." };
   }
 
-  const [registries, exchange, hostName] = await Promise.all([
+  const [registries, exchange, hostName, signups] = await Promise.all([
     getEventRegistries(eventId),
     getGiftExchange(eventId),
     hostNameFor(access.event, access.user.id),
+    getSignupSheet(eventId),
   ]);
   const { sentTokens, error } = await sendEventInvitations({
     event: access.event,
     registries,
     exchange,
+    signupTitle: signups?.sheet.title ?? null,
     hostName,
     replyTo: access.user.email ?? null,
     guests: recipients,
@@ -698,6 +733,71 @@ export interface RsvpInput {
     giftIdeas?: string;
     shippingAddress?: string;
   };
+  /**
+   * For an event with a sign-up sheet: every row the guest wants, with what
+   * they're bringing. Rows left out are released. Leave it out to keep the
+   * guest's sign-ups as they are.
+   */
+  signups?: { itemId: string; note?: string }[];
+}
+
+type SignupRequest = { claims: { item_id: string; note: string | null }[] } | { error: string };
+
+/**
+ * Checks a guest's sign-up choices against the sheet. Someone who can't go
+ * gives up their spots. A row whose day is over can be kept, not newly taken.
+ */
+function readSignups(
+  input: RsvpInput,
+  sheet: NonNullable<Awaited<ReturnType<typeof getSignupSheet>>>,
+  guestId: string | null,
+  eventType: string,
+): SignupRequest {
+  if (input.status === "no") return { claims: [] };
+  const requested = input.signups ?? [];
+  // The event's time zone could be a day behind UTC, so a day counts as over
+  // once yesterday in UTC is past it, like the event page.
+  const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  const rows = new Map(signupRowsForGuest(sheet, guestId, yesterday).map((row) => [row.id, row]));
+  const claims = new Map<string, string | null>();
+  for (const choice of requested.slice(0, rows.size)) {
+    const row = typeof choice?.itemId === "string" ? rows.get(choice.itemId) : undefined;
+    if (!row) return { error: "The sign-up sheet changed. Refresh the page and pick again." };
+    if (row.passed && !row.mine) return { error: `${row.slotDate ? formatSlotDate(row.slotDate) : row.label} has passed. Pick another.` };
+    const note = typeof choice.note === "string" ? choice.note.trim().slice(0, MAX_CLAIM_NOTE_LENGTH) : "";
+    claims.set(row.id, note || null);
+  }
+  if (hidesAddressUntilSignup(eventType) && input.status === "yes" && claims.size === 0) {
+    return { error: "Pick at least one day you can help." };
+  }
+  return { claims: [...claims].map(([item_id, note]) => ({ item_id, note })) };
+}
+
+/**
+ * Saves a guest's sign-ups. Null when saved; otherwise what to tell them,
+ * such as which row filled up while they were choosing.
+ */
+async function saveSignups(
+  eventId: string,
+  guestId: string,
+  claims: { item_id: string; note: string | null }[],
+  sheet: NonNullable<Awaited<ReturnType<typeof getSignupSheet>>>,
+): Promise<string | null> {
+  const { data: fullId, error } = await supabaseAdmin.rpc("save_signup_claims", {
+    p_event_id: eventId,
+    p_guest_id: guestId,
+    p_claims: claims,
+  });
+  if (error) {
+    console.error("[events] Failed to save sign-ups:", error);
+    return "Your sign-ups weren't saved. Try again.";
+  }
+  if (fullId) {
+    const row = sheet.items.find((item) => item.id === fullId);
+    const name = row ? (row.slot_date ? `${formatSlotDate(row.slot_date)}: ${row.label}` : row.label) : "One of those";
+    return `${name} just filled up. Pick something else.`;
+  }
+  return null;
 }
 
 /**
@@ -776,13 +876,15 @@ export async function submitRsvp(input: RsvpInput): Promise<Result<{ token: stri
   const { data: eventRow } = await supabaseAdmin.from("events").select("*").eq("slug", input.slug).maybeSingle();
   if (!eventRow) return { error: "This event wasn't found." };
   const event = eventRow as EventDetails;
-  const exchange = await getGiftExchange(event.id);
+  const [exchange, sheet] = await Promise.all([getGiftExchange(event.id), getSignupSheet(event.id)]);
+  // A meal train has no get-together either: "yes" means "I can help".
+  const mealTrain = hidesAddressUntilSignup(event.event_type);
 
   // A mailed exchange has no get-together: "yes" means "I'm in", for one person.
   const partySize =
     input.status === "no"
       ? 0
-      : exchange?.mailed
+      : exchange?.mailed || mealTrain
         ? 1
         : Math.min(Math.max(Math.round(Number(input.partySize)) || 1, 1), event.max_party_size);
   const kidsCount =
@@ -799,17 +901,25 @@ export async function submitRsvp(input: RsvpInput): Promise<Result<{ token: stri
   };
 
   // The guest as they are now, for the exchange rules below.
-  let existing: Pick<EventGuest, "in_exchange"> | null = null;
+  let existing: Pick<EventGuest, "id" | "in_exchange"> | null = null;
   if (input.token) {
     const { data } = await supabaseAdmin
       .from("event_guests")
-      .select("in_exchange")
+      .select("id, in_exchange")
       .eq("event_id", event.id)
       .eq("token", input.token)
       .maybeSingle();
     if (!data) return { error: "This RSVP link isn't on the guest list anymore. Ask the host for a new one." };
     existing = data;
   }
+
+  // Sign-ups are checked before anything is saved. A guest who sent none
+  // keeps theirs, unless they can't go.
+  const signups =
+    sheet && (input.signups !== undefined || input.status === "no")
+      ? readSignups(input, sheet, existing?.id ?? null, event.event_type)
+      : null;
+  if (signups && "error" in signups) return { error: signups.error };
 
   if (exchange && input.exchange) {
     const wantsIn = exchange.mailed ? input.status === "yes" : input.exchange.join && input.status !== "no";
@@ -828,7 +938,15 @@ export async function submitRsvp(input: RsvpInput): Promise<Result<{ token: stri
     }
   }
 
-  let guest: { name: string; email: string | null; token: string; in_exchange: boolean };
+  // Everything else is checked. A guest with a link takes their spots before
+  // their answer is saved, so a row that filled up meanwhile stops the whole
+  // RSVP and nothing changes.
+  if (signups && existing) {
+    const problem = await saveSignups(event.id, existing.id, signups.claims, sheet!);
+    if (problem) return { error: problem };
+  }
+
+  let guest: { id: string; name: string; email: string | null; token: string; in_exchange: boolean };
   let newGuest = false;
 
   if (input.token) {
@@ -837,7 +955,7 @@ export async function submitRsvp(input: RsvpInput): Promise<Result<{ token: stri
       .update(response)
       .eq("event_id", event.id)
       .eq("token", input.token)
-      .select("name, email, token, in_exchange")
+      .select("id, name, email, token, in_exchange")
       .maybeSingle();
     if (error || !data) return { error: "This RSVP link isn't on the guest list anymore. Ask the host for a new one." };
     guest = data;
@@ -865,7 +983,7 @@ export async function submitRsvp(input: RsvpInput): Promise<Result<{ token: stri
     const { data, error } = await supabaseAdmin
       .from("event_guests")
       .insert({ ...response, event_id: event.id, name, email, token: generateGuestToken(), added_by_guest: true })
-      .select("name, email, token, in_exchange")
+      .select("id, name, email, token, in_exchange")
       .single();
     if (error?.code === "23505") {
       return {
@@ -874,6 +992,15 @@ export async function submitRsvp(input: RsvpInput): Promise<Result<{ token: stri
       };
     }
     if (error || !data) return { error: "Your RSVP wasn't saved. Try again." };
+    // A new guest needs a row before taking spots. If a spot is gone, the
+    // row goes too, so trying again starts clean.
+    if (signups && signups.claims.length > 0) {
+      const problem = await saveSignups(event.id, data.id, signups.claims, sheet!);
+      if (problem) {
+        await supabaseAdmin.from("event_guests").delete().eq("id", data.id);
+        return { error: problem };
+      }
+    }
     guest = data;
     newGuest = true;
   }
@@ -885,7 +1012,9 @@ export async function submitRsvp(input: RsvpInput): Promise<Result<{ token: stri
   }
 
   after(async () => {
-    const registries = await getEventRegistries(event.id);
+    const [registries, savedSheet] = await Promise.all([getEventRegistries(event.id), getSignupSheet(event.id)]);
+    // What the guest signed up for, as it stands after this RSVP.
+    const claims: GuestClaim[] = savedSheet ? (claimsByGuest(savedSheet).get(guest.id) ?? []) : [];
     const tasks: Promise<void>[] = [];
     if (guest.email) {
       tasks.push(
@@ -897,6 +1026,7 @@ export async function submitRsvp(input: RsvpInput): Promise<Result<{ token: stri
           guest: { name: guest.name, email: guest.email, token: guest.token },
           status: input.status,
           partySize,
+          signups: savedSheet ? { title: savedSheet.sheet.title, claims: claims.map(describeClaim) } : null,
         }),
       );
     }
@@ -912,6 +1042,7 @@ export async function submitRsvp(input: RsvpInput): Promise<Result<{ token: stri
           attending: summary.attending,
           pending: summary.pending,
           newGuest,
+          signups: claims.map(describeClaim),
         }),
       );
     }
@@ -1148,6 +1279,8 @@ async function copyEventForNextYear(
       registries.map((r, index) => ({ event_id: copy.id, registry_id: r.id, linked_by: ownerId, sort_order: index })),
     );
   }
+
+  await copySignupSheet(old.id, copy.id, 1);
 
   if (exchange) {
     await supabaseAdmin.from("gift_exchanges").insert({
@@ -1471,6 +1604,15 @@ export async function undoExchangeDraw(eventId: string): Promise<Result> {
 
 // ── "What are you planning?" ─────────────────────────────────
 
+/** How many days a meal train from the picker starts with. */
+const MEAL_TRAIN_DAYS = 7;
+
+function addDays(date: string, days: number): string {
+  const next = new Date(`${date}T00:00:00Z`);
+  next.setUTCDate(next.getUTCDate() + days);
+  return next.toISOString().slice(0, 10);
+}
+
 export interface PlanInput {
   /** An occasion id from src/lib/occasions.ts. */
   occasion: string;
@@ -1504,7 +1646,7 @@ export async function startPlan(input: PlanInput): Promise<Result<{ href: string
   if (!isOccasionId(input.occasion)) return { error: "Choose what you're planning." };
   const occasion = occasionFor(input.occasion);
   if (!(occasion.audiences as readonly Audience[]).includes(input.audience)) return { error: "Choose who it's for." };
-  if (!giftPlansFor(input.audience).includes(input.gifts)) return { error: "Choose how gifts work." };
+  if (!giftPlansFor(input.audience, occasion).includes(input.gifts)) return { error: "Choose how gifts work." };
 
   const name = input.name?.trim().slice(0, 100) ?? "";
   if (nameLabelFor(input.audience) && !name && input.gifts === "ask") return { error: "Add their name." };
@@ -1552,6 +1694,8 @@ export async function startPlan(input: PlanInput): Promise<Result<{ href: string
   }
 
   const defaults = "defaults" in occasion ? occasion.defaults : undefined;
+  // A meal train has no day of its own: the date is its first drop-off day.
+  const mealTrain = hidesAddressUntilSignup(occasion.id);
   const { data: event, error } = await supabaseAdmin
     .from("events")
     .insert({
@@ -1559,7 +1703,7 @@ export async function startPlan(input: PlanInput): Promise<Result<{ href: string
       slug: generateEventSlug(title),
       event_type: occasion.id,
       title,
-      event_date: date || null,
+      event_date: mealTrain ? null : date || null,
       ask_kids: Boolean(defaults?.askKids),
       gift_note: input.gifts === "no_gifts" ? NO_GIFTS_NOTE : (defaults?.giftNote ?? null),
     })
@@ -1577,6 +1721,12 @@ export async function startPlan(input: PlanInput): Promise<Result<{ href: string
   if (linkIds.length > 0) await saveRegistryLinks(saved, linkIds, user.id);
   if (input.gifts === "exchange" || defaults?.exchange) {
     await saveExchange(saved.id, { enabled: true, budget: null, draw_by: null, mailed: false });
+  }
+  // A potluck or a meal train always starts with its sheet, like a gift exchange with its draw.
+  if (input.gifts === "signup" || defaults?.signup) {
+    // A meal train with a first day starts with a dinner each day for a week.
+    const week = mealTrain && date ? rowsForDays(date, addDays(date, MEAL_TRAIN_DAYS - 1), "Dinner") : null;
+    await insertSignupSheet(saved.id, defaults?.signup ?? "potluck", week ?? []);
   }
   if (input.gifts === "ask") {
     const token = crypto.randomBytes(24).toString("hex");

@@ -91,6 +91,11 @@ export interface EventGuestManagerProps {
   groups?: GroupSummary[];
   /** The name "Save as a group" suggests: the event's title. */
   eventTitle?: string;
+  /**
+   * What each guest signed up for on the sign-up sheet, by guest id, as
+   * "Side (Mac and cheese)". Undefined when the event has no sheet.
+   */
+  signups?: Record<string, string[]>;
 }
 
 type Filter = "all" | RsvpStatus;
@@ -123,7 +128,10 @@ function csvCell(value: string | number | null) {
   return /[",\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
 }
 
-function downloadCsv(guests: EventGuest[], { askKids = false, hasExchange = false } = {}) {
+function downloadCsv(
+  guests: EventGuest[],
+  { askKids = false, hasExchange = false, signups }: { askKids?: boolean; hasExchange?: boolean; signups?: Record<string, string[]> } = {},
+) {
   const coming = (g: EventGuest) => g.rsvp_status === "yes" || g.rsvp_status === "maybe";
   const rows = [
     [
@@ -133,6 +141,7 @@ function downloadCsv(guests: EventGuest[], { askKids = false, hasExchange = fals
       "People",
       ...(askKids ? ["Kids"] : []),
       ...(hasExchange ? ["Gift exchange"] : []),
+      ...(signups ? ["Signed up for"] : []),
       "Note",
       "Invited",
     ],
@@ -143,6 +152,7 @@ function downloadCsv(guests: EventGuest[], { askKids = false, hasExchange = fals
       coming(g) ? g.party_size : "",
       ...(askKids ? [coming(g) ? g.kids_count : ""] : []),
       ...(hasExchange ? [g.in_exchange ? "In" : ""] : []),
+      ...(signups ? [(signups[g.id] ?? []).join("; ")] : []),
       g.rsvp_note,
       g.invited_at ? new Date(g.invited_at).toISOString().slice(0, 10) : "",
     ]),
@@ -171,6 +181,7 @@ export function EventGuestManager({
   copySources = [],
   groups = [],
   eventTitle = "",
+  signups,
 }: EventGuestManagerProps) {
   const router = useRouter();
   const actions = { ...DEFAULT_ACTIONS, ...actionOverrides };
@@ -542,7 +553,7 @@ export function EventGuestManager({
                   Save as a group
                 </span>
               </Button>
-              <Button variant="outline" size="sm" onClick={() => downloadCsv(guests, { askKids, hasExchange })}>
+              <Button variant="outline" size="sm" onClick={() => downloadCsv(guests, { askKids, hasExchange, signups })}>
                 <span className="inline-flex items-center gap-1.5">
                   <Download className="size-4" />
                   Download CSV
@@ -631,6 +642,11 @@ export function EventGuestManager({
                         ? `Invited ${formatShortDate(guest.invited_at)}${guest.reminded_at ? `, reminded ${formatShortDate(guest.reminded_at)}` : ""}`
                         : "Not sent yet"}
                   </p>
+                  {signups?.[guest.id] && signups[guest.id].length > 0 && (
+                    <p className="mt-1 text-sm text-secondary">
+                      <span className="font-medium text-primary">Signed up for:</span> {signups[guest.id].join(" · ")}
+                    </p>
+                  )}
                   {guest.rsvp_note && (
                     <p className="mt-1 text-sm whitespace-pre-line text-secondary">“{guest.rsvp_note}”</p>
                   )}
