@@ -11,7 +11,8 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-supabase stop --no-backup
+# Nothing to stop the first time, as on a fresh GitHub Actions runner.
+supabase stop --no-backup || true
 
 # The tests don't use Studio, so it stays off to save memory. Storage takes
 # longer to start than the CLI waits for, so this script waits for it instead.

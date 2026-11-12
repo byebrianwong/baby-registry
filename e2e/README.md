@@ -52,6 +52,14 @@ colima stop
 
 `supabase stop` keeps the local database. Next time, `colima start` and `supabase start --exclude studio,postgres-meta --ignore-health-check` bring it back as it was, without running `npm run e2e:db` again.
 
+## On pull requests
+
+[`.github/workflows/e2e.yml`](../.github/workflows/e2e.yml) runs the same two commands on GitHub's servers, for every pull request that changes `src/`, `e2e/`, `supabase/`, `package.json` or `next.config.ts`, and for every push to `main`. It shows on the pull request as **End-to-end tests** and takes about five minutes, mostly to download local Supabase. It needs no secrets.
+
+- On GitHub, a test that fails gets one more try. One that passes the second time shows as flaky in the log. Fix flaky tests, since a test that fails at random teaches people to ignore it.
+- When a test fails, the run keeps its trace as `e2e-test-results` on the run's page for a week. Download it and open the trace with `npx playwright show-trace <file>.zip` to step through what the browser saw.
+- It isn't a required check yet, so a pull request can merge while it runs or fails. Once it has proven reliable, make it required in the repository's branch protection for `main`.
+
 ## What keeps tests away from production
 
 - `local-supabase.ts` refuses any Supabase or Mailpit address that isn't on this computer.
