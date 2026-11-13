@@ -12,7 +12,7 @@ import { EXTENSION_STORES } from "@/lib/retailers";
 
 /** Where Regibee is run from, how to reach it, and when this version took effect. */
 export const PRIVACY_FACTS = {
-  effectiveDate: "November 11, 2026",
+  effectiveDate: "November 13, 2026",
   contactEmail: "contact@regibee.com",
   location: "California, United States",
 };
@@ -206,8 +206,9 @@ export function PrivacyPolicy({ nav }: { nav: React.ReactNode }) {
                 who reply see it.
               </li>
               <li>
-                In a gift exchange, you see who has joined and how many have added a wishlist or address, but not
-                who drew whom or what anyone added.
+                In a gift exchange that draws names, you see who has joined and how many have added a wishlist or
+                address, but not who drew whom or what anyone added. When everyone gives everyone, you and your
+                guests see everyone&apos;s wish lists on the invitation.
               </li>
               <li>
                 You can ask the person an event is for to make a gift list. We email them a link, and keep their name
@@ -240,8 +241,11 @@ export function PrivacyPolicy({ nav }: { nav: React.ReactNode }) {
                 <strong className="font-semibold text-primary">Giving a gift.</strong> You give your name, your email
                 address and, if you like, a message. We record what you gave: the item and how many, or the amount
                 you sent to a cash fund. The registry&apos;s owner and anyone helping them manage it see your name,
-                email, message and gift. Other guests only see that an item is reserved or given, not by whom. If
-                you give from an event&apos;s invitation, the gift is matched to your RSVP.
+                email, message and gift. If the owner hides what&apos;s been reserved from themselves, they see it the
+                day after an event the list is part of. Other guests only see that an item is reserved or given, not
+                by whom. If you give from an event&apos;s invitation, the gift is matched to your RSVP. At an event
+                where everyone gives everyone, that event&apos;s other guests then see your name on what you
+                reserved from the lists on its invitation.
               </li>
               <li>
                 <strong className="font-semibold text-primary">Suggesting an item.</strong> The owners get your
@@ -266,7 +270,13 @@ export function PrivacyPolicy({ nav }: { nav: React.ReactNode }) {
                 one, you can add a wishlist link and gift ideas, and a shipping address when gifts are mailed. Only
                 the person who draws your name sees them, and only you see whose name you drew. A gift you give as
                 someone&apos;s Secret Santa shows their registry&apos;s owners &ldquo;Secret Santa&rdquo; instead of
-                your name and email. We keep those apart, only to send you emails about your gift.
+                your name and email, even after the event. We keep those apart, only to send you emails about your
+                gift.
+              </li>
+              <li>
+                <strong className="font-semibold text-primary">Everyone gives everyone.</strong> At an event where
+                every guest gives to everyone, you can add a wish list link and gift ideas when you RSVP. The
+                event&apos;s guests and hosts see them on the invitation, with your name.
               </li>
               <li>
                 When you give a gift or suggest an item, your browser gets an anonymous Regibee session: a random
@@ -351,6 +361,10 @@ export function PrivacyPolicy({ nav }: { nav: React.ReactNode }) {
                 follow;
               </li>
               <li>to gift exchange members, with the name they drew;</li>
+              <li>
+                to owners who hide what&apos;s been reserved, once, the day after an event, when its gifts are
+                revealed;
+              </li>
               <li>to the person an event is for, when its host asks them to make a gift list;</li>
               <li>
                 to owners when someone links their registry to an event, or when a store&apos;s completion discount
@@ -374,7 +388,8 @@ export function PrivacyPolicy({ nav }: { nav: React.ReactNode }) {
               <li>A cookie remembers the gifts a guest gave from that browser, for up to a year.</li>
               <li>
                 When a guest opens a gift link from an event invitation, a cookie remembers who they are for up to
-                60 days, so the gift form fills in their name and email.
+                60 days, so the gift form fills in their name and email, and, when everyone gives everyone, so they
+                see which of the other guests reserved what.
               </li>
               <li>
                 There are no analytics, advertising or tracking cookies, and no tracking scripts. Our fonts load from

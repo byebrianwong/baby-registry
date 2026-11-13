@@ -73,8 +73,12 @@ update public.event_guests g
 
 create table public.gift_reveals (
   id          uuid primary key default gen_random_uuid(),
-  -- Null once the event is deleted. The reveal stays.
-  event_id    uuid references public.events(id) on delete set null,
+  -- The event whose day-after revealed the gifts. Not a foreign key, on
+  -- purpose: events and registries already link through event_registries,
+  -- and a second route between them would make Supabase's API refuse joins
+  -- between the two as ambiguous (PGRST201, see CLAUDE.md). The reveal stays
+  -- if the event is deleted.
+  event_id    uuid,
   registry_id uuid not null references public.registries(id) on delete cascade,
   -- Gifts reserved before this moment are revealed.
   revealed_at timestamptz not null,
