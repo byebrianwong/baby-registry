@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { fireEvent } from "storybook/test";
+import { expect, fireEvent } from "storybook/test";
 import { FollowLists } from "./follow-lists";
 
 const mockAction = async () => {
@@ -45,7 +45,7 @@ export const WithEverything: Story = {
 
 
 // Right after approving a request, on a phone: the request stays put with a
-// Follow back button.
+// Follow back button, and the new follower has one too.
 export const AfterApproving: Story = {
   args: {
     requests: [{ public_id: "r4d8w2nb6h", full_name: "Grandma Dorothy", status: "pending" }],
@@ -55,6 +55,7 @@ export const AfterApproving: Story = {
   globals: { viewport: { value: "mobile1" } },
   play: async ({ canvas }) => {
     fireEvent.click(canvas.getByRole("button", { name: "Approve" }));
-    await canvas.findByRole("button", { name: "Follow back Grandma Dorothy" });
+    const followBack = await canvas.findAllByRole("button", { name: "Follow back Grandma Dorothy" });
+    await expect(followBack).toHaveLength(2);
   },
 };
