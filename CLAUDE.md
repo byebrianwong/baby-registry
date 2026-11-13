@@ -33,12 +33,20 @@ Vercel holds these env vars for production, preview and development: `NEXT_PUBLI
   `--remote` runs the file on the linked project, and the CLI asks you to confirm first. Without it, `db query` runs against a local database. The older `--linked` flag still works in CLI 3 but is deprecated and goes away in v4.
 
 - If a migration takes away access that the live code still uses, deploy the code first and run the migration after. Run the other way round, and the live site breaks until the code is deployed. `009_restrict_registry_reads.sql` was one of these.
+- A new table with foreign keys to two tables that already link to each other gives Supabase's API a second route between them. It then refuses any query that joins the two without naming the link (error `PGRST201`), and pages that use one show nothing. `20261112062733_item_placements.sql` did this to `registries` and `registry_items`, and the dashboard showed "No registries yet" until each join named its link, as in `registry_items!registry_items_registry_id_fkey(...)`. Before running such a migration, name the link in every join between those tables, in the website and in `mobile/src/lib/data.ts`.
 - To test access rules (RLS) on production without saving anything, put the test in a `DO` block. Set `local role` and `request.jwt.claims` inside it, run the queries, and end the block with `raise exception` so everything rolls back.
 
 ## Keys and access rules
 
 - The anon key ships in the browser, so anyone can use it. The table access rules (RLS) are the only thing protecting data the anon key can reach.
 - `SUPABASE_SERVICE_ROLE_KEY` skips every access rule. Use the service-role client only in server code, and filter by an id or slug the user is allowed to see. The public registry page (`src/app/r/[slug]/page.tsx`) works this way.
+
+## Items on several lists
+
+- An item's home list is `registry_items.registry_id`. `registry_item_placements` puts it on more of the same owner's lists, each with its own category. Gifts belong to the item, so they show on every list it's on.
+- Only the server reads placements. To list a list's items, use `src/lib/list-items.ts`, not `registry_items` filtered by `registry_id`, or placed items go missing.
+- Taking an item off its home list moves it to the next list it's on. Only an item on no other list is deleted. A database trigger does this for direct deletes too, so the phone app and the extension follow the same rule.
+- An owner who hides what's been reserved on any list an item is on doesn't see that item's gifts on any of them (`itemsHiddenFromOwner`).
 
 ## Visual tests (Chromatic)
 
@@ -55,7 +63,7 @@ Vercel holds these env vars for production, preview and development: `NEXT_PUBLI
 - `e2e/` holds Playwright tests that use the website in a browser and check the emails that follow. [e2e/README.md](e2e/README.md) covers setup.
 - They run against local Supabase in Docker (`npm run e2e:db`), never production. Every email, Supabase's own included, lands in local Supabase's Mailpit inbox at http://127.0.0.1:54324.
 - `EMAIL_TRANSPORT=mailpit` makes `src/lib/mailer.ts` send to Mailpit instead of Resend. Only the tests set it. Send every email through `src/lib/mailer.ts`, not Resend directly, so tests can catch it.
-- GitHub Actions doesn't run these tests yet.
+- `.github/workflows/e2e.yml` runs them on pull requests that change `src/`, `e2e/`, `supabase/`, `package.json` or `next.config.ts`, and on `main`. The check is called **End-to-end tests**. It isn't required yet, so read its result before merging, and don't merge over a failure without knowing why.
 
 ## Browser extension
 
@@ -68,10 +76,15 @@ Vercel holds these env vars for production, preview and development: `NEXT_PUBLI
 ## Mobile app
 
 - The iPhone and Android app lives in `mobile/`. It's an Expo (React Native) app for registry owners. [mobile/README.md](mobile/README.md) covers what it does, running it and what's left before the app stores.
-- It signs in to the same Supabase project and reads and writes the tables directly, as the signed-in user, under the same access rules as the website. It only has the anon key. `mobile/src/lib/data.ts` copies what the website's server actions in `src/lib/actions/registry.ts` do. When you change one, check the other.
-- It shares `src/lib/retailers.ts`, `src/lib/demo-data.ts` and `src/lib/gifts.ts` with the website through the `@shared/*` path. Keep those files free of imports, or the app can't use them.
+- It signs in to the same Supabase project and reads and writes the tables directly, as the signed-in user, under the same access rules as the website. It only has the anon key. The one exception is deleting the account, which needs the service-role key: the app calls the website's `/api/account` (on `EXPO_PUBLIC_SITE_URL`, regibee.com by default) with its access token. Like the extension, that only works once the route is deployed there. `mobile/src/lib/data.ts` copies what the website's server actions in `src/lib/actions/registry.ts` do. When you change one, check the other.
+- It shares `src/lib/retailers.ts`, `src/lib/demo-data.ts`, `src/lib/gifts.ts` and `src/lib/account-deletion-summary.ts` with the website through the `@shared/*` path. Keep those files free of imports, or the app can't use them.
 - Its product reader is built from `extension/src/product-reader.ts`. After changing that file, run `npm run product-reader` in `mobile/`.
 - The root `tsconfig.json` leaves out `mobile/`. The app has its own checks.
+
+## Privacy policy
+
+- `/privacy` is the privacy policy. The App Store, Google Play and the Chrome Web Store link to it. Its text is in `src/components/privacy-policy.tsx`.
+- When a change collects something new, sends data to a new service, keeps something new on a phone or in the browser, or changes what the extension reads, update that page in the same PR and change its effective date.
 
 ## Issues and follow-ups
 
@@ -91,11 +104,11 @@ Vercel holds these env vars for production, preview and development: `NEXT_PUBLI
 - If you changed components or stories, also run `npm run build-storybook`.
 - If you added a migration, also run `npm run check:migrations`.
 - `npm test` runs the unit tests in `src/lib/*.test.ts` with Node's own test runner (the gift exchange name draw, so far). Run it if you changed `src/lib/gift-exchange.ts`.
-- If you changed a flow the end-to-end tests cover, emails, `supabase/migrations` or `e2e/`, also run `npm run test:e2e`. After adding a migration, run `npm run e2e:db` first.
+- If you changed a flow the end-to-end tests cover, emails, `supabase/migrations` or `e2e/`, also run `npm run test:e2e` if Docker is running on this computer. After adding a migration, run `npm run e2e:db` first. Without Docker, the End-to-end tests check on the pull request runs them.
 - If you changed `extension/`, `src/lib/retailers.ts` or `src/lib/extension.ts`, also run `npm run extension:build` and `npm run test:extension`. The tests skip when this computer has no saved store pages. See "Tests" in [extension/README.md](extension/README.md).
-- If you changed `mobile/`, `src/lib/retailers.ts`, `src/lib/demo-data.ts`, `src/lib/gifts.ts` or `extension/src/product-reader.ts`, also run `npm run lint` and `npm run check` in `mobile/`.
+- If you changed `mobile/`, `src/lib/retailers.ts`, `src/lib/demo-data.ts`, `src/lib/gifts.ts`, `src/lib/account-deletion-summary.ts` or `extension/src/product-reader.ts`, also run `npm run lint` and `npm run check` in `mobile/`.
 - `npm run lint` fails right now. `eslint.config.mjs` imports `eslint-plugin-storybook`, which isn't in `package.json`.
 
 ## After opening a pull request
 
-- When the PR's `chromatic` and `Vercel` checks finish, publish a review page with the `pr-review-page` skill (`.claude/skills/pr-review-page`) and give the user the link. End that turn with an Accept and merge button. The skill says how to set it up and what to do when the user clicks it.
+- When the PR's `chromatic`, `Vercel` and `End-to-end tests` checks finish (the last runs only on pull requests that change the site), publish a review page with the `pr-review-page` skill (`.claude/skills/pr-review-page`) and give the user the link. End that turn with an Accept and merge button. The skill says how to set it up and what to do when the user clicks it.

@@ -10,10 +10,13 @@ import { cx } from "@/lib/utils/cx";
 const useLinkStatus: () => { pending: boolean } =
   nextLink.useLinkStatus ?? (() => ({ pending: false }));
 
+// Guests (anonymous sessions from reserving a gift) only get My registries.
+// `inDemo: false` leaves a tab out of the demo (/demo), which has no page for it.
 const TABS = [
-  { href: "/dashboard", label: "My registries" },
-  { href: "/dashboard/events", label: "Events" },
-  { href: "/dashboard/following", label: "Following" },
+  { href: "/dashboard", label: "My registries", accountOnly: false, inDemo: true },
+  { href: "/dashboard/saved", label: "Saved", accountOnly: true, inDemo: false },
+  { href: "/dashboard/events", label: "Events", accountOnly: true, inDemo: true },
+  { href: "/dashboard/following", label: "Following", accountOnly: true, inDemo: true },
 ];
 
 /**
@@ -29,7 +32,9 @@ function TabLabel({ label, current, pending }: { label: string; current: boolean
         <span
           aria-hidden="true"
           className={cx(
-            "absolute inset-x-0 -bottom-px h-0.5 rounded-full bg-brand-600",
+            // A list that scrolls clips anything below it, so on phones the
+            // underline sits just above the border instead of over it.
+            "absolute inset-x-0 -bottom-px h-0.5 rounded-full bg-brand-600 max-sm:bottom-0",
             pending && "animate-pulse",
           )}
         />
@@ -45,10 +50,10 @@ function TabStatus({ label, current }: { label: string; current: boolean }) {
 }
 
 /**
- * The My registries, Events and Following tabs at the top of the dashboard.
- * Each tab is its own page with its own URL and data, but the tabs stay on
- * screen while you switch. Guests can't plan events or follow anyone, so they
- * only get My registries.
+ * The My registries, Saved, Events and Following tabs at the top of the
+ * dashboard. Each tab is its own page with its own URL and data, but the tabs
+ * stay on screen while you switch. Guests have no lists of their own, can't
+ * plan events and can't follow anyone, so they only get My registries.
  */
 export function DashboardTabs({
   hasAccount,
@@ -69,14 +74,18 @@ export function DashboardTabs({
     setClickedHref(null);
   }
   const currentHref = clickedHref ?? pathname;
-  const tabs = (hasAccount ? TABS : TABS.slice(0, 1)).map((tab) => ({ ...tab, href: `${basePath}${tab.href}` }));
+  const tabs = TABS.filter((tab) => (hasAccount || !tab.accountOnly) && (!basePath || tab.inDemo)).map((tab) => ({
+    ...tab,
+    href: `${basePath}${tab.href}`,
+  }));
 
   return (
     <div className="container mx-auto px-4 pt-6">
       <nav aria-label="Dashboard">
-        {/* On phones the three tabs share the width by the length of their
-            labels, in a smaller size, so "My registries" stays on one line. */}
-        <ul className="flex gap-4 border-b border-secondary sm:gap-8">
+        {/* On phones the four tabs share the width by the length of their
+            labels, in a smaller size, so "My registries" stays on one line.
+            A phone narrower than 360px scrolls them sideways. */}
+        <ul className="scrollbar-hide flex gap-3 border-b border-secondary max-sm:overflow-x-auto sm:gap-8">
           {tabs.map((tab) => {
             const current = currentHref === tab.href;
             return (
@@ -86,7 +95,7 @@ export function DashboardTabs({
                   onNavigate={() => setClickedHref(tab.href)}
                   aria-current={current ? "page" : undefined}
                   className={cx(
-                    "relative flex min-h-12 w-full items-center justify-center font-display text-base font-semibold whitespace-nowrap outline-focus-ring sm:text-lg transition-colors focus-visible:outline-2 focus-visible:-outline-offset-2 sm:justify-start",
+                    "relative flex min-h-12 w-full items-center justify-center font-display text-[15px] font-semibold whitespace-nowrap outline-focus-ring sm:text-lg transition-colors focus-visible:outline-2 focus-visible:-outline-offset-2 sm:justify-start",
                     current ? "text-primary" : "text-tertiary hover:text-primary",
                   )}
                 >

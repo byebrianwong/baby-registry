@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/base/input/input";
 import { Checkbox } from "@/components/base/checkbox/checkbox";
 import { CopyLinkButton } from "@/components/copy-link-button";
+import { DeleteAccountCard } from "@/components/delete-account-card";
 import { FollowLists } from "@/components/follow-lists";
 import { GiftProfileForm, type SaveGiftProfile } from "@/components/gift-profile-form";
 import { BirthdayEmailsSetting } from "@/components/birthday-emails-setting";
@@ -84,6 +85,7 @@ export function AccountSettings({
   giftProfileAction = saveGiftProfile,
   birthdayEmails,
   birthdayEmailsAction,
+  deleteAccountActions,
   basePath = "",
 }: {
   profile: {
@@ -113,6 +115,8 @@ export function AccountSettings({
   /** Whether birthday reminder emails are on. Without it, the switch is left out. */
   birthdayEmails?: boolean;
   birthdayEmailsAction?: React.ComponentProps<typeof BirthdayEmailsSetting>["action"];
+  /** Stand-ins for the account API in the Delete account card. The demo passes them. */
+  deleteAccountActions?: React.ComponentProps<typeof DeleteAccountCard>;
   /** Put in front of every link. The demo passes "/demo". */
   basePath?: string;
 }) {
@@ -285,6 +289,8 @@ export function AccountSettings({
             )}
           </CardContent>
         </Card>
+
+        <DeleteAccountCard {...deleteAccountActions} />
       </div>
     </div>
   );

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { authenticateExtension, isRegistryManager, jsonError, readJson } from "@/lib/extension-server";
 import { isUuid, itemMatchKey, parseProductItem, type AddProductResponse } from "@/lib/extension";
+import { LINK_COLUMNS, loadListItems, type LinkRow } from "@/lib/list-items";
 
 // POST { registryId, item } → adds one item from a product page, with the
 // add-item dialog's fields. An item already on the registry comes back as
@@ -21,7 +22,12 @@ export async function POST(request: Request) {
   }
 
   const [{ data: existingItems, error: readError }, category] = await Promise.all([
-    supabase.from("registry_items").select("id, title, external_url").eq("registry_id", registryId),
+    // Items placed on this list from the owner's other lists count too
+    // (src/lib/list-items.ts). The manager check above has passed.
+    loadListItems<LinkRow>(registryId, LINK_COLUMNS).then(
+      (data) => ({ data, error: null }),
+      (error: unknown) => ({ data: null, error }),
+    ),
     // The category has to belong to this registry, not just any registry the user manages.
     item.categoryId
       ? supabase.from("categories").select("id").eq("id", item.categoryId).eq("registry_id", registryId).maybeSingle()

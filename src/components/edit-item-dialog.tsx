@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { Loader2, ChevronDown } from "lucide-react";
+import { Loader2, ChevronDown, ExternalLink } from "lucide-react";
 import { Link01 } from "@untitledui/icons";
 import { Button } from "@/components/ui/button";
 import { Input, InputBase } from "@/components/base/input/input";
@@ -65,6 +65,37 @@ interface EditItemDialogProps {
   linkedRegistries?: RetailerRegistry[];
   /** Stores that other items on this registry have registry links from. */
   storesWithRegistryLinks?: StoreId[];
+  /**
+   * The titles of the owner's other lists this item is on. Then changes show
+   * on those lists too, and removing it here keeps it there.
+   */
+  otherLists?: string[];
+}
+
+/** "Wishlist", "Wishlist and Birthday", "Wishlist, Birthday and 2 more". */
+function listNames(titles: string[]): string {
+  if (titles.length <= 2) return titles.join(" and ");
+  return `${titles[0]}, ${titles[1]} and ${titles.length - 2} more`;
+}
+
+/**
+ * The link as typed, ready to open in a new tab, or null when it isn't a web
+ * link. A link typed without https:// gets it. Saving adds http:// instead,
+ * and stores redirect that to https:// anyway.
+ */
+function openableLink(raw: string): string | null {
+  const text = raw.trim();
+  if (!text) return null;
+  const withScheme = /^https?:\/\//i.test(text) ? text : `https://${text}`;
+  try {
+    const url = new URL(withScheme);
+    if (url.protocol !== "http:" && url.protocol !== "https:") return null;
+    if (!url.hostname.includes(".")) return null;
+    // Opened as typed, so the store's registry params stay exactly as they are.
+    return withScheme;
+  } catch {
+    return null;
+  }
 }
 
 const currencySymbols: Record<string, string> = {
@@ -87,6 +118,7 @@ export function EditItemDialog({
   onOpenChange,
   linkedRegistries,
   storesWithRegistryLinks,
+  otherLists = [],
 }: EditItemDialogProps) {
   const isBaby = registryType === "baby";
   const copy = copyFor({ registryType, eventType });
@@ -114,6 +146,7 @@ export function EditItemDialog({
   const [categoryError, setCategoryError] = useState("");
 
   const urlRef = useRef<HTMLInputElement>(null);
+  const openUrl = openableLink(externalUrl);
 
   const normalizeUrl = (url: string) => {
     if (!url) return url;
@@ -224,8 +257,12 @@ export function EditItemDialog({
     setLoading(false);
   };
 
+  const onOtherLists = otherLists.length > 0;
   const handleDelete = async () => {
-    if (!confirm(`Delete "${item.title}"? This cannot be undone.`)) return;
+    const question = onOtherLists
+      ? `Remove "${item.title}" from this list? It stays on ${listNames(otherLists)}.`
+      : `Delete "${item.title}"? This cannot be undone.`;
+    if (!confirm(question)) return;
     setDeleting(true);
     const result = await deleteRegistryItem(item.id, registryId);
     if (result?.error) {
@@ -242,13 +279,15 @@ export function EditItemDialog({
         <DialogHeader>
           <DialogTitle>Edit item in registry</DialogTitle>
           <DialogDescription>
-            Update the details for this registry item.
+            {onOtherLists
+              ? `It's also on ${listNames(otherLists)}, so changes show there too. Its category is only for this list.`
+              : "Update the details for this registry item."}
           </DialogDescription>
         </DialogHeader>
         <form action={handleSubmit} className="space-y-4">
           <div className="space-y-1.5">
             <Label>Product URL</Label>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 sm:gap-4">
               <Input
                 ref={urlRef}
                 name="externalUrl"
@@ -271,22 +310,36 @@ export function EditItemDialog({
                 enterKeyHint="go"
                 className="flex-1"
               />
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon-lg"
-                disabled={scraping}
-                onClick={() => {
-                  if (urlRef.current?.value) handleScrape(urlRef.current.value);
-                }}
-                title="Fetch product details"
-              >
-                {scraping ? (
-                  <Loader2 className="h-6 w-6 animate-spin" />
-                ) : (
-                  <Link01 className="h-6 w-6" />
-                )}
-              </Button>
+              <div className="flex shrink-0 items-center gap-1">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-lg"
+                  disabled={scraping}
+                  onClick={() => {
+                    if (urlRef.current?.value) handleScrape(urlRef.current.value);
+                  }}
+                  title="Fetch product details"
+                >
+                  {scraping ? (
+                    <Loader2 className="h-6 w-6 animate-spin" />
+                  ) : (
+                    <Link01 className="h-6 w-6" />
+                  )}
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-lg"
+                  disabled={!openUrl}
+                  onClick={() => {
+                    if (openUrl) window.open(openUrl, "_blank", "noopener,noreferrer");
+                  }}
+                  title="Open link in a new tab"
+                >
+                  <ExternalLink className="h-6 w-6" />
+                </Button>
+              </div>
             </div>
             {linkedRegistries && (
               <StoreLinkNotice
@@ -511,7 +564,7 @@ export function EditItemDialog({
             disabled={deleting}
             className="w-full sm:hidden"
           >
-            {deleting ? "Removing..." : "Remove item"}
+            {deleting ? "Removing..." : onOtherLists ? "Remove from list" : "Remove item"}
           </Button>
           <DialogFooter sticky>
             <Button
@@ -528,7 +581,7 @@ export function EditItemDialog({
               disabled={deleting}
               className="max-sm:hidden"
             >
-              {deleting ? "Removing..." : "Remove item"}
+              {deleting ? "Removing..." : onOtherLists ? "Remove from list" : "Remove item"}
             </Button>
             <Button type="submit" disabled={loading}>
               {loading ? "Saving..." : "Save changes"}

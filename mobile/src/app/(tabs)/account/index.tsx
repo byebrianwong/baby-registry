@@ -5,6 +5,7 @@ import { Alert, Platform, Pressable, ScrollView, StyleSheet, View } from "react-
 
 import { Icon, type IconName } from "@/components/icon";
 import { Divider, Section, Text } from "@/components/ui";
+import { useDeleteAccount } from "@/lib/account";
 import { signOut, useSession } from "@/lib/auth";
 import { initials } from "@/lib/format";
 import { clearCache } from "@/lib/query";
@@ -25,6 +26,21 @@ export default function AccountScreen() {
   });
   const name = demo ? "Remi & Max" : (profile.data?.fullName ?? session?.user.email ?? "You");
   const open = (path: string) => WebBrowser.openBrowserAsync(`${SITE_URL}${path}`);
+  const deletion = useDeleteAccount();
+  const deleteRow = (
+    <Row
+      icon="trash"
+      label={
+        deletion.status === "checking"
+          ? "Checking your account…"
+          : deletion.status === "deleting"
+            ? "Deleting account…"
+            : "Delete account"
+      }
+      destructive
+      onPress={deletion.start}
+    />
+  );
 
   function confirmSignOut() {
     const run = async () => {
@@ -71,15 +87,21 @@ export default function AccountScreen() {
         <Row icon="people" label="People you follow" onPress={() => open("/dashboard/following")} />
         <Divider inset={52} />
         <Row icon="settings" label="Profile, privacy and email" onPress={() => open("/dashboard/account")} />
+        <Divider inset={52} />
+        <Row icon="lock" label="Privacy policy" onPress={() => open("/privacy")} />
       </Section>
 
       {demo ? (
         <Section footer="This is a sample registry. Changes you make here aren't saved.">
           <Row icon="signOut" label="Leave the demo" destructive onPress={endDemo} />
+          <Divider inset={52} />
+          {deleteRow}
         </Section>
       ) : (
         <Section>
           <Row icon="signOut" label="Sign out" destructive onPress={confirmSignOut} />
+          <Divider inset={52} />
+          {deleteRow}
         </Section>
       )}
 

@@ -12,6 +12,7 @@ import {
   maskGiverForOwner,
   reservationsHiddenFrom,
 } from "@shared/gifts";
+import { parseRetailerRegistries, type RetailerRegistry } from "@shared/retailers";
 
 import { useSession } from "@/lib/auth";
 import { demo, isDemo } from "@/lib/demo";
@@ -38,7 +39,10 @@ export const keys = {
 const REGISTRY_FIELDS =
   "id, owner_id, title, slug, event_date, is_public, description, photo_url, registry_type, event_type, honoree_names, settings, created_at";
 
-const CARD_FIELDS = `${REGISTRY_FIELDS}, registry_items(id, quantity_needed, quantity_fulfilled, is_parent_purchased, price, purchases(id, status, reserved_until, created_at, buyer_name, hide_giver))`;
+// The items are the ones whose registry_id is this registry. The link is named
+// because registry_item_placements also joins registries and items, and
+// without the name Supabase refuses the query as ambiguous (PGRST201).
+const CARD_FIELDS = `${REGISTRY_FIELDS}, registry_items!registry_items_registry_id_fkey(id, quantity_needed, quantity_fulfilled, is_parent_purchased, price, purchases(id, status, reserved_until, created_at, buyer_name, hide_giver))`;
 
 type CardRow = Registry & {
   registry_items:
@@ -164,6 +168,17 @@ async function fetchRegistry(id: string, userId: string): Promise<RegistryDetail
     pendingSuggestions: suggestions.count ?? 0,
     reservationsHidden: hidden,
   };
+}
+
+/**
+ * The owner's registries at stores, from the registry's settings, as the
+ * website's dashboard reads them. The owner and co-managers can read settings
+ * (the registries row, under RLS), and fetchRegistry already does. Null for
+ * registries other than baby registries, which don't show store registries,
+ * as on the website.
+ */
+export function storeRegistries(registry: Registry): RetailerRegistry[] | null {
+  return registry.registry_type === "baby" ? parseRetailerRegistries(registry.settings) : null;
 }
 
 export function useRegistry(id: string | undefined) {

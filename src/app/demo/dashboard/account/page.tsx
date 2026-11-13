@@ -2,6 +2,7 @@
 
 import { AccountSettings } from "@/components/account-settings";
 import { DEMO_FOLLOWS, DEMO_GIFT_PROFILE, DEMO_ME, demoOk } from "@/lib/demo-people";
+import { DEMO_ME_ID, demoEvents } from "@/lib/demo-events";
 import { demoOwnRegistries } from "@/lib/demo-registries";
 import { useDemoToday } from "../../demo-today";
 import { DemoOwnerShell } from "../../_components/demo-shell";
@@ -44,6 +45,21 @@ export default function DemoAccountPage() {
         giftProfileAction={demoOk}
         birthdayEmails
         birthdayEmailsAction={demoOk}
+        deleteAccountActions={{
+          // What deleting the demo account would do, if it were real.
+          loadSummary: async () => ({
+            deleted: demoOwnRegistries(today).map((registry) => ({
+              title: registry.title,
+              gifts: registry.purchases.filter((purchase) => purchase.status !== "cancelled").length,
+            })),
+            handedOver: [],
+            leaving: [],
+            events: demoEvents(today).filter((event) => event.owner_id === DEMO_ME_ID).length,
+          }),
+          deleteAction: async () => ({
+            error: "This is the demo, so there's no account to delete. Nothing in it is saved.",
+          }),
+        }}
         basePath="/demo"
       />
     </DemoOwnerShell>

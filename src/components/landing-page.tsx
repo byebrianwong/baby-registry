@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ArrowRight, Baby, Cake, Gift, Link2, PartyPopper, Shield } from "lucide-react";
+import { SiteFooter } from "@/components/site-footer";
 import { Button } from "@/components/ui/button";
 
 // Underlined as well as colored, since they sit inside a line of text. Each
@@ -220,11 +221,7 @@ export function LandingPage({ signedIn, nav }: { signedIn: boolean; nav: React.R
         </section>
       </main>
 
-      <footer className="border-t py-8">
-        <div className="container mx-auto px-4 text-center text-sm text-tertiary">
-          &copy; {new Date().getFullYear()} Regibee. All rights reserved.
-        </div>
-      </footer>
+      <SiteFooter />
     </div>
   );
 }

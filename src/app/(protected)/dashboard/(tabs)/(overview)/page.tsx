@@ -11,9 +11,11 @@ import { supabaseAdmin } from "@/lib/supabase-admin";
 import { countFollowRequests } from "@/lib/follows";
 import { getSessionUser } from "@/lib/viewer";
 import { giverNameForOwner, itemAsUnreserved, reservationsHiddenFrom } from "@/lib/gifts";
+import { itemsHiddenFromOwner, loadPlacements } from "@/lib/list-items";
 
 type CardPurchase = { id: string; status: string; created_at: string; buyer_name: string; hide_giver?: boolean | null };
 type CardItem = {
+  id: string;
   quantity_needed: number;
   quantity_fulfilled: number;
   is_parent_purchased: boolean;
@@ -32,21 +34,27 @@ function RegistryCard({
   registry,
   viewerId,
   today,
+  hiddenItemIds,
   badge,
   headingLevel,
 }: {
   registry: any;
   viewerId: string;
   today: string;
+  /** Items whose gifts another of the owner's lists hides from them. */
+  hiddenItemIds: Set<string>;
   badge?: string;
   headingLevel?: 2 | 3;
 }) {
   // An owner who hides what's been reserved sees nothing reserved yet.
   const hidden = reservationsHiddenFrom(registry, viewerId);
-  const items: CardItem[] = ((registry.registry_items as CardItem[] | null) || []).map((item) =>
-    hidden ? itemAsUnreserved(item) : item
+  const allItems = (registry.registry_items as CardItem[] | null) || [];
+  const items: CardItem[] = allItems.map((item) =>
+    hidden || hiddenItemIds.has(item.id) ? itemAsUnreserved(item) : item
   );
-  const recentPurchases = (hidden ? [] : activePurchases(registry))
+  const recentPurchases = (
+    hidden ? [] : activePurchases({ registry_items: allItems.filter((item) => !hiddenItemIds.has(item.id)) })
+  )
     .sort((a, b) => b.created_at.localeCompare(a.created_at))
     .slice(0, 3);
 
@@ -72,10 +80,42 @@ function RegistryCard({
 
 type ServerClient = Awaited<ReturnType<typeof createClient>>;
 
+const CARD_ITEM_FIELDS =
+  "id, quantity_needed, quantity_fulfilled, is_parent_purchased, price, purchases(id, status, created_at, buyer_name, hide_giver)";
+
+/**
+ * Adds the items placed on each list from its owner's other lists
+ * (src/lib/list-items.ts), so the cards count every item on the list. Also
+ * returns the items whose gifts are hidden from this person because another
+ * list they're on hides what's been reserved from its owner.
+ */
+async function withPlacedItems(registries: any[], viewerId: string): Promise<Set<string>> {
+  const placements = await loadPlacements(registries.map((r) => r.id as string)).catch(() => []);
+  if (placements.length === 0) return new Set();
+
+  const ids = [...new Set(placements.map((p) => p.item_id))];
+  const [{ data: placedItems }, hiddenItemIds] = await Promise.all([
+    supabaseAdmin.from("registry_items").select(`registry_id, ${CARD_ITEM_FIELDS}`).in("id", ids),
+    itemsHiddenFromOwner(ids, viewerId).catch(() => new Set<string>()),
+  ]);
+  const byId = new Map((placedItems ?? []).map((item: any) => [item.id as string, item]));
+  const byList = new Map(registries.map((r) => [r.id as string, r]));
+  for (const p of placements) {
+    const registry = byList.get(p.registry_id);
+    const item = byId.get(p.item_id);
+    if (!registry || !item || item.registry_id === p.registry_id) continue;
+    registry.registry_items = [...(registry.registry_items ?? []), item];
+  }
+  return hiddenItemIds;
+}
+
 // What each registry card needs: the registry, its items, and their purchases.
+// The items are the ones whose registry_id is this registry. Naming that link
+// matters: registry_item_placements also joins registries and items, and
+// without the name Supabase refuses the query as ambiguous (PGRST201).
 const REGISTRY_CARD_FIELDS = `
   *,
-  registry_items(id, quantity_needed, quantity_fulfilled, is_parent_purchased, price, purchases(id, status, created_at, buyer_name, hide_giver))
+  registry_items!registry_items_registry_id_fkey(${CARD_ITEM_FIELDS})
 `;
 
 // Registries the user helps manage but doesn't own. Pending email invites are
@@ -139,6 +179,8 @@ export default async function DashboardPage() {
       user.is_anonymous ? 0 : countFollowRequests(user.id),
     ]);
 
+  const hiddenItemIds = await withPlacedItems([...(registries || []), ...sharedRegistries], user.id);
+
   const hasNoRegistries = (!registries || registries.length === 0) && sharedRegistries.length === 0;
   // Until one of their registries is on their profile, the profile link has
   // nothing on it to share.
@@ -151,9 +193,21 @@ export default async function DashboardPage() {
   const now = new Date();
   const today = now.toISOString().slice(0, 10);
   const weekAgo = now.getTime() - 7 * 24 * 60 * 60 * 1000;
-  const giftsThisWeek = [...(registries || []), ...sharedRegistries]
-    .flatMap((registry) => activePurchases(registry))
-    .filter((p) => Date.parse(p.created_at) >= weekAgo).length;
+  // An item on several lists counts its gifts once.
+  const giftsThisWeek = new Set(
+    [...(registries || []), ...sharedRegistries]
+      .flatMap((registry) =>
+        reservationsHiddenFrom(registry, user.id)
+          ? []
+          : activePurchases({
+              registry_items: ((registry.registry_items as CardItem[] | null) || []).filter(
+                (item) => !hiddenItemIds.has(item.id),
+              ),
+            }),
+      )
+      .filter((p) => Date.parse(p.created_at) >= weekAgo)
+      .map((p) => p.id),
+  ).size;
 
   return (
     <div className="container mx-auto px-4 pt-6 pb-8">
@@ -245,7 +299,7 @@ export default async function DashboardPage() {
           {registries && registries.length > 0 && (
             <div className="mt-8 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
               {registries.map((registry) => (
-                <RegistryCard key={registry.id} registry={registry} viewerId={user.id} today={today} />
+                <RegistryCard key={registry.id} registry={registry} viewerId={user.id} today={today} hiddenItemIds={hiddenItemIds} />
               ))}
             </div>
           )}
@@ -263,7 +317,7 @@ export default async function DashboardPage() {
               </div>
               <div className="mt-4 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                 {sharedRegistries.map((registry) => (
-                  <RegistryCard key={registry.id} registry={registry} viewerId={user.id} today={today} badge="Manager" headingLevel={3} />
+                  <RegistryCard key={registry.id} registry={registry} viewerId={user.id} today={today} hiddenItemIds={hiddenItemIds} badge="Manager" headingLevel={3} />
                 ))}
               </div>
             </>

@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { DashboardTabs } from "./dashboard-tabs";
-import { DashboardSkeleton, EventsSkeleton, FollowingSkeleton } from "./page-skeletons";
+import { DashboardSkeleton, EventsSkeleton, FollowingSkeleton, SavedSkeleton } from "./page-skeletons";
 
 // The tabs above each tab's loading skeleton, as they appear while a tab
 // loads. The pages themselves load data on the server, which Storybook can't
@@ -22,6 +22,16 @@ export const MyRegistries: Story = {
     <>
       <DashboardTabs {...args} />
       <DashboardSkeleton />
+    </>
+  ),
+};
+
+export const Saved: Story = {
+  parameters: { nextjs: { appDirectory: true, navigation: { pathname: "/dashboard/saved" } } },
+  render: (args) => (
+    <>
+      <DashboardTabs {...args} />
+      <SavedSkeleton />
     </>
   ),
 };
@@ -52,7 +62,7 @@ export const Guest: Story = {
   render: MyRegistries.render,
 };
 
-/** On phones the three tabs share the width and stay on one line each. */
+/** On phones the four tabs share the width and stay on one line each. */
 export const Phone: Story = {
   globals: { viewport: { value: "mobile1" } },
   render: MyRegistries.render,
