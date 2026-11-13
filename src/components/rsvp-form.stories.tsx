@@ -67,7 +67,7 @@ export const EveryoneGivesEveryone: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await userEvent.click(canvas.getByRole("button", { name: "Going" }));
-    await expect(canvas.getByLabelText("Your list")).toHaveValue("https://regibee.com/r/fiyeros-list-5j2c");
+    await expect(canvas.getByLabelText(/^Your list/)).toHaveValue("https://regibee.com/r/fiyeros-list-5j2c");
     await expect(canvas.queryByRole("checkbox", { name: /Join the gift exchange/ })).toBeNull();
   },
 };
