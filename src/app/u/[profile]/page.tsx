@@ -1,10 +1,10 @@
 import { cache } from "react";
-import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { Nav } from "@/components/nav";
 import { FollowButton } from "@/components/follow-button";
 import { PublicProfile } from "@/components/public-profile";
+import { PoweredByFooter } from "@/components/site-footer";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { getViewer, getViewerRelation } from "@/lib/viewer";
 import { sharedRegistrySlugsFrom } from "@/lib/groups-server";
@@ -131,14 +131,7 @@ export default async function ProfilePage({
           }
         />
       </main>
-      <footer className="border-t py-6 mt-8">
-        <div className="container mx-auto px-4 text-center text-sm text-tertiary">
-          Powered by{" "}
-          <Link href="/" className="font-medium text-brand-600 hover:underline">
-            Regibee
-          </Link>
-        </div>
-      </footer>
+      <PoweredByFooter />
     </div>
   );
 }

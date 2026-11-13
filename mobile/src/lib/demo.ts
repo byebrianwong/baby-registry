@@ -63,6 +63,8 @@ function build(): Store {
     registry_type: "baby",
     event_type: null,
     honoree_names: DEMO_REGISTRY.honoree_names,
+    // Its Amazon and Target registries, so items show which one they count toward.
+    settings: { retailer_registries: DEMO_REGISTRY.settings.retailer_registries },
     created_at: new Date().toISOString(),
   };
   const categories: Category[] = DEMO_CATEGORIES.map((c) => ({ ...c, registry_id: "demo" }));

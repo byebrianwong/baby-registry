@@ -33,6 +33,7 @@ Vercel holds these env vars for production, preview and development: `NEXT_PUBLI
   `--remote` runs the file on the linked project, and the CLI asks you to confirm first. Without it, `db query` runs against a local database. The older `--linked` flag still works in CLI 3 but is deprecated and goes away in v4.
 
 - If a migration takes away access that the live code still uses, deploy the code first and run the migration after. Run the other way round, and the live site breaks until the code is deployed. `009_restrict_registry_reads.sql` was one of these.
+- A new table with foreign keys to two tables that already link to each other gives Supabase's API a second route between them. It then refuses any query that joins the two without naming the link (error `PGRST201`), and pages that use one show nothing. `20261112062733_item_placements.sql` did this to `registries` and `registry_items`, and the dashboard showed "No registries yet" until each join named its link, as in `registry_items!registry_items_registry_id_fkey(...)`. Before running such a migration, name the link in every join between those tables, in the website and in `mobile/src/lib/data.ts`.
 - To test access rules (RLS) on production without saving anything, put the test in a `DO` block. Set `local role` and `request.jwt.claims` inside it, run the queries, and end the block with `raise exception` so everything rolls back.
 
 ## Keys and access rules
@@ -79,6 +80,11 @@ Vercel holds these env vars for production, preview and development: `NEXT_PUBLI
 - It shares `src/lib/retailers.ts`, `src/lib/demo-data.ts`, `src/lib/gifts.ts` and `src/lib/account-deletion-summary.ts` with the website through the `@shared/*` path. Keep those files free of imports, or the app can't use them.
 - Its product reader is built from `extension/src/product-reader.ts`. After changing that file, run `npm run product-reader` in `mobile/`.
 - The root `tsconfig.json` leaves out `mobile/`. The app has its own checks.
+
+## Privacy policy
+
+- `/privacy` is the privacy policy. The App Store, Google Play and the Chrome Web Store link to it. Its text is in `src/components/privacy-policy.tsx`.
+- When a change collects something new, sends data to a new service, keeps something new on a phone or in the browser, or changes what the extension reads, update that page in the same PR and change its effective date.
 
 ## Issues and follow-ups
 

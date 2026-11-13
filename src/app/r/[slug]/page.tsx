@@ -12,6 +12,7 @@ import { verifyBuyerLink } from "@/lib/buyer-link";
 import type { PaymentMethods, RegistrySettings } from "@/lib/types";
 import type { Metadata } from "next";
 import { ScrollToTop } from "@/components/scroll-to-top";
+import { PoweredByFooter } from "@/components/site-footer";
 import { SuggestItemDialog } from "@/components/suggest-item-dialog";
 import { PublicRegistryGrid } from "@/components/public-registry-grid";
 import { PublicRegistryHero } from "@/components/public-registry-hero";
@@ -602,14 +603,7 @@ export default async function PublicRegistryPage({
         </GuestPrefillProvider>
       </main>
 
-      <footer className="border-t py-6 mt-8">
-        <div className="container mx-auto px-4 text-center text-sm text-tertiary">
-          Powered by{" "}
-          <a href="/" className="font-medium text-brand-600 hover:underline">
-            Regibee
-          </a>
-        </div>
-      </footer>
+      <PoweredByFooter />
 
       <ScrollToTop />
     </div>

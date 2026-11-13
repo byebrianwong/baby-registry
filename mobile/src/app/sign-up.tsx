@@ -1,10 +1,12 @@
 import { router } from "expo-router";
+import * as WebBrowser from "expo-web-browser";
 import { useRef, useState } from "react";
 import { KeyboardAvoidingView, Platform, ScrollView, View, type TextInputInstance } from "react-native";
 
 import { Button, EmptyState, Field, haptic, Section, SwitchRow, Text } from "@/components/ui";
 import { signUp } from "@/lib/auth";
 import { errorMessage } from "@/lib/data";
+import { SITE_URL } from "@/lib/supabase";
 import { spacing, useTheme } from "@/lib/theme";
 
 export default function SignUpScreen() {
@@ -110,6 +112,18 @@ export default function SignUpScreen() {
           </Text>
         ) : null}
         <Button title="Create account" onPress={submit} loading={loading} />
+        <Text variant="footnote" tone="secondary" style={{ textAlign: "center" }}>
+          Our{" "}
+          <Text
+            variant="footnote"
+            tone="tint"
+            accessibilityRole="link"
+            onPress={() => WebBrowser.openBrowserAsync(`${SITE_URL}/privacy`)}
+          >
+            privacy policy
+          </Text>{" "}
+          says what we keep and how to delete it.
+        </Text>
       </ScrollView>
     </KeyboardAvoidingView>
   );

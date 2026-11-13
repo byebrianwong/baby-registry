@@ -10,6 +10,7 @@ import { UsedConditionTag } from "@/components/ui/used-condition-tag";
 import { toggleParentPurchased } from "@/lib/actions/registry";
 import { EditItemDialog } from "@/components/edit-item-dialog";
 import { GiftDetailModal, type Purchase } from "@/components/gift-detail-modal";
+import { StoreRegistryLine } from "@/components/store-registry-line";
 import { giverNameForOwner, isOpenReservation } from "@/lib/gifts";
 import type { RetailerRegistry, StoreId } from "@/lib/retailers";
 import { formatPrice } from "@/lib/money";
@@ -39,7 +40,9 @@ interface ItemCardProps {
   selfPurchaseButtonLabel?: string;
   registryType?: "baby" | "personal";
   eventType?: string | null;
-  /** Passed to the edit dialog's store link notice. */
+  /** The owner's linked store registries, for baby registries. They name the
+   *  store registry the item's link counts toward, and go to the edit
+   *  dialog's store link notice. Leave unset to show neither. */
   linkedRegistries?: RetailerRegistry[];
   storesWithRegistryLinks?: StoreId[];
   /** The titles of the owner's other lists this item is on, if any. */
@@ -166,6 +169,14 @@ export function ItemCard({ item, registryId, isOwner, categories = [], zipCode, 
                   : `${remaining} of ${item.quantity_needed} still needed`}
               </span>
             </div>
+
+            {/* Gifts of an item the owner bought go as money, not through the link. */}
+            {linkedRegistries && !item.is_parent_purchased && (
+              <StoreRegistryLine
+                url={item.external_url}
+                linkedStores={linkedRegistries.map((r) => r.store)}
+              />
+            )}
 
             {item.notes && (
               <p className="text-sm whitespace-pre-line">{item.notes}</p>
