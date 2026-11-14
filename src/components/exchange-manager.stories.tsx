@@ -3,6 +3,7 @@ import { fn } from "storybook/test";
 import { ExchangeManager } from "./exchange-manager";
 import { exchangeStatus, guestForHost, type EventGuest } from "@/lib/events";
 import {
+  sampleEveryoneExchange,
   sampleDrawnExchange,
   sampleDrawnExchangeGuests,
   sampleExchange,
@@ -77,4 +78,23 @@ export const DrawIsOutOfDate: Story = {
     guests: boqRemoved.map(guestForHost),
     exclusions: sampleExchangeExclusions,
   },
+};
+
+/**
+ * Everyone gives everyone: no draw. The panel shows who's taking part and
+ * who has added a wish list. The host sees that a guest added one, not the
+ * list itself.
+ */
+export const EveryoneGivesEveryone: Story = {
+  args: {
+    exchange: sampleEveryoneExchange,
+    status: exchangeStatus(sampleExchangeGuests, sampleEveryoneExchange),
+    guests: sampleExchangeGuests.map(guestForHost),
+    exclusions: [],
+  },
+};
+
+export const EveryoneGivesEveryonePhone: Story = {
+  ...EveryoneGivesEveryone,
+  globals: { viewport: { value: "mobile1" } },
 };

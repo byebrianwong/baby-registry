@@ -310,6 +310,28 @@ export function newSuggestionOwnerHtml(opts: {
   `;
 }
 
+/**
+ * Sent once, the day after an event, to the owner of a list that hid what was
+ * reserved from them: the gifts reserved before the event are revealed.
+ */
+export function giftsRevealedOwnerHtml(opts: {
+  ownerName: string;
+  registryTitle: string;
+  eventTitle: string;
+  giftCount: number;
+  /** The list's Gift Activity tab. */
+  listUrl: string;
+}): string {
+  const gifts = opts.giftCount === 1 ? "1 gift" : `${opts.giftCount} gifts`;
+  return `
+    <p>Hi ${escapeHtml(opts.ownerName)},</p>
+    <p>${escapeHtml(opts.eventTitle)} is over, so the gifts reserved from <em>${escapeHtml(opts.registryTitle)}</em> aren't a secret anymore. <strong>${gifts}</strong> came from it.</p>
+    <p>See what people picked, and who to thank.</p>
+    <p style="margin: 24px 0;">${buttonLink(opts.listUrl, "See your gifts")}</p>
+    <p style="color:#888;font-size:13px;">Anything reserved from now on stays hidden from you, as before. You're receiving this because your list hides what's been reserved from you and was part of ${escapeHtml(opts.eventTitle)}.</p>
+  `;
+}
+
 // ── Store perks ──────────────────────────────────────────────
 
 export function completionDiscountOwnerHtml(opts: {
@@ -419,7 +441,13 @@ export interface EventEmailDetails {
   registry?: { title: string; url: string } | null;
   /** "No gifts, please", as the host wrote it. */
   giftNote?: string | null;
-  exchange?: { budget?: string | null; drawBy?: string | null; mailed: boolean } | null;
+  exchange?: {
+    /** "everyone" for everyone gives everyone. Missing means names are drawn. */
+    kind?: "draw" | "everyone";
+    budget?: string | null;
+    drawBy?: string | null;
+    mailed: boolean;
+  } | null;
   /** The event's sign-up sheet. A meal train has no get-together: guests pick a day to help. */
   signup?: { title: string; mealTrain: boolean } | null;
 }
@@ -465,6 +493,10 @@ function registryLine(event: EventEmailDetails): string {
 
 function exchangeLine(event: EventEmailDetails): string {
   if (!event.exchange) return "";
+  if (event.exchange.kind === "everyone") {
+    const each = event.exchange.budget ? ` Gifts are about ${escapeHtml(event.exchange.budget)} each.` : "";
+    return `<p><strong>Gifts:</strong> everyone gives everyone. Link your wish list when you RSVP, and see everyone else's on the invitation.${each}</p>`;
+  }
   const budget = event.exchange.budget ? `, about ${escapeHtml(event.exchange.budget)}` : "";
   const when = event.exchange.drawBy ? ` Names are drawn by ${escapeHtml(event.exchange.drawBy)}.` : "";
   const how = event.exchange.mailed ? " Gifts are mailed." : "";
@@ -570,11 +602,13 @@ export function rsvpGuestConfirmationHtml(opts: {
   const signups = opts.signups ?? [];
   const mealTrain = Boolean(event.signup?.mealTrain);
   const exchange =
-    event.exchange && opts.inExchange
-      ? `<p><strong>You're in the gift exchange.</strong> ${
-          event.exchange.drawBy ? `Names are drawn by ${escapeHtml(event.exchange.drawBy)}, and` : "When names are drawn,"
-        } we'll email you who you're giving to.</p>`
-      : "";
+    !event.exchange || !opts.inExchange
+      ? ""
+      : event.exchange.kind === "everyone"
+        ? `<p><strong>Everyone gives everyone.</strong> Everyone's wish lists are on the invitation, with what the others have reserved so nobody doubles up. Nobody sees what's been reserved from their own list.</p>`
+        : `<p><strong>You're in the gift exchange.</strong> ${
+            event.exchange.drawBy ? `Names are drawn by ${escapeHtml(event.exchange.drawBy)}, and` : "When names are drawn,"
+          } we'll email you who you're giving to.</p>`;
   const party =
     opts.status !== "no" && opts.partySize > 1 ? ` (${opts.partySize} people)` : "";
   const thanks =

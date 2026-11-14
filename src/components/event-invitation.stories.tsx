@@ -2,11 +2,14 @@ import type { Meta, StoryObj } from "@storybook/react";
 import { expect, fn, userEvent, within } from "storybook/test";
 import { EventInvitation, type InvitationRegistry } from "./event-invitation";
 import { RsvpForm } from "./rsvp-form";
+import { GuestWishLists } from "./guest-wish-lists";
 import {
   SAMPLE_TODAY,
   sampleEvent,
+  sampleEveryoneExchange,
   sampleExchange,
   sampleExchangeEvent,
+  sampleGuestWishLists,
   sampleLinkedRegistries,
   sampleMealTrainEvent,
   sampleMealTrainSheet,
@@ -268,4 +271,53 @@ export const MealTrainBeforeSigningUp: Story = {
     await expect(canvas.getByText("The drop-off address shows here once you sign up for a day.")).toBeVisible();
     await expect(canvas.queryByText(/Sunnyside/)).toBeNull();
   },
+};
+
+/**
+ * A family Christmas where everyone gives everyone. Glinda replied with her
+ * wish list, so she sees everyone's lists above her RSVP.
+ */
+export const EveryoneGivesEveryone: Story = {
+  args: {
+    event: { ...sampleExchangeEvent, title: "Christmas at Aunt Linda's" },
+    registry: null,
+    exchange: sampleEveryoneExchange,
+    eventSlug: sampleExchangeEvent.slug,
+    guestToken: "token-g1",
+  },
+  render: (args) => (
+    <EventInvitation {...args}>
+      <GuestWishLists
+        lists={sampleGuestWishLists}
+        eventSlug={sampleExchangeEvent.slug}
+        guestToken="token-g1"
+        waitingCount={2}
+      />
+      <RsvpForm
+        slug={sampleExchangeEvent.slug}
+        guest={{
+          name: "Glinda",
+          status: "yes",
+          partySize: 3,
+          kidsCount: 2,
+          note: "We'll bring dumplings!",
+          inExchange: true,
+          wishlistUrl: "https://regibee.com/r/glindas-wishlist-8h3m",
+          giftIdeas: null,
+        }}
+        token="token-g1"
+        openRsvp
+        maxPartySize={sampleExchangeEvent.max_party_size}
+        askKids
+        exchange={{ kind: "everyone", mailed: false, drawn: false }}
+        passed={false}
+        submitAction={submitAction}
+      />
+    </EventInvitation>
+  ),
+};
+
+export const EveryoneGivesEveryonePhone: Story = {
+  ...EveryoneGivesEveryone,
+  globals: { viewport: { value: "mobile1" } },
 };

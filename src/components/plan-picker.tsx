@@ -155,7 +155,7 @@ export function PlanPicker({
       gifts: null,
     };
     if (only === "everyone") {
-      // A gift exchange: the only gift plan is drawing names.
+      // A gift exchange occasion is a Secret Santa: names are drawn.
       goTo("name", { ...changes, gifts: "exchange" });
     } else if (only) {
       goTo("gifts", changes);
@@ -196,7 +196,7 @@ export function PlanPicker({
     const order: Step[] = ["what", "who", "gifts", "name"];
     let index = order.indexOf(state.step) - 1;
     // Skip the steps the occasion answered by itself.
-    if (order[index] === "gifts" && state.audience === "everyone") index -= 1;
+    if (order[index] === "gifts" && state.audience === "everyone" && audiences.length === 1) index -= 1;
     if (order[index] === "who" && audiences.length === 1) index -= 1;
     goTo(order[Math.max(index, 0)]);
   };
@@ -246,6 +246,9 @@ export function PlanPicker({
     if (state.gifts === "link") summary.push("The list you pasted, linked to the invitation. Its owners get an email.");
     if (state.gifts === "ask") summary.push(`An email to ${state.askEmail || "them"} asking for a ${occasion.list.noun}`);
     if (state.gifts === "exchange") summary.push("A Secret Santa draw. Set the budget and draw date next.");
+    if (state.gifts === "everyone") {
+      summary.push("Everyone gives everyone: guests link their wish lists when they RSVP, and see each other's");
+    }
     if (state.gifts === "no_gifts") summary.push("A note on the invitation: “No gifts, please.”");
     // A potluck or a meal train always starts with its sheet, like a gift exchange with its draw.
     const startsSheet = Boolean(occasion.defaults && "signup" in occasion.defaults);

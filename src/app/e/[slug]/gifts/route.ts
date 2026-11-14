@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase-admin";
-import { registrySlugFromLink, resolveRegistryLink } from "@/lib/events-server";
+import { eventIncludesRegistry, registrySlugFromLink, resolveRegistryLink } from "@/lib/events-server";
 import { EVENT_GUEST_COOKIE, EVENT_GUEST_COOKIE_OPTIONS, encodeEventGuest } from "@/lib/event-guest-cookie";
 
 // A gift link on a guest's invitation: /e/<event>/gifts?g=<rsvp token>&to=<registry slug>.
@@ -8,7 +8,8 @@ import { EVENT_GUEST_COOKIE, EVENT_GUEST_COOKIE_OPTIONS, encodeEventGuest } from
 // them on to the registry, so the gift form knows their name and the gift is
 // matched to their RSVP. For a gift exchange, "to" can be the wishlist of the
 // person the guest drew, and the cookie marks them as that person's Secret
-// Santa.
+// Santa. When everyone gives everyone, "to" can be any guest's wish list, and
+// the registry page shows the guest what the other guests reserved there.
 //
 // The registry's own address ends up in the address bar, so a guest who
 // copies it and sends it on doesn't send their identity along.
@@ -49,15 +50,10 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     }
   }
 
-  // Otherwise the registry must be one the event links.
-  if (!santa) {
-    const { data: link } = await supabaseAdmin
-      .from("event_registries")
-      .select("registry_id")
-      .eq("event_id", event.id)
-      .eq("registry_id", registry.id)
-      .maybeSingle();
-    if (!link) return NextResponse.redirect(registryUrl);
+  // Otherwise the registry must be one the event links, or a guest's wish
+  // list when everyone gives everyone.
+  if (!santa && !(await eventIncludesRegistry(event.id, registry.id))) {
+    return NextResponse.redirect(registryUrl);
   }
 
   const response = NextResponse.redirect(registryUrl);
