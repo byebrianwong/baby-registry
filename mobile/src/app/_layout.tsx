@@ -6,8 +6,8 @@ import { DarkTheme, DefaultTheme, router, Stack, ThemeProvider, usePathname } fr
 import { ShareIntentProvider, useShareIntentContext } from "expo-share-intent";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
-import { useEffect } from "react";
-import { Platform } from "react-native";
+import { useEffect, useRef } from "react";
+import { Alert, Platform } from "react-native";
 
 import { AuthProvider, useSession } from "@/lib/auth";
 import { QueryProvider } from "@/lib/query";
@@ -93,14 +93,43 @@ function RootNavigator({ ready }: { ready: boolean }) {
 /**
  * Opens the add form when someone shares a product to Regibee from another
  * app. A share that arrives while signed out waits until they sign in.
+ *
+ * On iPhone the share opens a link that already lands on the share screen. On
+ * Android the app comes to the front on whatever screen it was on, and this
+ * moves it to the share screen. It does that once for each share: sharing
+ * again opens the form again, and leaving it with the back button doesn't
+ * bring it straight back.
  */
 function ShareRouter({ signedIn }: { signedIn: boolean }) {
-  const { hasShareIntent } = useShareIntentContext();
+  const { shareIntent, hasShareIntent, error, resetShareIntent } = useShareIntentContext();
   const pathname = usePathname();
+  // Each share arrives as a new object.
+  const opened = useRef<object | null>(null);
+  const shownError = useRef<string | null>(null);
 
   useEffect(() => {
-    if (hasShareIntent && signedIn && pathname !== "/share") router.navigate("/share");
-  }, [hasShareIntent, signedIn, pathname]);
+    if (!hasShareIntent || !signedIn || opened.current === shareIntent) return;
+    opened.current = shareIntent;
+    if (pathname !== "/share") router.navigate("/share");
+  }, [hasShareIntent, signedIn, shareIntent, pathname]);
+
+  // The share library reports a share it can't read as an error. On Android
+  // that's any text not labeled as plain text. Say so instead of doing nothing.
+  useEffect(() => {
+    if (!error) {
+      shownError.current = null;
+      return;
+    }
+    if (shownError.current === error) return;
+    shownError.current = error;
+    Alert.alert(
+      "Couldn't read what you shared",
+      `Copy the product's link instead, then add it on your registry with the + button.\n\n(${error})`,
+    );
+    // Clear it so the same failure shows again next time, unless that would
+    // drop a share that's waiting.
+    if (!hasShareIntent) resetShareIntent(false);
+  }, [error, hasShareIntent, resetShareIntent]);
 
   return null;
 }
