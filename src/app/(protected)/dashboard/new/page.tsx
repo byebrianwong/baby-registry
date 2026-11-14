@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { PlanPicker } from "@/components/plan-picker";
+import { getManageableRegistries } from "@/lib/events-server";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { getSessionUser } from "@/lib/viewer";
 
@@ -16,7 +17,10 @@ export default async function NewPlanPage() {
   // Guests (anonymous sessions) can only make a registry. Events need an account.
   if (user.is_anonymous) redirect("/dashboard/registry/new");
 
-  const { data: profile } = await supabaseAdmin.from("profiles").select("full_name").eq("id", user.id).maybeSingle();
+  const [{ data: profile }, myLists] = await Promise.all([
+    supabaseAdmin.from("profiles").select("full_name").eq("id", user.id).maybeSingle(),
+    getManageableRegistries(user.id),
+  ]);
   const firstName = ((profile?.full_name as string | null) ?? "").trim().split(/\s+/)[0] ?? "";
 
   return (
@@ -26,7 +30,7 @@ export default async function NewPlanPage() {
         Three quick questions, and Regibee sets up the invitation, the gift list, or both.
       </p>
       <div className="mt-6">
-        <PlanPicker myName={firstName} />
+        <PlanPicker myName={firstName} myLists={myLists} />
       </div>
     </div>
   );

@@ -28,6 +28,24 @@ export const WhoItsFor: Story = {
   },
 };
 
+/** A Christmas party for no one in particular: link a wishlist, or draw names so everyone brings one. */
+export const GiftsForAParty: Story = {
+  args: {
+    initial: { step: "gifts", occasion: "christmas", audience: "no_one" },
+  },
+};
+
+/** Your own birthday, when you already have lists: pick one instead of pasting its link. */
+export const UseAListYouHave: Story = {
+  args: {
+    myLists: [
+      { id: "list-1", title: "Maya's Birthday Wishlist" },
+      { id: "list-2", title: "Maya's Christmas List" },
+    ],
+    initial: { step: "gifts", occasion: "birthday", audience: "me", name: "Maya", gifts: "link", registryId: "list-1" },
+  },
+};
+
 /** Someone else's shower: link their list, or ask them to make one. */
 export const GiftsForSomeoneElse: Story = {
   args: {
@@ -63,6 +81,8 @@ export const SecretSanta: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await userEvent.click(canvas.getByRole("button", { name: "Gift exchange" }));
-    await expect(canvas.getByText("A Secret Santa draw. Set the budget and draw date next.")).toBeVisible();
+    await expect(
+      canvas.getByText("A Secret Santa draw. Guests add a wishlist when they join. Set the budget and draw date next."),
+    ).toBeVisible();
   },
 };

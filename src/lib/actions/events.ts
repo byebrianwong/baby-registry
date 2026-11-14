@@ -1760,6 +1760,8 @@ export interface PlanInput {
   invitation?: boolean;
   /** The share link to link, for "link". */
   linkUrl?: string;
+  /** For "link": one of your own lists, picked instead of pasting its link. */
+  registryId?: string;
   /** Who to ask, for "ask". */
   askEmail?: string;
   /** The event's title, or the list's when there's no event. */
@@ -1796,7 +1798,10 @@ export async function startPlan(input: PlanInput): Promise<Result<{ href: string
 
   // Check what can fail before anything is saved.
   let linked: { id: string } | null = null;
-  if (input.gifts === "link") {
+  if (input.gifts === "link" && input.registryId) {
+    if (!(await canManageRegistry(user.id, input.registryId))) return { error: "Pick one of your lists, or paste a link." };
+    linked = { id: input.registryId };
+  } else if (input.gifts === "link") {
     const link = input.linkUrl?.trim() ?? "";
     if (!registrySlugFromLink(link)) return { error: "Paste a registry link, like regibee.com/r/remi-and-max-1a2b." };
     linked = await resolveRegistryLink(link);

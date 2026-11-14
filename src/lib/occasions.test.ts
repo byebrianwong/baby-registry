@@ -8,6 +8,8 @@ import {
   LIST_OCCASIONS,
   OCCASIONS,
   OCCASION_IDS,
+  giftPlanLabel,
+  giftPlanRows,
   giftPlansFor,
   listTint,
   listTitleFor,
@@ -75,10 +77,38 @@ test("gift plans fit who it's for", () => {
   assert.deepEqual(giftPlansFor("someone"), ["link", "ask", "no_gifts", "later"]);
   assert.ok(giftPlansFor("child").includes("new_list"));
   assert.deepEqual(giftPlansFor("everyone"), ["everyone", "exchange"]);
+  // A party for no one in particular can still use wishlists: linked, or one per guest with a name draw.
+  assert.deepEqual(giftPlansFor("no_one", occasionFor("christmas")), ["link", "exchange", "signup", "no_gifts", "later"]);
   // A potluck or meal train offers its sign-up sheet first.
-  assert.deepEqual(giftPlansFor("no_one", occasionFor("potluck")), ["signup", "no_gifts", "later"]);
+  assert.deepEqual(giftPlansFor("no_one", occasionFor("potluck")), ["signup", "link", "exchange", "no_gifts", "later"]);
   assert.equal(giftPlansFor("someone", occasionFor("meal_train"))[0], "signup");
   assert.ok(!giftPlansFor("someone", occasionFor("baby_shower")).includes("signup"));
   assert.equal(planNeedsEvent("new_list"), false);
   assert.equal(planNeedsEvent("ask"), true);
+});
+
+test("gift lists come first, and every audience with gifts has one", () => {
+  for (const { id } of OCCASIONS) {
+    const occasion = occasionFor(id);
+    for (const audience of occasion.audiences) {
+      const { main, other } = giftPlanRows(audience, occasion);
+      assert.ok(main.some((plan) => plan !== "signup"), `${occasion.id} for ${audience} has no gift list`);
+      assert.deepEqual([...main, ...other].sort(), giftPlansFor(audience, occasion).sort());
+    }
+  }
+  assert.deepEqual(giftPlanRows("no_one", occasionFor("christmas")), {
+    main: ["link", "exchange"],
+    other: ["signup", "no_gifts", "later"],
+  });
+  // A potluck's sheet stays up front with the lists.
+  assert.deepEqual(giftPlanRows("no_one", occasionFor("potluck")).main, ["signup", "link", "exchange"]);
+});
+
+test("a gift plan's label fits who it's for", () => {
+  const birthday = occasionFor("birthday");
+  assert.equal(giftPlanLabel("new_list", "child", birthday).label, "Make their birthday wishlist");
+  assert.equal(giftPlanLabel("link", "me", birthday).label, "Link a list");
+  assert.equal(giftPlanLabel("link", "me", birthday, true).label, "Use a list you already have");
+  assert.equal(giftPlanLabel("link", "someone", birthday, true).label, "Link their list");
+  assert.equal(giftPlanLabel("link", "no_one", birthday).label, "Link a wishlist");
 });

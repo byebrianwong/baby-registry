@@ -316,16 +316,50 @@ export const GIFT_PLAN_LABELS: Record<GiftPlan, { label: string; hint: string }>
     label: "Everyone gives everyone",
     hint: "Each person links a wish list when they RSVP, and everyone shops from everyone's lists.",
   },
-  exchange: { label: "Draw names", hint: "Everyone who joins gives one gift to one person." },
+  exchange: { label: "Draw names", hint: "Everyone adds a wishlist when they join, then gives one gift to the person they draw." },
   signup: { label: "A sign-up sheet", hint: "Guests pick what they'll bring, or a day to help." },
   no_gifts: { label: "No gifts", hint: "The invitation says \"No gifts, please.\"" },
   later: { label: "Decide later", hint: "Add a list or a gift note any time from the event." },
 };
 
 /**
- * The gift plans that make sense for who it's for, the usual one first. An
- * occasion that starts with a sign-up sheet (a potluck, a meal train) puts
- * that first. A party for no one in particular can have one too.
+ * What the picker calls a plan, for who it's for. `hasLists` is whether the
+ * person making the plan already has lists of their own to pick from.
+ */
+export function giftPlanLabel(
+  plan: GiftPlan,
+  audience: Audience,
+  occasion: Pick<Occasion, "list">,
+  hasLists = false,
+): { label: string; hint: string } {
+  if (plan === "new_list") {
+    return { label: `Make ${audience === "child" ? "their" : "your"} ${occasion.list.noun}`, hint: GIFT_PLAN_LABELS.new_list.hint };
+  }
+  if (plan === "link") {
+    if (audience === "someone") {
+      return { label: "Link their list", hint: "Paste the share link of their Regibee registry or wishlist." };
+    }
+    if (audience === "no_one") {
+      return {
+        label: "Link a wishlist",
+        hint: hasLists
+          ? "Yours, your kids', or anyone's by its link. Add more from the event later."
+          : "Paste the share link of any Regibee registry or wishlist. Add more from the event later.",
+      };
+    }
+    if (hasLists) return { label: "Use a list you already have", hint: "One of your lists, or any Regibee list by its link." };
+  }
+  return GIFT_PLAN_LABELS[plan];
+}
+
+/** The plans where guests shop from a gift list, or add their own wishlist. */
+const LIST_PLANS: readonly GiftPlan[] = ["new_list", "link", "ask", "everyone", "exchange"];
+
+/**
+ * The gift plans that make sense for who it's for, the usual one first. Every
+ * occasion that has gifts offers a gift list. An occasion that starts with a
+ * sign-up sheet (a potluck, a meal train) puts that first. A party for no one
+ * in particular can have one too.
  */
 export function giftPlansFor(audience: Audience, occasion?: Pick<Occasion, "defaults"> | null): GiftPlan[] {
   const plans = ((): GiftPlan[] => {
@@ -339,11 +373,25 @@ export function giftPlansFor(audience: Audience, occasion?: Pick<Occasion, "defa
       case "everyone":
         return ["everyone", "exchange"];
       case "no_one":
-        return ["no_gifts", "signup", "later"];
+        return ["link", "exchange", "signup", "no_gifts", "later"];
     }
   })();
   if (occasion?.defaults?.signup) return ["signup", ...plans.filter((p) => p !== "signup")];
   return plans;
+}
+
+/**
+ * The picker's two rows of gift plans. `main` holds the gift lists (and the
+ * sign-up sheet, for an occasion that starts with one), shown large and
+ * first. `other` holds the rest, shown smaller after them.
+ */
+export function giftPlanRows(
+  audience: Audience,
+  occasion?: Pick<Occasion, "defaults"> | null,
+): { main: GiftPlan[]; other: GiftPlan[] } {
+  const plans = giftPlansFor(audience, occasion);
+  const isMain = (plan: GiftPlan) => LIST_PLANS.includes(plan) || (plan === "signup" && Boolean(occasion?.defaults?.signup));
+  return { main: plans.filter(isMain), other: plans.filter((plan) => !isMain(plan)) };
 }
 
 /**
