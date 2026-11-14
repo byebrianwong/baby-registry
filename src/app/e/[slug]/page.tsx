@@ -7,13 +7,16 @@ import { EventInvitation } from "@/components/event-invitation";
 import { RsvpForm } from "@/components/rsvp-form";
 import { PoweredByFooter } from "@/components/site-footer";
 import { SecretSantaCard } from "@/components/secret-santa-card";
+import { GuestWishLists } from "@/components/guest-wish-lists";
 import { EventGroupGifts } from "@/components/event-group-gifts";
 import { groupGiftsForEvent, listsOfViewer } from "@/lib/group-gifts-server";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import {
+  getEventForManager,
   getEventRegistries,
   getGifteeFor,
   getGiftExchange,
+  getGuestWishLists,
   getSignupSheet,
   registrySlugFromLink,
 } from "@/lib/events-server";
@@ -21,6 +24,7 @@ import { hidesAddressUntilSignup, signupRowsForGuest, withAddressFor } from "@/l
 import { storedAnswers, storedQuestions } from "@/lib/rsvp-questions";
 import {
   eventHasPassed,
+  exchangeKind,
   formatEventDate,
   googleCalendarUrl,
   type EventDetails,
@@ -131,6 +135,31 @@ export default async function PublicEventPage({
       : giftee.wishlistUrl
     : null;
 
+  // Everyone gives everyone: the event's guests and hosts see everyone's
+  // wish lists. A signed-in guest can pick one of their own lists when they
+  // RSVP.
+  const everyone = exchangeKind(exchange) === "everyone";
+  const [isHost, guestLists, waiting, myLists] = everyone
+    ? await Promise.all([
+        viewer ? getEventForManager(event.id, viewer.id).then(Boolean) : false,
+        getGuestWishLists(event.id, guest?.id ?? null),
+        supabaseAdmin
+          .from("event_guests")
+          .select("id", { count: "exact", head: true })
+          .eq("event_id", event.id)
+          .eq("rsvp_status", "pending")
+          .then(({ count }) => count ?? 0),
+        viewer
+          ? supabaseAdmin
+              .from("registries")
+              .select("title, slug")
+              .eq("owner_id", viewer.id)
+              .order("created_at", { ascending: false })
+              .then(({ data }) => (data || []) as { title: string; slug: string }[])
+          : [],
+      ])
+    : [false, [], 0, []];
+  const showGuestLists = everyone && (Boolean(guest) || isHost);
   // The event's own time zone could be a day behind UTC, so it counts as over
   // only once yesterday in UTC is past it. Sign-up days work the same way.
   const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
@@ -179,6 +208,15 @@ export default async function PublicEventPage({
               wishlistHref={gifteeWishlistHref}
             />
           )}
+          {showGuestLists && (
+            <GuestWishLists
+              lists={guestLists}
+              eventSlug={event.slug}
+              guestToken={guest?.token ?? null}
+              waitingCount={waiting}
+              hostView={!guest}
+            />
+          )}
           {token && !guest && (
             <p className="rounded-xl bg-sunshine-50 p-4 text-sm text-sunshine-900">
               This RSVP link isn&apos;t on the guest list anymore. Ask the host for a new one.
@@ -206,7 +244,12 @@ export default async function PublicEventPage({
             openRsvp={event.open_rsvp && !(exchange?.drawn_at && exchange.mailed)}
             maxPartySize={event.max_party_size}
             askKids={event.ask_kids}
-            exchange={exchange ? { mailed: exchange.mailed, drawn: Boolean(exchange.drawn_at) } : null}
+            exchange={
+              exchange
+                ? { kind: exchangeKind(exchange), mailed: exchange.mailed, drawn: Boolean(exchange.drawn_at) }
+                : null
+            }
+            myLists={myLists.map((list) => ({ title: list.title, url: `${siteUrl}/r/${list.slug}` }))}
             passed={eventHasPassed(event, yesterday)}
             signup={signupSheet ? { title: signupSheet.sheet.title, rows: signupRows } : null}
             mealTrain={mealTrain}

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { AlertTriangle, Loader2, Shuffle, X } from "lucide-react";
+import { AlertTriangle, Check, Loader2, Shuffle, Users, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { NativeSelect } from "@/components/base/select/select-native";
@@ -15,6 +15,7 @@ import {
   undoExchangeDraw,
 } from "@/lib/actions/events";
 import {
+  exchangeKind,
   formatEventDate,
   MIN_EXCHANGE_PARTICIPANTS,
   type EventGuest,
@@ -42,22 +43,126 @@ const DEFAULT_ACTIONS: ExchangeActions = {
 
 export interface ExchangeManagerProps {
   eventId: string;
-  exchange: Pick<GiftExchange, "budget" | "draw_by" | "mailed" | "drawn_at">;
+  exchange: Pick<GiftExchange, "kind" | "budget" | "draw_by" | "mailed" | "drawn_at">;
   status: ExchangeStatus;
-  /** The guest list, as hosts see it: with no pairs, wishlists or addresses. */
-  guests: Pick<EventGuest, "id" | "name" | "rsvp_status" | "in_exchange">[];
+  /**
+   * The guest list, as hosts see it: with no pairs, wishlists or addresses.
+   * wishlist_url is "added" when the guest added one.
+   */
+  guests: (Pick<EventGuest, "id" | "name" | "rsvp_status" | "in_exchange"> & Partial<Pick<EventGuest, "wishlist_url">>)[];
   exclusions: { guest_a: string; guest_b: string }[];
   /** Where Edit goes. The demo passes its own. */
   editHref: string;
   actions?: Partial<ExchangeActions>;
 }
 
-/**
- * The host's side of a gift exchange: who's in, who shouldn't draw whom, and
- * the draw. The host never sees who drew whom; each person gets an email and
- * sees their own on their RSVP link.
- */
+/** The host's side of a gift exchange: a name draw, or everyone giving everyone. */
 export function ExchangeManager({
+  eventId,
+  exchange,
+  status,
+  guests,
+  exclusions,
+  editHref,
+  actions: overrides,
+}: ExchangeManagerProps) {
+  if (exchangeKind(exchange) === "everyone") {
+    return <EveryoneGivesManager exchange={exchange} guests={guests} editHref={editHref} />;
+  }
+  return (
+    <DrawManager
+      eventId={eventId}
+      exchange={exchange}
+      status={status}
+      guests={guests}
+      exclusions={exclusions}
+      editHref={editHref}
+      actions={overrides}
+    />
+  );
+}
+
+/**
+ * The host's side of an everyone-gives-everyone event: who's taking part and
+ * who has added a wish list. There's nothing to draw. The host sees whether a
+ * guest added a list, not the list itself, unless they're a guest too.
+ */
+function EveryoneGivesManager({
+  exchange,
+  guests,
+  editHref,
+}: Pick<ExchangeManagerProps, "exchange" | "guests" | "editHref">) {
+  const taking = guests.filter((g) => g.in_exchange);
+  const withList = taking.filter((g) => g.wishlist_url);
+  const waiting = guests.filter((g) => g.rsvp_status === "pending").length;
+  return (
+    <section aria-labelledby="exchange-manager-heading" className="flex flex-col gap-4 rounded-2xl bg-mint-50 p-4 sm:p-5">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="flex items-start gap-3">
+          <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary">
+            <Users aria-hidden="true" className="size-4.5 text-mint-800" />
+          </span>
+          <div>
+            <h2 id="exchange-manager-heading" className="text-lg font-semibold text-primary">
+              Everyone gives everyone
+            </h2>
+            <p className="text-sm text-tertiary">
+              {exchange.budget ? `About ${exchange.budget} a gift · ` : ""}Guests link wish lists when they RSVP
+            </p>
+          </div>
+        </div>
+        <Link href={editHref} className="text-sm font-medium text-brand-600 hover:underline max-sm:min-h-11">
+          Change settings
+        </Link>
+      </div>
+
+      <p className="text-primary">
+        {taking.length === 0
+          ? "Nobody is taking part yet. Guests who say they're going or might go take part."
+          : `${taking.length === 1 ? "1 guest is" : `${taking.length} guests are`} taking part, and ${
+              withList.length === taking.length
+                ? "everyone has"
+                : withList.length === 1
+                  ? "1 has"
+                  : `${withList.length} have`
+            } added a wish list.`}
+        {waiting > 0 ? ` ${waiting === 1 ? "1 guest hasn't" : `${waiting} guests haven't`} answered yet.` : ""}
+      </p>
+
+      {taking.length > 0 && (
+        <ul className="flex flex-wrap gap-2">
+          {taking.map((g) => (
+            <li
+              key={g.id}
+              className="inline-flex items-center gap-1.5 rounded-full bg-primary px-3 py-1 text-sm text-primary"
+            >
+              {g.wishlist_url ? (
+                <Check aria-hidden="true" className="size-3.5 text-success-primary" />
+              ) : (
+                <span aria-hidden="true" className="size-2 rounded-full bg-quaternary" />
+              )}
+              {g.name}
+              <span className="sr-only">{g.wishlist_url ? ", has a wish list" : ", no wish list yet"}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <p className="text-xs text-tertiary">
+        Guests see everyone&apos;s lists on the invitation, and what the others reserved from each one. Nobody sees
+        what&apos;s been reserved from their own list until the day after the event. Taking part yourself? Add
+        yourself to the guest list and RSVP from your own link.
+      </p>
+    </section>
+  );
+}
+
+/**
+ * The host's side of a name draw: who's in, who shouldn't draw whom, and the
+ * draw. The host never sees who drew whom; each person gets an email and sees
+ * their own on their RSVP link.
+ */
+function DrawManager({
   eventId,
   exchange,
   status,

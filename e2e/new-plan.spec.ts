@@ -67,7 +67,7 @@ test("a Christmas party for no one in particular links one of your own wishlists
   await signIn(page, maya);
   await openPicker(page);
   await chooseOccasion(page, "Christmas");
-  await expect(page.getByRole("button", { name: "No one in particular" })).toHaveAttribute("aria-pressed", "true");
+  await page.getByRole("button", { name: "No one in particular" }).click();
   await page.getByRole("button", { name: "Next", exact: true }).click();
   // Wishlists come first, even with no one in particular getting gifts.
   await page.getByRole("button", { name: /Link a wishlist/ }).click();

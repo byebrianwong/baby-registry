@@ -17,6 +17,7 @@ import { claimsByGuest, describeClaim, hidesAddressUntilSignup, signupRowsForHos
 import {
   eventTheme,
   eventTypeLabel,
+  exchangeKind,
   exchangeStatus,
   formatEventDate,
   formatEventTime,
@@ -173,6 +174,7 @@ export default async function ManageEventPage({
             replyToEmail={viewer.email ?? null}
             askKids={event.ask_kids}
             hasExchange={Boolean(exchange)}
+            everyoneGives={exchangeKind(exchange) === "everyone"}
             copySources={copySources}
             groups={groups}
             eventTitle={event.title}

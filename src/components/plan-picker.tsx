@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Check, ClipboardList, Gift, Link2, Loader2, Mail, Shuffle, type LucideIcon } from "lucide-react";
+import { ArrowLeft, Check, ClipboardList, Gift, Link2, Loader2, Mail, Shuffle, Users, type LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/base/input/input";
 import { Checkbox } from "@/components/base/checkbox/checkbox";
@@ -124,6 +124,7 @@ const PLAN_ICONS: Partial<Record<GiftPlan, LucideIcon>> = {
   new_list: Gift,
   link: Link2,
   ask: Mail,
+  everyone: Users,
   exchange: Shuffle,
   signup: ClipboardList,
 };
@@ -194,7 +195,7 @@ export function PlanPicker({
       gifts: null,
     };
     if (only === "everyone") {
-      // A gift exchange: the only gift plan is drawing names.
+      // A gift exchange occasion is a Secret Santa: names are drawn.
       goTo("name", { ...changes, gifts: "exchange" });
     } else if (only) {
       goTo("gifts", changes);
@@ -235,7 +236,7 @@ export function PlanPicker({
     const order: Step[] = ["what", "who", "gifts", "name"];
     let index = order.indexOf(state.step) - 1;
     // Skip the steps the occasion answered by itself.
-    if (order[index] === "gifts" && state.audience === "everyone") index -= 1;
+    if (order[index] === "gifts" && state.audience === "everyone" && audiences.length === 1) index -= 1;
     if (order[index] === "who" && audiences.length === 1) index -= 1;
     goTo(order[Math.max(index, 0)]);
   };
@@ -292,6 +293,9 @@ export function PlanPicker({
     }
     if (state.gifts === "ask") summary.push(`An email to ${state.askEmail || "them"} asking for a ${occasion.list.noun}`);
     if (state.gifts === "exchange") summary.push("A Secret Santa draw. Guests add a wishlist when they join. Set the budget and draw date next.");
+    if (state.gifts === "everyone") {
+      summary.push("Everyone gives everyone: guests link their wish lists when they RSVP, and see each other's");
+    }
     if (state.gifts === "no_gifts") summary.push("A note on the invitation: “No gifts, please.”");
     // A potluck or a meal train always starts with its sheet, like a gift exchange with its draw.
     const startsSheet = Boolean(occasion.defaults && "signup" in occasion.defaults);

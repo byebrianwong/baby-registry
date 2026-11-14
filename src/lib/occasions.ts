@@ -125,7 +125,9 @@ export const OCCASIONS = [
     titlePlaceholder: "The Chens' Christmas Party",
     titleFor: (name) => named(name, "Christmas"),
     list: CHRISTMAS_LIST,
-    audiences: ["no_one", "me", "us", "child"],
+    // A family Christmas where everyone gives everyone comes first: it's
+    // the event most families plan on Regibee once a year.
+    audiences: ["everyone", "no_one", "me", "us", "child"],
   },
   {
     id: "bridal_shower",
@@ -298,17 +300,22 @@ export function listTitleFor(occasion: Occasion, name: string): string {
  * - new_list: make a gift list now, owned by whoever is making the plan.
  * - link: link a list that already exists, by its share link.
  * - ask: email the honoree an invitation to make a list, linked once it exists.
+ * - everyone: everyone gives everyone. Each guest links a wish list when they RSVP.
  * - exchange: draw names (a Secret Santa).
  * - signup: a sign-up sheet, for things to bring or days to help (src/lib/signups.ts).
  * - no_gifts: a "No gifts, please" note.
  * - later: decide later.
  */
-export type GiftPlan = "new_list" | "link" | "ask" | "exchange" | "signup" | "no_gifts" | "later";
+export type GiftPlan = "new_list" | "link" | "ask" | "everyone" | "exchange" | "signup" | "no_gifts" | "later";
 
 export const GIFT_PLAN_LABELS: Record<GiftPlan, { label: string; hint: string }> = {
   new_list: { label: "Make a gift list", hint: "Add things from any store, and guests reserve them." },
   link: { label: "Link a list", hint: "Paste the share link of a Regibee registry or wishlist." },
   ask: { label: "Ask them to make one", hint: "We email them an invitation, and their list is linked as soon as it exists." },
+  everyone: {
+    label: "Everyone gives everyone",
+    hint: "Each person links a wish list when they RSVP, and everyone shops from everyone's lists.",
+  },
   exchange: { label: "Draw names", hint: "Everyone adds a wishlist when they join, then gives one gift to the person they draw." },
   signup: { label: "A sign-up sheet", hint: "Guests pick what they'll bring, or a day to help." },
   no_gifts: { label: "No gifts", hint: "The invitation says \"No gifts, please.\"" },
@@ -346,7 +353,7 @@ export function giftPlanLabel(
 }
 
 /** The plans where guests shop from a gift list, or add their own wishlist. */
-const LIST_PLANS: readonly GiftPlan[] = ["new_list", "link", "ask", "exchange"];
+const LIST_PLANS: readonly GiftPlan[] = ["new_list", "link", "ask", "everyone", "exchange"];
 
 /**
  * The gift plans that make sense for who it's for, the usual one first. Every
@@ -364,7 +371,7 @@ export function giftPlansFor(audience: Audience, occasion?: Pick<Occasion, "defa
       case "someone":
         return ["link", "ask", "no_gifts", "later"];
       case "everyone":
-        return ["exchange"];
+        return ["everyone", "exchange"];
       case "no_one":
         return ["link", "exchange", "signup", "no_gifts", "later"];
     }

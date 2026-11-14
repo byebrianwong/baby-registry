@@ -79,8 +79,9 @@ export function ReservationPrivacyCard({
               hint={
                 <>
                   Every item shows as not yet reserved for you, and you don&apos;t get gift emails. Guests still see
-                  what&apos;s taken, so nobody buys the same thing twice. Co-managers still see everything. Turn this
-                  off after the big day to see who gave what.
+                  what&apos;s taken, so nobody buys the same thing twice. Co-managers still see everything. When the
+                  list is part of an event, you see what was given, and by whom, from the day after it. Or turn this
+                  off any time to see everything.
                   {turnedOnByExchange && (
                     <> Regibee turned this on when you added this list to a gift exchange.</>
                   )}

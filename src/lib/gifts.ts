@@ -172,6 +172,46 @@ export function fundAsUnpledged<T extends { current_amount: number }>(fund: T): 
   return { ...fund, current_amount: 0 };
 }
 
+// ── Revealing hidden gifts after an event ───────────────────────────────
+//
+// When a list that hides reservations is linked to an event, its owner sees
+// the gifts reserved before the event from the day after it, for thank-you
+// notes. The database works out the moment (gifts_revealed_through in
+// supabase/migrations/20261114035445_everyone_gives_everyone.sql) and stops
+// the owner reading anything later. These helpers show the owner the gifts
+// that are revealed and nothing else, whatever the rows say.
+
+/** Whether a gift made at `createdAt` is revealed, given the list's reveal moment. */
+export function isGiftRevealed(createdAt: string, revealedThrough: string | null | undefined): boolean {
+  return Boolean(revealedThrough) && new Date(createdAt).getTime() < new Date(revealedThrough!).getTime();
+}
+
+interface RevealablePurchase {
+  status: string;
+  quantity?: number | null;
+  amount?: number | string | null;
+}
+
+/**
+ * An item as its owner sees it with reservations hidden and some gifts
+ * revealed: only the revealed gifts count. `revealed` holds the item's
+ * revealed purchases.
+ */
+export function itemAsRevealed<T extends { quantity_fulfilled: number; quantity_needed: number; is_parent_purchased?: boolean | null }>(
+  item: T,
+  revealed: RevealablePurchase[],
+): T {
+  if (item.is_parent_purchased) return item;
+  const given = revealed.filter((p) => p.status !== "cancelled").reduce((sum, p) => sum + (p.quantity || 1), 0);
+  return { ...item, quantity_fulfilled: Math.min(given, item.quantity_needed) };
+}
+
+/** A cash fund as its owner sees it with reservations hidden and some gifts revealed. */
+export function fundAsRevealed<T extends { current_amount: number }>(fund: T, revealed: RevealablePurchase[]): T {
+  const pledged = revealed.filter((p) => p.status !== "cancelled").reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+  return { ...fund, current_amount: pledged };
+}
+
 /**
  * A list's settings after its owner added it to a gift exchange as their
  * wishlist, or null when nothing changes. Hiding turns on for a personal

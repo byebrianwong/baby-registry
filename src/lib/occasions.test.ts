@@ -76,7 +76,7 @@ test("titles read naturally, with or without a name", () => {
 test("gift plans fit who it's for", () => {
   assert.deepEqual(giftPlansFor("someone"), ["link", "ask", "no_gifts", "later"]);
   assert.ok(giftPlansFor("child").includes("new_list"));
-  assert.deepEqual(giftPlansFor("everyone"), ["exchange"]);
+  assert.deepEqual(giftPlansFor("everyone"), ["everyone", "exchange"]);
   // A party for no one in particular can still use wishlists: linked, or one per guest with a name draw.
   assert.deepEqual(giftPlansFor("no_one", occasionFor("christmas")), ["link", "exchange", "signup", "no_gifts", "later"]);
   // A potluck or meal train offers its sign-up sheet first.
