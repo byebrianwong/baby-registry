@@ -5,6 +5,7 @@ import {
   Cake,
   CookingPot,
   Gift,
+  HandCoins,
   ListChecks,
   Mail,
   Settings,
@@ -14,7 +15,9 @@ import {
   Users,
   type LucideIcon,
 } from "lucide-react";
+import { DEMO_STROLLER_GROUP_GIFT_TOKEN } from "@/lib/demo-group-gifts";
 import { DEMO_ME, demoProfilePath } from "@/lib/demo-people";
+import { groupGiftPath } from "@/lib/group-gifts";
 import { eventTheme, type EventType } from "@/lib/events";
 import { cx } from "@/lib/utils/cx";
 
@@ -64,6 +67,12 @@ const TRACKS: Track[] = [
         icon: Mail,
         title: "RSVP to the shower",
         body: "As Jordan, who hasn't replied yet.",
+      },
+      {
+        href: groupGiftPath(DEMO_STROLLER_GROUP_GIFT_TOKEN, "/demo"),
+        icon: HandCoins,
+        title: "Chip in on a group gift",
+        body: "Shower guests are going in on the stroller. Chip in, or see it as Oz, who started it.",
       },
       {
         href: "/demo/e/meals-for-remi-and-max?g=demo-mt-g4",

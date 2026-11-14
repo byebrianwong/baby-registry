@@ -19,7 +19,7 @@ import { ReservationBanner, type ReservationBannerEntry } from "@/components/res
 import { formatReservedUntil, type MyItemGift } from "@/lib/gifts";
 import { CoverItemDialog, type CoverActions } from "@/components/cover-item-dialog";
 import { ContributeFundDialog } from "@/components/contribute-fund-dialog";
-import { StartGroupGiftDialog } from "@/components/start-group-gift-dialog";
+import { StartGroupGiftDialog, type StartGroupGiftDialogProps } from "@/components/start-group-gift-dialog";
 import { buttonVariants } from "@/components/ui/button";
 import { groupGiftPath } from "@/lib/group-gifts";
 import { CategoryNav, type CategoryNavItem } from "@/components/category-nav";
@@ -110,6 +110,8 @@ export interface GroupGiftOptions {
   mine: Record<string, { token: string; organizer: boolean }>;
   /** The event the viewer came from, whose guests will see a new group gift. */
   eventTitle?: string | null;
+  /** Where the group gift pages live. The demo passes "/demo". */
+  basePath?: string;
 }
 
 /** Stand-ins for the gift dialogs' server actions, for the demo. */
@@ -120,6 +122,8 @@ export interface GiftActions {
   cover?: (itemId: string) => Partial<CoverActions>;
   /** The contribute dialog puts the fund's id in the form data as fundId. */
   contribute?: (formData: FormData) => Promise<{ error: string } | undefined>;
+  /** Starts a group gift on an item. */
+  startGroupGift?: StartGroupGiftDialogProps["action"];
 }
 
 type SortMode = "default" | "most-wanted" | "price-asc" | "price-desc";
@@ -674,7 +678,10 @@ function PublicItemCard({
           : !isFulfilled || !!myItemGift || !!myGroupGift || openStep === "ended") && (
           <div className="flex flex-wrap items-center justify-end gap-2">
             {myGroupGift ? (
-              <Link href={groupGiftPath(myGroupGift.token)} className={buttonVariants({ variant: "outline" })}>
+              <Link
+                href={groupGiftPath(myGroupGift.token, groupGifts?.basePath)}
+                className={buttonVariants({ variant: "outline" })}
+              >
                 <span className="inline-flex items-center gap-1.5">
                   <Users className="h-4 w-4 shrink-0" aria-hidden="true" />
                   Open group gift
@@ -706,6 +713,8 @@ function PublicItemCard({
                     signedIn={groupGifts.signedIn}
                     returnTo={groupGifts.returnTo}
                     eventTitle={groupGifts.eventTitle}
+                    basePath={groupGifts.basePath}
+                    action={actions?.startGroupGift}
                   />
                 )}
                 <ReserveItemDialog

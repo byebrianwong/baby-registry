@@ -11,7 +11,14 @@ import { formatAmount as money } from "@/lib/money";
  * other guests can chip in. Gifts for the guest's own lists are left out by
  * the page.
  */
-export function EventGroupGifts({ gifts }: { gifts: EventGroupGift[] }) {
+export function EventGroupGifts({
+  gifts,
+  basePath = "",
+}: {
+  gifts: EventGroupGift[];
+  /** Where the group gift pages live. The demo passes "/demo". */
+  basePath?: string;
+}) {
   if (gifts.length === 0) return null;
   return (
     <section aria-labelledby="event-group-gifts-heading" className="flex flex-col gap-3">
@@ -45,7 +52,7 @@ export function EventGroupGifts({ gifts }: { gifts: EventGroupGift[] }) {
               </div>
               {gift.goalAmount ? <Progress aria-labelledby={progressId} value={percent} /> : null}
               <Button variant="outline" className="self-start max-sm:w-full" asChild>
-                <Link href={groupGiftPath(gift.token)}>
+                <Link href={groupGiftPath(gift.token, basePath)}>
                   {gift.status === "bought" ? "See the group gift" : "Chip in"}
                 </Link>
               </Button>

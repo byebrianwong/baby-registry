@@ -13,6 +13,7 @@ import {
   demoPurchases,
   demoSuggestions,
 } from "@/lib/demo-data";
+import { DEMO_GROUP_GIFTS, demoGroupGiftReservation } from "@/lib/demo-group-gifts";
 import { DEMO_DOROTHY, DEMO_ELPHABA, DEMO_GLINDA, DEMO_ME, DEMO_OZ, type DemoPerson } from "@/lib/demo-people";
 import type { FeedRegistry } from "@/lib/follows";
 import type { ListedRegistry } from "@/lib/registry-listing";
@@ -159,6 +160,12 @@ function gift(
 const PORTER_ADDRESS = DEMO_REGISTRY.settings.shipping_address;
 
 function babyRegistry(today: string): DemoRegistry {
+  // A group gift reserves its item in the organizer's name, "Oz and others".
+  // That ordinary reservation is all Remi & Max see of it.
+  const groupGifts = DEMO_GROUP_GIFTS.filter((g) => g.registryId === "baby");
+  const items: DemoItem[] = DEMO_ITEMS.map((i) =>
+    groupGifts.some((g) => g.itemId === i.id) ? { ...i, quantity_fulfilled: i.quantity_fulfilled + 1 } : i,
+  );
   return {
     id: "baby",
     slug: "remi-and-max",
@@ -173,9 +180,12 @@ function babyRegistry(today: string): DemoRegistry {
     owner: DEMO_ME,
     settings: DEMO_REGISTRY.settings,
     categories: DEMO_CATEGORIES,
-    items: DEMO_ITEMS,
+    items,
     cashFunds: DEMO_CASH_FUNDS,
-    purchases: demoPurchases(today),
+    purchases: [
+      ...demoPurchases(today),
+      ...groupGifts.map((g) => demoGroupGiftReservation(today, g, items.find((i) => i.id === g.itemId)?.title ?? "")),
+    ],
     suggestions: demoSuggestions(today),
     managers: [
       { name: "Remi & Max", email: DEMO_ME.email, role: "owner" },

@@ -30,8 +30,10 @@ export interface StartGroupGiftDialogProps {
   returnTo: string;
   /** The event the viewer came from. Its guests see the group gift on their invitation. */
   eventTitle?: string | null;
-  /** Stories pass their own. */
+  /** Stories and the demo pass their own. */
   action?: typeof startGroupGift;
+  /** Where the new group gift's page lives. The demo passes "/demo". */
+  basePath?: string;
 }
 
 /**
@@ -47,6 +49,7 @@ export function StartGroupGiftDialog({
   returnTo,
   eventTitle,
   action = startGroupGift,
+  basePath = "",
 }: StartGroupGiftDialogProps) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -74,7 +77,7 @@ export function StartGroupGiftDialog({
         setPending(false);
         return;
       }
-      router.push(groupGiftPath(result.token));
+      router.push(groupGiftPath(result.token, basePath));
     } catch {
       setError("Something went wrong. Try again in a moment.");
       setPending(false);

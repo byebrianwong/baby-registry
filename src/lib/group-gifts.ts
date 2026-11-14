@@ -55,9 +55,12 @@ export function groupGiftReservationName(organizerName: string | null | undefine
   return `${first || "Friends"} and others`;
 }
 
-/** The page others chip in from. */
-export function groupGiftPath(token: string): string {
-  return `/group-gift/${encodeURIComponent(token)}`;
+/**
+ * The page others chip in from. The demo passes "/demo" as `basePath`, so its
+ * links stay in the demo.
+ */
+export function groupGiftPath(token: string, basePath = ""): string {
+  return `${basePath}/group-gift/${encodeURIComponent(token)}`;
 }
 
 /**

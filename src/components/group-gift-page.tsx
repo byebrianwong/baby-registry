@@ -56,8 +56,10 @@ export interface GroupGiftPageProps {
   viewer: GroupGiftViewer;
   /** The link the organizer shares. */
   shareUrl: string;
-  /** Stories pass their own. */
+  /** Stories and the demo pass their own. */
   actions?: Partial<GroupGiftPageActions>;
+  /** Where the list and event pages live. The demo passes "/demo". */
+  basePath?: string;
 }
 
 const FALLBACK_ERROR = "Something went wrong. Try again in a moment.";
@@ -120,7 +122,13 @@ function PaidBadge() {
   );
 }
 
-export function GroupGiftPage({ view: serverView, viewer: serverViewer, shareUrl, actions }: GroupGiftPageProps) {
+export function GroupGiftPage({
+  view: serverView,
+  viewer: serverViewer,
+  shareUrl,
+  actions,
+  basePath = "",
+}: GroupGiftPageProps) {
   const router = useRouter();
   const act = { ...SERVER_ACTIONS, ...actions };
 
@@ -184,7 +192,8 @@ export function GroupGiftPage({ view: serverView, viewer: serverViewer, shareUrl
       return;
     }
     const pledgeToken = "pledgeToken" in result ? result.pledgeToken : "";
-    const shownName = viewer.signedIn ? viewer.prefill?.name || "You" : name.trim();
+    // Signed in, the server uses the account's name, or the one typed in when the account has none.
+    const shownName = viewer.signedIn ? viewer.prefill?.name || name.trim() || "You" : name.trim();
     setView((v) => ({
       ...v,
       pledged: changeTotal(value),
@@ -344,7 +353,7 @@ export function GroupGiftPage({ view: serverView, viewer: serverViewer, shareUrl
                 <ExternalLink aria-hidden="true" className="size-3.5" />
               </a>
             )}
-            <Link href={`/r/${view.listSlug}`} className={linkClass}>
+            <Link href={`${basePath}/r/${view.listSlug}`} className={linkClass}>
               {view.recipientName}&apos;s list
             </Link>
           </p>
@@ -354,7 +363,7 @@ export function GroupGiftPage({ view: serverView, viewer: serverViewer, shareUrl
               <>
                 {" "}
                 for{" "}
-                <Link href={`/e/${view.event.slug}`} className={linkClass}>
+                <Link href={`${basePath}/e/${view.event.slug}`} className={linkClass}>
                   {view.event.title}
                 </Link>
               </>

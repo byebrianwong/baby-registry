@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { notFound } from "next/navigation";
+import { EventGroupGifts } from "@/components/event-group-gifts";
 import { EventInvitation, type InvitationRegistry } from "@/components/event-invitation";
 import { GuestWishLists } from "@/components/guest-wish-lists";
 import { RsvpForm } from "@/components/rsvp-form";
@@ -9,6 +10,7 @@ import { SecretSantaCard } from "@/components/secret-santa-card";
 import type { RsvpInput } from "@/lib/actions/events";
 import { addDays } from "@/lib/demo-data";
 import { findDemoEvent, type DemoEvent } from "@/lib/demo-events";
+import { DEMO_GROUP_GIFTS, demoEventGroupGift } from "@/lib/demo-group-gifts";
 import { demoRegistryPath, findDemoRegistry, type DemoRegistry } from "@/lib/demo-registries";
 import {
   eventHasPassed,
@@ -110,6 +112,15 @@ function GuestPage({ event, token, today }: { event: DemoEvent; token: string | 
   const addressHidden = shown !== event && Boolean(event.location_name || event.location_address);
   const mealTrain = hidesAddressUntilSignup(event.event_type);
   const google = googleCalendarUrl(shown, `${SITE_URL}/demo/e/${event.slug}`);
+
+  // Group gifts started from this event, on a guest's own link only, like the
+  // real page. None of the demo's guests manage the lists they're for.
+  const groupGifts = guest
+    ? DEMO_GROUP_GIFTS.filter((g) => g.eventId === event.id).flatMap((g) => {
+        const list = findDemoRegistry(today, { id: g.registryId });
+        return list ? [demoEventGroupGift(g, list)] : [];
+      })
+    : [];
 
   // Who this guest drew, once names are drawn. Only their own link shows it.
   const drew = exchange?.drawn_at && guest?.giftee_id ? guests.find((g) => g.id === guest.giftee_id) : null;
@@ -248,6 +259,7 @@ function GuestPage({ event, token, today }: { event: DemoEvent; token: string | 
             questions={event.rsvp_questions}
             submitAction={submit}
           />
+          <EventGroupGifts gifts={groupGifts} basePath="/demo" />
         </EventInvitation>
       </main>
     </DemoGuestShell>
