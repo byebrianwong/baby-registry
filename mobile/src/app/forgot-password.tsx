@@ -2,6 +2,7 @@ import { router } from "expo-router";
 import { useState } from "react";
 import { ScrollView, View } from "react-native";
 
+import { AutofillFields } from "@/components/autofill-fields";
 import { Button, EmptyState, Field, Text } from "@/components/ui";
 import { sendPasswordReset } from "@/lib/auth";
 import { errorMessage } from "@/lib/data";
@@ -54,18 +55,20 @@ export default function ForgotPasswordScreen() {
       <Text variant="callout" tone="secondary">
         Enter the email you signed up with. We'll send you a link to set a new password.
       </Text>
-      <Field
-        label="Email"
-        value={email}
-        onChangeText={setEmail}
-        autoCapitalize="none"
-        autoComplete="email"
-        keyboardType="email-address"
-        textContentType="emailAddress"
-        returnKeyType="send"
-        onSubmitEditing={submit}
-        autoFocus
-      />
+      <AutofillFields>
+        <Field
+          label="Email"
+          value={email}
+          onChangeText={setEmail}
+          autoCapitalize="none"
+          autoComplete="email"
+          keyboardType="email-address"
+          textContentType="emailAddress"
+          returnKeyType="send"
+          onSubmitEditing={submit}
+          autoFocus
+        />
+      </AutofillFields>
       {error ? (
         <Text variant="footnote" tone="danger">
           {error}
