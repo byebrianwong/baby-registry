@@ -1,6 +1,10 @@
 import type { ExpoConfig } from "expo/config";
 
+import { readBuildInfo } from "./scripts/build-info";
 import productReader from "./src/generated/product-reader.json";
+
+// The Expo project that runs EAS builds and over-the-air updates.
+const EAS_PROJECT_ID = "dbf89b9a-6e9b-4d3f-8e7c-56605aeff72c";
 
 // On iPhone, sharing from Safari runs this inside the page before the app
 // opens, so the app gets the product's name, price and pictures straight from
@@ -17,7 +21,12 @@ const readProductInSafari = `
 const config: ExpoConfig = {
   name: "Regibee",
   slug: "regibee",
+  // The Expo account the project belongs to.
+  owner: "deniseangos-team",
   version: "1.0.0",
+  // An update reaches only builds with the same native code. See fingerprint.config.js.
+  runtimeVersion: { policy: "fingerprint" },
+  updates: { url: `https://u.expo.dev/${EAS_PROJECT_ID}` },
   orientation: "portrait",
   icon: "./assets/images/icon.png",
   scheme: "regibee",
@@ -74,6 +83,11 @@ const config: ExpoConfig = {
   experiments: {
     typedRoutes: true,
     reactCompiler: true,
+  },
+  extra: {
+    eas: { projectId: EAS_PROJECT_ID },
+    // The commit and latest pull request, shown in preview builds. See scripts/build-info.js.
+    build: readBuildInfo(),
   },
 };
 

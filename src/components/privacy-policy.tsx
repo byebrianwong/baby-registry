@@ -327,6 +327,13 @@ export function PrivacyPolicy({ nav }: { nav: React.ReactNode }) {
               </li>
               <li>The app reads your clipboard only when you tap Paste.</li>
               <li>
+                <strong className="font-semibold text-primary">Updates.</strong> Each time the app opens, it asks
+                Expo, which delivers the app&apos;s updates, whether there&apos;s a newer version. It sends which
+                version it&apos;s running, whether your phone is an iPhone or Android, and a random ID the app made
+                for your phone, which Expo uses to count how many phones run each version. Your account and
+                registries aren&apos;t sent.
+              </li>
+              <li>
                 <strong className="font-semibold text-primary">Kept on your phone.</strong> Your sign-in session, a
                 copy of your registries so the app opens quickly, and the registry you last added to. Signing out
                 removes the session and the copy. Deleting the app removes everything it kept.
@@ -467,6 +474,9 @@ export function PrivacyPolicy({ nav }: { nav: React.ReactNode }) {
               <li>
                 <strong className="font-semibold text-primary">Resend</strong> sends our notification emails and
                 records whether they&apos;re opened and clicked.
+              </li>
+              <li>
+                <strong className="font-semibold text-primary">Expo</strong> builds the app and delivers its updates.
               </li>
             </List>
             <P>

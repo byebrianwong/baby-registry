@@ -5,6 +5,7 @@ import { Alert, Platform, Pressable, ScrollView, StyleSheet, View } from "react-
 
 import { Icon, type IconName } from "@/components/icon";
 import { Divider, Section, Text } from "@/components/ui";
+import { VersionSection } from "@/components/version-section";
 import { useDeleteAccount } from "@/lib/account";
 import { signOut, useSession } from "@/lib/auth";
 import { initials } from "@/lib/format";
@@ -104,6 +105,8 @@ export default function AccountScreen() {
           {deleteRow}
         </Section>
       )}
+
+      <VersionSection />
 
       <Text variant="caption" tone="tertiary" style={{ textAlign: "center" }}>
         Regibee {Application.nativeApplicationVersion ?? ""}
