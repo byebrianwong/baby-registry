@@ -11,5 +11,6 @@ const meta: Meta<typeof DemoEventsPage> = {
 export default meta;
 type Story = StoryObj<typeof DemoEventsPage>;
 
-// A co-hosted shower, a birthday dinner, and a past housewarming.
+// A co-hosted shower, a birthday dinner, a Secret Santa, Christmas dinner and a
+// past housewarming. The meal train a friend hosts is under "Celebrating you".
 export const Default: Story = {};

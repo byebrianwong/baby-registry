@@ -4,7 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Info } from "lucide-react";
 import { EventForm } from "@/components/event-form";
-import { findDemoEvent } from "@/lib/demo-events";
+import { findDemoEvent, isDemoHost } from "@/lib/demo-events";
 import { demoOwnRegistries } from "@/lib/demo-registries";
 import { useDemoToday } from "../demo-today";
 import { DemoOwnerShell } from "./demo-shell";
@@ -39,7 +39,8 @@ function DemoNotice() {
 export function DemoEventForm({ eventId, registryId }: { eventId?: string; registryId?: string }) {
   const today = useDemoToday();
   const event = eventId ? findDemoEvent(today, { id: eventId }) : null;
-  if (eventId && !event) notFound();
+  // Only hosts edit an event, like the real site.
+  if (eventId && (!event || !isDemoHost(event))) notFound();
   const registries = demoOwnRegistries(today).map((r) => ({ id: r.id, title: r.title }));
 
   return (
@@ -66,6 +67,7 @@ export function DemoEventForm({ eventId, registryId }: { eventId?: string; regis
               initial={event}
               registries={registries}
               startRegistryId={event.registryId}
+              exchange={event.exchange}
               lookupAction={demoLookup(today)}
               updateAction={notSaved}
               setImageAction={notSaved}
