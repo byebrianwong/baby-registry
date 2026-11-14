@@ -110,7 +110,7 @@ function Choice({
         </span>
       )}
       <span className="flex flex-col gap-0.5">
-        <span className={cx("flex items-center gap-2 text-primary", compact ? "text-sm font-medium" : "font-semibold")}>
+        <span className={cx("flex items-center gap-2 text-primary", compact ? "text-sm font-medium" : Icon ? "font-semibold" : "font-medium")}>
           {selected && !Icon && <Check aria-hidden="true" className="size-4 text-brand-600" />}
           {label}
         </span>
