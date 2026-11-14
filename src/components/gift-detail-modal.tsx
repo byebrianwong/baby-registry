@@ -7,7 +7,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { formatPrice } from "@/lib/money";
-import { formatReservedUntil, giverNameForOwner, isOpenReservation } from "@/lib/gifts";
+import { formatReservedUntil, giverNameForOwner, isHeldUntilBought, isOpenReservation } from "@/lib/gifts";
 
 export interface Purchase {
   id: string;
@@ -43,7 +43,9 @@ function getTagStyle(purchase: Purchase) {
   if (isOpenReservation(purchase)) {
     return {
       className: "bg-sunshine-50 border-sunshine-200 text-primary",
-      label: `Reserved until ${formatReservedUntil(purchase.reserved_until!, "short")}`,
+      label: isHeldUntilBought(purchase)
+        ? "Reserved"
+        : `Reserved until ${formatReservedUntil(purchase.reserved_until!, "short")}`,
     };
   }
   if (purchase.registry_items?.is_parent_purchased) {

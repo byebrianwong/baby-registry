@@ -42,6 +42,7 @@ import { formatDollars, formatPrice } from "@/lib/money";
 import {
   formatReservedUntil,
   fundAsUnpledged,
+  isHeldUntilBought,
   isOpenReservation,
   itemAsUnreserved,
   maskGiverForOwner,
@@ -699,7 +700,9 @@ export default async function RegistryManagePage({
                                 {purchase.cash_fund_id
                                   ? purchase.item_title
                                   : `${purchase.quantity > 1 ? `${purchase.quantity}x ` : ""}${purchase.item_title}${
-                                      isReserved ? ` · until ${formatReservedUntil(purchase.reserved_until, "short")}` : ""
+                                      isReserved && !isHeldUntilBought(purchase)
+                                        ? ` · until ${formatReservedUntil(purchase.reserved_until, "short")}`
+                                        : ""
                                     }`}
                               </span>
                             </div>

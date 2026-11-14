@@ -12,7 +12,7 @@ import { EXTENSION_STORES } from "@/lib/retailers";
 
 /** Where Regibee is run from, how to reach it, and when this version took effect. */
 export const PRIVACY_FACTS = {
-  effectiveDate: "November 11, 2026",
+  effectiveDate: "November 13, 2026",
   contactEmail: "contact@regibee.com",
   location: "California, United States",
 };
@@ -269,6 +269,16 @@ export function PrivacyPolicy({ nav }: { nav: React.ReactNode }) {
                 your name and email. We keep those apart, only to send you emails about your gift.
               </li>
               <li>
+                <strong className="font-semibold text-primary">Group gifts.</strong> Someone with an account can
+                start a group gift on an item and share its link, so friends can chip in. The item shows as reserved
+                by their first name &ldquo;and others&rdquo;, and anyone with the link sees the total they&apos;re
+                collecting and how to pay them back. To chip in, you give your name, your email address and an
+                amount. The person who started it sees your name, email, amount and whether they&apos;ve marked it
+                paid. Others with the link see your name and the total so far, not your amount. The person the gift
+                is for, and anyone helping manage their list, see only that the item is reserved, never who chipped
+                in or how much. Regibee doesn&apos;t handle the money: you pay the person who started it directly.
+              </li>
+              <li>
                 When you give a gift or suggest an item, your browser gets an anonymous Regibee session: a random
                 ID with no name or email attached. A cookie also remembers which gifts you gave from that browser,
                 so the registry can show you your own gifts.
@@ -351,6 +361,10 @@ export function PrivacyPolicy({ nav }: { nav: React.ReactNode }) {
                 follow;
               </li>
               <li>to gift exchange members, with the name they drew;</li>
+              <li>
+                to the person who starts a group gift, with its link and when someone chips in, and to people who
+                chip in, with their own link to change it and if it&apos;s called off;
+              </li>
               <li>to the person an event is for, when its host asks them to make a gift list;</li>
               <li>
                 to owners when someone links their registry to an event, or when a store&apos;s completion discount
@@ -375,6 +389,10 @@ export function PrivacyPolicy({ nav }: { nav: React.ReactNode }) {
               <li>
                 When a guest opens a gift link from an event invitation, a cookie remembers who they are for up to
                 60 days, so the gift form fills in their name and email.
+              </li>
+              <li>
+                When you chip in on a group gift, a cookie remembers your pledge for up to a year, so you can change
+                it from that browser.
               </li>
               <li>
                 There are no analytics, advertising or tracking cookies, and no tracking scripts. Our fonts load from
@@ -486,7 +504,8 @@ export function PrivacyPolicy({ nav }: { nav: React.ReactNode }) {
           <Section id="keeping">
             <P>
               We keep your information until you delete it or your account. Gifts, suggestions and RSVPs stay with
-              the registry or event they were for until its owner deletes it. Deleted information can stay in our
+              the registry or event they were for until its owner deletes it. A group gift and the pledges on it stay
+              until the registry is deleted or the person who started it deletes their account. Deleted information can stay in our
               providers&apos; backups, and records of emails already sent can stay in our email service&apos;s logs,
               until they expire on those providers&apos; own schedules.
             </P>
@@ -495,7 +514,8 @@ export function PrivacyPolicy({ nav }: { nav: React.ReactNode }) {
           <Section id="security">
             <P>
               Every connection to Regibee is encrypted. Access rules in the database let each person reach only what
-              they&apos;re allowed to. Guest lists, gift exchanges, groups, follows and blocks can be read only by our server. No system
+              they&apos;re allowed to. Guest lists, gift exchanges, groups, group gifts, follows and blocks can be read only by our
+              server. No system
               is perfectly secure, so if you find a problem, please email us at <ContactEmail />.
             </P>
           </Section>
