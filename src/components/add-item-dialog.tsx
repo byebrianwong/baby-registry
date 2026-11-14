@@ -139,6 +139,13 @@ export function AddItemDialog({
   const titleRef = useRef<HTMLInputElement>(null);
   const priceRef = useRef<HTMLInputElement>(null);
   const readSharedLink = useRef(false);
+  // Reading a link can take many seconds, and the owner may close the dialog
+  // meanwhile. Each read takes the next number. Closing the dialog moves the
+  // number on, so a read that finishes after that leaves the fresh form alone.
+  const readNumber = useRef(0);
+  const isOpen = useRef(open);
+  // The link last read, so leaving the field doesn't read the same link again.
+  const lastReadUrl = useRef<string | null>(null);
 
   // Reading the clipboard needs a secure page and a browser that allows it.
   // Only the open dialog asks, so this never runs during server rendering.
@@ -215,10 +222,12 @@ export function AddItemDialog({
    * Reads the link and fills in what the owner hasn't. `knownTitle` is a name
    * set in the same tap, before state has caught up. `fromTap` is true when the
    * owner tapped Paste or Fetch rather than leaving the field, so it's fine to
-   * move focus to what's left to fill in.
+   * move focus to what's left to fill in. Leaving the field reads the link only
+   * when it changed since the last read.
    */
   const handleScrape = async (rawUrl: string, options: { knownTitle?: string; fromTap?: boolean } = {}) => {
-    if (!rawUrl || scraping) return;
+    // Leaving the field calls this too, so it can run as the dialog closes.
+    if (!rawUrl || scraping || !isOpen.current) return;
     const url = normalizeUrl(rawUrl.trim());
     const currentTitle = options.knownTitle || title;
 
@@ -227,14 +236,21 @@ export function AddItemDialog({
     } catch {
       return;
     }
+    if (!options.fromTap && url === lastReadUrl.current) return;
+    lastReadUrl.current = url;
 
+    const run = ++readNumber.current;
+    const stillCurrent = () => run === readNumber.current;
     setScraping(true);
     setScrapeStatus("");
     setScrapeIsError(false);
 
     const result = await fetchProductDetails(url, {
-      onReadingWithExtension: () => setScrapeStatus("Reading the page in a background tab with the Regibee extension…"),
+      onReadingWithExtension: () => {
+        if (stillCurrent()) setScrapeStatus("Reading the page in a background tab with the Regibee extension…");
+      },
     });
+    if (!stillCurrent()) return;
 
     if (result.error) {
       // Some stores, Amazon above all, block the server from reading their
@@ -263,6 +279,7 @@ export function AddItemDialog({
         let taxNote = "";
         if (parentPurchased && zipCode) {
           const taxResult = await estimateTax(zipCode, parseFloat(result.price));
+          if (!stillCurrent()) return;
           if (taxResult) {
             taxNote = ` (incl. ~${(taxResult.taxRate * 100).toFixed(1)}% tax)`;
             setTaxInfo({ original: finalPrice, rate: taxResult.taxRate });
@@ -321,8 +338,12 @@ export function AddItemDialog({
     handleScrape(shared.url, { knownTitle, fromTap: true });
   };
 
-  // Back to a clean form, so reopening the dialog starts fresh.
+  // Back to a clean form, so reopening the dialog starts fresh. A read still
+  // under way is dropped when it finishes.
   const resetForm = () => {
+    readNumber.current++;
+    lastReadUrl.current = null;
+    setScraping(false);
     setScrapeStatus("");
     setScrapeIsError(false);
     setParentPurchased(false);
@@ -341,6 +362,12 @@ export function AddItemDialog({
       setChosenListId(defaultRegistryId);
       setCategories(saveTo.find((list) => list.id === defaultRegistryId)?.categories ?? defaultCategories);
     }
+  };
+
+  const changeOpen = (next: boolean) => {
+    isOpen.current = next;
+    setOpen(next);
+    if (!next) resetForm();
   };
 
   /** Saving to another list: its categories replace the last list's. */
@@ -370,15 +397,14 @@ export function AddItemDialog({
       setError(result.error);
     } else {
       const savedTo = registryId;
-      resetForm();
-      setOpen(false);
+      changeOpen(false);
       onAdded?.(savedTo);
     }
     setLoading(false);
   };
 
   return (
-    <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) resetForm(); }}>
+    <Dialog open={open} onOpenChange={changeOpen}>
       <DialogTrigger asChild>
         {trigger || (
           <Button>
@@ -764,7 +790,7 @@ export function AddItemDialog({
             <Button
               type="button"
               variant="outline"
-              onClick={() => setOpen(false)}
+              onClick={() => changeOpen(false)}
             >
               Cancel
             </Button>
