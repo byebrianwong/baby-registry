@@ -46,13 +46,15 @@ function Row({
   label: string;
   children: ReactNode;
 }) {
+  // A <dl> group may hold only its <dt> and <dd>, so the icon sits inside
+  // the <dt>, placed in the left gutter.
   return (
-    <div className="flex gap-3">
-      <Icon className="mt-0.5 size-4 shrink-0 text-fg-quaternary" aria-hidden />
-      <div className="min-w-0 flex-1">
-        <dt className="text-xs font-medium text-tertiary">{label}</dt>
-        <dd className="mt-0.5 break-words text-sm text-primary">{children}</dd>
-      </div>
+    <div className="relative min-w-0 pl-7">
+      <dt className="text-xs font-medium text-tertiary">
+        <Icon className="absolute top-0.5 left-0 size-4 text-fg-quaternary" aria-hidden />
+        {label}
+      </dt>
+      <dd className="mt-0.5 break-words text-sm text-primary">{children}</dd>
     </div>
   );
 }
