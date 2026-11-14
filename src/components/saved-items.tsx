@@ -247,7 +247,7 @@ function ItemListsPicker({
                 label={list.title}
                 hint={listKind(list)}
                 isSelected={item.listIds.includes(list.id)}
-                isDisabled={pending}
+                isReadOnly={pending}
                 onChange={(on) => change(list.id, on)}
               />
             ))}

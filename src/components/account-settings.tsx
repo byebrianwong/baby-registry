@@ -64,7 +64,7 @@ function RegistryListingRow({
     <div>
       <Checkbox
         isSelected={listed}
-        isDisabled={saving}
+        isReadOnly={saving}
         onChange={handleChange}
         label={registry.title}
         hint={hint}
