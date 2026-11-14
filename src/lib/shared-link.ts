@@ -113,10 +113,12 @@ export function nameFromProductUrl(raw: string): string | undefined {
     })
     .filter(Boolean);
   // The segment with the most words wins. A name has at least three words,
-  // mostly letters, so ids such as B07PMK8R2V or A-12345 don't count.
+  // mostly letters, so ids such as B07PMK8R2V or A-12345 don't count. A
+  // segment with "=" is a setting, not a name, like Amazon's tracking part
+  // ref=ox_sc_saved_title_3.
   let best: string[] = [];
   for (const segment of segments) {
-    if (!/[-_+]/.test(segment)) continue;
+    if (!/[-_+]/.test(segment) || segment.includes("=")) continue;
     const words = segment
       .replace(/\.(?:html?|php|aspx?)$/i, "")
       .split(/[-_+]+/)

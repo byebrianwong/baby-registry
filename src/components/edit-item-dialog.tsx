@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Loader2, ChevronDown, ExternalLink } from "lucide-react";
 import { Link01 } from "@untitledui/icons";
 import { Button } from "@/components/ui/button";
@@ -147,6 +147,16 @@ export function EditItemDialog({
 
   const urlRef = useRef<HTMLInputElement>(null);
   const openUrl = openableLink(externalUrl);
+  // Reading a link can take many seconds, and the owner may close the dialog
+  // meanwhile. Each read takes the next number. Closing the dialog moves the
+  // number on, so a read that finishes after that leaves the form alone.
+  const readNumber = useRef(0);
+  const isOpen = useRef(open);
+  useEffect(() => {
+    isOpen.current = open;
+  }, [open]);
+  // The link last read, so leaving the field doesn't read the same link again.
+  const lastReadUrl = useRef<string | null>(null);
 
   const normalizeUrl = (url: string) => {
     if (!url) return url;
@@ -177,8 +187,14 @@ export function EditItemDialog({
     }
   };
 
-  const handleScrape = async (rawUrl: string) => {
-    if (!rawUrl || scraping) return;
+  /**
+   * Reads the link and fills in what's empty. `fromTap` is true for Fetch and
+   * Enter. Leaving the field reads the link only when it changed since the
+   * last read.
+   */
+  const handleScrape = async (rawUrl: string, options: { fromTap?: boolean } = {}) => {
+    // Leaving the field calls this too, so it can run as the dialog closes.
+    if (!rawUrl || scraping || !isOpen.current) return;
     const url = normalizeUrl(rawUrl);
 
     try {
@@ -186,14 +202,21 @@ export function EditItemDialog({
     } catch {
       return;
     }
+    if (!options.fromTap && url === lastReadUrl.current) return;
+    lastReadUrl.current = url;
 
+    const run = ++readNumber.current;
+    const stillCurrent = () => run === readNumber.current;
     setScraping(true);
     setScrapeStatus("");
     setScrapeIsError(false);
 
     const result = await fetchProductDetails(url, {
-      onReadingWithExtension: () => setScrapeStatus("Reading the page in a background tab with the Regibee extension…"),
+      onReadingWithExtension: () => {
+        if (stillCurrent()) setScrapeStatus("Reading the page in a background tab with the Regibee extension…");
+      },
     });
+    if (!stillCurrent()) return;
 
     if (result.error) {
       setScrapeStatus(result.error);
@@ -209,6 +232,7 @@ export function EditItemDialog({
         let taxNote = "";
         if (item.is_parent_purchased && zipCode) {
           const taxResult = await estimateTax(zipCode, parseFloat(result.price));
+          if (!stillCurrent()) return;
           if (taxResult) {
             taxNote = ` (incl. ~${(taxResult.taxRate * 100).toFixed(1)}% tax)`;
             setTaxInfo({ original: finalPrice, rate: taxResult.taxRate });
@@ -252,9 +276,46 @@ export function EditItemDialog({
     if (parentPurchased !== item.is_parent_purchased) {
       await toggleParentPurchased(item.id, registryId, parentPurchased);
     }
-    onOpenChange(false);
+    closeAfterSaving();
     setScrapeStatus("");
     setLoading(false);
+  };
+
+  /** Stops listening to a read still under way. */
+  const dropRead = () => {
+    readNumber.current++;
+    lastReadUrl.current = null;
+    setScraping(false);
+  };
+
+  /** Closes after saving or deleting. The form already shows the saved item, so it stays as it is. */
+  const closeAfterSaving = () => {
+    isOpen.current = false;
+    dropRead();
+    onOpenChange(false);
+  };
+
+  // Back to the item as saved, so reopening the dialog starts fresh.
+  const changeOpen = (next: boolean) => {
+    isOpen.current = next;
+    onOpenChange(next);
+    if (next) return;
+    dropRead();
+    setScrapeStatus("");
+    setScrapeIsError(false);
+    setOpenToUsed(item.is_open_to_used);
+    setParentPurchased(item.is_parent_purchased);
+    setCurrency("USD");
+    setError("");
+    setTitle(item.title);
+    setPrice(item.price != null ? item.price.toFixed(2) : "");
+    setImageUrl(item.image_url || "");
+    setExternalUrl(item.external_url || "");
+    setTaxInfo(null);
+    setCategoryId(item.category_id ?? undefined);
+    setAddingCategory(false);
+    setNewCategoryName("");
+    setCategoryError("");
   };
 
   const onOtherLists = otherLists.length > 0;
@@ -268,13 +329,13 @@ export function EditItemDialog({
     if (result?.error) {
       setError(result.error);
     } else {
-      onOpenChange(false);
+      closeAfterSaving();
     }
     setDeleting(false);
   };
 
   return (
-    <Dialog open={open} onOpenChange={(v) => { onOpenChange(v); if (!v) { setScrapeStatus(""); setScrapeIsError(false); setOpenToUsed(item.is_open_to_used); setParentPurchased(item.is_parent_purchased); setCurrency("USD"); setError(""); setTitle(item.title); setPrice(item.price != null ? item.price.toFixed(2) : ""); setImageUrl(item.image_url || ""); setExternalUrl(item.external_url || ""); setTaxInfo(null); setCategoryId(item.category_id ?? undefined); setAddingCategory(false); setNewCategoryName(""); setCategoryError(""); } }}>
+    <Dialog open={open} onOpenChange={changeOpen}>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg" showCloseButton={false}>
         <DialogHeader>
           <DialogTitle>Edit item in registry</DialogTitle>
@@ -299,7 +360,7 @@ export function EditItemDialog({
                   // Enter reads the link instead of saving the form.
                   if (e.key === "Enter") {
                     e.preventDefault();
-                    handleScrape(externalUrl);
+                    handleScrape(externalUrl, { fromTap: true });
                   }
                 }}
                 aria-label="Product URL"
@@ -317,7 +378,7 @@ export function EditItemDialog({
                   size="icon-lg"
                   disabled={scraping}
                   onClick={() => {
-                    if (urlRef.current?.value) handleScrape(urlRef.current.value);
+                    if (urlRef.current?.value) handleScrape(urlRef.current.value, { fromTap: true });
                   }}
                   title="Fetch product details"
                 >
@@ -570,7 +631,7 @@ export function EditItemDialog({
             <Button
               type="button"
               variant="outline"
-              onClick={() => onOpenChange(false)}
+              onClick={() => changeOpen(false)}
             >
               Cancel
             </Button>
