@@ -93,14 +93,19 @@ export async function listEventsForUser(userId: string): Promise<EventListEntry[
   const { data: hosted } = await supabaseAdmin.from("event_hosts").select("event_id").eq("user_id", userId);
   const ids = (hosted || []).map((h) => h.event_id as string);
 
+  // The guests are the ones whose event_id is this event. The link is named
+  // because exchange_exclusions also joins events and event_guests (twice,
+  // by guest_a and guest_b), and without the name Supabase refuses the query
+  // as ambiguous (PGRST201) and the Events tab comes back empty.
   const query = supabaseAdmin
     .from("events")
-    .select("*, event_guests(rsvp_status, party_size, invited_at)")
+    .select("*, event_guests!event_guests_event_id_fkey(rsvp_status, party_size, invited_at)")
     .order("event_date", { ascending: true, nullsFirst: false })
     .order("created_at", { ascending: false });
-  const { data } = ids.length > 0
+  const { data, error } = ids.length > 0
     ? await query.or(`owner_id.eq.${userId},id.in.(${ids.join(",")})`)
     : await query.eq("owner_id", userId);
+  if (error) console.error("[events] Failed to list events:", error);
   return (data || []) as EventListEntry[];
 }
 
