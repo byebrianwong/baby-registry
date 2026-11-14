@@ -3,7 +3,7 @@ import { PeopleSearch } from "@/components/people-search";
 import { BirthdaysComingUp } from "@/components/birthdays-coming-up";
 import { ProfileRegistryCard } from "@/components/profile-registry-card";
 import { PandaMark } from "@/components/panda-mark";
-import type { FollowActions } from "@/components/follow-button";
+import { MutualBadge, type FollowActions } from "@/components/follow-button";
 import type { searchPeople } from "@/lib/actions/follows";
 import type { sendFollowInvite } from "@/lib/actions/follow-invites";
 import type { FeedRegistry, FollowPerson } from "@/lib/follows";
@@ -154,6 +154,7 @@ export function FollowingFeed({
                     <Link href={`${basePath}${profilePath(person)}`} className="font-medium text-primary hover:underline">
                       {displayName(person)}
                     </Link>
+                    {person.mutual && <MutualBadge />}
                     {person.status === "pending" && (
                       <span className="text-sm text-tertiary">· Waiting for approval</span>
                     )}

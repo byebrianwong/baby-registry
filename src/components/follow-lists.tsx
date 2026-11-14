@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { FollowBackButton } from "@/components/follow-button";
+import { FollowBackButton, MutualBadge } from "@/components/follow-button";
 import {
   approveFollower,
   blockUser,
@@ -20,9 +20,7 @@ function PersonLabel({ person, basePath }: { person: PersonSummary; basePath: st
   return (
     <Link
       href={`${basePath}${profilePath(person)}`}
-      // At least 8rem, so on a narrow screen the buttons wrap under the name
-      // instead of squeezing it.
-      className="min-w-0 grow basis-32 break-words text-sm font-medium text-primary hover:underline"
+      className="min-w-0 break-words text-sm font-medium text-primary hover:underline"
     >
       {displayName(person)}
     </Link>
@@ -33,14 +31,22 @@ function PersonRow({
   person,
   actions,
   basePath,
+  mutual = false,
 }: {
   person: PersonSummary;
   actions: React.ReactNode;
   basePath: string;
+  /** The account and this person follow each other. */
+  mutual?: boolean;
 }) {
   return (
     <div className="flex flex-wrap items-center gap-3">
-      <PersonLabel person={person} basePath={basePath} />
+      {/* At least 8rem, so on a narrow screen the buttons wrap under the name
+          instead of squeezing it. */}
+      <div className="flex min-w-0 grow basis-32 flex-wrap items-center gap-x-2 gap-y-1">
+        <PersonLabel person={person} basePath={basePath} />
+        {mutual && <MutualBadge />}
+      </div>
       <div className="flex shrink-0 flex-wrap gap-2">{actions}</div>
     </div>
   );
@@ -119,6 +125,10 @@ export function FollowLists({
   const followingStatus = (person: PersonSummary) =>
     following.find((p) => p.public_id === person.public_id)?.status ?? null;
 
+  // Both follows approved. `followers` holds only approved follows.
+  const isMutual = (person: PersonSummary) =>
+    followingStatus(person) === "approved" && followers.some((p) => p.public_id === person.public_id);
+
   // Keyed by status, so the button starts over when the status changes
   // somewhere else on the page, like after unfollowing.
   const followBack = (person: PersonSummary) => (
@@ -159,10 +169,11 @@ export function FollowLists({
                 basePath={basePath}
                 key={person.public_id}
                 person={person}
+                mutual={isMutual(person)}
                 actions={
                   <>
                     <span className="self-center text-sm text-tertiary">Approved</span>
-                    {followBack(person)}
+                    {!isMutual(person) && followBack(person)}
                   </>
                 }
               />
@@ -212,8 +223,8 @@ export function FollowLists({
         <CardHeader>
           <CardTitle>Followers</CardTitle>
           <CardDescription>
-            They can see your private registries and your birthday. Follow them back to see theirs. When you
-            follow each other, you&apos;re friends.
+            They can see your private registries and your birthday. Follow them back to see theirs.
+            Mutual means you follow each other.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -227,9 +238,10 @@ export function FollowLists({
                 basePath={basePath}
                 key={person.public_id}
                 person={person}
+                mutual={isMutual(person)}
                 actions={
                   <>
-                    {followBack(person)}
+                    {!isMutual(person) && followBack(person)}
                     <Button
                       size="sm"
                       variant="outline"
@@ -285,6 +297,7 @@ export function FollowLists({
                 basePath={basePath}
                 key={person.public_id}
                 person={person}
+                mutual={isMutual(person)}
                 actions={
                   <>
                     {person.status === "pending" && (

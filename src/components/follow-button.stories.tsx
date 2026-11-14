@@ -44,7 +44,7 @@ export const AllStates: Story = {
 };
 
 // Someone who follows the viewer: "Follow back" instead of "Follow", and
-// "friends" once both follows are approved.
+// "You follow each other" once both follows are approved.
 export const FollowsYou: Story = {
   render: () => (
     <div className="grid grid-cols-2 gap-x-8 gap-y-10">

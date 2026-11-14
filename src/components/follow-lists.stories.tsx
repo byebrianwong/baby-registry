@@ -30,7 +30,7 @@ export const WithEverything: Story = {
       { public_id: "s6g2t8vy3j", full_name: null, status: "pending" },
     ],
     // Alex follows back with one tap. Jordan and the account follow each
-    // other, so they're friends.
+    // other, so Jordan shows as Mutual in both lists.
     followers: [
       { public_id: "a3f9c2xz7e", full_name: "Alex Kim", status: "approved" },
       { public_id: "h5n7b4ce9w", full_name: "Jordan Lee", status: "approved" },
@@ -40,6 +40,9 @@ export const WithEverything: Story = {
       { public_id: "u2q6r8kd3m", full_name: "Tin Man", status: "pending" },
     ],
     blocked: [{ public_id: "e9w4z7pa2s", full_name: "Not A Real Aunt" }],
+  },
+  play: async ({ canvas }) => {
+    await expect(canvas.getAllByText("Mutual", { exact: true })).toHaveLength(2);
   },
 };
 

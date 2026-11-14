@@ -16,6 +16,12 @@ export interface PersonSummary {
 
 export interface FollowPerson extends PersonSummary {
   status: FollowStatus;
+  /**
+   * They follow the account back, and both follows are approved. Only the
+   * Following page's list sets it. The Account page works it out from the
+   * followers list, since that changes as the account approves and removes.
+   */
+  mutual?: boolean;
 }
 
 export interface FeedRegistry extends ListedRegistry {
@@ -110,22 +116,28 @@ export async function listFollows(userId: string) {
 // approved them. Approved followers see private listed registries too, the same
 // as on each profile.
 export async function listFollowingFeed(userId: string) {
-  const { data: rows } = await supabaseAdmin
-    .from("follows")
-    .select("status, person:profiles!follows_followee_id_fkey(id, public_id, full_name)")
-    .eq("follower_id", userId)
-    .order("created_at", { ascending: false });
+  const [{ data: rows }, { data: followerRows }] = await Promise.all([
+    supabaseAdmin
+      .from("follows")
+      .select("status, person:profiles!follows_followee_id_fkey(id, public_id, full_name)")
+      .eq("follower_id", userId)
+      .order("created_at", { ascending: false }),
+    // Approved followers, to mark the people who follow the user back.
+    supabaseAdmin.from("follows").select("follower_id").eq("followee_id", userId).eq("status", "approved"),
+  ]);
 
   type Row = {
     status: FollowStatus;
     person: { id: string; public_id: string; full_name: string | null } | null;
   };
   const followed = ((rows || []) as unknown as Row[]).filter((row) => row.person);
+  const followerIds = new Set((followerRows || []).map((row) => row.follower_id as string));
 
   const people: FollowPerson[] = followed.map((row) => ({
     public_id: row.person!.public_id,
     full_name: row.person!.full_name,
     status: row.status,
+    mutual: row.status === "approved" && followerIds.has(row.person!.id),
   }));
 
   const approvedOwners = new Map(

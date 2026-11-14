@@ -1,8 +1,8 @@
 // Gift profiles, birthdays and Follow back. Someone's sizes and likes show to
 // anyone with their links, but their birthday only to them and the followers
 // they approved. Those followers see it coming up on their Following page,
-// and get one email 10 days before it. Two people who follow each other are
-// friends, and a follower is one tap from following back.
+// and get one email 10 days before it. A follower is one tap from following
+// back, and two people who follow each other show as Mutual.
 
 import { expect, test, type Page } from "@playwright/test";
 import { createAccount, createWishlist, CRON_SECRET, db } from "./fixtures";
@@ -155,14 +155,15 @@ test("a follower is one tap from following back, and approving offers it too", a
   await page.getByRole("button", { name: "Approve" }).click();
   await expect(page.getByRole("button", { name: "Follow back Oz Asking" }).first()).toBeVisible();
 
-  // Once Max approves Glinda, they're friends.
+  // Once Max approves Glinda, they follow each other, so Max shows as Mutual
+  // in both Followers and Following.
   await db
     .from("follows")
     .update({ status: "approved", approved_at: new Date().toISOString() })
     .eq("follower_id", glinda.id)
     .eq("followee_id", max.id);
   await page.reload();
-  await expect(page.getByText("Friends", { exact: true })).toBeVisible();
+  await expect(page.getByText("Mutual", { exact: true })).toHaveCount(2);
 });
 
 test("someone fills in their gift profile on the Account page", async ({ page }) => {
