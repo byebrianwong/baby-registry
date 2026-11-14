@@ -10,6 +10,10 @@
 @custom-variant dark (&:is(.dark-mode *));
 @custom-variant label (& [data-label]);
 @custom-variant focus-input-within (&:has(input:focus));
+/* While a finger or mouse button is down on a React Aria component. React Aria
+   also holds data-pressed on a menu or popover trigger for as long as it's
+   open, so open triggers are left out: press feedback only lasts the press. */
+@custom-variant pressing (&[data-pressed]:not([aria-expanded="true"]));
 
 @theme inline {
   /* Fonts — use Geist loaded from next/font */
@@ -94,5 +98,21 @@ input[type="search"]::-webkit-search-cancel-button {
   h2 {
     font-family: var(--font-display);
     letter-spacing: -0.015em;
+  }
+
+  /* Phones can't hover, so `hover:` styles never show there, and Tailwind's
+     preflight turns off the browser's grey tap flash. So a tap gave no sign
+     it landed. On touch screens, dim anything tappable while a finger is on
+     it. React Aria components set data-pressed, which follows the finger more
+     closely than :active, so they use that instead, minus open triggers (see
+     the pressing variant above). The shared Button has its
+     own pressed style and opts out with opacity-100: utilities win over base
+     styles, so hidden things (opacity-0) stay hidden too. Each selector needs
+     more weight than preflight's `button { opacity: 1 }`. */
+  @media (hover: none) {
+    :where(a[href], button, summary, [role="button"], [role="link"], [role="tab"], [role="menuitem"], [role="menuitemradio"], [role="menuitemcheckbox"], [role="option"]):where(:not([data-rac], :disabled, [aria-disabled="true"])):active,
+    [data-rac][data-pressed]:where(:not([data-disabled], [aria-expanded="true"])) {
+      opacity: 0.7;
+    }
   }
 }

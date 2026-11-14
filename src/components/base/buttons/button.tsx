@@ -7,6 +7,13 @@ import { Button as AriaButton, Link as AriaLink } from "react-aria-components";
 import { cx, sortCx } from "@/lib/utils/cx";
 import { isReactComponent } from "@/lib/utils/is-react-component";
 
+// Phones can't hover, so `hover:` styles never show there. While a finger or mouse button is down
+// (the `pressing:` variant in globals.css), filled buttons shrink a little and change color, which
+// makes a tap feel like a press. `pressing:` leaves out a menu or popover trigger that's open, which
+// React Aria keeps pressed. `opacity-100` keeps buttons out of the dimming that globals.css gives
+// other tappable things on touch screens.
+const pressed = "pressing:scale-[0.97] pressing:opacity-100";
+
 export const styles = sortCx({
     common: {
         root: [
@@ -57,6 +64,8 @@ export const styles = sortCx({
         primary: {
             root: [
                 "bg-brand-solid text-white shadow-xs-skeumorphic ring-1 ring-transparent ring-inset hover:bg-brand-solid_hover data-loading:bg-brand-solid_hover",
+                pressed,
+                "pressing:bg-brand-solid_hover",
                 // Inner border gradient
                 "before:absolute before:inset-px before:border before:border-white/12 before:mask-b-from-0%",
                 // Disabled styles
@@ -68,6 +77,8 @@ export const styles = sortCx({
         secondary: {
             root: [
                 "bg-primary text-secondary shadow-xs-skeumorphic ring-1 ring-primary ring-inset hover:bg-primary_hover hover:text-secondary_hover data-loading:bg-primary_hover",
+                pressed,
+                "pressing:bg-tertiary pressing:text-secondary_hover",
                 // Disabled styles
                 "disabled:shadow-xs disabled:ring-disabled_subtle",
                 // Icon styles
@@ -77,24 +88,26 @@ export const styles = sortCx({
         tertiary: {
             root: [
                 "text-tertiary hover:bg-primary_hover hover:text-tertiary_hover data-loading:bg-primary_hover",
+                pressed,
+                "pressing:bg-tertiary pressing:text-tertiary_hover",
                 // Icon styles
                 "*:data-icon:text-fg-quaternary hover:*:data-icon:text-fg-quaternary_hover",
             ].join(" "),
         },
         "link-gray": {
             root: [
-                "justify-normal rounded p-0! max-sm:min-h-0 max-sm:data-icon-only:min-w-0 text-tertiary hover:text-tertiary_hover",
+                "justify-normal rounded p-0! max-sm:min-h-0 max-sm:data-icon-only:min-w-0 text-tertiary hover:text-tertiary_hover pressing:text-tertiary_hover",
                 // Inner text underline
-                "*:data-text:underline *:data-text:decoration-transparent *:data-text:underline-offset-2 hover:*:data-text:decoration-current",
+                "*:data-text:underline *:data-text:decoration-transparent *:data-text:underline-offset-2 hover:*:data-text:decoration-current pressing:*:data-text:decoration-current",
                 // Icon styles
                 "*:data-icon:text-fg-quaternary hover:*:data-icon:text-fg-quaternary_hover",
             ].join(" "),
         },
         "link-color": {
             root: [
-                "justify-normal rounded p-0! max-sm:min-h-0 max-sm:data-icon-only:min-w-0 text-brand-secondary hover:text-brand-secondary_hover",
+                "justify-normal rounded p-0! max-sm:min-h-0 max-sm:data-icon-only:min-w-0 text-brand-secondary hover:text-brand-secondary_hover pressing:text-brand-secondary_hover",
                 // Inner text underline
-                "*:data-text:underline *:data-text:decoration-transparent *:data-text:underline-offset-2 hover:*:data-text:decoration-current",
+                "*:data-text:underline *:data-text:decoration-transparent *:data-text:underline-offset-2 hover:*:data-text:decoration-current pressing:*:data-text:decoration-current",
                 // Icon styles
                 "*:data-icon:text-fg-brand-secondary_alt hover:*:data-icon:text-fg-brand-secondary_hover",
             ].join(" "),
@@ -102,6 +115,8 @@ export const styles = sortCx({
         "primary-destructive": {
             root: [
                 "bg-error-solid text-white shadow-xs-skeumorphic ring-1 ring-transparent outline-error ring-inset hover:bg-error-solid_hover data-loading:bg-error-solid_hover",
+                pressed,
+                "pressing:bg-error-solid_hover",
                 // Inner border gradient
                 "before:absolute before:inset-px before:border before:border-white/12 before:mask-b-from-0%",
                 // Disabled styles
@@ -113,6 +128,8 @@ export const styles = sortCx({
         "secondary-destructive": {
             root: [
                 "bg-primary text-error-primary shadow-xs-skeumorphic ring-1 ring-error_subtle outline-error ring-inset hover:bg-error-primary hover:text-error-primary_hover data-loading:bg-error-primary",
+                pressed,
+                "pressing:bg-error-primary pressing:text-error-primary_hover",
                 // Disabled styles
                 "disabled:bg-primary disabled:shadow-xs disabled:ring-disabled_subtle",
                 // Icon styles
@@ -122,15 +139,17 @@ export const styles = sortCx({
         "tertiary-destructive": {
             root: [
                 "text-error-primary outline-error hover:bg-error-primary hover:text-error-primary_hover data-loading:bg-error-primary",
+                pressed,
+                "pressing:bg-error-primary pressing:text-error-primary_hover",
                 // Icon styles
                 "*:data-icon:text-fg-error-secondary hover:*:data-icon:text-fg-error-primary",
             ].join(" "),
         },
         "link-destructive": {
             root: [
-                "justify-normal rounded p-0! max-sm:min-h-0 max-sm:data-icon-only:min-w-0 text-error-primary outline-error hover:text-error-primary_hover",
+                "justify-normal rounded p-0! max-sm:min-h-0 max-sm:data-icon-only:min-w-0 text-error-primary outline-error hover:text-error-primary_hover pressing:text-error-primary_hover",
                 // Inner text underline
-                "*:data-text:underline *:data-text:decoration-transparent *:data-text:underline-offset-2 hover:*:data-text:decoration-current",
+                "*:data-text:underline *:data-text:decoration-transparent *:data-text:underline-offset-2 hover:*:data-text:decoration-current pressing:*:data-text:decoration-current",
                 // Icon styles
                 "*:data-icon:text-fg-error-secondary hover:*:data-icon:text-fg-error-primary",
             ].join(" "),
