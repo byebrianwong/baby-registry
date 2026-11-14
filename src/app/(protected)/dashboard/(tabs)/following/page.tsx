@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { FollowingFeed } from "@/components/following-feed";
 import { listFollowingFeed } from "@/lib/follows";
+import { listUpcomingBirthdays } from "@/lib/birthdays-server";
 import { listRegistriesSharedWithViewer } from "@/lib/groups-server";
 import { getSessionUser } from "@/lib/viewer";
 
@@ -17,10 +18,12 @@ export default async function FollowingPage() {
     redirect("/signup?redirect=/dashboard/following");
   }
 
-  const [feed, shared] = await Promise.all([
+  const today = new Date().toISOString().slice(0, 10);
+  const [feed, shared, birthdays] = await Promise.all([
     listFollowingFeed(user.id),
     // An email counts for group membership only once it's confirmed.
     listRegistriesSharedWithViewer({ id: user.id, email: user.email_confirmed_at ? user.email : null }),
+    listUpcomingBirthdays(user.id, today),
   ]);
 
   return (
@@ -28,7 +31,8 @@ export default async function FollowingPage() {
       people={feed.people}
       registries={feed.registries}
       shared={shared}
-      today={new Date().toISOString().slice(0, 10)}
+      birthdays={birthdays}
+      today={today}
     />
   );
 }

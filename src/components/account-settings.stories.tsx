@@ -44,6 +44,8 @@ const meta: Meta<typeof AccountSettings> = {
     registries,
     saveAction: mockSave as never,
     listAction: mockList as never,
+    giftProfileAction: mockSave,
+    birthdayEmailsAction: mockList,
     deleteAccountActions: {
       loadSummary: async () => ({ deleted: [], handedOver: [], leaving: [], events: 0 }),
       deleteAction: async () => ({}),
@@ -53,7 +55,8 @@ const meta: Meta<typeof AccountSettings> = {
 export default meta;
 type Story = StoryObj<typeof AccountSettings>;
 
-// A new account: findable by name and email, no followers yet.
+// A new account: findable by name and email, no followers yet, an empty gift
+// profile and birthday emails on.
 export const NewAccount: Story = {
   args: {
     profile: {
@@ -63,6 +66,8 @@ export const NewAccount: Story = {
       findable_by_email: true,
     },
     follows: { requests: [], followers: [], following: [] },
+    giftProfile: {},
+    birthdayEmails: true,
   },
 };
 

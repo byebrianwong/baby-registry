@@ -16,6 +16,8 @@ import {
   managerInviteHtml,
   followRequestHtml,
   followInviteHtml,
+  birthdayReminderHtml,
+  birthdayReminderSubject,
   eventInvitationHtml,
   rsvpGuestConfirmationHtml,
   rsvpHostNotificationHtml,
@@ -592,6 +594,52 @@ export const FollowInvite: Story = {
     html: followInviteHtml({
       inviterName: "Grandma Dorothy",
       inviteUrl: "https://regibee.com/follow-invite/abc123",
+    }),
+  },
+};
+
+// ── Birthdays ────────────────────────────────────────────────
+
+const sampleBirthdays = [
+  {
+    name: "Glinda Upland",
+    date: "2026-03-03",
+    linkUrl: "https://regibee.com/r/glindas-wishlist-7k2m",
+    linkTo: "list" as const,
+  },
+  {
+    name: "Toto",
+    date: "2026-03-03",
+    parentName: "Dorothy Gale",
+    linkUrl: "https://regibee.com/r/totos-wishlist-4n8p",
+    linkTo: "list" as const,
+  },
+];
+
+// Ten days before a followed person's birthday.
+export const BirthdayReminder: Story = {
+  args: {
+    subject: birthdayReminderSubject(sampleBirthdays.slice(0, 1), 10),
+    to: "max@example.com",
+    html: birthdayReminderHtml({
+      toName: "Max",
+      days: 10,
+      birthdays: sampleBirthdays.slice(0, 1),
+      settingsUrl: "https://regibee.com/dashboard/account#birthday-emails",
+    }),
+  },
+};
+
+// Two birthdays on the same day go in one email, as a list.
+export const BirthdayReminderSeveral: Story = {
+  args: {
+    subject: birthdayReminderSubject(sampleBirthdays, 10),
+    to: "max@example.com",
+    html: birthdayReminderHtml({
+      toName: "Max",
+      days: 10,
+      birthdays: sampleBirthdays,
+      settingsUrl: "https://regibee.com/dashboard/account#birthday-emails",
     }),
   },
 };

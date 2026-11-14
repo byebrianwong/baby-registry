@@ -18,6 +18,9 @@ import {
   managerInviteHtml,
   followRequestHtml,
   followInviteHtml,
+  birthdayReminderHtml,
+  birthdayReminderSubject,
+  type BirthdayReminderEntry,
   completionDiscountOwnerHtml,
   eventInvitationHtml,
   rsvpGuestConfirmationHtml,
@@ -635,6 +638,37 @@ export async function sendFollowInviteEmail(opts: { toEmail: string; inviterName
     });
   } catch (err) {
     console.error("[email] Failed to send follow invite:", err);
+  }
+}
+
+// ── Birthdays ────────────────────────────────────────────────
+
+/**
+ * The daily birthday reminder (src/lib/birthdays-server.ts). The caller logs
+ * it first, and checks the reader's opt-out. False when it couldn't be sent,
+ * so the caller can let a later run try again.
+ */
+export async function sendBirthdayReminder(opts: {
+  toEmail: string;
+  toName: string | null;
+  days: number;
+  birthdays: BirthdayReminderEntry[];
+  settingsUrl: string;
+}): Promise<boolean> {
+  try {
+    await sendEmail({
+      from: FROM,
+      to: TEST_RECIPIENT_OVERRIDE || opts.toEmail,
+      subject: birthdayReminderSubject(
+        opts.birthdays.map((b) => ({ name: b.name.slice(0, 60) })),
+        opts.days,
+      ),
+      html: birthdayReminderHtml(opts),
+    });
+    return true;
+  } catch (err) {
+    console.error("[email] Failed to send a birthday reminder:", err);
+    return false;
   }
 }
 

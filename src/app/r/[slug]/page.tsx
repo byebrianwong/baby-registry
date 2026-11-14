@@ -39,6 +39,8 @@ import { ReservationsHiddenNotice } from "@/components/reservations-hidden-notic
 import { FellowGuestsNotice } from "@/components/fellow-guests-notice";
 import type { OpenGift } from "@/components/reserve-item-dialog";
 import { GuestPrefillProvider, type GuestPrefill } from "@/components/guest-prefill-context";
+import { GiftProfileCard } from "@/components/gift-profile-card";
+import { parseGiftProfile, withoutBirthday, type GiftProfile } from "@/lib/gift-profile";
 import { itemsHiddenFromOwner, loadListItems } from "@/lib/list-items";
 import { canManageRegistry } from "@/lib/events-server";
 import { myGroupGiftsOnItems } from "@/lib/group-gifts-server";
@@ -109,6 +111,30 @@ async function loadOwner(listedOnProfile: boolean, ownerId: string) {
     },
     ownerRelation,
   };
+}
+
+// The gift profile shown above a personal wish list's items. A list kept for
+// a child has its own, in its settings. Other wish lists show their owner's.
+// Baby registries show none.
+async function loadGiftProfile(registry: {
+  registry_type: string | null;
+  owner_id: string;
+  settings: unknown;
+}): Promise<GiftProfile | null> {
+  if (registry.registry_type !== "personal") return null;
+  const settings = (registry.settings && typeof registry.settings === "object" ? registry.settings : {}) as Record<
+    string,
+    unknown
+  >;
+  if (settings.for_child === true) return parseGiftProfile(settings.gift_profile);
+  // Errors until 20261112062844_gift_profiles_and_birthday_reminders.sql has
+  // run, which counts as no profile.
+  const { data, error } = await supabaseAdmin
+    .from("profiles")
+    .select("gift_profile")
+    .eq("id", registry.owner_id)
+    .maybeSingle();
+  return error ? null : parseGiftProfile(data?.gift_profile);
 }
 
 // A guest who came from a gift link on their event invitation (the event
@@ -299,6 +325,7 @@ export default async function PublicRegistryPage({
     { data: cashFunds },
     { prefill: guestPrefill, santaFor, eventTitle: guestEventTitle, guest: eventGuest },
     viewerManages,
+    fullGiftProfile,
   ] = await Promise.all([
     loadOwner(Boolean(registry.listed_on_profile), registry.owner_id),
     supabaseAdmin
@@ -315,7 +342,16 @@ export default async function PublicRegistryPage({
       .eq("registry_id", registry.id),
     loadGuestPrefill(registry.id),
     viewer ? canManageRegistry(viewer.id, registry.id) : Promise.resolve(false),
+    loadGiftProfile(registry),
   ]);
+
+  // The birthday shows only to the owner and the followers they approved.
+  // An unlisted list doesn't say whose it is, so only its owner sees it there.
+  const showBirthday =
+    (viewer !== null && viewer.id === registry.owner_id) ||
+    (Boolean(owner) && ownerRelation?.state === "approved");
+  const giftProfile =
+    fullGiftProfile && (showBirthday ? fullGiftProfile : withoutBirthday(fullGiftProfile));
 
   // The owner can hide what's been reserved from themselves (src/lib/gifts.ts).
   // When they open their own list's page, it shows nothing reserved, the same
@@ -612,6 +648,14 @@ export default async function PublicRegistryPage({
             eventTitle={fellowGuests.eventTitle}
             eventHref={`/e/${fellowGuests.eventSlug}`}
             ownerName={fellowGuests.listOwner ?? (registry.honoree_names?.trim() || registry.parent_names?.trim() || null)}
+          />
+        )}
+        {giftProfile && (
+          <GiftProfileCard
+            className="mx-auto mb-8 max-w-2xl"
+            profile={giftProfile}
+            name={honoreeDisplayName(registry, owner?.name ?? "this list's owner")}
+            showBirthday={showBirthday}
           />
         )}
         <GuestPrefillProvider value={guestPrefill}>

@@ -6,6 +6,7 @@ import type { SearchResponse, SearchResult } from "@/lib/actions/follows";
 import type { FollowPerson, PersonSummary } from "@/lib/follows";
 import { looksLikeEmail } from "@/lib/email-address";
 import { profilePath } from "@/lib/profile-link";
+import { addDays, type GiftProfile, type UpcomingBirthday } from "@/lib/gift-profile";
 
 export interface DemoPerson extends PersonSummary {
   full_name: string;
@@ -143,3 +144,30 @@ export async function demoSearchPeople(rawQuery: string): Promise<SearchResponse
 
 /** Every follow action in the demo works and changes nothing. */
 export const demoOk = async (..._args: unknown[]) => ({ success: true as const });
+
+/** The demo account's own gift profile, as the Account page shows it. */
+export const DEMO_GIFT_PROFILE: GiftProfile = {
+  birthday: { month: 6, day: 14 },
+  sizes: { tops: "M", shoes: "9" },
+  colors: "Sage green, mustard",
+  likes: ["Coffee", "Houseplants", "Board games"],
+  skip: ["Candles"],
+};
+
+/**
+ * Birthdays coming up for the people the demo account follows, counted from
+ * the demo's today. Glinda approved, so hers shows. Elphaba hasn't, so hers
+ * doesn't.
+ */
+export function demoUpcomingBirthdays(today: string): UpcomingBirthday[] {
+  const date = addDays(today, 4);
+  return [
+    {
+      key: "glinda",
+      name: DEMO_GLINDA.full_name,
+      date,
+      href: profilePath(DEMO_GLINDA),
+      linkTo: "profile",
+    },
+  ];
+}

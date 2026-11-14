@@ -5,6 +5,7 @@
 
 import { answerLabel } from "@/lib/rsvp-questions";
 import { formatPrice } from "@/lib/money";
+import { formatBirthdayDate } from "@/lib/gift-profile";
 
 // Every value that goes into an email is escaped: guests type names, messages
 // and suggestions on a public page, and owners and managers set titles, names,
@@ -417,6 +418,81 @@ export function followInviteHtml(opts: {
     </p>
     <p style="color:#888;font-size:13px;">Or copy this link: ${inviteUrl}</p>
     <p style="color:#888;font-size:13px;">You're getting this because ${name} entered your email address on Regibee. If you don't know them, you can ignore this email. The invite expires in 30 days.</p>
+  `;
+}
+
+// ── Birthdays ────────────────────────────────────────────────
+
+export interface BirthdayReminderEntry {
+  /** "Glinda Upland", or a child's name. */
+  name: string;
+  /** The birthday, YYYY-MM-DD. */
+  date: string;
+  /** For a child's list: the parent who keeps it. */
+  parentName?: string;
+  linkUrl: string;
+  /** What the link opens: their wish list, or their profile. */
+  linkTo: "list" | "profile";
+}
+
+/** "Glinda", "Glinda and Oz", "Glinda, Oz and Toto". */
+function joinNames(names: string[]): string {
+  if (names.length <= 1) return names.join("");
+  return `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`;
+}
+
+/** The subject of a birthday reminder. */
+export function birthdayReminderSubject(birthdays: { name: string }[], days: number): string {
+  const names = birthdays.map((b) => b.name);
+  return names.length === 1
+    ? `${names[0]}'s birthday is in ${days} days`
+    : `${joinNames(names)} have birthdays in ${days} days`;
+}
+
+/**
+ * Sent 10 days before the birthday of someone the reader follows, who
+ * approved them. One email covers every birthday on that day.
+ */
+export function birthdayReminderHtml(opts: {
+  toName: string | null;
+  days: number;
+  birthdays: BirthdayReminderEntry[];
+  settingsUrl: string;
+}): string {
+  const linkLabel = (b: BirthdayReminderEntry) =>
+    b.linkTo === "list" ? `See ${b.name}'s wish list` : `See ${b.name}'s profile`;
+  const whose = (b: BirthdayReminderEntry) =>
+    `<strong>${escapeHtml(b.name)}</strong>${b.parentName ? ` (${escapeHtml(b.parentName)}'s list)` : ""}`;
+
+  const body =
+    opts.birthdays.length === 1
+      ? (() => {
+          const b = opts.birthdays[0];
+          return `
+    <p>${whose(b)} has a birthday in ${opts.days} days, on ${escapeHtml(formatBirthdayDate(b.date))}.</p>
+    <p>${
+      b.linkTo === "list"
+        ? "Their wish list shows what they'd love and what's already taken, with their sizes and the things to skip."
+        : "Their profile has their wish lists, their sizes and the things to skip."
+    }</p>
+    <p style="margin: 24px 0;">${buttonLink(b.linkUrl, linkLabel(b))}</p>`;
+        })()
+      : `
+    <p>These birthdays are in ${opts.days} days, on ${escapeHtml(formatBirthdayDate(opts.birthdays[0].date))}:</p>
+    <ul style="padding-left: 20px;">
+      ${opts.birthdays
+        .map(
+          (b) =>
+            `<li style="margin-bottom: 8px;">${whose(b)}: <a href="${escapeHtml(b.linkUrl)}" style="color:#004659;">${escapeHtml(linkLabel(b))}</a></li>`,
+        )
+        .join("\n      ")}
+    </ul>
+    <p>Each wish list shows what they'd love and what's already taken.</p>`;
+
+  return `
+    <p>Hi ${escapeHtml(opts.toName || "there")},</p>
+    ${body}
+    <p style="color:#888;font-size:13px;">You're getting this because you follow ${opts.birthdays.length === 1 ? "them" : "these people"} on Regibee and they shared their birthday with their followers. <a href="${escapeHtml(opts.settingsUrl)}" style="color:#888;">Turn off birthday emails</a></p>
   `;
 }
 

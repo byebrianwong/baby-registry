@@ -1,7 +1,7 @@
 "use client";
 
 import { FollowingFeed } from "@/components/following-feed";
-import { DEMO_FOLLOWS, demoOk, demoSearchPeople } from "@/lib/demo-people";
+import { DEMO_FOLLOWS, demoOk, demoSearchPeople, demoUpcomingBirthdays } from "@/lib/demo-people";
 import { demoFeedRegistries } from "@/lib/demo-registries";
 import { useDemoToday } from "../../demo-today";
 import { DemoOwnerShell } from "../../_components/demo-shell";
@@ -16,6 +16,7 @@ export default function DemoFollowingPage() {
       <FollowingFeed
         people={DEMO_FOLLOWS.following}
         registries={demoFeedRegistries(today, approvedIds)}
+        birthdays={demoUpcomingBirthdays(today)}
         today={today}
         searchAction={demoSearchPeople}
         inviteAction={demoOk}

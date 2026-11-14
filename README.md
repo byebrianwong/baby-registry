@@ -55,7 +55,10 @@ A gift registry app built with Next.js, Supabase, and Tailwind CSS. It started a
 - **Finding people** - The Following page searches by name, for people who chose to show up in search, or by a whole email address, for people who turned on email search. Email addresses are never shown. When an address finds nobody, you can email it a follow invite (`/follow-invite/<token>`), which the person accepts after signing in or signing up.
 - **You choose which registries appear** - Each registry has a "Show on my profile" option. Only the owner can turn it on, and it starts off.
 - **Follows need approval** - Following someone sends them a request. They approve or decline it on their Account page, and can get an email about it (at most one a day from the same person). Approved followers see private registries on the profile. Everyone else sees only the public ones.
-- **Following page** - `/dashboard/following` lists the registries of people who approved your follow, grouped into "Coming up", "Anytime" and "Past events".
+- **Following page** - `/dashboard/following` lists the registries of people who approved your follow, grouped into "Coming up", "Anytime" and "Past events". Above them, "Birthdays coming up" lists the birthdays in the next 30 days of people who approved your follow, and of the children whose lists they show on their profiles.
+- **Gift profiles** - On the Account page, anyone can add their birthday (month and day), sizes, favorite colors, likes, things to skip and notes. Sizes, likes and the rest show on their personal wish lists and their profile, so anyone with those links sees them. The birthday shows only to them and the followers they approved. A list kept for a child ("I keep this list for my child") gets its own gift profile on its Settings page.
+- **Birthday emails** - Ten days before the birthday of someone you follow, who approved you, a daily job (`/api/cron/birthdays`) emails you a link to their wish list or profile. Each email is logged in `reminder_log`, so it's never sent twice. Turn them off on the Account page.
+- **Follow back and friends** - Approving a request, or answering a follow invite, offers a one-tap "Follow back", and so do your followers on the Account page and a follower's profile. Following back is a request like any other. Two people who follow each other are friends.
 - **People search** - Search by name or username on the Following page. Only people who turned on "Show me in people search" appear. If you're searchable, your own profile shows up too, labeled "That's you".
 - **Follow from a registry** - A registry that's shown on its owner's profile says who shared it and has a Follow button.
 - **Blocking** - Blocking someone removes any follow between you, stops their follow requests, and hides your profile and search result from them while they're signed in.
@@ -248,7 +251,7 @@ Fourteen tables, all with Row Level Security turned on:
 | `NEXT_PUBLIC_SITE_URL` | Client + Server | The site's address, used in links in emails. Defaults to `http://localhost:3000` |
 | `RESEND_API_KEY` | Server only | Resend key for notification emails |
 | `RESEND_TEST_RECIPIENT` | Server only | Optional. Sends every email to this address instead, for testing |
-| `CRON_SECRET` | Server only | Needed by the two daily jobs in `vercel.json`. Vercel Cron sends it, and without it the jobs don't run: no reservation reminders, no releasing reservations that ran out, no completion discount emails |
+| `CRON_SECRET` | Server only | Needed by the four daily jobs in `vercel.json`. Vercel Cron sends it, and without it the jobs don't run: no reservation reminders, no releasing reservations that ran out, no completion discount emails, no event reminders the day before, no birthday reminders |
 | `EMAIL_TRANSPORT`, `MAILPIT_URL` | Server only | End-to-end tests only. `mailpit` sends every email to the local Mailpit inbox instead of Resend. See [e2e/README.md](e2e/README.md) |
 
 For how the live site, database and visual tests are run, see [CLAUDE.md](CLAUDE.md).

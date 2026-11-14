@@ -5,7 +5,9 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Logo } from "@/components/logo";
+import { FollowBackButton } from "@/components/follow-button";
 import { acceptFollowInvite, declineFollowInvite } from "@/lib/actions/follow-invites";
+import { requestFollow } from "@/lib/actions/follows";
 import type { PersonSummary } from "@/lib/follows";
 import { displayName, profilePath } from "@/lib/profile-link";
 
@@ -19,6 +21,8 @@ export function FollowInviteCard({
   logoHref = "/",
   acceptAction = acceptFollowInvite,
   declineAction = declineFollowInvite,
+  followingInviter = null,
+  followAction = requestFollow,
 }: {
   view: FollowInviteView;
   /** Null when the link doesn't match an invite. */
@@ -27,6 +31,10 @@ export function FollowInviteCard({
   logoHref?: string;
   acceptAction?: typeof acceptFollowInvite;
   declineAction?: typeof declineFollowInvite;
+  /** How the signed-in person follows the inviter already: null when they don't. */
+  followingInviter?: "pending" | "approved" | null;
+  /** Follows the inviter back. */
+  followAction?: typeof requestFollow;
 }) {
   const [view, setView] = useState<FollowInviteView | "accepted" | "declined">(initialView);
   const [busy, setBusy] = useState(false);
@@ -90,10 +98,26 @@ export function FollowInviteCard({
       break;
     case "accepted":
       title = `${name} follows you now`;
-      body = <>They&apos;ll see the registries you show on your profile. You choose which ones on your account page.</>;
+      body = (
+        <>
+          They&apos;ll see the registries you show on your profile, and your birthday if you add it. You
+          choose which registries on your account page.
+          {inviter && followingInviter !== "approved" && (
+            <> Follow {name} back to see theirs. When you follow each other, you&apos;re friends.</>
+          )}
+        </>
+      );
       actions = (
         <>
-          <Button asChild>
+          {inviter && (
+            <FollowBackButton
+              publicId={inviter.public_id}
+              name={name}
+              status={followingInviter}
+              requestAction={followAction}
+            />
+          )}
+          <Button variant="outline" asChild>
             <Link href="/dashboard/account">Choose registries</Link>
           </Button>
           {inviter && (
