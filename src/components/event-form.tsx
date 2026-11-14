@@ -753,7 +753,7 @@ export function EventForm({
             isSelected={notifyGuests}
             onChange={setNotifyGuests}
             label={<span className="font-medium">Email guests about the {changeSummary(changes).replace(/^New /, "new ")}</span>}
-            hint="Everyone who said yes or maybe, and everyone invited who hasn't answered, gets the new details. Untick this for a small fix, like a typo."
+            hint="Everyone who said yes or maybe, and everyone invited who hasn't answered, gets the new details, and a line on the invitation says what changed. Untick this for a small fix, like a typo."
           />
         </div>
       )}

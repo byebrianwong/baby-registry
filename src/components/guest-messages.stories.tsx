@@ -70,6 +70,37 @@ export const WithHistory: Story = {};
 /** Nothing sent yet, and the host turned the reminder off. */
 export const NothingSentYet: Story = { args: { messages: [], remindDayBefore: false } };
 
+/**
+ * The host texted everyone the link, so nobody on the list has an email
+ * address. A message is posted on the invitation only.
+ */
+export const NoEmailAddresses: Story = {
+  args: {
+    counts: { going: 0, going_maybe: 0, not_declined: 0 },
+    messages: [
+      {
+        id: "m4",
+        event_id: sampleEvent.id,
+        sent_by: sampleEvent.owner_id,
+        kind: "message",
+        audience: "going",
+        subject: "Parking for Saturday",
+        body: "Park on Rose Street and come in through the side gate.",
+        recipients: 0,
+        created_at: "2026-03-12T02:30:00Z",
+      },
+    ],
+    sendAction: fn(async () => ({ error: null, sent: 0 })),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByText(/Invitation only/)).toBeInTheDocument();
+    await userEvent.click(canvas.getByRole("button", { name: "Message everyone going" }));
+    const dialog = within(await screen.findByRole("dialog"));
+    await expect(dialog.getByRole("button", { name: "Post on the invitation" })).toBeInTheDocument();
+  },
+};
+
 /** Writing to everyone going. The choices say how many guests each one reaches. */
 export const WritingAMessage: Story = {
   play: async ({ canvasElement }) => {

@@ -204,8 +204,9 @@ export function PrivacyPolicy({ nav }: { nav: React.ReactNode }) {
             <P>
               For an event you add its details, which can include a date, a place and its address, a message, a gift
               note and an invitation picture, questions to ask when guests RSVP, a sign-up sheet, and a guest list
-              with names and email addresses. We keep a copy of the messages you email guests, so you can see what
-              you sent. You can link
+              with names and email addresses. We keep a copy of the messages you send guests, so you can see what
+              you sent, and show them on the event&apos;s page, with a line when its date, time or place changes, so
+              guests without email see them too. You can link
               registries to it, yours or anyone else&apos;s you have the link to, and we email a registry&apos;s
               owners when you link it. Guests opening the event&apos;s link see its details. Event pages are hidden
               from search engines.
