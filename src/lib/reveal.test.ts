@@ -47,7 +47,7 @@ test("reveal dates are formatted in UTC, with the year only when it isn't this o
 
 test("the database reveals at the same hour as src/lib/reveal.ts", () => {
   const sql = readFileSync(
-    new URL("../../supabase/migrations/20261112063128_everyone_gives_everyone.sql", import.meta.url),
+    new URL("../../supabase/migrations/20261114035445_everyone_gives_everyone.sql", import.meta.url),
     "utf8",
   );
   assert.match(sql, /\(e\.event_date \+ 1\)::timestamp \+ interval '12 hours'\) at time zone 'UTC'/);

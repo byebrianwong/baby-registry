@@ -1218,6 +1218,10 @@ export async function toggleParentPurchased(
     return { error: "Item not found" };
   }
 
+  // A database trigger sets quantity_fulfilled whenever is_parent_purchased
+  // changes, so unmarking keeps guests' gifts counted
+  // (20261113213004_gift_counts.sql). The value sent here only applies until
+  // that migration runs.
   const { data: updated, error } = await supabase
     .from("registry_items")
     .update({
@@ -1273,6 +1277,11 @@ export async function contributeToCashFund(formData: FormData) {
   const buyerName = formData.get("buyerName") as string;
   const buyerEmail = formData.get("buyerEmail") as string;
   const message = formData.get("message") as string;
+
+  // reserve_cash_fund refuses these too (20261113213004_gift_counts.sql).
+  if (!Number.isFinite(amount) || amount <= 0) {
+    return { error: "Enter an amount above $0." };
+  }
 
   // Ensure the gift giver has at least an anonymous session
   const {

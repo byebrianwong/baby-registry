@@ -43,6 +43,24 @@ export function isExpiredReservation(p: PurchaseLike, now = Date.now()): boolean
   return isOpenReservation(p) && new Date(p.reserved_until!).getTime() <= now;
 }
 
+/**
+ * A group gift's reservation (src/lib/group-gifts.ts) is held until its
+ * organizer buys it, not for GIFT_HOLD_DAYS. Its reserved_until is set this
+ * far out only so a forgotten one goes back on the list in the end.
+ */
+export const GROUP_GIFT_HOLD_DAYS = 365;
+
+/** Ordinary reservations are held 30 days at most (reserve_registry_item). */
+const LONGEST_DATED_HOLD_MS = 31 * 24 * 60 * 60 * 1000;
+
+/**
+ * True for a reservation held until it's bought, like a group gift's. Pages
+ * show it as reserved with no end date, since the far-off date means nothing.
+ */
+export function isHeldUntilBought(p: PurchaseLike, now = Date.now()): boolean {
+  return isOpenReservation(p) && new Date(p.reserved_until!).getTime() - now > LONGEST_DATED_HOLD_MS;
+}
+
 export function toMyItemGift(p: PurchaseLike & { id: string; quantity?: number | null }): MyItemGift {
   const open = isOpenReservation(p);
   return {
@@ -159,7 +177,7 @@ export function fundAsUnpledged<T extends { current_amount: number }>(fund: T): 
 // When a list that hides reservations is linked to an event, its owner sees
 // the gifts reserved before the event from the day after it, for thank-you
 // notes. The database works out the moment (gifts_revealed_through in
-// supabase/migrations/20261112063128_everyone_gives_everyone.sql) and stops
+// supabase/migrations/20261114035445_everyone_gives_everyone.sql) and stops
 // the owner reading anything later. These helpers show the owner the gifts
 // that are revealed and nothing else, whatever the rows say.
 

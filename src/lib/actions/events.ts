@@ -344,7 +344,7 @@ async function saveExchange(eventId: string, form: ExchangeForm): Promise<{ erro
     return { error: "Names have been drawn. To change how gifts work, undo the draw first." };
   }
   // kind is only sent when it matters, so a draw still saves on a database
-  // the 20261112063128 migration hasn't reached yet.
+  // the 20261114035445 migration hasn't reached yet.
   const values = {
     budget: form.budget,
     draw_by: form.draw_by,

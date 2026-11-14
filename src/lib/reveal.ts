@@ -3,7 +3,7 @@
 // it's linked to from the day after that event. Nothing here talks to the
 // database, so pages, emails and tests can all use it. The database has the
 // same rule in gifts_revealed_through
-// (supabase/migrations/20261112063128_everyone_gives_everyone.sql), and the
+// (supabase/migrations/20261114035445_everyone_gives_everyone.sql), and the
 // two must agree.
 
 const DAY_MS = 24 * 60 * 60 * 1000;

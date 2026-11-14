@@ -408,6 +408,8 @@ async function setBoughtMyself(itemId: string, bought: boolean, quantityNeeded: 
     return;
   }
   // The same as the website's toggleParentPurchased (src/lib/actions/registry.ts).
+  // A database trigger corrects quantity_fulfilled, so unmarking keeps guests'
+  // gifts counted (supabase/migrations/20261113213004_gift_counts.sql).
   const { error } = await supabase
     .from("registry_items")
     .update({

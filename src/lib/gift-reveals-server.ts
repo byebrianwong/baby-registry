@@ -7,7 +7,7 @@ import { addDays, REVEAL_HOUR_UTC, revealMomentFor } from "@/lib/reveal";
 // and is linked to an event, its owner sees the gifts reserved before the
 // event from the day after it (src/lib/reveal.ts). The database shows them
 // as soon as the moment passes (gifts_revealed_through in
-// 20261112063128_everyone_gives_everyone.sql). This job logs each reveal in
+// 20261114035445_everyone_gives_everyone.sql). This job logs each reveal in
 // gift_reveals, which keeps it in place if the event is later moved or
 // unlinked, and sends the owner one "your gifts are revealed" email.
 //
