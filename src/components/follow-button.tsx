@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { SwitchHorizontal01 } from "@untitledui/icons";
 import { Button } from "@/components/ui/button";
 import { cancelFollow, requestFollow } from "@/lib/actions/follows";
 
@@ -87,9 +88,27 @@ export function FollowToggle({
 }
 
 /**
- * One tap to follow back someone who follows you. Two people who follow each
- * other are friends, so once both follows are approved this says "Friends".
- * Following back is a request like any other: the other person approves it.
+ * Shows that the viewer and this person follow each other, with both follows
+ * approved. It says "Mutual", not "Friends": a one-way follow is often family
+ * too, like a grandparent following the parents, and calling only the two-way
+ * ones friends would suggest the others aren't.
+ */
+export function MutualBadge() {
+  return (
+    <span
+      title="You follow each other"
+      className="inline-flex shrink-0 items-center gap-1 self-center rounded-full bg-brand-primary px-2 py-0.5 text-xs font-medium text-brand-secondary"
+    >
+      <SwitchHorizontal01 aria-hidden="true" className="size-3" />
+      Mutual
+    </span>
+  );
+}
+
+/**
+ * One tap to follow back someone who follows you. Once both follows are
+ * approved, this shows the Mutual badge instead. Following back is a request
+ * like any other: the other person approves it.
  */
 export function FollowBackButton({
   publicId,
@@ -111,11 +130,7 @@ export function FollowBackButton({
   const [error, setError] = useState("");
 
   if (status === "approved") {
-    return (
-      <span className="inline-flex items-center self-center rounded-full bg-brand-primary px-2.5 py-0.5 text-xs font-medium text-brand-secondary">
-        Friends
-      </span>
-    );
+    return <MutualBadge />;
   }
   if (status === "pending") {
     return <span className="self-center text-sm text-tertiary">Requested</span>;
@@ -234,7 +249,7 @@ export function FollowButton({
     none: followsYou ? `${name} follows you. They approve every follower.` : `${name} approves every follower.`,
     pending: `Waiting for ${name} to approve.`,
     approved: followsYou
-      ? `You follow each other, so you're friends.`
+      ? `You follow each other, so you can see each other's private registries.`
       : `You can see ${name}'s private registries.`,
   }[state];
 

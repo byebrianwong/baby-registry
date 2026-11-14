@@ -17,7 +17,8 @@ const meta: Meta<typeof FollowingFeed> = {
     searchAction: mockSearch,
     inviteAction: mockInvite,
     people: [
-      { ...remiAndMax, status: "approved" },
+      // Remi & Max follow back. Alex doesn't.
+      { ...remiAndMax, status: "approved", mutual: true },
       { ...alex, status: "approved" },
       { public_id: "u2q6r8kd3m", full_name: "Tin Man", status: "pending" },
     ],

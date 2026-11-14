@@ -10,11 +10,17 @@ import { DemoOwnerShell } from "../../_components/demo-shell";
 export default function DemoFollowingPage() {
   const today = useDemoToday();
   const approvedIds = DEMO_FOLLOWS.following.filter((p) => p.status === "approved").map((p) => p.public_id);
+  // Marks the people who follow the demo account back, as listFollowingFeed does.
+  const people = DEMO_FOLLOWS.following.map((person) => ({
+    ...person,
+    mutual:
+      person.status === "approved" && DEMO_FOLLOWS.followers.some((f) => f.public_id === person.public_id),
+  }));
 
   return (
     <DemoOwnerShell tabs>
       <FollowingFeed
-        people={DEMO_FOLLOWS.following}
+        people={people}
         registries={demoFeedRegistries(today, approvedIds)}
         birthdays={demoUpcomingBirthdays(today)}
         today={today}

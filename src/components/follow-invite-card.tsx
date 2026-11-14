@@ -103,7 +103,7 @@ export function FollowInviteCard({
           They&apos;ll see the registries you show on your profile, and your birthday if you add it. You
           choose which registries on your account page.
           {inviter && followingInviter !== "approved" && (
-            <> Follow {name} back to see theirs. When you follow each other, you&apos;re friends.</>
+            <> Follow {name} back to see theirs.</>
           )}
         </>
       );
