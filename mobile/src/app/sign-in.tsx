@@ -5,6 +5,7 @@ import { useRef, useState } from "react";
 import { KeyboardAvoidingView, Platform, ScrollView, View, type TextInputInstance } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { AutofillFields } from "@/components/autofill-fields";
 import { Icon } from "@/components/icon";
 import { Button, Field, haptic, Text } from "@/components/ui";
 import { signIn, useSession } from "@/lib/auth";
@@ -73,29 +74,31 @@ export default function SignInScreen() {
         ) : null}
 
         <View style={{ gap: spacing.lg }}>
-          <Field
-            label="Email"
-            value={email}
-            onChangeText={setEmail}
-            autoCapitalize="none"
-            autoComplete="email"
-            keyboardType="email-address"
-            textContentType="emailAddress"
-            returnKeyType="next"
-            onSubmitEditing={() => passwordRef.current?.focus()}
-            submitBehavior="submit"
-          />
-          <Field
-            ref={passwordRef}
-            label="Password"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-            autoComplete="current-password"
-            textContentType="password"
-            returnKeyType="go"
-            onSubmitEditing={submit}
-          />
+          <AutofillFields>
+            <Field
+              label="Email"
+              value={email}
+              onChangeText={setEmail}
+              autoCapitalize="none"
+              autoComplete="email"
+              keyboardType="email-address"
+              textContentType="emailAddress"
+              returnKeyType="next"
+              onSubmitEditing={() => passwordRef.current?.focus()}
+              submitBehavior="submit"
+            />
+            <Field
+              ref={passwordRef}
+              label="Password"
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry
+              autoComplete="current-password"
+              textContentType="password"
+              returnKeyType="go"
+              onSubmitEditing={submit}
+            />
+          </AutofillFields>
           {error ? (
             <Text variant="footnote" tone="danger" accessibilityLiveRegion="polite">
               {error}

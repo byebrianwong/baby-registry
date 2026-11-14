@@ -3,6 +3,7 @@ import * as WebBrowser from "expo-web-browser";
 import { useRef, useState } from "react";
 import { KeyboardAvoidingView, Platform, ScrollView, View, type TextInputInstance } from "react-native";
 
+import { AutofillFields } from "@/components/autofill-fields";
 import { Button, EmptyState, Field, haptic, Section, SwitchRow, Text } from "@/components/ui";
 import { signUp } from "@/lib/auth";
 import { errorMessage } from "@/lib/data";
@@ -61,42 +62,44 @@ export default function SignUpScreen() {
   return (
     <KeyboardAvoidingView style={{ flex: 1, backgroundColor: theme.background }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
       <ScrollView contentContainerStyle={{ padding: spacing.xl, gap: spacing.lg }} keyboardShouldPersistTaps="handled" contentInsetAdjustmentBehavior="automatic">
-        <Field
-          label="Your name"
-          value={fullName}
-          onChangeText={setFullName}
-          autoCapitalize="words"
-          autoComplete="name"
-          textContentType="name"
-          returnKeyType="next"
-          onSubmitEditing={() => emailRef.current?.focus()}
-          submitBehavior="submit"
-        />
-        <Field
-          ref={emailRef}
-          label="Email"
-          value={email}
-          onChangeText={setEmail}
-          autoCapitalize="none"
-          autoComplete="email"
-          keyboardType="email-address"
-          textContentType="emailAddress"
-          returnKeyType="next"
-          onSubmitEditing={() => passwordRef.current?.focus()}
-          submitBehavior="submit"
-        />
-        <Field
-          ref={passwordRef}
-          label="Password"
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-          autoComplete="new-password"
-          textContentType="newPassword"
-          hint="At least 6 characters."
-          returnKeyType="go"
-          onSubmitEditing={submit}
-        />
+        <AutofillFields>
+          <Field
+            label="Your name"
+            value={fullName}
+            onChangeText={setFullName}
+            autoCapitalize="words"
+            autoComplete="name"
+            textContentType="name"
+            returnKeyType="next"
+            onSubmitEditing={() => emailRef.current?.focus()}
+            submitBehavior="submit"
+          />
+          <Field
+            ref={emailRef}
+            label="Email"
+            value={email}
+            onChangeText={setEmail}
+            autoCapitalize="none"
+            autoComplete="email"
+            keyboardType="email-address"
+            textContentType="emailAddress"
+            returnKeyType="next"
+            onSubmitEditing={() => passwordRef.current?.focus()}
+            submitBehavior="submit"
+          />
+          <Field
+            ref={passwordRef}
+            label="Password"
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry
+            autoComplete="new-password"
+            textContentType="newPassword"
+            hint="At least 6 characters."
+            returnKeyType="go"
+            onSubmitEditing={submit}
+          />
+        </AutofillFields>
         <Section>
           <SwitchRow
             icon="search"
