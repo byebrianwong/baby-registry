@@ -3,17 +3,18 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Check, Loader2 } from "lucide-react";
+import { ArrowLeft, Check, ClipboardList, Gift, Link2, Loader2, Mail, Shuffle, type LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/base/input/input";
 import { Checkbox } from "@/components/base/checkbox/checkbox";
+import { NativeSelect } from "@/components/base/select/select-native";
 import { startPlan, type PlanInput } from "@/lib/actions/events";
 import { themeForTint } from "@/lib/occasion-theme";
 import {
   AUDIENCE_LABELS,
-  GIFT_PLAN_LABELS,
   OCCASIONS,
-  giftPlansFor,
+  giftPlanLabel,
+  giftPlanRows,
   listTitleFor,
   nameLabelFor,
   occasionFor,
@@ -44,6 +45,8 @@ export interface PlanPickerState {
   gifts: GiftPlan | null;
   invitation: boolean;
   linkUrl: string;
+  /** One of your own lists, for "link". Picked instead of pasting a link. */
+  registryId: string;
   askEmail: string;
   title: string;
   date: string;
@@ -57,6 +60,7 @@ const EMPTY: PlanPickerState = {
   gifts: null,
   invitation: true,
   linkUrl: "",
+  registryId: "",
   askEmail: "",
   title: "",
   date: "",
@@ -67,12 +71,18 @@ function Choice({
   onClick,
   label,
   hint,
+  icon: Icon,
+  compact = false,
   className,
 }: {
   selected: boolean;
   onClick: () => void;
   label: string;
   hint?: string;
+  /** A main choice's picture. It turns into a check once chosen. */
+  icon?: LucideIcon;
+  /** A smaller choice, for the ones after the main few. */
+  compact?: boolean;
   className?: string;
 }) {
   return (
@@ -81,19 +91,42 @@ function Choice({
       aria-pressed={selected}
       onClick={onClick}
       className={cx(
-        "flex cursor-pointer flex-col items-start gap-0.5 rounded-xl border px-4 py-3 text-left transition outline-none focus-visible:ring-2 focus-visible:ring-brand-600",
+        "flex cursor-pointer items-start rounded-xl border text-left transition outline-none focus-visible:ring-2 focus-visible:ring-brand-600",
+        compact ? "px-3 py-2" : "px-4 py-3",
+        Icon ? "gap-3" : "flex-col gap-0.5",
         selected ? "border-brand-600 bg-brand-50" : "border-secondary hover:border-primary",
         className,
       )}
     >
-      <span className="flex items-center gap-2 font-medium text-primary">
-        {selected && <Check aria-hidden="true" className="size-4 text-brand-600" />}
-        {label}
+      {Icon && (
+        <span
+          aria-hidden="true"
+          className={cx(
+            "flex size-9 shrink-0 items-center justify-center rounded-full",
+            selected ? "bg-brand-600 text-white" : "bg-brand-50 text-brand-600",
+          )}
+        >
+          {selected ? <Check className="size-4" /> : <Icon className="size-4" />}
+        </span>
+      )}
+      <span className="flex flex-col gap-0.5">
+        <span className={cx("flex items-center gap-2 text-primary", compact ? "text-sm font-medium" : "font-semibold")}>
+          {selected && !Icon && <Check aria-hidden="true" className="size-4 text-brand-600" />}
+          {label}
+        </span>
+        {hint && <span className={cx("text-tertiary", compact ? "text-xs" : "text-sm")}>{hint}</span>}
       </span>
-      {hint && <span className="text-sm text-tertiary">{hint}</span>}
     </button>
   );
 }
+
+const PLAN_ICONS: Partial<Record<GiftPlan, LucideIcon>> = {
+  new_list: Gift,
+  link: Link2,
+  ask: Mail,
+  exchange: Shuffle,
+  signup: ClipboardList,
+};
 
 /**
  * "What are you planning?": the one New button's page. Three questions
@@ -102,11 +135,14 @@ function Choice({
  */
 export function PlanPicker({
   myName = "",
+  myLists = [],
   initial,
   startAction = startPlan,
 }: {
   /** The signed-in person's first name, for plans that are for them. */
   myName?: string;
+  /** The lists the signed-in person owns or manages, to link one without its link. */
+  myLists?: { id: string; title: string }[];
   /** Stories start partway through. */
   initial?: Partial<PlanPickerState>;
   /** Makes the plan. Stories pass a stand-in. */
@@ -119,7 +155,10 @@ export function PlanPicker({
 
   const occasion = state.occasion ? occasionFor(state.occasion) : null;
   const audiences = (occasion?.audiences ?? []) as readonly Audience[];
-  const giftPlans = state.audience ? giftPlansFor(state.audience, occasion) : [];
+  const giftRows = state.audience ? giftPlanRows(state.audience, occasion) : { main: [], other: [] };
+  // Someone else's list is theirs, so it's pasted. Every other plan can pick one of yours.
+  const pickableLists = state.audience === "someone" ? [] : myLists;
+  const pickedList = myLists.find((l) => l.id === state.registryId) ?? null;
   // A meal train has no day of its own; the date is its first drop-off day.
   const mealTrain = state.occasion === "meal_train";
   const nameLabel = state.audience ? nameLabelFor(state.audience) : null;
@@ -181,8 +220,8 @@ export function PlanPicker({
       setError("Choose how gifts work.");
       return;
     }
-    if (state.gifts === "link" && !state.linkUrl.trim()) {
-      setError("Paste the link to the list.");
+    if (state.gifts === "link" && !state.linkUrl.trim() && !pickedList) {
+      setError(pickableLists.length > 0 ? "Pick one of your lists, or paste a link." : "Paste the link to the list.");
       return;
     }
     if (state.gifts === "ask" && !state.askEmail.trim()) {
@@ -215,7 +254,8 @@ export function PlanPicker({
       name: state.name,
       gifts: state.gifts,
       invitation: state.invitation,
-      linkUrl: state.linkUrl,
+      linkUrl: pickedList ? "" : state.linkUrl,
+      registryId: pickedList?.id ?? "",
       askEmail: state.askEmail,
       title: state.title,
       date: state.date,
@@ -243,9 +283,15 @@ export function PlanPicker({
       );
       if (state.audience === "child") summary.push("You'll always see what's been reserved, since you keep it for your child");
     }
-    if (state.gifts === "link") summary.push("The list you pasted, linked to the invitation. Its owners get an email.");
+    if (state.gifts === "link") {
+      summary.push(
+        pickedList
+          ? `Your list “${pickedList.title}”, linked to the invitation`
+          : "The list you pasted, linked to the invitation. Its owners get an email.",
+      );
+    }
     if (state.gifts === "ask") summary.push(`An email to ${state.askEmail || "them"} asking for a ${occasion.list.noun}`);
-    if (state.gifts === "exchange") summary.push("A Secret Santa draw. Set the budget and draw date next.");
+    if (state.gifts === "exchange") summary.push("A Secret Santa draw. Guests add a wishlist when they join. Set the budget and draw date next.");
     if (state.gifts === "no_gifts") summary.push("A note on the invitation: “No gifts, please.”");
     // A potluck or a meal train always starts with its sheet, like a gift exchange with its draw.
     const startsSheet = Boolean(occasion.defaults && "signup" in occasion.defaults);
@@ -358,20 +404,40 @@ export function PlanPicker({
           <h2 id="plan-gifts" className="text-xl font-semibold">
             How do gifts work?
           </h2>
-          <div className="grid gap-2 sm:grid-cols-2">
-            {giftPlans.map((plan) => (
-              <Choice
-                key={plan}
-                selected={state.gifts === plan}
-                onClick={() => update({ gifts: plan })}
-                label={
-                  plan === "new_list" ? `Make ${state.audience === "child" ? "their" : "your"} ${occasion.list.noun}` : GIFT_PLAN_LABELS[plan].label
-                }
-                hint={GIFT_PLAN_LABELS[plan].hint}
-              />
-            ))}
+          {/* Gift lists first, large. Everything else after them, smaller. */}
+          <div className={cx("grid gap-2", giftRows.main.length === 3 ? "sm:grid-cols-3" : "sm:grid-cols-2")}>
+            {giftRows.main.map((plan) => {
+              const { label, hint } = giftPlanLabel(plan, state.audience!, occasion, pickableLists.length > 0);
+              return (
+                <Choice
+                  key={plan}
+                  selected={state.gifts === plan}
+                  onClick={() => update({ gifts: plan })}
+                  label={label}
+                  hint={hint}
+                  icon={PLAN_ICONS[plan]}
+                />
+              );
+            })}
           </div>
-          {state.gifts === "link" && (
+          {state.gifts === "link" && pickableLists.length > 0 && (
+            <div className="flex flex-col gap-3 sm:max-w-lg">
+              <NativeSelect
+                label="Your lists"
+                value={state.registryId}
+                onChange={(e) => update({ registryId: e.target.value, linkUrl: "" })}
+                options={[{ value: "", label: "Choose a list…" }, ...pickableLists.map((l) => ({ value: l.id, label: l.title }))]}
+              />
+              <Input
+                label="Or paste a link to anyone's list"
+                value={state.linkUrl}
+                onChange={(linkUrl) => update({ linkUrl, registryId: "" })}
+                placeholder="regibee.com/r/remi-and-max-1a2b"
+                hint="Linking someone's list shows it to guests. It gives you no rights over it, and its owners get an email."
+              />
+            </div>
+          )}
+          {state.gifts === "link" && pickableLists.length === 0 && (
             <Input
               label="Link to the list"
               value={state.linkUrl}
@@ -399,6 +465,28 @@ export function PlanPicker({
               label="Also make an invitation"
               hint="Email guests an invitation with RSVPs, with your list on it. You can also add one later."
             />
+          )}
+          {giftRows.other.length > 0 && (
+            <div role="group" aria-labelledby="plan-gifts-other" className="flex flex-col gap-2">
+              <p id="plan-gifts-other" className="text-sm font-medium text-tertiary">
+                Or
+              </p>
+              <div className="grid gap-2 sm:grid-cols-3">
+                {giftRows.other.map((plan) => {
+                  const { label, hint } = giftPlanLabel(plan, state.audience!, occasion);
+                  return (
+                    <Choice
+                      key={plan}
+                      compact
+                      selected={state.gifts === plan}
+                      onClick={() => update({ gifts: plan })}
+                      label={label}
+                      hint={hint}
+                    />
+                  );
+                })}
+              </div>
+            </div>
           )}
         </section>
       )}

@@ -46,7 +46,7 @@ test("a friend's baby shower links the parents' registry", async ({ page }) => {
   await expect(page.getByRole("button", { name: "Someone else" })).toHaveAttribute("aria-pressed", "true");
   await page.getByLabel("Their name").fill("Remi");
   await page.getByRole("button", { name: "Next", exact: true }).click();
-  await page.getByRole("button", { name: /Link a list/ }).click();
+  await page.getByRole("button", { name: /Link their list/ }).click();
   await page.getByLabel("Link to the list").fill(`${SITE_URL}/r/${registry.slug}`);
   await page.getByRole("button", { name: "Next", exact: true }).click();
   await expect(page.getByLabel("Event name")).toHaveValue("Remi's Baby Shower");
@@ -58,6 +58,26 @@ test("a friend's baby shower links the parents' registry", async ({ page }) => {
   expect((await linkedRegistries(eventId)).map((r) => r.id)).toEqual([registry.id]);
   // The parents hear their registry was linked.
   await waitForEmail(parent.email, "Hal Host linked your registry to Remi's Baby Shower");
+});
+
+test("a Christmas party for no one in particular links one of your own wishlists", async ({ page }) => {
+  const maya = await createAccount("Maya Owner");
+  const { registry } = await createWishlist(maya.id);
+
+  await signIn(page, maya);
+  await openPicker(page);
+  await chooseOccasion(page, "Christmas");
+  await expect(page.getByRole("button", { name: "No one in particular" })).toHaveAttribute("aria-pressed", "true");
+  await page.getByRole("button", { name: "Next", exact: true }).click();
+  // Wishlists come first, even with no one in particular getting gifts.
+  await page.getByRole("button", { name: /Link a wishlist/ }).click();
+  await page.getByLabel("Your lists").selectOption({ label: registry.title });
+  await page.getByRole("button", { name: "Next", exact: true }).click();
+  await expect(page.getByText(`Your list “${registry.title}”, linked to the invitation`)).toBeVisible();
+  await page.getByRole("button", { name: "Make the event" }).click();
+
+  const eventId = await eventIdFrom(page);
+  expect((await linkedRegistries(eventId)).map((r) => r.id)).toEqual([registry.id]);
 });
 
 test("a kid's birthday makes the child's wishlist and the invitation together", async ({ page }) => {
