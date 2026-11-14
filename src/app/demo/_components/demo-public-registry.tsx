@@ -10,11 +10,13 @@ import { SuggestItemDialog } from "@/components/suggest-item-dialog";
 import { DEMO_ME, demoFollowState, demoOk, demoProfilePath } from "@/lib/demo-people";
 import { findDemoRegistry } from "@/lib/demo-registries";
 import { GIFT_HOLD_DAYS, type MyItemGift } from "@/lib/gifts";
+import { PAYBACK_NOTE_MAX, parseGroupGiftAmount } from "@/lib/group-gifts";
 import { copyForRegistry } from "@/lib/registry-copy";
 import { parseRetailerRegistries } from "@/lib/retailers";
 import { useDemoToday } from "../demo-today";
 import { DemoGuestShell } from "./demo-shell";
 import { DemoGuestHeader } from "./demo-guest-header";
+import { rememberStartedGroupGift, startedGroupGiftToken } from "./demo-started-group-gifts";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -115,6 +117,19 @@ export function DemoPublicRegistry({ slug }: { slug: string }) {
       setMyFunds((given) => ({ ...given, [fundId]: (given[fundId] || 0) + amount }));
       return undefined;
     },
+    // Like startGroupGift, which reserves the item and opens the group gift's
+    // page. The demo's page shows the total and note typed in here.
+    startGroupGift: async (input) => {
+      const goalText = input.goalAmount == null ? "" : String(input.goalAmount).trim();
+      const goalAmount = goalText ? parseGroupGiftAmount(goalText) : null;
+      if (goalText && goalAmount === null) return { error: "Enter the total to collect, like 120." };
+      const token = startedGroupGiftToken(registry.id, input.itemId);
+      rememberStartedGroupGift(token, {
+        goalAmount,
+        paybackNote: (input.paybackNote ?? "").trim().slice(0, PAYBACK_NOTE_MAX) || null,
+      });
+      return { success: true, token };
+    },
   };
 
   // On Remi & Max's own registries you're a guest, who can ask to follow
@@ -172,6 +187,15 @@ export function DemoPublicRegistry({ slug }: { slug: string }) {
           showStoreRegistries={isBaby}
           actions={actions}
           demo
+          // Anyone can start a group gift here. The demo counts you as signed
+          // in, so the dialog shows its form rather than asking you to sign in.
+          groupGifts={{
+            registryId: registry.id,
+            signedIn: true,
+            returnTo: `/demo/r/${registry.slug}`,
+            mine: {},
+            basePath: "/demo",
+          }}
           suggestButton={
             <SuggestItemDialog
               registryId={registry.id}
