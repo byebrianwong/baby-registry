@@ -17,6 +17,7 @@ import {
   getGifteeFor,
   getGiftExchange,
   getGuestWishLists,
+  getInvitationUpdates,
   getSignupSheet,
   registrySlugFromLink,
 } from "@/lib/events-server";
@@ -79,10 +80,12 @@ export default async function PublicEventPage({
   const [event, viewer] = await Promise.all([getEvent(slug), getViewer()]);
   if (!event) notFound();
 
-  const [registries, exchange, signupSheet, guestResult] = await Promise.all([
+  const [registries, exchange, signupSheet, updates, guestResult] = await Promise.all([
     getEventRegistries(event.id, { withItems: true }),
     getGiftExchange(event.id),
     getSignupSheet(event.id),
+    // The host's messages and changes, for anyone with the link (#129).
+    getInvitationUpdates(event.id),
     token
       ? supabaseAdmin
           .from("event_guests")
@@ -199,6 +202,7 @@ export default async function PublicEventPage({
               : null
           }
           addressHidden={addressHidden}
+          updates={updates}
         >
           {giftee && exchange && (
             <SecretSantaCard

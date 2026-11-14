@@ -49,9 +49,10 @@ export interface GuestMessagesProps {
 }
 
 /**
- * Emailing guests after the invitation: "Message everyone going", and a list
- * of what went out, including the automatic emails about a new date, time or
- * place and the day-before reminder.
+ * Telling guests things after the invitation: "Message everyone going", and a
+ * list of what went out, including the automatic emails about a new date, time
+ * or place and the day-before reminder. Messages and changes also show on the
+ * invitation, so a message can go out with nobody to email.
  */
 export function GuestMessages({
   eventId,
@@ -84,7 +85,11 @@ export function GuestMessages({
       setError(result.error);
       return;
     }
-    toast.success(`Sent to ${result.sent === 1 ? "1 guest" : `${result.sent} guests`}`);
+    toast.success(
+      result.sent
+        ? `Sent to ${result.sent === 1 ? "1 guest" : `${result.sent} guests`}, and posted on the invitation`
+        : "Posted on the invitation",
+    );
     setOpen(false);
     setBody("");
     router.refresh();
@@ -109,7 +114,7 @@ export function GuestMessages({
             </p>
           </div>
         </div>
-        <Button variant="outline" onClick={() => setOpen(true)} disabled={counts.not_declined === 0}>
+        <Button variant="outline" onClick={() => setOpen(true)}>
           <span className="inline-flex items-center gap-1.5">
             <Send className="size-4" />
             Message everyone going
@@ -122,7 +127,11 @@ export function GuestMessages({
                 <p className="truncate font-medium text-primary">{message.subject}</p>
                 <p className="text-tertiary">
                   {KIND_LABELS[message.kind]} · {formatSent(message.created_at)} ·{" "}
-                  {message.recipients === 1 ? "1 guest" : `${message.recipients} guests`}
+                  {message.recipients === 0 && message.kind !== "reminder"
+                    ? "Invitation only"
+                    : message.recipients === 1
+                      ? "1 guest"
+                      : `${message.recipients} guests`}
                 </p>
               </li>
             ))}
@@ -135,7 +144,8 @@ export function GuestMessages({
           <DialogHeader>
             <DialogTitle>Message guests</DialogTitle>
             <DialogDescription>
-              It goes by email, with each guest&apos;s own RSVP link. Replies come to you.
+              It goes by email, with each guest&apos;s own RSVP link, and replies come to you. It also shows on the
+              invitation, for anyone with its link, including guests you texted it to.
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={send} className="flex flex-col gap-4">
@@ -170,10 +180,14 @@ export function GuestMessages({
               </p>
             )}
             <div className="flex gap-2">
-              <Button type="submit" disabled={sending || counts[audience] === 0}>
+              <Button type="submit" disabled={sending}>
                 <span className="inline-flex items-center gap-1.5">
                   {sending ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
-                  {sending ? "Sending…" : `Send to ${counts[audience] === 1 ? "1 guest" : `${counts[audience]} guests`}`}
+                  {sending
+                    ? "Sending…"
+                    : counts[audience] === 0
+                      ? "Post on the invitation"
+                      : `Send to ${counts[audience] === 1 ? "1 guest" : `${counts[audience]} guests`}`}
                 </span>
               </Button>
               <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={sending}>

@@ -1,4 +1,15 @@
-import { CalendarDays, CalendarPlus, Clock, CookingPot, Gift, MapPin, PartyPopper, Shuffle, Users } from "lucide-react";
+import {
+  CalendarDays,
+  CalendarPlus,
+  Clock,
+  CookingPot,
+  Gift,
+  MapPin,
+  Megaphone,
+  PartyPopper,
+  Shuffle,
+  Users,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   eventTheme,
@@ -10,6 +21,7 @@ import {
   type GiftExchange,
   type LinkedRegistry,
 } from "@/lib/events";
+import type { InvitationUpdate } from "@/lib/event-updates";
 import { formatPrice } from "@/lib/money";
 import { SignupSheetSection, type InvitationSignup } from "@/components/signup-sheet";
 import { cx } from "@/lib/utils/cx";
@@ -64,6 +76,8 @@ export interface EventInvitationProps {
    * The event passed in has no address; this says there is one.
    */
   addressHidden?: boolean;
+  /** The host's messages and changes to the date, time or place, newest first. */
+  updates?: InvitationUpdate[];
   /** The RSVP form, under the details. */
   children?: React.ReactNode;
   /** Put in front of the registry link. The demo passes "/demo". */
@@ -81,10 +95,57 @@ function DetailRow({ icon: Icon, children }: { icon: typeof CalendarDays; childr
   );
 }
 
+/** "Mar 5", the day it was posted where the event is. */
+function formatPosted(iso: string, timeZone: string | null) {
+  const options: Intl.DateTimeFormatOptions = { month: "short", day: "numeric" };
+  try {
+    return new Date(iso).toLocaleDateString("en-US", { ...options, timeZone: timeZone || "UTC" });
+  } catch {
+    return new Date(iso).toLocaleDateString("en-US", { ...options, timeZone: "UTC" });
+  }
+}
+
 /**
- * The event as guests see it: the invitation picture, the details, a link to
- * the registry, and the RSVP form below. The public event page and the host's
- * preview both use it.
+ * What the host told guests after the invitation went out: their messages,
+ * and a line for each new date, time or place. Guests without email, and
+ * guests whose email bounced, see them here.
+ */
+function HostUpdates({ updates, timeZone }: { updates: InvitationUpdate[]; timeZone: string | null }) {
+  return (
+    <section aria-labelledby="updates-heading" className="flex flex-col gap-3 rounded-2xl bg-secondary p-4">
+      <div className="flex items-center gap-3">
+        <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary">
+          <Megaphone aria-hidden="true" className="size-4.5 text-brand-600" />
+        </span>
+        <h2 id="updates-heading" className="font-medium text-primary">
+          Updates from the host
+        </h2>
+      </div>
+      <ol className="flex flex-col divide-y divide-secondary rounded-xl bg-primary px-3">
+        {updates.map((update) => (
+          <li key={update.id} className="flex flex-col gap-1 py-3">
+            {update.kind === "message" ? (
+              <>
+                <p className="font-medium text-primary">{update.subject}</p>
+                <p className="whitespace-pre-line text-secondary">{update.body}</p>
+              </>
+            ) : (
+              <p className="font-medium text-primary">{update.body}</p>
+            )}
+            <p className="text-sm text-tertiary">
+              <time dateTime={update.created_at}>{formatPosted(update.created_at, timeZone)}</time>
+            </p>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
+/**
+ * The event as guests see it: the invitation picture, the details, the
+ * host's updates, a link to the registry, and the RSVP form below. The public
+ * event page and the host's preview both use it.
  */
 export function EventInvitation({
   event,
@@ -96,6 +157,7 @@ export function EventInvitation({
   calendar,
   signup = null,
   addressHidden = false,
+  updates = [],
   children,
   basePath = "",
 }: EventInvitationProps) {
@@ -208,6 +270,8 @@ export function EventInvitation({
         {event.message && (
           <p className="text-lg leading-relaxed whitespace-pre-line text-secondary">{event.message}</p>
         )}
+
+        {updates.length > 0 && <HostUpdates updates={updates} timeZone={event.time_zone} />}
 
         {(registries.length > 0 || event.gift_note) && (
           <section aria-labelledby="gifts-heading" className="flex flex-col gap-4 rounded-2xl bg-brand-50 p-4">

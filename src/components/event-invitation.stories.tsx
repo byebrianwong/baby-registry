@@ -18,6 +18,8 @@ import {
   sampleRegistry,
 } from "@/lib/event-sample-data";
 import { signupRowsForGuest, withAddressFor } from "@/lib/signups";
+import { changeNotice, type InvitationUpdate } from "@/lib/event-updates";
+import { formatEventDate, formatEventTime } from "@/lib/events";
 
 // The public event page (src/app/e/[slug]/page.tsx) without its header and
 // footer. The page reads the event on the server, which Storybook can't render.
@@ -112,6 +114,49 @@ export const InviteOnly: Story = {
       />
     </EventInvitation>
   ),
+};
+
+const hostUpdates: InvitationUpdate[] = [
+  {
+    id: "u2",
+    kind: "message",
+    subject: "Parking for Saturday",
+    body: "Sunnyside fills up fast, so park on Rose Street and come in through the side gate.\nSee you there!",
+    created_at: "2026-03-12T02:30:00Z",
+  },
+  {
+    id: "u1",
+    kind: "change",
+    subject: `New time: ${sampleEvent.title}`,
+    body: changeNotice(["time"], `${formatEventDate(sampleEvent.event_date!)}, ${formatEventTime(sampleEvent)}`),
+    created_at: "2026-03-05T19:00:00Z",
+  },
+];
+
+/**
+ * A guest the host texted the link to. They get no email, so the host's
+ * message and the new time show on the invitation, newest first.
+ */
+export const WithHostUpdates: Story = {
+  args: { event: { ...sampleEvent, image_url: null }, updates: hostUpdates },
+  render: (args) => (
+    <EventInvitation {...args}>
+      <RsvpForm
+        slug={sampleEvent.slug}
+        guest={{ name: "Glinda", status: "yes", partySize: 2, note: null }}
+        token="token-g1"
+        openRsvp
+        maxPartySize={2}
+        passed={false}
+        submitAction={submitAction}
+      />
+    </EventInvitation>
+  ),
+  play: async ({ canvasElement }) => {
+    const updates = within(canvasElement).getByRole("region", { name: "Updates from the host" });
+    await expect(within(updates).getAllByRole("listitem")).toHaveLength(2);
+    await expect(within(updates).getByText(/^New time\. It's now Saturday, March 14, 2026, 2/)).toBeInTheDocument();
+  },
 };
 
 // The pictures are the landing page's drawings, so the story needs no network.
