@@ -14,6 +14,7 @@ import {
   itemCoveredOwnerHtml,
   cashFundContributionOwnerHtml,
   newSuggestionOwnerHtml,
+  giftsRevealedOwnerHtml,
   managerInviteHtml,
   followRequestHtml,
   followInviteHtml,
@@ -532,6 +533,35 @@ export async function notifyNewSuggestion(opts: {
   }
 }
 
+/** Tells a list's owner that the gifts hidden from them until after an event are revealed. */
+export async function notifyGiftsRevealed(opts: {
+  toEmail: string;
+  ownerName: string;
+  registryId: string;
+  registryTitle: string;
+  eventTitle: string;
+  giftCount: number;
+}): Promise<boolean> {
+  try {
+    await sendEmail({
+      from: FROM,
+      to: TEST_RECIPIENT_OVERRIDE || opts.toEmail,
+      subject: `🎁 Your gifts from ${opts.eventTitle} are revealed`,
+      html: giftsRevealedOwnerHtml({
+        ownerName: opts.ownerName,
+        registryTitle: opts.registryTitle,
+        eventTitle: opts.eventTitle,
+        giftCount: opts.giftCount,
+        listUrl: `${siteUrl()}/dashboard/registry/${opts.registryId}?tab=purchases`,
+      }),
+    });
+    return true;
+  } catch (err) {
+    console.error("[email] Failed to send the gifts revealed email:", err);
+    return false;
+  }
+}
+
 const FOLLOW_REQUEST_EMAIL_GAP_MS = 24 * 60 * 60 * 1000;
 
 // Tells someone a person asked to follow them. Sends at most one email per
@@ -661,7 +691,7 @@ export function guestRsvpUrl(slug: string, token: string): string {
 export function eventEmailDetails(
   event: EventDetails,
   registries: LinkedRegistry[],
-  exchange: Pick<GiftExchange, "budget" | "draw_by" | "mailed" | "drawn_at"> | null = null,
+  exchange: Pick<GiftExchange, "kind" | "budget" | "draw_by" | "mailed" | "drawn_at"> | null = null,
   signupTitle: string | null = null,
 ): EventEmailDetails {
   return {
@@ -678,6 +708,7 @@ export function eventEmailDetails(
     giftNote: event.gift_note,
     exchange: exchange
       ? {
+          kind: exchange.kind === "everyone" ? "everyone" : "draw",
           budget: exchange.budget,
           drawBy: exchange.draw_by ? formatEventDate(exchange.draw_by) : null,
           mailed: exchange.mailed,
