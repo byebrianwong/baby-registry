@@ -1,0 +1,87 @@
+name: App update
+
+# Publishes an over-the-air update to the app's preview builds when a merge to
+# main changes something the app runs. Preview builds download it the next
+# time they open, or from "Check for updates" on the Account tab, which also
+# names the newest pull request in it. A change to native code makes a new
+# runtime version that no installed build matches, so those need a new build.
+# See "Updates" in mobile/README.md.
+#
+# It needs the EXPO_TOKEN repo secret, an Expo access token for the account
+# that owns the project. Without it, the run says so and publishes nothing.
+on:
+  push:
+    branches: [main]
+    paths:
+      - mobile/**
+      - src/lib/retailers.ts
+      - src/lib/demo-data.ts
+      - src/lib/gifts.ts
+      - src/lib/account-deletion-summary.ts
+      - extension/src/product-reader.ts
+      - .github/workflows/mobile-update.yml
+  workflow_dispatch:
+
+# One publish at a time, in order, so the newest merge is the newest update.
+concurrency:
+  group: mobile-update
+  cancel-in-progress: false
+
+jobs:
+  token:
+    name: Expo token
+    runs-on: ubuntu-latest
+    outputs:
+      ready: ${{ steps.check.outputs.ready }}
+    steps:
+      - id: check
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          if [ -n "$EXPO_TOKEN" ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::The EXPO_TOKEN secret isn't set, so no app update was published. See mobile/README.md."
+          fi
+
+  update:
+    name: Publish preview update
+    needs: token
+    if: needs.token.outputs.ready == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      # Some history, so the app can name the newest pull request.
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 50
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+      - uses: expo/expo-github-action@v9
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+      - run: npm ci
+
+      # The Supabase URL and site URL that builds get from eas.json's `env`,
+      # which is for builds. The anon key comes from the project's EAS
+      # environment variables (--environment below).
+      - name: Use the build profiles' settings
+        run: node -e 'for (const [k, v] of Object.entries(require("./eas.json").build.base.env)) console.log(`${k}=${v}`)' >> "$GITHUB_ENV"
+
+      # "#167 Let Android password managers fill the app's sign-in fields"
+      - name: Publish
+        run: |
+          subject=$(git log -1 --format=%s)
+          if [[ $subject =~ ^Merge\ pull\ request\ \#([0-9]+) ]]; then
+            message="#${BASH_REMATCH[1]} $(git log -1 --format=%b | head -n 1)"
+          else
+            message="$subject"
+          fi
+          eas update --channel preview --environment preview --message "$message" --non-interactive
