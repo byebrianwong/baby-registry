@@ -17,6 +17,8 @@ export interface GuestWishListsProps {
   waitingCount?: number;
   /** A host looking at it without being a guest: no "You" row to point at. */
   hostView?: boolean;
+  /** Put in front of a Regibee list's link instead of going through the event. The demo passes "/demo". */
+  basePath?: string;
 }
 
 /** "store.com" from a link, for a list that isn't on Regibee. */
@@ -39,9 +41,12 @@ export function GuestWishLists({
   guestToken,
   waitingCount = 0,
   hostView = false,
+  basePath,
 }: GuestWishListsProps) {
   const hrefFor = (slug: string) =>
-    eventSlug && guestToken
+    basePath
+      ? `${basePath}/r/${slug}`
+      : eventSlug && guestToken
       ? `/e/${eventSlug}/gifts?g=${encodeURIComponent(guestToken)}&to=${encodeURIComponent(slug)}`
       : `/r/${slug}`;
   const withList = lists.filter((l) => l.url).length;

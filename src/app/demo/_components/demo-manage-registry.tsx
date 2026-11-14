@@ -1185,7 +1185,12 @@ export function DemoManageRegistry({ registryId }: { registryId: string }) {
   const copy = copyForRegistry(registry);
   const fundActions = demoFundActions(setFunds);
   const publicPath = demoRegistryPath(registry);
-  const linkedEvents = demoEventsForRegistry(today, registry.id);
+  // Unlinking someone else's event takes it off this page until you leave.
+  const [linkedEvents, setLinkedEvents] = useState(() => demoEventsForRegistry(today, registry.id));
+  const unlinkEvent = async (eventId: string) => {
+    setLinkedEvents((current) => current.filter((e) => e.id !== eventId));
+    return { error: null };
+  };
 
   const handleAddItem = (item: DemoItem) => {
     setItems((prev) => [...prev, item]);
@@ -1357,7 +1362,7 @@ export function DemoManageRegistry({ registryId }: { registryId: string }) {
 
         {/* Events that link to this registry, and a way to plan one. */}
         <div className="mt-6">
-          <RegistryEventsBanner registryId={registry.id} events={linkedEvents} basePath="/demo" />
+          <RegistryEventsBanner registryId={registry.id} events={linkedEvents} basePath="/demo" unlinkAction={unlinkEvent} />
         </div>
 
         {/* Stats */}
