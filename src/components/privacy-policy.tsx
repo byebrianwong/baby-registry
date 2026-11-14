@@ -12,7 +12,7 @@ import { EXTENSION_STORES } from "@/lib/retailers";
 
 /** Where Regibee is run from, how to reach it, and when this version took effect. */
 export const PRIVACY_FACTS = {
-  effectiveDate: "November 11, 2026",
+  effectiveDate: "November 13, 2026",
   contactEmail: "contact@regibee.com",
   location: "California, United States",
 };
@@ -147,6 +147,21 @@ export function PrivacyPolicy({ nav }: { nav: React.ReactNode }) {
               Signed-in people can find you on Regibee by name, or by typing your whole email address, only if you
               turn that on. It&apos;s the &ldquo;Let friends find me&rdquo; box when you sign up, and two settings
               on your Account page. Search never shows your email address.
+            </P>
+
+            <H3>Your gift profile</H3>
+            <P>
+              If you fill it in on your Account page, we keep your birthday (the month and day, no year), your
+              sizes, favorite colors, likes, things to skip and notes. Everything but the birthday shows on your
+              personal wish lists and your profile, so anyone with those links sees it. Your birthday shows only to
+              you and the followers you&apos;ve approved: on your profile, on their Following page, and in an email
+              we send them 10 days before.
+            </P>
+            <P>
+              A list you keep for a child can have its own gift profile, which you and anyone helping you manage
+              the list fill in on its settings page. It shows on that list. The child&apos;s birthday shows only to
+              the people who manage the list and to followers you&apos;ve approved, while the list is on your
+              profile.
             </P>
 
             <H3>Your registries</H3>
@@ -351,6 +366,10 @@ export function PrivacyPolicy({ nav }: { nav: React.ReactNode }) {
                 follow;
               </li>
               <li>to gift exchange members, with the name they drew;</li>
+              <li>
+                to followers, 10 days before the birthday of someone they follow who approved them and added a
+                birthday to their gift profile;
+              </li>
               <li>to the person an event is for, when its host asks them to make a gift list;</li>
               <li>
                 to owners when someone links their registry to an event, or when a store&apos;s completion discount
@@ -358,7 +377,8 @@ export function PrivacyPolicy({ nav }: { nav: React.ReactNode }) {
               </li>
             </List>
             <P>
-              You can turn off follow request emails on your Account page, and RSVP emails for each event you host.
+              You can turn off follow request emails and birthday emails on your Account page, and RSVP emails for
+              each event you host.
             </P>
             <P>
               Our email service, Resend, records when one of our emails is opened and which of its links are
@@ -486,7 +506,8 @@ export function PrivacyPolicy({ nav }: { nav: React.ReactNode }) {
           <Section id="keeping">
             <P>
               We keep your information until you delete it or your account. Gifts, suggestions and RSVPs stay with
-              the registry or event they were for until its owner deletes it. Deleted information can stay in our
+              the registry or event they were for until its owner deletes it. We keep a note of each birthday email
+              we send for 60 days, so the same one is never sent twice. Deleted information can stay in our
               providers&apos; backups, and records of emails already sent can stay in our email service&apos;s logs,
               until they expire on those providers&apos; own schedules.
             </P>
@@ -495,7 +516,7 @@ export function PrivacyPolicy({ nav }: { nav: React.ReactNode }) {
           <Section id="security">
             <P>
               Every connection to Regibee is encrypted. Access rules in the database let each person reach only what
-              they&apos;re allowed to. Guest lists, gift exchanges, groups, follows and blocks can be read only by our server. No system
+              they&apos;re allowed to. Guest lists, gift exchanges, groups, follows, blocks and the notes of birthday emails sent can be read only by our server. No system
               is perfectly secure, so if you find a problem, please email us at <ContactEmail />.
             </P>
           </Section>
@@ -503,8 +524,8 @@ export function PrivacyPolicy({ nav }: { nav: React.ReactNode }) {
           <Section id="children">
             <P>
               Regibee is for adults planning gifts and events, and isn&apos;t meant for children. Please don&apos;t
-              use it if you&apos;re under 13. A registry may mention a child, such as a baby&apos;s name, and you
-              decide what to put there. If you think a child has given us their information, email us and we&apos;ll
+              use it if you&apos;re under 13. A registry may mention a child, such as a baby&apos;s name, or a
+              child&apos;s sizes and birthday on a list kept for them, and you decide what to put there. If you think a child has given us their information, email us and we&apos;ll
               delete it.
             </P>
           </Section>
