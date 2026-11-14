@@ -31,6 +31,8 @@ import {
 } from "@/lib/signups";
 import {
   exchangeKind,
+  formatEventDate,
+  formatEventTime,
   isEmail,
   isEventType,
   isExchangeKind,
@@ -54,7 +56,13 @@ import { getGroupForOwner, getGroupMembers, listGroupEvents } from "@/lib/groups
 import { createGroup } from "@/lib/actions/groups";
 import { getSessionUser } from "@/lib/viewer";
 import { confirmRsvpToGuest, notifyHostOfRsvp, sendEventChangeEmails, sendEventInvitations } from "@/lib/email";
-import { changeRecipients, changedParts } from "@/lib/event-updates";
+import {
+  changeNotice,
+  changeRecipients,
+  changeSummary,
+  changedParts,
+  someoneHasInvitation,
+} from "@/lib/event-updates";
 import {
   answerLines,
   cleanQuestions,
@@ -519,7 +527,9 @@ export async function updateEvent(eventId: string, formData: FormData): Promise<
 
 /**
  * Emails the guests who might come that the date, time or place changed, and
- * logs it on the event's messages. Runs after the response, from updateEvent.
+ * logs it on the event's messages, which puts a line about it on the
+ * invitation. Guests with no email address see that line instead (#129).
+ * Runs after the response, from updateEvent.
  */
 async function emailEventChange(
   before: EventDetails,
@@ -534,28 +544,34 @@ async function emailEventChange(
     getSignupSheet(nextEvent.id),
     hostNameFor(nextEvent, userId),
   ]);
+  // Nobody has the invitation yet, so there's no old version to correct.
+  if (!someoneHasInvitation(guests)) return;
   const signedUp = sheet ? claimsByGuest(sheet) : new Map();
   const recipients = changeRecipients(guests);
-  if (recipients.length === 0) return;
-  const { sent } = await sendEventChangeEmails({
-    before,
-    after: nextEvent,
-    parts,
-    registries,
-    hostName,
-    replyTo,
-    guests: recipients.map((g) => ({ name: g.name, email: g.email, token: g.token, signedUp: signedUp.has(g.id) })),
+  const { sent } =
+    recipients.length > 0
+      ? await sendEventChangeEmails({
+          before,
+          after: nextEvent,
+          parts,
+          registries,
+          hostName,
+          replyTo,
+          guests: recipients.map((g) => ({ name: g.name, email: g.email, token: g.token, signedUp: signedUp.has(g.id) })),
+        })
+      : { sent: 0 };
+  const when = nextEvent.event_date
+    ? [formatEventDate(nextEvent.event_date), formatEventTime(nextEvent)].filter(Boolean).join(", ")
+    : formatEventTime(nextEvent);
+  await supabaseAdmin.from("event_messages").insert({
+    event_id: nextEvent.id,
+    sent_by: userId,
+    kind: "change",
+    audience: "not_declined",
+    subject: `${changeSummary(parts)}: ${nextEvent.title}`.slice(0, 150),
+    body: changeNotice(parts, when),
+    recipients: sent,
   });
-  if (sent > 0) {
-    await supabaseAdmin.from("event_messages").insert({
-      event_id: nextEvent.id,
-      sent_by: userId,
-      kind: "change",
-      audience: "not_declined",
-      subject: `New ${parts.join(", ")}: ${nextEvent.title}`.slice(0, 150),
-      recipients: sent,
-    });
-  }
 }
 
 /** Sets or clears the invitation picture. The browser uploads it first. */

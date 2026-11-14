@@ -10,7 +10,7 @@ import {
   type LinkedRegistry,
 } from "@/lib/events";
 import type { SignupClaim, SignupItem, SignupSheet, SignupSheetWithRows } from "@/lib/signups";
-import type { EventMessage } from "@/lib/event-updates";
+import { invitationUpdates, type EventMessage, type InvitationUpdate } from "@/lib/event-updates";
 
 // Reads for the event pages. The event tables have no access rules for the
 // API roles (see 015_events.sql), so everything goes through the service-role
@@ -422,6 +422,25 @@ export async function getEventMessages(eventId: string, limit = 20): Promise<Eve
     .order("created_at", { ascending: false })
     .limit(limit);
   return (data || []) as EventMessage[];
+}
+
+/**
+ * The host's messages and the changes to the date, time or place, newest
+ * first, as the invitation shows them to anyone with its link (#129).
+ */
+export async function getInvitationUpdates(eventId: string, limit = 10): Promise<InvitationUpdate[]> {
+  const { data, error } = await supabaseAdmin
+    .from("event_messages")
+    .select("id, kind, subject, body, created_at")
+    .eq("event_id", eventId)
+    .in("kind", ["message", "change"])
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (error) {
+    console.error("[event] Failed to load updates:", error);
+    return [];
+  }
+  return invitationUpdates((data || []) as Pick<EventMessage, "id" | "kind" | "subject" | "body" | "created_at">[]);
 }
 
 /** Other events the user can manage, newest first, for "copy guests from". */

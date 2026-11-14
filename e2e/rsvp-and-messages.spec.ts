@@ -172,6 +172,10 @@ test("a new time emails everyone who might come, unless the host unticks it", as
     await page.reload();
     await expect(page.getByText("New details ·")).toBeVisible({ timeout: 1000 });
   }).toPass();
+  // And the invitation says what changed, for guests without email (#129).
+  await page.goto(`/e/${event.slug}`);
+  const updates = page.getByRole("region", { name: "Updates from the host" });
+  await expect(updates.getByText(/^New time\. It's now Sunday, March 14, 2027, 3:30/)).toBeVisible();
 
   // A small fix with the box unticked emails nobody.
   await page.goto(`/dashboard/events/${event.id}/edit`);
@@ -216,6 +220,37 @@ test("the host messages everyone going, and replies go to the host", async ({ pa
   expect(email.from).toContain("Hal Host via Regibee");
   expect((await emailsTo(maybe)).map((e) => e.subject)).not.toContain(`About ${event.title}`);
   await expect(page.getByText(`About ${event.title}`)).toBeVisible();
+
+  // It's on the invitation too, for anyone with the link (#129).
+  await page.goto(`/e/${event.slug}`);
+  const updates = page.getByRole("region", { name: "Updates from the host" });
+  await expect(updates.getByText(`About ${event.title}`)).toBeVisible();
+  await expect(updates.getByText("Parking is behind the building.")).toBeVisible();
+});
+
+test("with nobody to email, the host's message is posted on the invitation", async ({ page }) => {
+  const host = await createAccount("Hal Host");
+  // The host texted this guest the link, so there's no email address.
+  const { event, guests } = await createEvent(host.id, { event_type: "baby_shower" }, [
+    { name: "Texted", email: null, rsvp_status: "yes" },
+  ]);
+
+  await signIn(page, host);
+  await page.goto(`/dashboard/events/${event.id}`);
+  const dialog = page.getByRole("dialog");
+  await expect(async () => {
+    await page.getByRole("button", { name: "Message everyone going" }).click();
+    await expect(dialog).toBeVisible({ timeout: 1000 });
+  }).toPass();
+  await dialog.getByRole("textbox", { name: "Message" }).fill("Come in through the side gate.");
+  await dialog.getByRole("button", { name: "Post on the invitation" }).click();
+  await expect(dialog).toBeHidden();
+  await expect(page.getByText(/Invitation only/)).toBeVisible();
+
+  // The guest opens the link they were texted.
+  await page.goto(guests[0].rsvpPath);
+  const updates = page.getByRole("region", { name: "Updates from the host" });
+  await expect(updates.getByText("Come in through the side gate.")).toBeVisible();
 });
 
 test("the day before, everyone going gets one reminder", async ({ page }) => {
