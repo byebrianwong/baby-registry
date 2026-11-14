@@ -557,7 +557,8 @@ export function GroupGiftPage({
                     label="Paid"
                     aria-label={`${person.name} paid`}
                     isSelected={person.paid}
-                    isDisabled={savingPaid.includes(person.id) || view.status === "ended"}
+                    isDisabled={view.status === "ended"}
+                    isReadOnly={savingPaid.includes(person.id)}
                     onChange={(paid) => void togglePaid(person, paid)}
                     className="shrink-0"
                   />

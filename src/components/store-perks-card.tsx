@@ -263,7 +263,7 @@ export function StorePerksCard({
         <div className="space-y-2.5">
           <Checkbox
             isSelected={emails}
-            isDisabled={saving}
+            isReadOnly={saving}
             onChange={toggleEmails}
             label="Email me when a perk may be ready"
           />

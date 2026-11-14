@@ -37,7 +37,7 @@ export function BirthdayEmailsSetting({
     <div className="space-y-2">
       <Checkbox
         isSelected={on}
-        isDisabled={saving}
+        isReadOnly={saving}
         onChange={change}
         label="Email me before birthdays"
         hint={`${BIRTHDAY_REMINDER_DAYS} days before the birthday of someone you follow, if they approved you and added their birthday.`}

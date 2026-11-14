@@ -57,6 +57,12 @@ export const CheckboxBase = ({ className, isSelected, isDisabled, isIndeterminat
 };
 CheckboxBase.displayName = "CheckboxBase";
 
+/**
+ * For a checkbox that saves as soon as it changes, pass `isReadOnly` while the
+ * save runs, not `isDisabled`. Both stop further clicks. `isDisabled` also greys
+ * the box and shows a "not allowed" cursor under the pointer that just clicked it.
+ * Keep `isDisabled` for a choice the person can't make at all.
+ */
 interface CheckboxProps extends AriaCheckboxProps {
     ref?: Ref<HTMLLabelElement>;
     size?: "sm" | "md";
