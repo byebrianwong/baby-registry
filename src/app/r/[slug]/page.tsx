@@ -39,6 +39,8 @@ import { GuestPrefillProvider, type GuestPrefill } from "@/components/guest-pref
 import { GiftProfileCard } from "@/components/gift-profile-card";
 import { parseGiftProfile, withoutBirthday, type GiftProfile } from "@/lib/gift-profile";
 import { itemsHiddenFromOwner, loadListItems } from "@/lib/list-items";
+import { canManageRegistry } from "@/lib/events-server";
+import { myGroupGiftsOnItems } from "@/lib/group-gifts-server";
 
 const PURCHASE_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
@@ -138,25 +140,31 @@ async function loadGiftProfile(registry: {
 // Secret Santa also sees a notice that the owners won't see their name.
 async function loadGuestPrefill(
   registryId: string
-): Promise<{ prefill: GuestPrefill | null; santaFor: string | null }> {
-  const none = { prefill: null, santaFor: null };
+): Promise<{ prefill: GuestPrefill | null; santaFor: string | null; eventTitle: string | null }> {
+  const none = { prefill: null, santaFor: null, eventTitle: null };
   try {
     const guest = await readEventGuestCookie();
     if (!guest) return none;
     const isSanta = guest.santa?.registryId === registryId;
-    if (!isSanta) {
-      if (!isUuid(guest.eventId)) return none;
+    // The event, when it links this list. A group gift started here shows on
+    // its invitation (src/lib/actions/group-gifts.ts).
+    let eventTitle: string | null = null;
+    if (isUuid(guest.eventId)) {
       const { data: link } = await supabaseAdmin
         .from("event_registries")
-        .select("event_id")
+        .select("events(title)")
         .eq("event_id", guest.eventId)
         .eq("registry_id", registryId)
         .maybeSingle();
-      if (!link) return none;
+      if (link) eventTitle = (link as unknown as { events: { title: string } | null }).events?.title ?? null;
+      else if (!isSanta) return none;
+    } else if (!isSanta) {
+      return none;
     }
     return {
       prefill: { name: guest.name, email: guest.email, secretGiver: isSanta },
       santaFor: isSanta ? guest.santa?.gifteeName || null : null,
+      eventTitle,
     };
   } catch (err) {
     console.error("[registry] Failed to read the event guest cookie:", err);
@@ -214,7 +222,8 @@ export default async function PublicRegistryPage({
     { data: categories },
     { data: items },
     { data: cashFunds },
-    { prefill: guestPrefill, santaFor },
+    { prefill: guestPrefill, santaFor, eventTitle: guestEventTitle },
+    viewerManages,
     fullGiftProfile,
   ] = await Promise.all([
     loadOwner(Boolean(registry.listed_on_profile), registry.owner_id),
@@ -231,6 +240,7 @@ export default async function PublicRegistryPage({
       .select("*")
       .eq("registry_id", registry.id),
     loadGuestPrefill(registry.id),
+    viewer ? canManageRegistry(viewer.id, registry.id) : Promise.resolve(false),
     loadGiftProfile(registry),
   ]);
 
@@ -248,6 +258,20 @@ export default async function PublicRegistryPage({
   const hideReservations = reservationsHiddenFrom(registry, viewer?.id);
 
   const allItems = (items || []) as RegistryItem[];
+
+  // Group gifts (src/lib/group-gifts.ts): anyone but the list's managers can
+  // start one, and sees the ones they organize or chipped in on. Managers
+  // only ever see an ordinary reservation.
+  const myGroupGifts =
+    viewer && !viewerManages
+      ? await myGroupGiftsOnItems(
+          allItems.map((i) => i.id),
+          viewer.id,
+        ).catch((err) => {
+          console.error("[registry] Failed to load group gifts:", err);
+          return {};
+        })
+      : {};
   // A gift belongs to the item, and an item can be on several of the owner's
   // lists. If another of them hides what's been reserved, the owner doesn't
   // see this item's gifts here either.
@@ -540,6 +564,17 @@ export default async function PublicRegistryPage({
             coverFlavor={copy.coverItemFlavor(parentName)}
             linkedStores={linkedStores}
             showStoreRegistries={isBabyRegistry}
+            groupGifts={
+              viewerManages
+                ? undefined
+                : {
+                    registryId: registry.id,
+                    signedIn: Boolean(viewer),
+                    returnTo: `/r/${slug}`,
+                    mine: myGroupGifts,
+                    eventTitle: guestEventTitle,
+                  }
+            }
             suggestButton={
               <SuggestItemDialog
                 registryId={registry.id}

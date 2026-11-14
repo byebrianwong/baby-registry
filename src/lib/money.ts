@@ -25,3 +25,8 @@ export function formatDollars(amount: number): string {
 export function formatPrice(amount: number): string {
   return dollarsAndCents.format(amount);
 }
+
+/** "$40", or "$37.50" when there are cents. For amounts people type, like a pledge. */
+export function formatAmount(amount: number): string {
+  return Number.isInteger(amount) ? formatDollars(amount) : formatPrice(amount);
+}

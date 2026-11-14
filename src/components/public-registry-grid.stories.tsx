@@ -208,3 +208,29 @@ export const NoItemsYet: Story = {
     suggestButton: suggestButton([]),
   },
 };
+
+// A signed-in friend's view: "Group gift" sits beside "Gift this" on each
+// open item, and the stroller they started a group gift on links to it.
+export const WithGroupGifts: Story = {
+  args: {
+    ...ItemsFromStores.args,
+    items: [
+      ...ItemsFromStores.args!.items!.slice(0, 2),
+      {
+        ...base,
+        id: "5",
+        title: "UPPAbaby Vista V2 Stroller",
+        price: 979.99,
+        quantity_fulfilled: 1,
+        external_url: null,
+      },
+    ],
+    groupGifts: {
+      registryId: "registry-1",
+      signedIn: true,
+      returnTo: "/r/remi-and-max",
+      mine: { "5": { token: "story-group-gift-token-0000", organizer: true } },
+    },
+  },
+  parameters: { nextjs: { appDirectory: true } },
+};
